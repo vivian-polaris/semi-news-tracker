@@ -151,11 +151,11 @@ footer{text-align:center;padding:30px 0;color:var(--text2);font-size:.75rem;bord
     <div class="right">
       <button class="sort-btn active" data-sort="time" onclick="setSort('time')">最新</button>
       <button class="sort-btn" data-sort="source" onclick="setSort('source')">來源</button>
-      <button class="view-btn" id="viewBtn" onclick="toggleView()">&#x2630; 條列式</button>
+      <button class="view-btn" id="viewBtn" onclick="toggleView()">&#x229E; 卡片式</button>
     </div>
   </div>
 
-  <div class="news-grid" id="newsGrid">
+  <div class="news-list" id="newsGrid">
     <div class="loading"><div class="spinner"></div><br>正在載入新聞...</div>
   </div>
 
@@ -221,7 +221,7 @@ let searchText = '';
 let activePeriod = 'all';
 let customStart = null;
 let customEnd = null;
-let viewMode = 'grid';
+let viewMode = 'list';
 
 // ============================================================
 // 版面切換
@@ -526,13 +526,11 @@ function renderNews() {
   filtered = filterByTime(filtered);
 
   if (searchText) {
-    const terms = searchText.toLowerCase().split(/\s+/);
-    const allCatKeywords = NL_MAPPINGS.flatMap(m => m.patterns);
-    const freeTerms = terms.filter(t => !allCatKeywords.some(k => k.includes(t) || t.includes(k)));
-    if (freeTerms.length > 0) {
+    const tokens = buildSearchTokens(searchText);
+    if (tokens.length > 0) {
       filtered = filtered.filter(n => {
         const title = n.title.toLowerCase();
-        return freeTerms.some(t => title.includes(t));
+        return tokens.some(t => title.includes(t));
       });
     }
   }
@@ -577,6 +575,30 @@ function setSort(sort) {
     b.classList.toggle('active', b.dataset.sort === sort);
   });
   renderNews();
+}
+
+// ============================================================
+// 搜尋 Tokenizer（支援句子 / 中文 / 英文）
+// ============================================================
+function buildSearchTokens(text) {
+  const t = text.toLowerCase().trim();
+  if (!t) return [];
+  const tokens = new Set();
+  // 整句當作一個 token（支援直接 phrase match）
+  tokens.add(t);
+  // 按空格切分（英文句子）
+  const parts = t.split(/\s+/).filter(p => p.length > 0);
+  parts.forEach(p => tokens.add(p));
+  // 中文部分：每個 2-char 組合（bigram）讓句子也能匹配
+  parts.forEach(p => {
+    if (/[\u4e00-\u9fff]/.test(p) && p.length > 2) {
+      for (let i = 0; i <= p.length - 2; i++) {
+        tokens.add(p.slice(i, i + 2));
+      }
+    }
+  });
+  // 排除過短或無意義的 token
+  return [...tokens].filter(t => t.length >= 2);
 }
 
 // ============================================================
