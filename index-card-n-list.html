@@ -129,7 +129,6 @@ footer{text-align:center;padding:30px 0;color:var(--text2);font-size:.75rem;bord
       <div class="time-btn" data-period="1d" onclick="setTimePeriod('1d')">1 天</div>
       <div class="time-btn" data-period="1w" onclick="setTimePeriod('1w')">1 週</div>
       <div class="time-btn" data-period="1m" onclick="setTimePeriod('1m')">1 月</div>
-      <div class="time-btn" data-period="1y" onclick="setTimePeriod('1y')">1 年</div>
       <div class="time-btn" data-period="custom" onclick="setTimePeriod('custom')">&#x270F;&#xFE0F; 自訂</div>
     </div>
     <div class="time-custom" id="timeCustom">
@@ -137,7 +136,7 @@ footer{text-align:center;padding:30px 0;color:var(--text2);font-size:.75rem;bord
       <label>&#x23F0; 結束 <input type="datetime-local" id="endDate"></label>
       <button class="time-apply-btn" onclick="applyCustomTime()">套用</button>
     </div>
-    <div class="time-notice" id="timeNotice">&#x26A0;&#xFE0F; 1 年範圍需重新載入新聞以獲取完整資料</div>
+    <div class="time-notice" id="timeNotice">&#x26A0;&#xFE0F; 自訂範圍最多 1 個月</div>
   </div>
 
   <div class="filters" id="filters"></div>
@@ -247,7 +246,7 @@ function setTimePeriod(period) {
     b.classList.toggle('active', b.dataset.period === period);
   });
   document.getElementById('timeCustom').classList.toggle('show', period === 'custom');
-  document.getElementById('timeNotice').classList.toggle('show', period === '1y');
+  document.getElementById('timeNotice').classList.toggle('show', period === 'custom');
   if (period !== 'custom') renderNews();
 }
 
@@ -256,6 +255,10 @@ function applyCustomTime() {
   const e = document.getElementById('endDate').value;
   if (s && e && new Date(s) > new Date(e)) {
     alert('開始時間不能晚於結束時間');
+    return;
+  }
+  if (s && e && (new Date(e) - new Date(s)) > 31 * 24 * 3600 * 1000) {
+    alert('自訂範圍最多 1 個月');
     return;
   }
   customStart = s ? new Date(s) : null;
@@ -281,10 +284,6 @@ function filterByTime(items) {
     const cutoff = new Date(now - 30 * 24 * 3600 * 1000);
     return items.filter(n => new Date(n.pubDate) >= cutoff);
   }
-  if (activePeriod === '1y') {
-    const cutoff = new Date(now - 365 * 24 * 3600 * 1000);
-    return items.filter(n => new Date(n.pubDate) >= cutoff);
-  }
   if (activePeriod === 'custom') {
     return items.filter(n => {
       const d = new Date(n.pubDate);
@@ -302,7 +301,6 @@ function getPeriodLabel() {
     case '1d': return '（今天）';
     case '1w': return '（近 1 週）';
     case '1m': return '（近 1 月）';
-    case '1y': return '（近 1 年）';
     case 'custom': {
       const s = customStart ? customStart.toLocaleDateString('zh-TW') : '';
       const e = customEnd ? customEnd.toLocaleDateString('zh-TW') : '';
@@ -332,8 +330,6 @@ function buildGoogleNewsUrl(query) {
     when = 'when:1d';
   } else if (activePeriod === '1w') {
     when = 'when:7d';
-  } else if (activePeriod === '1y') {
-    when = 'when:1y';
   } else if (activePeriod === 'custom') {
     const parts = [];
     if (customStart) parts.push('after:' + customStart.toISOString().split('T')[0]);
