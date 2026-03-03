@@ -6,421 +6,432 @@
 <title>Semiconductor News Tracker - AI-Powered Industry Intelligence | Claude</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0e17;--card:#131a2b;--border:#1e2a42;--accent:#3b82f6;--accent2:#8b5cf6;
---text:#e2e8f0;--text2:#94a3b8;--green:#10b981;--red:#ef4444;--orange:#f59e0b;--tag-bg:#1e293b}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.container{max-width:1200px;margin:0 auto;padding:20px}
+:root{
+  --bg:#0a0e17;
+  --sidebar:#0d1321;
+  --card:#111827;
+  --card2:#141e30;
+  --border:#1e2d45;
+  --orange:#f59e0b;
+  --orange-dark:#d97706;
+  --blue:#3b82f6;
+  --purple:#8b5cf6;
+  --green:#10b981;
+  --red:#ef4444;
+  --text:#e2e8f0;
+  --text2:#94a3b8;
+  --text3:#4b6080;
+}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;height:100vh;overflow:hidden}
 
-/* Header */
-header{text-align:center;padding:30px 0 20px}
-header h1{font-size:1.8rem;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
-header p{color:var(--text2);font-size:.9rem}
+/* ── APP SHELL ── */
+.app{display:flex;flex:1;overflow:hidden}
 
-/* Search Bar */
-.search-bar{margin:20px 0;position:relative}
-.search-bar input{width:100%;padding:14px 20px 14px 44px;background:var(--card);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:1rem;outline:none;transition:border .2s}
-.search-bar input:focus{border-color:var(--accent)}
-.search-bar input::placeholder{color:var(--text2)}
-.search-bar .icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:1.2rem}
-.search-hint{color:var(--text2);font-size:.75rem;margin-top:6px;padding-left:4px}
+/* ── SIDEBAR ── */
+.sidebar{width:252px;min-width:252px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;padding:18px 14px 24px}
 
-/* Category Filters */
-.filters{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 24px}
-.filter-btn{padding:8px 16px;background:var(--tag-bg);border:1px solid var(--border);border-radius:20px;color:var(--text2);cursor:pointer;font-size:.85rem;transition:all .2s;user-select:none}
-.filter-btn:hover{border-color:var(--accent);color:var(--text)}
-.filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
-.filter-btn .count{margin-left:4px;font-size:.75rem;opacity:.7}
+.logo{display:flex;align-items:center;gap:8px;margin-bottom:26px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.logo-diamond{color:var(--orange);font-size:1.1rem;line-height:1}
+.logo-text{font-size:.68rem;font-weight:700;letter-spacing:.12em;color:var(--text2)}
+.logo-text em{color:var(--orange);font-style:normal}
 
-/* Stats Bar */
-.stats-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding:0 4px}
-.stats-bar .left{color:var(--text2);font-size:.85rem}
-.stats-bar .right{display:flex;gap:8px}
-.sort-btn{padding:4px 12px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;font-size:.8rem}
-.sort-btn.active{color:var(--accent);border-color:var(--accent)}
+.s-label{font-size:.63rem;font-weight:700;letter-spacing:.1em;color:var(--text3);text-transform:uppercase;margin-bottom:10px}
 
-/* News Grid */
-.news-grid{display:grid;grid-template-columns:1fr;gap:12px}
-@media(min-width:768px){.news-grid{grid-template-columns:repeat(2,1fr)}}
-@media(min-width:1024px){.news-grid{grid-template-columns:repeat(3,1fr)}}
+/* category rows */
+.cat-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;gap:8px}
+.cat-left{display:flex;align-items:center;gap:8px;font-size:.82rem}
+.cat-icon{font-size:.7rem;width:14px;text-align:center;flex-shrink:0}
 
-.news-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;transition:all .2s;cursor:pointer;display:flex;flex-direction:column}
-.news-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 20px rgba(59,130,246,.1)}
-.news-card .meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.news-card .source{color:var(--accent);font-size:.75rem;font-weight:600;text-transform:uppercase}
-.news-card .time{color:var(--text2);font-size:.75rem}
-.news-card h3{font-size:.95rem;line-height:1.4;margin-bottom:10px;flex-grow:1}
-.news-card h3 a{color:var(--text);text-decoration:none}
-.news-card h3 a:hover{color:var(--accent)}
-.news-card .tags{display:flex;flex-wrap:wrap;gap:4px}
-.tag{padding:2px 8px;background:var(--tag-bg);border-radius:4px;font-size:.7rem;color:var(--text2)}
-.tag.foundry{color:var(--green);background:rgba(16,185,129,.1)}
-.tag.fabless{color:var(--accent);background:rgba(59,130,246,.1)}
-.tag.equipment{color:var(--orange);background:rgba(245,158,11,.1)}
-.tag.memory{color:var(--accent2);background:rgba(139,92,246,.1)}
-.tag.ai{color:var(--red);background:rgba(239,68,68,.1)}
-.tag.material{color:#14b8a6;background:rgba(20,184,166,.1)}
+/* toggle */
+.tgl{position:relative;width:34px;height:18px;flex-shrink:0}
+.tgl input{opacity:0;width:0;height:0;position:absolute}
+.tgl-track{position:absolute;inset:0;border-radius:9px;background:var(--border);transition:background .2s;cursor:pointer}
+.tgl input:checked+.tgl-track{background:var(--orange)}
+.tgl-thumb{position:absolute;top:3px;left:3px;width:12px;height:12px;background:#fff;border-radius:50%;transition:transform .2s;pointer-events:none}
+.tgl input:checked~.tgl-thumb{transform:translateX(16px)}
 
-/* Loading & States */
-.loading{text-align:center;padding:60px;color:var(--text2)}
-.loading .spinner{display:inline-block;width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+/* company section */
+.co-group{margin-bottom:14px}
+.co-group-hd{display:flex;align-items:center;gap:6px;font-size:.68rem;color:var(--text3);margin-bottom:6px}
+.co-group-hd .dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{padding:3px 9px;border-radius:5px;font-size:.72rem;border:1px solid var(--border);color:var(--text3);cursor:pointer;transition:all .15s;background:transparent;user-select:none}
+.chip:hover{border-color:var(--orange);color:var(--orange)}
+
+/* time grid */
+.time-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.t-btn{padding:7px 4px;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--text2);font-size:.78rem;cursor:pointer;text-align:center;transition:all .15s}
+.t-btn:hover{border-color:var(--orange);color:var(--orange)}
+.t-btn.active{background:var(--orange);border-color:var(--orange);color:#000;font-weight:700}
+
+.s-section{margin-bottom:22px}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+
+/* top bar */
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:14px 22px;border-bottom:1px solid var(--border);flex-shrink:0}
+.top-logo{display:flex;align-items:center;gap:7px;font-size:.7rem;font-weight:700;letter-spacing:.1em;color:var(--text2)}
+.top-logo .d{color:var(--orange)}
+.top-date{font-size:.75rem;color:var(--text3)}
+
+/* search row */
+.search-row{display:flex;gap:10px;padding:14px 22px;border-bottom:1px solid var(--border);flex-shrink:0}
+.s-input{flex:1;padding:11px 15px;background:var(--card);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:.88rem;outline:none;transition:border .2s}
+.s-input:focus{border-color:var(--orange)}
+.s-input::placeholder{color:var(--text3)}
+.s-btn{display:flex;align-items:center;gap:6px;padding:11px 20px;background:var(--orange);border:none;border-radius:9px;color:#000;font-size:.88rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .15s;flex-shrink:0}
+.s-btn:hover{background:var(--orange-dark)}
+.s-btn:disabled{opacity:.55;cursor:not-allowed}
+.s-btn .sp{width:16px;height:16px;border:2.5px solid rgba(0,0,0,.4);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
-.empty{text-align:center;padding:60px;color:var(--text2)}
 
-/* Refresh */
-.refresh-bar{display:flex;justify-content:center;margin:8px 0 16px}
-.refresh-btn{padding:8px 24px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text2);cursor:pointer;font-size:.85rem;transition:all .2s}
-.refresh-btn:hover{border-color:var(--accent);color:var(--accent)}
-.refresh-btn:disabled{opacity:.5;cursor:not-allowed}
+/* status bar */
+.status-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 22px;border-bottom:1px solid var(--border);flex-shrink:0}
+.s-left{display:flex;align-items:center;gap:6px;font-size:.78rem;color:var(--text2)}
+.s-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);flex-shrink:0}
+.s-dot.live{background:var(--green);box-shadow:0 0 6px var(--green)}
+.s-sep{color:var(--text3)}
+.imp-group{display:flex;align-items:center;gap:3px}
+.imp-lbl{font-size:.75rem;color:var(--text3);margin-right:4px}
+.imp-btn{padding:3px 11px;border-radius:5px;border:1px solid transparent;background:transparent;color:var(--text2);font-size:.75rem;cursor:pointer;transition:all .15s}
+.imp-btn:hover{color:var(--text)}
+.imp-btn.active{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.4);color:var(--orange)}
 
-/* Footer */
-footer{text-align:center;padding:30px 0;color:var(--text2);font-size:.75rem;border-top:1px solid var(--border);margin-top:40px}
+/* content */
+.content{flex:1;overflow-y:auto;padding:0}
+
+/* empty state */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:360px;text-align:center;padding:40px}
+.empty-icon{font-size:2.8rem;color:var(--border);margin-bottom:18px;opacity:.7}
+.empty-title{font-size:1rem;color:var(--text2);margin-bottom:10px;font-weight:500}
+.empty-desc{font-size:.82rem;color:var(--text3);line-height:1.7;max-width:320px}
+
+/* news list */
+.news-list{padding:14px 22px;display:flex;flex-direction:column;gap:9px}
+.n-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 15px;cursor:pointer;transition:border-color .15s,transform .15s}
+.n-card:hover{border-color:rgba(245,158,11,.5);transform:translateX(2px)}
+.n-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.n-src{font-size:.7rem;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.05em}
+.n-time{font-size:.7rem;color:var(--text3)}
+.n-title{font-size:.87rem;line-height:1.5;color:var(--text);text-decoration:none;display:block;margin-bottom:8px}
+.n-title:hover{color:var(--orange)}
+.n-footer{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.n-tag{padding:2px 7px;border-radius:4px;font-size:.67rem;background:#1e293b;color:var(--text3)}
+.n-tag.foundry{color:var(--orange);background:rgba(245,158,11,.1)}
+.n-tag.ai{color:var(--blue);background:rgba(59,130,246,.1)}
+.n-tag.memory{color:var(--purple);background:rgba(139,92,246,.1)}
+.n-tag.equipment{color:#14b8a6;background:rgba(20,184,166,.1)}
+.n-tag.eda{color:#94a3b8;background:rgba(148,163,184,.1)}
+.n-tag.aicompany{color:#ec4899;background:rgba(236,72,153,.1)}
+.badge{padding:2px 7px;border-radius:4px;font-size:.67rem;font-weight:700}
+.badge.critical{background:rgba(239,68,68,.15);color:#ef4444}
+.badge.important{background:rgba(245,158,11,.15);color:#f59e0b}
+
+/* loading */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:360px;gap:14px;color:var(--text2);font-size:.88rem}
+.spinner-lg{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin .8s linear infinite}
+
+/* error */
+.err-box{margin:20px 22px;padding:14px 16px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:9px;color:#ef4444;font-size:.84rem;text-align:center}
 </style>
 </head>
 <body>
-<div class="container">
-  <header>
-    <h1>&#x1F4E1; Semiconductor News Tracker</h1>
-    <p>AI-Powered Industry Intelligence &mdash; 即時追蹤全球半導體產業動態</p>
-  </header>
+<div class="app">
 
-  <div class="search-bar">
-    <span class="icon">&#x1F50D;</span>
-    <input type="text" id="searchInput" placeholder="輸入搜尋...  例如: 半導體製造商 / TSMC / AI晶片 / 記憶體">
-    <div class="search-hint">&#x1F4A1; 試試: 「製造商」「IC設計」「AI公司」「設備商」「記憶體」或直接輸入公司名稱</div>
-  </div>
-
-  <div class="filters" id="filters"></div>
-
-  <div class="refresh-bar">
-    <button class="refresh-btn" id="refreshBtn" onclick="fetchAllNews()">&#x1F504; 重新載入新聞</button>
-  </div>
-
-  <div class="stats-bar">
-    <span class="left" id="statsText">載入中...</span>
-    <div class="right">
-      <button class="sort-btn active" data-sort="time" onclick="setSort('time')">最新</button>
-      <button class="sort-btn" data-sort="source" onclick="setSort('source')">來源</button>
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="logo-diamond">◆</span>
+      <span class="logo-text"><em>SEMIPULSE</em> / AI NEWS TRACKER</span>
     </div>
-  </div>
 
-  <div class="news-grid" id="newsGrid">
-    <div class="loading"><div class="spinner"></div><br>正在載入新聞...</div>
-  </div>
+    <!-- 搜尋範圍 -->
+    <div class="s-section">
+      <div class="s-label">搜尋範圍</div>
+      <div id="catList"></div>
+    </div>
 
-  <footer>
-    Semiconductor News Tracker &copy; 2026 &mdash; 資料來源: Google News RSS
-  </footer>
+    <!-- 公司篩選 -->
+    <div class="s-section">
+      <div class="s-label">公司篩選</div>
+      <div id="coList"></div>
+    </div>
+
+    <!-- 時間範圍 -->
+    <div class="s-section">
+      <div class="s-label">時間範圍</div>
+      <div class="time-grid">
+        <button class="t-btn" data-d="1"  onclick="setDays(1)">24時</button>
+        <button class="t-btn" data-d="3"  onclick="setDays(3)">3天</button>
+        <button class="t-btn active" data-d="7"  onclick="setDays(7)">1週</button>
+        <button class="t-btn" data-d="30" onclick="setDays(30)">1個月</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main">
+
+    <div class="top-bar">
+      <div class="top-logo"><span class="d">◆</span> SEMIPULSE / AI NEWS TRACKER</div>
+      <div class="top-date" id="topDate"></div>
+    </div>
+
+    <div class="search-row">
+      <input class="s-input" id="kw" type="text" placeholder="加入特定關鍵字，如：HBM、CoWoS、製程節點...">
+      <button class="s-btn" id="searchBtn" onclick="doSearch()">◆ 搜尋新聞</button>
+    </div>
+
+    <div class="status-bar">
+      <div class="s-left">
+        <span class="s-dot" id="sDot"></span>
+        <span id="sText">等待搜尋</span>
+        <span class="s-sep" id="sCo">• 0 家公司</span>
+      </div>
+      <div class="imp-group">
+        <span class="imp-lbl">重要性：</span>
+        <button class="imp-btn active" data-v="all"      onclick="setImp('all')">全部</button>
+        <button class="imp-btn"        data-v="important" onclick="setImp('important')">重要</button>
+        <button class="imp-btn"        data-v="critical"  onclick="setImp('critical')">關鍵</button>
+      </div>
+    </div>
+
+    <div class="content" id="content">
+      <div class="empty">
+        <div class="empty-icon">◆</div>
+        <div class="empty-title">等待搜尋指令</div>
+        <div class="empty-desc">從左側選擇感興趣的產業類別與公司，設定時間範圍後<br>按下「搜尋新聞」，AI 將自動蒐集並整理最新資訊。</div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <script>
-const CATEGORIES = {
-  foundry: {
-    label: '製造商 Foundry', emoji: '&#x1F3ED;',
-    companies: ['TSMC','Samsung Foundry','GlobalFoundries','UMC','SMIC','Tower Semiconductor'],
-    keywords: ['台積電','tsmc','聯電','三星晶圓','格芯','中芯','foundry','製造商','晶圓代工','代工']
-  },
-  fabless: {
-    label: 'IC 設計 Fabless', emoji: '&#x1F4A0;',
-    companies: ['NVIDIA','AMD','Qualcomm','Broadcom','MediaTek','Marvell','Arm'],
-    keywords: ['nvidia','amd','高通','博通','聯發科','ic設計','fabless','輝達','超微','arm']
-  },
-  equipment: {
-    label: '設備商 Equipment', emoji: '&#x2699;&#xFE0F;',
-    companies: ['ASML','Applied Materials','Lam Research','KLA','Tokyo Electron','Disco'],
-    keywords: ['asml','應材','科林研發','科磊','東京威力','設備商','equipment','半導體設備','光刻機','曝光機']
-  },
-  memory: {
-    label: '記憶體 Memory', emoji: '&#x1F4BE;',
-    companies: ['Samsung Memory','SK Hynix','Micron','Kioxia','Western Digital','Nanya'],
-    keywords: ['三星記憶體','海力士','美光','鎧俠','記憶體','memory','dram','nand','hbm','南亞科']
-  },
-  ai: {
-    label: 'AI 相關', emoji: '&#x1F916;',
-    companies: ['NVIDIA AI','Google AI','Microsoft AI','Meta AI','Amazon AWS','OpenAI','Tesla AI'],
-    keywords: ['ai晶片','ai chip','人工智慧','機器學習','gpu','accelerator','加速器','ai伺服器','ai server']
-  },
-  material: {
-    label: '材料 / EDA', emoji: '&#x1F9EA;',
-    companies: ['Synopsys','Cadence','Shin-Etsu','Sumco','Entegris'],
-    keywords: ['eda','synopsys','cadence','矽晶圓','材料','photoresist','光阻','化學品']
-  }
+// ── DATA ──
+const CATS = {
+  foundry:   { label:'半導體製造', icon:'◆', color:'#f59e0b', on:true,
+    cos:['TSMC','Samsung','Intel','GlobalFoundries','UMC','SMIC'],
+    kw:['tsmc','台積電','samsung foundry','晶圓代工','foundry','umc','聯電','globalfoundries'] },
+  ai:        { label:'AI 晶片',   icon:'●', color:'#3b82f6', on:true,
+    cos:['NVIDIA','AMD','Qualcomm','Apple','Broadcom','MediaTek'],
+    kw:['nvidia','amd','ai chip','ai晶片','gpu','qualcomm','高通','輝達'] },
+  memory:    { label:'記憶體',    icon:'■', color:'#8b5cf6', on:true,
+    cos:['SK Hynix','Micron','Samsung Memory','Kioxia','Nanya'],
+    kw:['hbm','dram','nand','記憶體','memory','海力士','micron','美光','kioxia'] },
+  equipment: { label:'半導體設備', icon:'○', color:'#94a3b8', on:false,
+    cos:['ASML','Applied Materials','Lam Research','KLA','Tokyo Electron'],
+    kw:['asml','applied materials','lam research','kla','設備','光刻'] },
+  eda:       { label:'EDA / 軟體', icon:'○', color:'#94a3b8', on:false,
+    cos:['Synopsys','Cadence','Mentor','Ansys','Siemens EDA'],
+    kw:['synopsys','cadence','eda','設計工具','ip核'] },
+  aicompany: { label:'AI科技公司', icon:'✦', color:'#94a3b8', on:false,
+    cos:['OpenAI','Google DeepMind','Microsoft','Meta AI','Amazon AWS'],
+    kw:['openai','chatgpt','gemini','copilot','aws','anthropic'] }
 };
 
-const NL_MAPPINGS = [
-  { patterns: ['製造','foundry','代工','晶圓廠','fab'], category: 'foundry' },
-  { patterns: ['設計','fabless','ic設計','設計公司'], category: 'fabless' },
-  { patterns: ['設備','equipment','光刻','曝光','蝕刻'], category: 'equipment' },
-  { patterns: ['記憶體','memory','dram','nand','hbm','存儲'], category: 'memory' },
-  { patterns: ['ai','人工智慧','機器學習','gpu','加速器'], category: 'ai' },
-  { patterns: ['材料','eda','光阻','化學'], category: 'material' }
-];
+// default selected companies (from default-on cats)
+const selCos = new Set(['TSMC','Samsung','Intel','NVIDIA','AMD','Qualcomm','SK Hynix','Micron']);
+let days = 7, imp = 'all', news = [], phase = 'idle';
 
-let allNews = [];
-let activeCategories = new Set(Object.keys(CATEGORIES));
-let currentSort = 'time';
-let searchText = '';
-
-const CORS_PROXIES = [
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-];
-let proxyIndex = 0;
-
-function getProxy(url) {
-  return CORS_PROXIES[proxyIndex % CORS_PROXIES.length](url);
+// ── INIT ──
+function init() {
+  document.getElementById('topDate').textContent =
+    new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'});
+  renderCats(); renderCos(); updateStatus();
 }
 
-function buildGoogleNewsUrl(query) {
-  return `https://news.google.com/rss/search?q=${encodeURIComponent(query + ' when:30d')}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
-}
-
-async function fetchRSS(query) {
-  const rssUrl = buildGoogleNewsUrl(query);
-  const proxyUrl = getProxy(rssUrl);
-  const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const text = await res.text();
-  const parser = new DOMParser();
-  const xml = parser.parseFromString(text, 'text/xml');
-  const items = xml.querySelectorAll('item');
-  const results = [];
-  items.forEach(item => {
-    const title = item.querySelector('title')?.textContent || '';
-    const link = item.querySelector('link')?.textContent || '';
-    const pubDate = item.querySelector('pubDate')?.textContent || '';
-    const source = item.querySelector('source')?.textContent || '';
-    results.push({ title, link, pubDate, source, query });
-  });
-  return results;
-}
-
-async function fetchAllNews() {
-  const grid = document.getElementById('newsGrid');
-  const btn = document.getElementById('refreshBtn');
-  grid.innerHTML = '<div class="loading"><div class="spinner"></div><br>正在載入新聞...</div>';
-  btn.disabled = true;
-  btn.textContent = '載入中...';
-
-  const queries = [];
-  for (const [catId, cat] of Object.entries(CATEGORIES)) {
-    const topCompanies = cat.companies.slice(0, 4);
-    const q = topCompanies.map(c => c.replace(/ (AI|Memory|Foundry)$/, '')).join(' OR ');
-    queries.push({ catId, query: q + ' semiconductor' });
-  }
-
-  const results = await Promise.allSettled(
-    queries.map(async ({ catId, query }) => {
-      try {
-        const items = await fetchRSS(query);
-        return items.slice(0, 10).map(item => ({ ...item, category: catId }));
-      } catch (e) {
-        proxyIndex++;
-        try {
-          const items = await fetchRSS(query);
-          return items.slice(0, 10).map(item => ({ ...item, category: catId }));
-        } catch (e2) {
-          console.error(`Failed for ${catId}:`, e2.message);
-          return [];
-        }
-      }
-    })
-  );
-
-  allNews = [];
-  const seen = new Set();
-  results.forEach(r => {
-    if (r.status === 'fulfilled') {
-      r.value.forEach(item => {
-        if (!seen.has(item.link)) {
-          seen.add(item.link);
-          item.categories = detectCategories(item.title);
-          if (!item.categories.includes(item.category)) {
-            item.categories.push(item.category);
-          }
-          allNews.push(item);
-        }
-      });
-    }
-  });
-
-  btn.disabled = false;
-  btn.innerHTML = '&#x1F504; 重新載入新聞';
-  renderFilters();
-  renderNews();
-}
-
-function detectCategories(title) {
-  const t = title.toLowerCase();
-  const cats = [];
-  for (const [catId, cat] of Object.entries(CATEGORIES)) {
-    const match = cat.keywords.some(kw => t.includes(kw.toLowerCase())) ||
-                  cat.companies.some(c => t.toLowerCase().includes(c.toLowerCase().replace(/ (ai|memory|foundry)$/i, '')));
-    if (match) cats.push(catId);
-  }
-  return cats;
-}
-
-function processNaturalLanguage(input) {
-  const text = input.toLowerCase().trim();
-  if (!text) {
-    activeCategories = new Set(Object.keys(CATEGORIES));
-    searchText = '';
-    renderFilters();
-    renderNews();
-    return;
-  }
-
-  const matchedCats = new Set();
-  for (const mapping of NL_MAPPINGS) {
-    if (mapping.patterns.some(p => text.includes(p))) {
-      matchedCats.add(mapping.category);
-    }
-  }
-
-  if (matchedCats.size > 0) {
-    activeCategories = matchedCats;
-  } else {
-    activeCategories = new Set(Object.keys(CATEGORIES));
-  }
-
-  searchText = text;
-  renderFilters();
-  renderNews();
-}
-
-function renderFilters() {
-  const container = document.getElementById('filters');
-  container.innerHTML = '';
-
-  const allActive = activeCategories.size === Object.keys(CATEGORIES).length;
-  const allBtn = document.createElement('div');
-  allBtn.className = `filter-btn ${allActive ? 'active' : ''}`;
-  allBtn.innerHTML = '&#x1F30D; 全部';
-  allBtn.onclick = () => {
-    activeCategories = new Set(Object.keys(CATEGORIES));
-    searchText = '';
-    document.getElementById('searchInput').value = '';
-    renderFilters();
-    renderNews();
-  };
-  container.appendChild(allBtn);
-
-  for (const [catId, cat] of Object.entries(CATEGORIES)) {
-    const btn = document.createElement('div');
-    btn.className = `filter-btn ${activeCategories.has(catId) ? 'active' : ''}`;
-    const count = allNews.filter(n => n.categories.includes(catId)).length;
-    btn.innerHTML = `${cat.emoji} ${cat.label} <span class="count">(${count})</span>`;
-    btn.onclick = () => {
-      if (activeCategories.has(catId) && activeCategories.size === 1) {
-        activeCategories = new Set(Object.keys(CATEGORIES));
-      } else if (activeCategories.size === Object.keys(CATEGORIES).length) {
-        activeCategories = new Set([catId]);
-      } else if (activeCategories.has(catId)) {
-        activeCategories.delete(catId);
-      } else {
-        activeCategories.add(catId);
-      }
-      renderFilters();
-      renderNews();
-    };
-    container.appendChild(btn);
-  }
-}
-
-function renderNews() {
-  const grid = document.getElementById('newsGrid');
-  let filtered = allNews.filter(n =>
-    n.categories.some(c => activeCategories.has(c))
-  );
-
-  if (searchText) {
-    const terms = searchText.toLowerCase().split(/\s+/);
-    const allCatKeywords = NL_MAPPINGS.flatMap(m => m.patterns);
-    const freeTerms = terms.filter(t => !allCatKeywords.some(k => k.includes(t) || t.includes(k)));
-    if (freeTerms.length > 0) {
-      filtered = filtered.filter(n => {
-        const title = n.title.toLowerCase();
-        return freeTerms.some(t => title.includes(t));
-      });
-    }
-  }
-
-  if (currentSort === 'time') {
-    filtered.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
-  } else {
-    filtered.sort((a, b) => a.source.localeCompare(b.source));
-  }
-
-  document.getElementById('statsText').textContent =
-    `顯示 ${filtered.length} 則新聞 / 共 ${allNews.length} 則`;
-
-  if (filtered.length === 0) {
-    grid.innerHTML = '<div class="empty">&#x1F4ED; 沒有符合條件的新聞，試試調整篩選條件</div>';
-    return;
-  }
-
-  grid.innerHTML = filtered.map(item => {
-    const timeAgo = getTimeAgo(new Date(item.pubDate));
-    const tags = item.categories.map(c => {
-      const cat = CATEGORIES[c];
-      return `<span class="tag ${c}">${cat ? cat.label.split(' ')[0] : c}</span>`;
-    }).join('');
-
-    return `
-      <div class="news-card" onclick="window.open('${escapeHtml(item.link)}','_blank')">
-        <div class="meta">
-          <span class="source">${escapeHtml(item.source)}</span>
-          <span class="time">${timeAgo}</span>
-        </div>
-        <h3><a href="${escapeHtml(item.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${escapeHtml(item.title)}</a></h3>
-        <div class="tags">${tags}</div>
+// ── CATEGORIES ──
+function renderCats() {
+  document.getElementById('catList').innerHTML = Object.entries(CATS).map(([id,c])=>`
+    <div class="cat-row">
+      <div class="cat-left">
+        <span class="cat-icon" style="color:${c.on?c.color:'var(--text3)'}">${c.icon}</span>
+        <span style="color:${c.on?'var(--text)':'var(--text3)'}">${c.label}</span>
       </div>
-    `;
-  }).join('');
+      <label class="tgl">
+        <input type="checkbox" ${c.on?'checked':''} onchange="toggleCat('${id}')">
+        <div class="tgl-track"></div>
+        <div class="tgl-thumb"></div>
+      </label>
+    </div>`).join('');
 }
 
-function setSort(sort) {
-  currentSort = sort;
-  document.querySelectorAll('.sort-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.sort === sort);
-  });
-  renderNews();
+function toggleCat(id) {
+  const c = CATS[id];
+  c.on = !c.on;
+  if (!c.on) c.cos.forEach(co => selCos.delete(co));
+  else       c.cos.slice(0,3).forEach(co => selCos.add(co));
+  renderCats(); renderCos(); updateStatus();
 }
 
-function getTimeAgo(date) {
-  const now = new Date();
-  const diff = (now - date) / 1000;
-  if (isNaN(diff) || diff < 0) return '';
-  if (diff < 60) return '剛剛';
-  if (diff < 3600) return `${Math.floor(diff / 60)} 分鐘前`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} 小時前`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)} 天前`;
-  return date.toLocaleDateString('zh-TW');
-}
-
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-let searchTimeout;
-document.getElementById('searchInput').addEventListener('input', e => {
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(() => {
-    processNaturalLanguage(e.target.value);
-  }, 400);
-});
-
-document.getElementById('searchInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    clearTimeout(searchTimeout);
-    processNaturalLanguage(e.target.value);
+// ── COMPANIES ──
+function renderCos() {
+  const active = Object.entries(CATS).filter(([,c])=>c.on);
+  if (!active.length) {
+    document.getElementById('coList').innerHTML =
+      '<div style="font-size:.78rem;color:var(--text3)">請先啟用搜尋範圍</div>';
+    return;
   }
-});
+  document.getElementById('coList').innerHTML = active.map(([id,c])=>`
+    <div class="co-group">
+      <div class="co-group-hd">
+        <div class="dot" style="background:${c.color}"></div>${c.label}
+      </div>
+      <div class="chips">
+        ${c.cos.slice(0,5).map(co=>{
+          const on = selCos.has(co);
+          return `<div class="chip" style="${on?`color:${c.color};border-color:${c.color}`:''}"
+                       onclick="toggleCo('${co}')">${co}</div>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+}
 
-renderFilters();
-fetchAllNews();
+function toggleCo(co) {
+  selCos.has(co) ? selCos.delete(co) : selCos.add(co);
+  renderCos(); updateStatus();
+}
+
+// ── TIME ──
+function setDays(d) {
+  days = d;
+  document.querySelectorAll('.t-btn').forEach(b=>b.classList.toggle('active',+b.dataset.d===d));
+}
+
+// ── IMPORTANCE ──
+function setImp(v) {
+  imp = v;
+  document.querySelectorAll('.imp-btn').forEach(b=>b.classList.toggle('active',b.dataset.v===v));
+  if (phase==='done') renderNews();
+}
+
+// ── STATUS ──
+function updateStatus() {
+  const n = selCos.size;
+  document.getElementById('sCo').textContent = `• ${n} 家公司`;
+  const dot = document.getElementById('sDot');
+  const txt = document.getElementById('sText');
+  if (phase==='idle')    { dot.className='s-dot';      txt.textContent='等待搜尋'; }
+  else if (phase==='loading') { dot.className='s-dot live'; txt.textContent='搜尋中...'; }
+  else                   { dot.className='s-dot live'; txt.textContent=`找到 ${news.length} 則`; }
+}
+
+// ── SEARCH ──
+const PROXIES = [
+  u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u=>`https://corsproxy.io/?${encodeURIComponent(u)}`
+];
+let pi = 0;
+
+async function fetchRSS(q) {
+  const rss = `https://news.google.com/rss/search?q=${encodeURIComponent(q+` when:${days}d`)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
+  const url = PROXIES[pi%PROXIES.length](rss);
+  const r = await fetch(url,{signal:AbortSignal.timeout(14000)});
+  if (!r.ok) throw new Error('HTTP '+r.status);
+  const xml = new DOMParser().parseFromString(await r.text(),'text/xml');
+  return [...xml.querySelectorAll('item')].map(x=>({
+    title: x.querySelector('title')?.textContent||'',
+    link:  x.querySelector('link')?.textContent||'',
+    pub:   x.querySelector('pubDate')?.textContent||'',
+    src:   x.querySelector('source')?.textContent||''
+  }));
+}
+
+function buildQ() {
+  const kw = document.getElementById('kw').value.trim();
+  const cos = [...selCos].slice(0,8).join(' OR ');
+  return cos + (kw?' '+kw:'') + ' semiconductor';
+}
+
+function scoreImp(title) {
+  const t = title.toLowerCase();
+  const crit = ['突破','重大','禁令','制裁','危機','ban','crisis','record','紀錄','breakthrough'];
+  const imp  = ['發布','投資','合作','擴廠','launch','investment','partnership','expansion'];
+  if (crit.some(k=>t.includes(k))) return 'critical';
+  if (imp .some(k=>t.includes(k))) return 'important';
+  return 'normal';
+}
+
+function detectTags(title) {
+  const t = title.toLowerCase();
+  const found = Object.entries(CATS).filter(([,c])=>c.kw.some(k=>t.includes(k))).map(([id])=>id);
+  return found.length ? found : ['foundry'];
+}
+
+async function doSearch() {
+  if (!selCos.size) { alert('請先選擇至少一家公司'); return; }
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="sp"></span> 搜尋中...';
+  phase = 'loading'; news = []; updateStatus();
+  document.getElementById('content').innerHTML =
+    '<div class="loading"><div class="spinner-lg"></div>正在蒐集最新新聞...</div>';
+
+  try {
+    const q = buildQ();
+    let items;
+    try { items = await fetchRSS(q); }
+    catch(e) { pi++; items = await fetchRSS(q); }
+
+    const seen = new Set();
+    news = items.filter(x=>{
+      if (!x.title||!x.link||seen.has(x.link)) return false;
+      seen.add(x.link); return true;
+    }).slice(0,50).map(x=>({...x, imp:scoreImp(x.title), tags:detectTags(x.title)}));
+
+    phase = 'done';
+  } catch(e) {
+    phase = 'idle';
+    document.getElementById('content').innerHTML =
+      '<div class="err-box">無法連接新聞來源，請稍後再試。<br><small>'+e.message+'</small></div>';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '◆ 搜尋新聞';
+    updateStatus();
+    if (phase==='done') renderNews();
+  }
+}
+
+// ── RENDER NEWS ──
+function renderNews() {
+  const list = imp==='all' ? news : news.filter(x=>x.imp===imp);
+  if (!list.length) {
+    document.getElementById('content').innerHTML =
+      '<div class="empty"><div class="empty-icon">◆</div>'+
+      '<div class="empty-title">無符合條件的新聞</div>'+
+      '<div class="empty-desc">試試切換重要性篩選，或更換搜尋關鍵字。</div></div>';
+    return;
+  }
+  document.getElementById('content').innerHTML =
+    '<div class="news-list">'+list.map(x=>{
+      const ago  = timeAgo(new Date(x.pub));
+      const tags = x.tags.slice(0,3).map(t=>`<span class="n-tag ${t}">${CATS[t]?.label||t}</span>`).join('');
+      const bdg  = x.imp!=='normal'
+        ? `<span class="badge ${x.imp}">${x.imp==='critical'?'🔴 關鍵':'🟡 重要'}</span>` : '';
+      return `<div class="n-card" onclick="window.open('${esc(x.link)}','_blank')">
+        <div class="n-meta"><span class="n-src">${esc(x.src)}</span><span class="n-time">${ago}</span></div>
+        <a class="n-title" href="${esc(x.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(x.title)}</a>
+        <div class="n-footer">${tags}${bdg}</div>
+      </div>`;
+    }).join('')+'</div>';
+}
+
+// ── UTILS ──
+function timeAgo(d) {
+  const s=(Date.now()-d)/1000;
+  if(isNaN(s)||s<0)return'';
+  if(s<60)return'剛剛';
+  if(s<3600)return Math.floor(s/60)+' 分鐘前';
+  if(s<86400)return Math.floor(s/3600)+' 小時前';
+  if(s<604800)return Math.floor(s/86400)+' 天前';
+  return d.toLocaleDateString('zh-TW');
+}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+init();
 </script>
 </body>
 </html>
