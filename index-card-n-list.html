@@ -441,24 +441,33 @@ function detectCategories(title) {
 // ============================================================
 function processNaturalLanguage(input) {
   const text = input.toLowerCase().trim();
+
+  // 每次輸入都重置時間範圍為「全部」
+  activePeriod = 'all';
+  document.querySelectorAll('.time-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.period === 'all');
+  });
+  document.getElementById('timeCustom').classList.remove('show');
+  document.getElementById('timeNotice').classList.remove('show');
+
   if (!text) {
     activeCategories = new Set(Object.keys(CATEGORIES));
+    searchText = '';
     renderFilters();
     renderNews();
     return;
   }
 
+  // 每次輸入都重置分類為「全部」，再判斷 NL 分類
+  activeCategories = new Set(Object.keys(CATEGORIES));
   const matchedCats = new Set();
   for (const mapping of NL_MAPPINGS) {
     if (mapping.patterns.some(p => text.includes(p))) {
       matchedCats.add(mapping.category);
     }
   }
-
   if (matchedCats.size > 0) {
     activeCategories = matchedCats;
-  } else {
-    activeCategories = new Set(Object.keys(CATEGORIES));
   }
 
   searchText = text;
