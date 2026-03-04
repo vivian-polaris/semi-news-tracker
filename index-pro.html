@@ -6,68 +6,95 @@
 <title>半導體新聞 Pro</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0e17;--card:#131a2b;--card2:#192236;--border:#1e2a42;--accent:#3b82f6;--accent2:#8b5cf6;--text:#e2e8f0;--text2:#94a3b8;--green:#10b981;--orange:#f59e0b;--red:#ef4444;--tag:#1e293b}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.wrap{max-width:1080px;margin:0 auto;padding:16px 18px}
-header{text-align:center;padding:20px 0 14px}
-h1{font-size:1.55rem;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+:root{
+  --bg:#0a0e17;--card:#131a2b;--card2:#192236;--border:#1e2a42;
+  --accent:#3b82f6;--accent2:#8b5cf6;--green:#10b981;--orange:#f59e0b;
+  --red:#ef4444;--text:#e2e8f0;--text2:#94a3b8;--tag:#1e293b;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.wrap{max-width:1100px;margin:0 auto;padding:16px 18px}
+
+/* Header */
+header{text-align:center;padding:22px 0 14px}
+h1{font-size:1.6rem;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 header p{color:var(--text2);font-size:.82rem;margin-top:5px}
-.lbl{color:var(--text2);font-size:.72rem;font-weight:600;letter-spacing:.04em;margin:12px 0 5px 2px}
+
+/* Section label */
+.lbl{color:var(--text2);font-size:.72rem;font-weight:600;letter-spacing:.04em;margin:12px 0 5px 2px;text-transform:uppercase}
 
 /* Search */
-.srch{position:relative;margin:14px 0 4px}
-.srch input{width:100%;padding:13px 18px 13px 44px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:.95rem;outline:none;transition:border .2s}
-.srch input:focus{border-color:var(--accent)}
-.srch input::placeholder{color:var(--text2)}
-.srch .ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text2)}
-.hint{color:var(--text2);font-size:.73rem;padding:0 3px;margin-bottom:2px}
+.srch-wrap{position:relative;margin:14px 0 6px}
+.srch-wrap input{width:100%;padding:13px 18px 13px 46px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:.97rem;outline:none;transition:border .2s}
+.srch-wrap input:focus{border-color:var(--accent)}
+.srch-wrap input::placeholder{color:var(--text2)}
+.srch-ico{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:1.05rem;pointer-events:none}
+.hint{color:var(--text2);font-size:.73rem;padding:0 3px;margin-bottom:3px}
+
+/* Query display */
+.qdisp{display:none;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:7px;padding:6px 12px;font-size:.75rem;color:var(--text2);margin-bottom:8px}
+.qdisp.show{display:block}
+.qdisp strong{color:var(--accent)}
 
 /* Pills */
 .row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
 .pill{padding:5px 13px;border-radius:20px;border:1px solid var(--border);background:var(--tag);color:var(--text2);cursor:pointer;font-size:.8rem;transition:all .18s;user-select:none;display:inline-flex;align-items:center;gap:4px}
 .pill:hover{border-color:var(--accent2);color:var(--text)}
 .pill.on{color:#fff}
-.pill.src-on{background:var(--accent2);border-color:var(--accent2)}
-.pill.time-on{background:var(--orange);border-color:var(--orange);color:#000}
-.pill.l1-on{background:var(--accent);border-color:var(--accent)}
-.pill.l2-on{background:var(--accent2);border-color:var(--accent2)}
-.cnt{font-size:.68rem;opacity:.7}
-.topic-pill{border-style:dashed}
+.pill.p-src{} .pill.p-src.on{background:var(--accent2);border-color:var(--accent2)}
+.pill.p-time.on{background:var(--orange);border-color:var(--orange);color:#000}
+.pill.p-l1.on{background:var(--accent);border-color:var(--accent)}
+.pill.p-l2.on{background:var(--accent2);border-color:var(--accent2)}
+.pill .cnt{font-size:.68rem;opacity:.7}
+.pill.dashed{border-style:dashed}
 
 /* Custom time */
 .ctime{display:none;gap:10px;align-items:center;flex-wrap:wrap;padding:9px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px}
 .ctime.show{display:flex}
 .ctime label{color:var(--text2);font-size:.78rem;display:flex;align-items:center;gap:5px}
 .ctime input[type=date]{background:var(--tag);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 8px;font-size:.78rem;outline:none;color-scheme:dark}
-.apply{padding:5px 14px;background:var(--accent);border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:.78rem}
+.apply-btn{padding:5px 14px;background:var(--accent);border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:.78rem}
 
 /* L2 panel */
 .l2-panel{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:10px 12px;margin-bottom:8px;display:none}
 .l2-panel.show{display:block}
-.l2-group{font-size:.68rem;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 5px}
-.l2-group:first-child{margin-top:0}
+.l2-grp{font-size:.68rem;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 5px}
+.l2-grp:first-child{margin-top:0}
 
-/* Stats */
-.stats{display:flex;justify-content:space-between;align-items:center;margin:10px 0 8px;padding:0 2px}
-.stats .st{color:var(--text2);font-size:.8rem}
-.stats .sr{display:flex;gap:5px}
-.sbtn{padding:3px 10px;border:1px solid var(--border);border-radius:5px;color:var(--text2);cursor:pointer;font-size:.75rem;background:transparent;transition:all .2s}
-.sbtn.on{color:var(--accent);border-color:var(--accent)}
+/* Stats bar */
+.stats{display:flex;justify-content:space-between;align-items:center;margin:10px 0 8px;padding:0 2px;flex-wrap:wrap;gap:6px}
+.stats .sl{color:var(--text2);font-size:.8rem}
+.stats .sr{display:flex;gap:5px;align-items:center}
+.smbtn{padding:4px 11px;border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;font-size:.77rem;background:transparent;transition:all .2s}
+.smbtn.on{color:var(--accent);border-color:var(--accent)}
+.viewbtn{padding:4px 11px;border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;font-size:.77rem;background:transparent;transition:all .2s}
+.viewbtn:hover{color:var(--accent2);border-color:var(--accent2)}
 
-/* News list */
+/* List view */
 .nlist{display:flex;flex-direction:column;gap:6px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:12px 15px;cursor:pointer;transition:all .18s;display:flex;flex-direction:column;gap:6px}
-.card:hover{border-color:var(--accent);background:var(--card2)}
+/* Card/Grid view */
+.ngrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.ngrid .div-row{grid-column:1/-1}
+.ngrid .infobox{grid-column:1/-1}
+
+/* News card — shared */
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 15px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:6px}
+.card:hover{border-color:var(--accent);background:var(--card2);transform:translateY(-1px);box-shadow:0 4px 16px rgba(59,130,246,.08)}
 .card.clive{border-left:3px solid var(--green)}
 .card.cpaper{border-left:3px solid var(--accent2)}
-.ctop{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
-.csrc{color:var(--accent);font-size:.7rem;font-weight:600}
+/* Card-grid extra */
+.ngrid .card{height:100%}
+
+.ctop{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px}
+.csrc{color:var(--accent);font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.02em}
 .ctime-txt{color:var(--text2);font-size:.7rem}
 .ctitle{font-size:.9rem;line-height:1.45;color:var(--text)}
 .ctitle a{color:inherit;text-decoration:none}
 .ctitle a:hover{color:var(--accent)}
+/* List: title 2 lines; Card: 3 lines */
+.nlist .ctitle{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ngrid .ctitle{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .csumm{font-size:.76rem;color:var(--text2);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.ctags{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.ctags{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:2px}
 .badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:.65rem}
 .bn{background:rgba(59,130,246,.1);color:var(--accent);border:1px solid rgba(59,130,246,.25)}
 .bp{background:rgba(139,92,246,.1);color:var(--accent2);border:1px solid rgba(139,92,246,.25)}
@@ -75,23 +102,25 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 .tl1{padding:2px 7px;border-radius:3px;font-size:.65rem;background:var(--tag);color:var(--text2)}
 .tl2{padding:2px 7px;border-radius:3px;font-size:.65rem;background:rgba(139,92,246,.08);color:var(--accent2)}
 
-/* Dividers */
+/* Section dividers */
 .div-row{color:var(--text2);font-size:.76rem;padding:5px 2px 3px;border-top:1px solid var(--border);margin-top:5px}
 
-/* Loading */
+/* Loading / empty */
 .loading{text-align:center;padding:44px;color:var(--text2)}
 .spin{display:inline-block;width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite;margin-bottom:9px}
 @keyframes sp{to{transform:rotate(360deg)}}
 .empty{text-align:center;padding:44px;color:var(--text2)}
 
 /* Info box */
-.infobox{background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.18);border-radius:7px;padding:8px 13px;font-size:.75rem;color:var(--text2);margin:6px 0}
+.infobox{background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.18);border-radius:7px;padding:8px 13px;font-size:.74rem;color:var(--text2);margin:4px 0}
+.infobox a{color:var(--accent2)}
 
 /* Refresh */
 .rfwrap{display:flex;justify-content:center;margin:8px 0}
 .rfbtn{padding:7px 20px;background:var(--card);border:1px solid var(--border);border-radius:7px;color:var(--text2);cursor:pointer;font-size:.8rem;transition:all .2s}
 .rfbtn:hover{border-color:var(--accent);color:var(--accent)}
 .rfbtn:disabled{opacity:.5;cursor:not-allowed}
+
 footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;border-top:1px solid var(--border);margin-top:28px}
 </style>
 </head>
@@ -99,34 +128,35 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
 <div class="wrap">
   <header>
     <h1>🔬 半導體新聞追蹤器 Pro</h1>
-    <p>即時搜尋半導體新聞 &amp; 論文 · Google News + arXiv · 雙層分類過濾</p>
+    <p>輸入任何句子或關鍵字 · Google News 即時搜尋 + arXiv 論文 · 雙層分類過濾</p>
   </header>
 
-  <div class="srch">
-    <span class="ico">🔍</span>
-    <input type="text" id="si" placeholder="搜尋... 例: TSMC 先進封裝 / HBM4 法說會 / CoWoS 論文 / EUV 良率">
+  <div class="srch-wrap">
+    <span class="srch-ico">🔍</span>
+    <input type="text" id="si" placeholder="輸入任何句子... 例：TSMC 先進封裝的最新進展 / HBM4 供應鏈動態 / CoWoS 良率論文">
   </div>
-  <div class="hint">💡 試試: 「先進封裝」「法說會」「HBM」「Chiplet」「EUV」「論文」</div>
+  <div class="hint">💡 可以輸入完整句子，系統會自動提取關鍵詞搜尋 · 含「論文/paper/IEEE」自動搜尋 arXiv</div>
+  <div class="qdisp" id="qdisp"></div>
 
   <div class="lbl">📂 來源</div>
   <div class="row" id="srcRow">
-    <div class="pill src-on on" data-s="all" onclick="setSrc('all')">全部</div>
-    <div class="pill" data-s="news" onclick="setSrc('news')">📰 新聞</div>
-    <div class="pill" data-s="paper" onclick="setSrc('paper')">📄 論文 (arXiv)</div>
+    <div class="pill p-src on" data-s="all"   onclick="setSrc('all')">🌐 全部</div>
+    <div class="pill p-src"    data-s="news"  onclick="setSrc('news')">📰 新聞</div>
+    <div class="pill p-src"    data-s="paper" onclick="setSrc('paper')">📄 論文 (arXiv)</div>
   </div>
 
   <div class="lbl">⏱ 時間範圍</div>
   <div class="row" id="timeRow">
-    <div class="pill" data-t="today" onclick="setTime('today')">今天</div>
-    <div class="pill" data-t="week"  onclick="setTime('week')">本週</div>
-    <div class="pill time-on on" data-t="month"  onclick="setTime('month')">本月</div>
-    <div class="pill" data-t="3month" onclick="setTime('3month')">3 個月</div>
-    <div class="pill" data-t="custom" onclick="setTime('custom')">✏️ 自訂</div>
+    <div class="pill p-time"         data-t="today"  onclick="setTime('today')">今天</div>
+    <div class="pill p-time"         data-t="week"   onclick="setTime('week')">本週</div>
+    <div class="pill p-time on"      data-t="month"  onclick="setTime('month')">本月</div>
+    <div class="pill p-time"         data-t="3month" onclick="setTime('3month')">3 個月</div>
+    <div class="pill p-time"         data-t="custom" onclick="setTime('custom')">✏️ 自訂</div>
   </div>
   <div class="ctime" id="ctime">
     <label>開始 <input type="date" id="sd"></label>
     <label>結束 <input type="date" id="ed"></label>
-    <button class="apply" onclick="applyCustom()">套用</button>
+    <button class="apply-btn" onclick="applyCustom()">套用</button>
   </div>
 
   <div class="lbl">🏷 產業分類（第一層）</div>
@@ -134,117 +164,160 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
 
   <div class="l2-panel" id="l2panel"></div>
 
-  <div class="rfwrap"><button class="rfbtn" id="rfbtn" onclick="fetchAll()">🔄 重新載入新聞</button></div>
+  <div class="rfwrap">
+    <button class="rfbtn" id="rfbtn" onclick="fetchAll()">🔄 重新載入</button>
+  </div>
 
   <div class="stats">
-    <span class="st" id="stxt">載入中...</span>
+    <span class="sl" id="stxt">載入中...</span>
     <div class="sr">
-      <button class="sbtn on" data-so="time" onclick="setSort('time')">最新</button>
-      <button class="sbtn" data-so="src" onclick="setSort('src')">來源</button>
+      <button class="smbtn on" data-so="time" onclick="setSort('time')">最新</button>
+      <button class="smbtn"    data-so="src"  onclick="setSort('src')">來源</button>
+      <button class="viewbtn"  id="viewbtn"   onclick="toggleView()">⊞ 卡片</button>
     </div>
   </div>
 
-  <div class="nlist" id="nlist"><div class="loading"><div class="spin"></div><br>正在載入新聞...</div></div>
+  <div class="nlist" id="nlist">
+    <div class="loading"><div class="spin"></div><br>正在載入新聞...</div>
+  </div>
 
-  <footer>半導體新聞追蹤器 Pro © 2026 · Google News RSS + arXiv API</footer>
+  <footer>半導體新聞追蹤器 Pro © 2026 &nbsp;·&nbsp; Google News RSS + arXiv API &nbsp;·&nbsp; 雙層分類</footer>
 </div>
 <script>
 // ================================================================
-// 雙層分類（L1 + L2：公司 & 技術主題）
+// 雙層分類 — L1（7大行業）+ L2（公司 ＋ 技術主題）
 // ================================================================
 const CAT = {
   foundry:{
     label:'製造商',emoji:'🏭',
-    kw:['tsmc','台積電','samsung foundry','intel foundry','umc','聯電','smic','中芯','globalfoundries','格芯','晶圓代工','foundry'],
+    kw:['tsmc','台積電','samsung foundry','intel foundry','umc','聯電','smic','中芯','globalfoundries','格芯','晶圓代工','foundry','wafer foundry'],
     subs:{
-      tsmc:      {label:'TSMC / 台積電',    t:'co', kw:['tsmc','台積電']},
-      samsung_f: {label:'Samsung Foundry', t:'co', kw:['samsung foundry','三星代工']},
-      intel_f:   {label:'Intel Foundry',   t:'co', kw:['intel foundry','intel 18a']},
-      umc:       {label:'UMC / 聯電',       t:'co', kw:['umc','聯電']},
-      smic:      {label:'SMIC / 中芯',      t:'co', kw:['smic','中芯']},
-      gf:        {label:'GlobalFoundries', t:'co', kw:['globalfoundries','格芯']},
-      process:   {label:'先進製程 2/3nm',   t:'tp', kw:['2nm','3nm','n2 ','n3 ','gaa','nanosheet','angstrom node']},
-      earnings:  {label:'法說會 / 財報',    t:'tp', kw:['法說會','法人說明會','investor day','earnings call','quarterly result']},
-      capacity:  {label:'產能 / 擴廠',      t:'tp', kw:['產能','擴廠','capacity','wafer shipment','fab expansion']},
+      tsmc:      {label:'TSMC / 台積電',    t:'co',kw:['tsmc','台積電']},
+      samsung_f: {label:'Samsung Foundry', t:'co',kw:['samsung foundry','三星代工']},
+      intel_f:   {label:'Intel Foundry',   t:'co',kw:['intel foundry','intel 18a','intel process']},
+      umc:       {label:'UMC / 聯電',       t:'co',kw:['umc ','聯電']},
+      smic:      {label:'SMIC / 中芯',      t:'co',kw:['smic','中芯']},
+      gf:        {label:'GlobalFoundries', t:'co',kw:['globalfoundries','格芯']},
+      process:   {label:'先進製程 2/3nm',   t:'tp',kw:['2nm','3nm','n2 ','n3 ','gaa','nanosheet','angstrom node','gate-all-around']},
+      earnings:  {label:'法說會 / 財報',    t:'tp',kw:['法說會','法人說明會','investor day','earnings call','quarterly result','financial result']},
+      capacity:  {label:'產能 / 擴廠',      t:'tp',kw:['產能','擴廠','capacity expansion','wafer shipment','fab expansion','new fab']},
     }
   },
   fabless:{
     label:'IC 設計',emoji:'💠',
-    kw:['nvidia','amd','qualcomm','broadcom','mediatek','聯發科','高通','博通','輝達','超微','arm','apple silicon','fabless','ic設計'],
+    kw:['nvidia','amd','qualcomm','broadcom','mediatek','聯發科','高通','博通','輝達','超微','arm ','apple silicon','fabless','ic設計'],
     subs:{
-      nvidia:   {label:'NVIDIA / 輝達',    t:'co', kw:['nvidia','輝達']},
-      amd:      {label:'AMD / 超微',       t:'co', kw:['amd ','超微','ryzen','epyc']},
-      qualcomm: {label:'Qualcomm / 高通',  t:'co', kw:['qualcomm','高通','snapdragon']},
-      broadcom: {label:'Broadcom / 博通',  t:'co', kw:['broadcom','博通']},
-      mediatek: {label:'MediaTek / 聯發科',t:'co', kw:['mediatek','聯發科']},
-      apple:    {label:'Apple Silicon',   t:'co', kw:['apple silicon','apple m','a18','m4']},
-      ai_ic:    {label:'AI 推理晶片',      t:'tp', kw:['ai accelerator','inference chip','npu design']},
-      auto_ic:  {label:'車用 IC',          t:'tp', kw:['automotive chip','車用晶片','adas','soc車']},
+      nvidia:   {label:'NVIDIA / 輝達',    t:'co',kw:['nvidia','輝達']},
+      amd:      {label:'AMD / 超微',       t:'co',kw:['amd ','超微','ryzen','epyc']},
+      qualcomm: {label:'Qualcomm / 高通',  t:'co',kw:['qualcomm','高通','snapdragon']},
+      broadcom: {label:'Broadcom / 博通',  t:'co',kw:['broadcom','博通']},
+      mediatek: {label:'MediaTek / 聯發科',t:'co',kw:['mediatek','聯發科']},
+      apple:    {label:'Apple Silicon',   t:'co',kw:['apple silicon','apple m3','apple m4','a18 chip']},
+      ai_ic:    {label:'AI 推理晶片',      t:'tp',kw:['ai accelerator','inference chip','npu design','ai chip design']},
+      auto_ic:  {label:'車用 IC',          t:'tp',kw:['automotive chip','車用晶片','adas chip','automotive semiconductor']},
     }
   },
   equipment:{
     label:'設備商',emoji:'⚙️',
-    kw:['asml','applied materials','lam research','kla','tokyo electron','設備商','semiconductor equipment','光刻機','曝光機'],
+    kw:['asml','applied materials','lam research','kla ','tokyo electron','設備商','semiconductor equipment','光刻機','曝光機'],
     subs:{
-      asml: {label:'ASML',             t:'co', kw:['asml']},
-      amat: {label:'Applied Materials',t:'co', kw:['applied materials','應用材料']},
-      lam:  {label:'Lam Research',     t:'co', kw:['lam research','科林']},
-      kla:  {label:'KLA',              t:'co', kw:['kla ','科磊']},
-      tel:  {label:'Tokyo Electron',   t:'co', kw:['tokyo electron','東京威力']},
-      euv:  {label:'EUV / 光刻',        t:'tp', kw:['euv','extreme ultraviolet','光刻機','曝光機','lithography']},
-      ald:  {label:'ALD / CVD 薄膜',   t:'tp', kw:['atomic layer deposition','ald ','cvd ','thin film deposition']},
-      etch: {label:'蝕刻設備',          t:'tp', kw:['dry etch','蝕刻','plasma etch']},
+      asml:{label:'ASML',            t:'co',kw:['asml']},
+      amat:{label:'Applied Materials',t:'co',kw:['applied materials','應用材料']},
+      lam: {label:'Lam Research',    t:'co',kw:['lam research','科林']},
+      kla: {label:'KLA',             t:'co',kw:['kla ','科磊']},
+      tel: {label:'Tokyo Electron',  t:'co',kw:['tokyo electron','東京威力']},
+      euv: {label:'EUV / 光刻',       t:'tp',kw:['euv','extreme ultraviolet','光刻機','曝光機','euv lithography']},
+      ald: {label:'ALD / CVD 薄膜',  t:'tp',kw:['atomic layer deposition','ald ','cvd ','thin film deposition']},
+      etch:{label:'蝕刻設備',         t:'tp',kw:['dry etch','蝕刻設備','plasma etch','reactive ion']},
     }
   },
   memory:{
     label:'記憶體',emoji:'💾',
-    kw:['sk hynix','海力士','micron','美光','kioxia','鎧俠','samsung dram','samsung nand','記憶體','dram','nand','hbm','南亞科'],
+    kw:['sk hynix','海力士','micron','美光','kioxia','鎧俠','samsung memory','samsung dram','記憶體','dram','nand','hbm ','hbm3','hbm4','南亞科'],
     subs:{
-      samsung_m:{label:'Samsung Memory',t:'co', kw:['samsung dram','samsung nand','samsung memory','三星記憶體']},
+      samsung_m:{label:'Samsung Memory',  t:'co',kw:['samsung dram','samsung nand','samsung memory','三星記憶體']},
       hynix:    {label:'SK Hynix / 海力士',t:'co',kw:['sk hynix','海力士']},
-      micron:   {label:'Micron / 美光',  t:'co', kw:['micron','美光']},
-      kioxia:   {label:'Kioxia / 鎧俠',  t:'co', kw:['kioxia','鎧俠']},
-      nanya:    {label:'Nanya / 南亞科',  t:'co', kw:['nanya','南亞科']},
-      hbm:      {label:'HBM',            t:'tp', kw:['hbm3','hbm4','hbm ','high bandwidth memory']},
-      ddr:      {label:'DRAM / DDR5',    t:'tp', kw:['ddr5','lpddr5','lpddr6','dram chip']},
-      nand3d:   {label:'3D NAND / SSD',  t:'tp', kw:['3d nand','qlc','tlc','nand flash','3d nand']},
+      micron:   {label:'Micron / 美光',   t:'co',kw:['micron','美光']},
+      kioxia:   {label:'Kioxia / 鎧俠',   t:'co',kw:['kioxia','鎧俠']},
+      nanya:    {label:'Nanya / 南亞科',   t:'co',kw:['nanya','南亞科']},
+      hbm:      {label:'HBM',             t:'tp',kw:['hbm3','hbm4','hbm ','high bandwidth memory']},
+      ddr:      {label:'DRAM / DDR5',     t:'tp',kw:['ddr5','lpddr5','lpddr6','dram chip','dram technology']},
+      nand3d:   {label:'3D NAND / SSD',   t:'tp',kw:['3d nand','qlc nand','tlc nand','nand flash technology']},
     }
   },
   ai:{
     label:'AI 晶片',emoji:'🤖',
-    kw:['ai chip','ai accelerator','gpu server','tpu','npu','data center ai','資料中心ai','llm chip','ai伺服器'],
+    kw:['ai chip','ai accelerator','ai gpu','data center ai','ai伺服器','blackwell','hopper','ai晶片','tpu','npu chip'],
     subs:{
-      gpu_dc:  {label:'GPU / 資料中心',  t:'tp', kw:['h100','h200','b200','gb200','blackwell','data center gpu']},
-      edge_ai: {label:'邊緣 AI / 手機',  t:'tp', kw:['edge ai','on-device ai','mobile ai','邊緣ai']},
-      llm_hw:  {label:'LLM 訓練硬體',    t:'tp', kw:['llm training','training chip','ai training cluster']},
-      google_t:{label:'Google TPU',     t:'co', kw:['google tpu','tpu v5','trillium chip']},
-      amazon_t:{label:'Amazon Trainium',t:'co', kw:['trainium','inferentia','aws chip']},
-      groq_c:  {label:'Groq / Cerebras',t:'co', kw:['groq chip','cerebras','tenstorrent']},
+      gpu_dc:  {label:'GPU / 資料中心',   t:'tp',kw:['h100','h200','b200','gb200','blackwell gpu','data center gpu','hopper']},
+      edge_ai: {label:'邊緣 AI / 手機',   t:'tp',kw:['edge ai','on-device ai','mobile ai','邊緣ai','端側推理']},
+      llm_hw:  {label:'LLM 訓練硬體',     t:'tp',kw:['llm training','training cluster','ai training chip','超算']},
+      google_t:{label:'Google TPU',      t:'co',kw:['google tpu','tpu v5','trillium chip']},
+      amazon_t:{label:'AWS Trainium',    t:'co',kw:['trainium','inferentia','aws ai chip']},
+      groq_c:  {label:'Groq / Cerebras', t:'co',kw:['groq chip','cerebras','tenstorrent','wafer-scale']},
     }
   },
   packaging:{
     label:'先進封裝',emoji:'📦',
-    kw:['advanced packaging','先進封裝','cowos','chiplet','2.5d','3d ic','fan-out','soic','wafer bonding','ucle','封裝技術'],
+    kw:['advanced packaging','先進封裝','cowos','chiplet','2.5d','3d ic','fan-out','soic','wafer bonding','ucie','ucle','封裝技術'],
     subs:{
-      cowos:   {label:'CoWoS / 2.5D',  t:'tp', kw:['cowos','2.5d interposer','silicon interposer','oip']},
-      chiplet: {label:'Chiplet / UCIe', t:'tp', kw:['chiplet','ucie','die-to-die','multi-die']},
-      threeD:  {label:'3D IC / SoIC',  t:'tp', kw:['3d ic','soic','face-to-face','wafer bonding','3d stacking']},
-      fanout:  {label:'Fan-Out',        t:'tp', kw:['fan-out','fowlp','info ','fan out wafer']},
-      ase:     {label:'ASE / 日月光',   t:'co', kw:['ase group','日月光','ase holdings']},
-      amkor:   {label:'Amkor',          t:'co', kw:['amkor technology']},
+      cowos:  {label:'CoWoS / 2.5D',   t:'tp',kw:['cowos','2.5d interposer','silicon interposer','oip technology']},
+      chiplet:{label:'Chiplet / UCIe',  t:'tp',kw:['chiplet','ucie','die-to-die','multi-die','ucle']},
+      threeD: {label:'3D IC / SoIC',   t:'tp',kw:['3d ic','soic','face-to-face','wafer bonding','3d stacking','cfet']},
+      fanout: {label:'Fan-Out',         t:'tp',kw:['fan-out','fowlp','info ','fan out wafer level']},
+      ase:    {label:'ASE / 日月光',    t:'co',kw:['ase group','日月光','ase holdings']},
+      amkor:  {label:'Amkor',           t:'co',kw:['amkor technology','amkor']},
     }
   },
   material:{
     label:'材料 / EDA',emoji:'🧪',
-    kw:['eda','synopsys','cadence','silicon wafer','矽晶圓','photoresist','光阻','特殊氣體','半導體材料'],
+    kw:['eda tool','synopsys','cadence','silicon wafer','矽晶圓','photoresist','光阻','特殊氣體','半導體材料','entegris'],
     subs:{
-      synopsys:{label:'Synopsys',     t:'co', kw:['synopsys']},
-      cadence: {label:'Cadence',      t:'co', kw:['cadence design']},
-      wafer:   {label:'矽晶圓',        t:'tp', kw:['silicon wafer','矽晶圓','shin-etsu','信越化學','sumco']},
-      resist:  {label:'光阻 / EUV 光阻',t:'tp',kw:['photoresist','光阻','euv resist','jsr photoresist']},
-      gas:     {label:'特殊氣體',      t:'tp', kw:['special gas','特殊氣體','process chemical','entegris']},
+      synopsys:{label:'Synopsys',       t:'co',kw:['synopsys']},
+      cadence: {label:'Cadence',        t:'co',kw:['cadence design']},
+      wafer:   {label:'矽晶圓',          t:'tp',kw:['silicon wafer','矽晶圓','shin-etsu','信越化學','sumco','polished wafer']},
+      resist:  {label:'光阻 / EUV 光阻', t:'tp',kw:['photoresist','光阻','euv resist','jsr resist','chemically amplified']},
+      gas:     {label:'特殊氣體 / 化學品',t:'tp',kw:['special gas','特殊氣體','process chemical','entegris','semiconductor chemical']},
     }
   }
+};
+
+// ================================================================
+// 句子搜尋 — 停用詞 & 中→英術語對照
+// ================================================================
+const STOP_ZH = new Set(['的','與','和','及','或','之','是','在','有','了','等','相關','最新','近期','有關','關於','新聞','報導','論文','研究','分析','趨勢','動態','消息','看','找','搜尋','目前','未來','方面','部分','領域','方向','進展','狀況']);
+const STOP_EN = new Set(['the','a','an','and','or','of','in','on','at','for','with','about','is','are','news','article','latest','recent','update','development','trend']);
+
+// 中文術語 → 英文（給 arXiv 用）
+const ZH_EN = {
+  '先進封裝':'advanced packaging','晶圓代工':'foundry','台積電':'TSMC','法說會':'investor conference earnings',
+  '法人說明會':'investor day earnings call','先進製程':'advanced process node','記憶體':'memory',
+  '封裝':'packaging','製程':'process node','量產':'mass production','良率':'yield rate',
+  '產能':'capacity','矽晶圓':'silicon wafer','光阻':'photoresist','蝕刻':'etching',
+  '薄膜':'thin film','晶片':'chip semiconductor','晶圓':'wafer','封測':'OSAT packaging testing',
+  '高頻寬記憶體':'high bandwidth memory HBM','設備':'semiconductor equipment','新廠':'fab',
+  '擴廠':'capacity expansion','聯電':'UMC','海力士':'SK Hynix','美光':'Micron',
+  '輝達':'NVIDIA','超微':'AMD','高通':'Qualcomm','博通':'Broadcom','聯發科':'MediaTek',
+  '設備商':'semiconductor equipment','代工':'foundry','中芯':'SMIC','格芯':'GlobalFoundries',
+};
+
+// NL → L1 auto-detect（自動選分類）
+const NL_L1 = [
+  {p:['晶圓代工','foundry','fab ','晶圓廠'],l:'foundry'},
+  {p:['ic設計','fabless','設計公司'],       l:'fabless'},
+  {p:['設備','equipment','光刻','曝光'],    l:'equipment'},
+  {p:['記憶體','memory','dram','nand','hbm'],l:'memory'},
+  {p:['ai晶片','ai加速','gpu伺服器','tpu'], l:'ai'},
+  {p:['先進封裝','封裝','chiplet','cowos','2.5d','3d ic'],l:'packaging'},
+  {p:['光阻','矽晶圓','eda','entegris'],    l:'material'},
+];
+
+// NL → L2 auto-detect
+const NL_L2 = {
+  foundry: [{p:['tsmc','台積電'],k:'tsmc'},{p:['samsung foundry'],k:'samsung_f'},{p:['intel foundry'],k:'intel_f'},{p:['umc','聯電'],k:'umc'},{p:['smic','中芯'],k:'smic'},{p:['先進製程','2nm','3nm'],k:'process'},{p:['法說會','法人說明'],k:'earnings'},{p:['產能','擴廠'],k:'capacity'}],
+  memory:  [{p:['hbm'],k:'hbm'},{p:['ddr5','lpddr'],k:'ddr'},{p:['3d nand'],k:'nand3d'},{p:['海力士','hynix'],k:'hynix'},{p:['micron','美光'],k:'micron'},{p:['kioxia','鎧俠'],k:'kioxia'}],
+  packaging:[{p:['cowos'],k:'cowos'},{p:['chiplet'],k:'chiplet'},{p:['3d ic','soic'],k:'threeD'},{p:['fan-out','fowlp'],k:'fanout'}],
+  equipment:[{p:['euv','光刻機'],k:'euv'},{p:['ald','cvd'],k:'ald'},{p:['蝕刻'],k:'etch'}],
 };
 
 // ================================================================
@@ -255,13 +328,79 @@ let activeL1='all', activeL2='all';
 let timePeriod='month', customStart=null, customEnd=null;
 let searchText='', activeSrc='all', sortBy='time';
 let isSearching=false, currentQ='';
+let viewMode='list'; // 'list' | 'grid'
+let liveTimer;
+
+// Parsed query result
+let lastParsed={newsQ:'',arQ:'',wantPaper:false,tokens:[]};
 
 // ================================================================
-// CORS proxy
+// Proxy
 // ================================================================
 const PROX=[u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,u=>`https://corsproxy.io/?${encodeURIComponent(u)}`];
 let pi=0;
-const proxy=u=>PROX[pi%PROX.length](u);
+const prox=u=>PROX[pi%PROX.length](u);
+
+// ================================================================
+// 句子解析
+// ================================================================
+function parseSentence(raw){
+  const lc=raw.toLowerCase();
+  const wantPaper=/論文|paper|preprint|arxiv|ieee|iedm|vlsi|isscc|學術|研究報告|conference/i.test(raw);
+
+  // 切詞（英文按空格，中文保留2字以上片段）
+  let parts=raw.split(/[\s,，。.？?！!、；;：:「」『』【】\[\]()（）]+/).filter(p=>p.length>0);
+
+  // 移除停用詞
+  parts=parts.filter(p=>{
+    const pl=p.toLowerCase();
+    return !STOP_ZH.has(p)&&!STOP_EN.has(pl)&&p.length>=2;
+  });
+
+  // 補充：英文部分按空格再切一次（避免"的新聞"黏著）
+  const flat=[];
+  parts.forEach(p=>{
+    if(/^[a-zA-Z0-9\s]+$/.test(p)){
+      p.split(/\s+/).forEach(w=>{if(w.length>=2)flat.push(w);});
+    } else {
+      flat.push(p);
+    }
+  });
+
+  // 搜尋 Token（含中文 bigram）
+  const tokens=new Set(flat.map(t=>t.toLowerCase()));
+  flat.forEach(p=>{
+    if(/[\u4e00-\u9fff]/.test(p)&&p.length>2){
+      for(let i=0;i<=p.length-2;i++) tokens.add(p.slice(i,i+2));
+    }
+  });
+
+  // Google News 查詢（保留原始中英文，去除停用詞）
+  const newsQ=flat.length?flat.join(' '):raw;
+
+  // arXiv 查詢（中文術語翻譯為英文）
+  const arParts=flat.map(p=>ZH_EN[p]||p);
+  const arQ=arParts.length?arParts.join(' '):raw;
+
+  return{newsQ,arQ,wantPaper,tokens:[...tokens].filter(t=>t.length>=2)};
+}
+
+// ================================================================
+// NL 自動偵測分類
+// ================================================================
+function autoDetectCats(input){
+  const lc=input.toLowerCase();
+  let detL1=null,detL2=null;
+  for(const{p,l}of NL_L1){
+    if(p.some(x=>lc.includes(x))){detL1=l;break;}
+  }
+  if(detL1&&NL_L2[detL1]){
+    for(const{p,k}of NL_L2[detL1]){
+      if(p.some(x=>lc.includes(x))){detL2=k;break;}
+    }
+  }
+  return{detL1,detL2};
+}
 
 // ================================================================
 // Date helpers
@@ -273,7 +412,7 @@ function afterDate(){
 }
 function inRange(pub){
   const d=new Date(pub); if(isNaN(d)) return false;
-  if(d<new Date('2022-01-01')) return false;  // hard min
+  if(d<new Date('2022-01-01')) return false;
   if(timePeriod==='custom'){
     if(customStart&&d<customStart) return false;
     if(customEnd&&d>customEnd) return false;
@@ -321,7 +460,7 @@ function passL1(title){
 }
 function passL2(title){
   if(activeL1==='all'||activeL2==='all') return true;
-  return CAT[activeL1].subs[activeL2].kw.some(w=>title.toLowerCase().includes(w));
+  return CAT[activeL1].subs[activeL2]?.kw.some(w=>title.toLowerCase().includes(w))??false;
 }
 
 // ================================================================
@@ -331,7 +470,7 @@ async function fetchRSS(query){
   const after=afterDate();
   const q=`${query} after:${after}`;
   const url=`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
-  const r=await fetch(proxy(url),{signal:AbortSignal.timeout(13000)});
+  const r=await fetch(prox(url),{signal:AbortSignal.timeout(13000)});
   if(!r.ok) throw new Error('HTTP '+r.status);
   const xml=new DOMParser().parseFromString(await r.text(),'text/xml');
   const items=[];
@@ -349,7 +488,7 @@ async function fetchRSS(query){
 // ================================================================
 async function fetchArxiv(query){
   const url=`https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(query)}&max_results=20&sortBy=submittedDate&sortOrder=descending`;
-  const r=await fetch(proxy(url),{signal:AbortSignal.timeout(13000)});
+  const r=await fetch(prox(url),{signal:AbortSignal.timeout(13000)});
   if(!r.ok) throw new Error('arXiv '+r.status);
   const xml=new DOMParser().parseFromString(await r.text(),'text/xml');
   const items=[];
@@ -357,19 +496,13 @@ async function fetchArxiv(query){
     const g=s=>(el.querySelector(s)||{textContent:''}).textContent.trim();
     const pub=g('published');
     if(!inRange(pub)) return;
-    items.push({
-      type:'paper',
-      title:g('title').replace(/\s+/g,' '),
-      link:g('id').replace('http://','https://'),
-      pub,source:'arXiv',
-      summary:g('summary').replace(/\s+/g,' ').slice(0,220)+'…'
-    });
+    items.push({type:'paper',title:g('title').replace(/\s+/g,' '),link:g('id').replace('http://','https://'),pub,source:'arXiv',summary:g('summary').replace(/\s+/g,' ').slice(0,240)+'…'});
   });
   return items;
 }
 
 // ================================================================
-// Page load: fetch per L1 category
+// Page load: per-L1 category fetch
 // ================================================================
 async function fetchAll(){
   const list=document.getElementById('nlist');
@@ -377,51 +510,61 @@ async function fetchAll(){
   list.innerHTML='<div class="loading"><div class="spin"></div><br>正在載入新聞...</div>';
   btn.disabled=true; btn.textContent='載入中...';
 
-  const queries=Object.entries(CAT).map(([k,c])=>({
-    q: c.kw.slice(0,3).join(' OR ')+' semiconductor'
-  }));
-
+  const queries=Object.values(CAT).map(c=>({q:c.kw.slice(0,3).join(' OR ')+' semiconductor'}));
   const res=await Promise.allSettled(queries.map(async({q})=>{
     try{return await fetchRSS(q);}
     catch{pi++;try{return await fetchRSS(q);}catch{return[];}}
   }));
 
-  const seen=new Set();
-  allNews=[];
+  const seen=new Set(); allNews=[];
   res.forEach(r=>{
     if(r.status==='fulfilled') r.value.forEach(n=>{
       if(!seen.has(n.link)){seen.add(n.link);allNews.push(n);}
     });
   });
 
-  btn.disabled=false; btn.innerHTML='🔄 重新載入新聞';
+  btn.disabled=false; btn.innerHTML='🔄 重新載入';
   renderL1(); render();
 }
 
 // ================================================================
 // Live search
 // ================================================================
-let liveTimer;
-async function doSearch(q){
-  if(!q||q.length<2){liveNews=[];arxivNews=[];isSearching=false;render();return;}
-  currentQ=q; isSearching=true;
+async function doSearch(raw){
+  if(!raw||raw.length<2){
+    liveNews=[];arxivNews=[];isSearching=false;
+    document.getElementById('qdisp').className='qdisp';
+    render();return;
+  }
+
+  const parsed=parseSentence(raw);
+  lastParsed=parsed;
+
+  // Show query display
+  const qd=document.getElementById('qdisp');
+  qd.className='qdisp show';
+  qd.innerHTML=`📤 搜尋 Google News：<strong>${esc(parsed.newsQ)}</strong>`+
+    (parsed.wantPaper?` &nbsp;·&nbsp; arXiv：<strong>${esc(parsed.arQ)}</strong>`:'')+
+    (parsed.newsQ!==raw?` &nbsp;<span style="opacity:.6;font-size:.7rem">（原句已提取關鍵詞）</span>`:'');
+
+  currentQ=raw; isSearching=true;
   document.getElementById('stxt').textContent='🔍 搜尋中...';
 
-  const wantPaper=activeSrc!=='news'&&/論文|paper|research|arxiv|ieee|iedm|vlsi|isscc|preprint/i.test(q);
   try{
+    const shouldArxiv=activeSrc!=='news'&&(parsed.wantPaper||activeSrc==='paper');
     const[nr,ar]=await Promise.allSettled([
-      fetchRSS(q),
-      wantPaper?fetchArxiv(q):Promise.resolve([])
+      fetchRSS(parsed.newsQ),
+      shouldArxiv?fetchArxiv(parsed.arQ):Promise.resolve([])
     ]);
-    if(currentQ!==q) return;
+    if(currentQ!==raw) return;
     const ex=new Set(allNews.map(n=>n.link));
     liveNews=nr.status==='fulfilled'?nr.value.filter(n=>!ex.has(n.link)):[];
     arxivNews=ar.status==='fulfilled'?ar.value:[];
   }catch(e){
-    if(currentQ===q){liveNews=[];arxivNews=[];}
+    if(currentQ===raw){liveNews=[];arxivNews=[];}
   }
   isSearching=false;
-  if(currentQ===q) render();
+  if(currentQ===raw) render();
 }
 
 // ================================================================
@@ -429,21 +572,19 @@ async function doSearch(q){
 // ================================================================
 function renderL1(){
   const row=document.getElementById('l1row');
-  let h='<div class="pill l1-on on" onclick="setL1(\'all\')">🌍 全部</div>';
+  const allOn=activeL1==='all';
+  let h=`<div class="pill p-l1${allOn?' on':''}" onclick="setL1('all')">🌍 全部</div>`;
   for(const[k,c]of Object.entries(CAT)){
     const cnt=allNews.filter(n=>c.kw.some(w=>n.title.toLowerCase().includes(w))).length;
     const on=activeL1===k;
-    h+=`<div class="pill${on?' l1-on on':''}" onclick="setL1('${k}')">${c.emoji} ${c.label} <span class="cnt">(${cnt})</span></div>`;
+    h+=`<div class="pill p-l1${on?' on':''}" onclick="setL1('${k}')">${c.emoji} ${c.label} <span class="cnt">(${cnt})</span></div>`;
   }
   row.innerHTML=h;
-  // fix "全部" active state
-  row.firstElementChild.className='pill'+(activeL1==='all'?' l1-on on':'');
 }
-
 function setL1(k){
   activeL1=(activeL1===k&&activeL2==='all')?'all':k;
   activeL2='all';
-  renderL1(); renderL2(); render();
+  renderL1();renderL2();render();
 }
 
 // ================================================================
@@ -458,25 +599,29 @@ function renderL2(){
   const tps=Object.entries(subs).filter(([,s])=>s.t==='tp');
   let h='';
   if(cos.length){
-    h+='<div class="l2-group">🏢 公司</div><div class="row">';
-    h+=`<div class="pill${activeL2==='all'?' l2-on on':''}" onclick="setL2('all')">全部</div>`;
-    cos.forEach(([k,s])=>h+=`<div class="pill${activeL2===k?' l2-on on':''}" onclick="setL2('${k}')">${s.label}</div>`);
+    h+=`<div class="l2-grp">🏢 公司</div><div class="row"><div class="pill p-l2${activeL2==='all'?' on':''}" onclick="setL2('all')">全部</div>`;
+    cos.forEach(([k,s])=>h+=`<div class="pill p-l2${activeL2===k?' on':''}" onclick="setL2('${k}')">${s.label}</div>`);
     h+='</div>';
   }
   if(tps.length){
-    h+='<div class="l2-group">🔬 技術主題</div><div class="row">';
-    tps.forEach(([k,s])=>h+=`<div class="pill topic-pill${activeL2===k?' l2-on on':''}" onclick="setL2('${k}')">${s.label}</div>`);
+    h+=`<div class="l2-grp">🔬 技術主題</div><div class="row">`;
+    tps.forEach(([k,s])=>h+=`<div class="pill dashed p-l2${activeL2===k?' on':''}" onclick="setL2('${k}')">${s.label}</div>`);
     h+='</div>';
   }
   p.innerHTML=h;
 }
-
 function setL2(k){activeL2=k;renderL2();render();}
 
 // ================================================================
 // Main render
 // ================================================================
-function buildTokens(txt){
+function passSearch(title){
+  if(!searchText) return true;
+  const toks=lastParsed.tokens.length?lastParsed.tokens:buildFallbackTokens(searchText);
+  const t=title.toLowerCase();
+  return toks.some(tk=>t.includes(tk));
+}
+function buildFallbackTokens(txt){
   const t=txt.toLowerCase().trim(); if(!t) return[];
   const s=new Set([t]);
   t.split(/\s+/).forEach(p=>{if(p.length>=2)s.add(p);});
@@ -485,12 +630,6 @@ function buildTokens(txt){
       for(let i=0;i<=p.length-2;i++) s.add(p.slice(i,i+2));
   });
   return[...s].filter(x=>x.length>=2);
-}
-
-function passSearch(title){
-  if(!searchText) return true;
-  const toks=buildTokens(searchText);
-  return!toks.length||toks.some(t=>title.toLowerCase().includes(t));
 }
 
 function render(){
@@ -512,22 +651,20 @@ function render(){
   ).sort(sortFn);
 
   const total=base.length+live.length+papers.length;
-  const suffix=isSearching?' ⏳ 搜尋中...':
-    (searchText&&(live.length||papers.length)?` + 即時 ${live.length+papers.length} 則`:'');
-  document.getElementById('stxt').textContent=
-    `顯示 ${total} 則${periodLabel()} / 預載 ${allNews.length} 則${suffix}`;
+  const liveHint=isSearching?' ⏳ 搜尋中...':(searchText&&(live.length||papers.length)?` + 即時 ${live.length+papers.length} 則`:'');
+  document.getElementById('stxt').textContent=`顯示 ${total} 則${periodLabel()} / 預載 ${allNews.length} 則${liveHint}`;
 
   if(total===0){
-    list.innerHTML=isSearching
-      ?'<div class="loading"><div class="spin"></div><br>搜尋中...</div>'
-      :'<div class="empty">📭 沒有符合結果，試試調整時間範圍或關鍵字</div>';
+    list.innerHTML=isSearching?'<div class="loading"><div class="spin"></div><br>搜尋中...</div>':'<div class="empty">📭 沒有符合結果，試試調整時間範圍或關鍵字</div>';
     return;
   }
 
+  const cls=viewMode==='grid'?'ngrid':'nlist';
   let h='';
+
   if(papers.length){
     h+=`<div class="div-row">📄 arXiv 論文（${papers.length} 篇）</div>`;
-    h+='<div class="infobox">💡 arXiv 主要為學術預印本（cs / physics / eess 類）。IEDM、ISSCC 等 IEEE 付費論文請至 <a href="https://ieeexplore.ieee.org" target="_blank" style="color:var(--accent2)">ieeexplore.ieee.org</a> 查詢。</div>';
+    h+='<div class="infobox">💡 arXiv 為學術預印本（cs / physics / eess）。IEDM、VLSI、ISSCC 等 IEEE 付費論文請至 <a href="https://ieeexplore.ieee.org" target="_blank">ieeexplore.ieee.org</a> 查詢。</div>';
     papers.forEach(n=>{h+=cardHTML(n,'paper');});
     if(live.length+base.length) h+=`<div class="div-row">📰 新聞</div>`;
   }
@@ -537,6 +674,8 @@ function render(){
     if(base.length) h+=`<div class="div-row">📰 已載入新聞（${base.length} 則）</div>`;
   }
   base.forEach(n=>{h+=cardHTML(n,'news');});
+
+  list.className=cls;
   list.innerHTML=h;
 }
 
@@ -547,20 +686,20 @@ function esc(s){const d=document.createElement('div');d.textContent=s;return d.i
 function cardHTML(n,kind){
   const ago=timeAgo(n.pub);
   const date=new Date(n.pub);
-  const dateStr=isNaN(date)?'':date.toLocaleDateString('zh-TW');
+  const ds=isNaN(date)?'':date.toLocaleDateString('zh-TW');
   const l1k=detectL1(n.title);
   const l2k=l1k?detectL2(n.title,l1k):null;
   const l1tag=l1k?`<span class="tl1">${CAT[l1k].emoji} ${CAT[l1k].label}</span>`:'';
-  const l2tag=l2k?`<span class="tl2">${CAT[l1k].subs[l2k].label}</span>`:'';
+  const l2tag=(l2k&&l1k)?`<span class="tl2">${CAT[l1k].subs[l2k].label}</span>`:'';
   const badge={news:'<span class="badge bn">📰 新聞</span>',live:'<span class="badge bl">⚡ 即時</span>',paper:'<span class="badge bp">📄 論文</span>'}[kind];
   const cls='card'+(kind==='paper'?' cpaper':kind==='live'?' clive':'');
   const summ=n.summary?`<div class="csumm">${esc(n.summary)}</div>`:'';
   return `<div class="${cls}" onclick="window.open('${esc(n.link)}','_blank')">
-    <div class="ctop"><span class="csrc">${esc(n.source)}</span><span class="ctime-txt" title="${dateStr}">${ago}</span></div>
-    <div class="ctitle"><a href="${esc(n.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(n.title)}</a></div>
-    ${summ}
-    <div class="ctags">${badge}${l1tag}${l2tag}</div>
-  </div>`;
+<div class="ctop"><span class="csrc">${esc(n.source)}</span><span class="ctime-txt" title="${ds}">${ago}</span></div>
+<div class="ctitle"><a href="${esc(n.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(n.title)}</a></div>
+${summ}
+<div class="ctags">${badge}${l1tag}${l2tag}</div>
+</div>`;
 }
 
 // ================================================================
@@ -568,26 +707,31 @@ function cardHTML(n,kind){
 // ================================================================
 function setSrc(s){
   activeSrc=s;
-  document.querySelectorAll('#srcRow .pill').forEach(b=>b.className='pill'+(b.dataset.s===s?' src-on on':''));
-  render();
+  document.querySelectorAll('#srcRow .pill').forEach(b=>b.className='pill p-src'+(b.dataset.s===s?' on':''));
+  if(searchText) doSearch(document.getElementById('si').value);
+  else render();
 }
 function setTime(t){
   timePeriod=t;
-  document.querySelectorAll('#timeRow .pill').forEach(b=>b.className='pill'+(b.dataset.t===t?' time-on on':''));
+  document.querySelectorAll('#timeRow .pill').forEach(b=>b.className='pill p-time'+(b.dataset.t===t?' on':''));
   document.getElementById('ctime').className='ctime'+(t==='custom'?' show':'');
-  if(t!=='custom'){searchText?doSearch(searchText):fetchAll();}
+  if(t!=='custom'){searchText?doSearch(document.getElementById('si').value):fetchAll();}
 }
 function applyCustom(){
-  const s=document.getElementById('sd').value;
-  const e=document.getElementById('ed').value;
+  const s=document.getElementById('sd').value,e=document.getElementById('ed').value;
   if(s&&e&&new Date(s)>new Date(e)){alert('開始日期不能晚於結束');return;}
   customStart=s?new Date(s):null;
   customEnd=e?new Date(e+'T23:59:59'):null;
-  searchText?doSearch(searchText):fetchAll();
+  searchText?doSearch(document.getElementById('si').value):fetchAll();
 }
 function setSort(s){
   sortBy=s;
-  document.querySelectorAll('.sbtn').forEach(b=>b.className='sbtn'+(b.dataset.so===s?' on':''));
+  document.querySelectorAll('.smbtn').forEach(b=>b.className='smbtn'+(b.dataset.so===s?' on':''));
+  render();
+}
+function toggleView(){
+  viewMode=viewMode==='list'?'grid':'list';
+  document.getElementById('viewbtn').textContent=viewMode==='grid'?'☰ 條列':'⊞ 卡片';
   render();
 }
 
@@ -595,13 +739,26 @@ function setSort(s){
 // Search input
 // ================================================================
 document.getElementById('si').addEventListener('input',e=>{
-  const v=e.target.value.trim();
-  searchText=v.toLowerCase();
-  if(v){activeL1='all';activeL2='all';renderL1();renderL2();}
+  const raw=e.target.value;
+  searchText=raw.toLowerCase().trim();
+
+  if(raw.trim()){
+    // NL auto-detect category
+    const{detL1,detL2}=autoDetectCats(raw);
+    if(detL1&&detL1!==activeL1){activeL1=detL1;activeL2=detL2||'all';renderL1();renderL2();}
+  } else {
+    activeL1='all';activeL2='all';
+    document.getElementById('qdisp').className='qdisp';
+    liveNews=[];arxivNews=[];
+    lastParsed={newsQ:'',arQ:'',wantPaper:false,tokens:[]};
+    renderL1();renderL2();
+  }
+
   render();
   clearTimeout(liveTimer);
-  liveTimer=setTimeout(()=>doSearch(v),500);
+  liveTimer=setTimeout(()=>doSearch(raw.trim()),600);
 });
+
 document.getElementById('si').addEventListener('keydown',e=>{
   if(e.key==='Enter'){clearTimeout(liveTimer);doSearch(e.target.value.trim());}
 });
@@ -610,11 +767,11 @@ document.getElementById('si').addEventListener('keydown',e=>{
 // Init
 // ================================================================
 (function(){
-  const now=new Date(), ago=new Date(now-30*86400000);
+  const now=new Date(),ago=new Date(now-30*86400000);
   document.getElementById('ed').value=toDateStr(now);
   document.getElementById('sd').value=toDateStr(ago);
 })();
-renderL1(); renderL2();
+renderL1();renderL2();
 fetchAll();
 </script>
 </body>
