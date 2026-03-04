@@ -578,7 +578,11 @@ function renderNews() {
   let liveOnly = [];
   if (searchText && liveSearchNews.length > 0) {
     const ex = new Set(filtered.map(n => n.link));
-    liveOnly = filterByTime(liveSearchNews.filter(n => !ex.has(n.link)));
+    liveOnly = filterByTime(
+      liveSearchNews
+        .filter(n => !ex.has(n.link))
+        .filter(n => n.categories.some(c => activeCategories.has(c)))
+    );
   }
   const totalShown = filtered.length + liveOnly.length;
   const liveStatus = liveSearchActive ? ' ⏳ 即時搜尋中...'
