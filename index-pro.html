@@ -81,6 +81,7 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 .card:hover{border-color:var(--accent);background:var(--card2);transform:translateY(-1px);box-shadow:0 4px 16px rgba(59,130,246,.08)}
 .card.clive{border-left:3px solid var(--green)}
 .card.cpaper{border-left:3px solid var(--accent2)}
+.card.cabc{border-left:3px solid var(--green)}
 /* Card-grid extra */
 .ngrid .card{height:100%}
 
@@ -99,6 +100,7 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 .bn{background:rgba(59,130,246,.1);color:var(--accent);border:1px solid rgba(59,130,246,.25)}
 .bp{background:rgba(139,92,246,.1);color:var(--accent2);border:1px solid rgba(139,92,246,.25)}
 .bl{background:rgba(16,185,129,.1);color:var(--green);border:1px solid rgba(16,185,129,.25)}
+.ba{background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(52,211,153,.3)}
 .tl1{padding:2px 7px;border-radius:3px;font-size:.65rem;background:var(--tag);color:var(--text2)}
 .tl2{padding:2px 7px;border-radius:3px;font-size:.65rem;background:rgba(139,92,246,.08);color:var(--accent2)}
 
@@ -128,14 +130,14 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
 <div class="wrap">
   <header>
     <h1>🔬 半導體新聞追蹤器 Pro</h1>
-    <p>輸入任何句子或關鍵字 · Google News 即時搜尋 + arXiv 論文 · 雙層分類過濾</p>
+    <p>輸入任何句子或關鍵字 · Google News 即時搜尋 + arXiv 論文 + Always Be Curious · 雙層分類過濾</p>
   </header>
 
   <div class="srch-wrap">
     <span class="srch-ico">🔍</span>
     <input type="text" id="si" placeholder="輸入任何句子... 例：TSMC 先進封裝的最新進展 / HBM4 供應鏈動態 / CoWoS 良率論文">
   </div>
-  <div class="hint">💡 可以輸入完整句子，系統會自動提取關鍵詞搜尋 · 含「論文/paper/IEEE」自動搜尋 arXiv</div>
+  <div class="hint">💡 可以輸入完整句子，系統會自動提取關鍵詞搜尋 · 含「論文/paper/IEEE」自動搜尋 arXiv · 📧 ABC 為 Always Be Curious newsletter</div>
   <div class="qdisp" id="qdisp"></div>
 
   <div class="lbl">📂 來源</div>
@@ -143,6 +145,7 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
     <div class="pill p-src on" data-s="all"   onclick="setSrc('all')">🌐 全部</div>
     <div class="pill p-src"    data-s="news"  onclick="setSrc('news')">📰 新聞</div>
     <div class="pill p-src"    data-s="paper" onclick="setSrc('paper')">📄 論文 (arXiv)</div>
+    <div class="pill p-src"    data-s="abc"   onclick="setSrc('abc')">📧 Always Be Curious</div>
   </div>
 
   <div class="lbl">⏱ 時間範圍</div>
@@ -181,7 +184,7 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
     <div class="loading"><div class="spin"></div><br>正在載入新聞...</div>
   </div>
 
-  <footer>半導體新聞追蹤器 Pro © 2026 &nbsp;·&nbsp; Google News RSS + arXiv API &nbsp;·&nbsp; 雙層分類</footer>
+  <footer>半導體新聞追蹤器 Pro © 2026 &nbsp;·&nbsp; Google News RSS + arXiv API + Always Be Curious &nbsp;·&nbsp; 雙層分類</footer>
 </div>
 <script>
 // ================================================================
@@ -323,7 +326,7 @@ const NL_L2 = {
 // ================================================================
 // State
 // ================================================================
-let allNews=[], liveNews=[], arxivNews=[];
+let allNews=[], liveNews=[], arxivNews=[], substackNews=[];
 let activeL1='all', activeL2='all';
 let timePeriod='month', customStart=null, customEnd=null;
 let searchText='', activeSrc='all', sortBy='time';
@@ -502,6 +505,33 @@ async function fetchArxiv(query){
 }
 
 // ================================================================
+// Fetch Always Be Curious (Substack RSS)
+// ================================================================
+async function fetchSubstack(){
+  const url='https://alwaysbecurious.substack.com/feed';
+  try{
+    const r=await fetch(prox(url),{signal:AbortSignal.timeout(13000)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const xml=new DOMParser().parseFromString(await r.text(),'text/xml');
+    const items=[];
+    xml.querySelectorAll('item').forEach(el=>{
+      const g=s=>(el.querySelector(s)||{textContent:''}).textContent;
+      const title=g('title').replace(/\s+/g,' ').trim();
+      const link=g('link').trim();
+      const pub=g('pubDate');
+      const raw=g('description').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
+      const summary=raw.slice(0,240)+(raw.length>240?'…':'');
+      if(title) items.push({type:'abc',title,link,pub,source:'Always Be Curious',summary});
+    });
+    substackNews=items;
+    render();
+  }catch(e){
+    console.warn('Substack fetch failed:',e.message);
+    substackNews=[];
+  }
+}
+
+// ================================================================
 // Page load: per-L1 category fetch
 // ================================================================
 async function fetchAll(){
@@ -524,6 +554,7 @@ async function fetchAll(){
   });
 
   btn.disabled=false; btn.innerHTML='🔄 重新載入';
+  fetchSubstack();
   renderL1(); render();
 }
 
@@ -551,9 +582,9 @@ async function doSearch(raw){
   document.getElementById('stxt').textContent='🔍 搜尋中...';
 
   try{
-    const shouldArxiv=activeSrc!=='news'&&(parsed.wantPaper||activeSrc==='paper');
+    const shouldArxiv=activeSrc!=='news'&&activeSrc!=='abc'&&(parsed.wantPaper||activeSrc==='paper');
     const[nr,ar]=await Promise.allSettled([
-      fetchRSS(parsed.newsQ),
+      (activeSrc==='abc')?Promise.resolve([]):fetchRSS(parsed.newsQ),
       shouldArxiv?fetchArxiv(parsed.arQ):Promise.resolve([])
     ]);
     if(currentQ!==raw) return;
@@ -650,9 +681,14 @@ function render(){
     inRange(n.pub)&&(activeSrc==='all'||activeSrc==='paper')
   ).sort(sortFn);
 
-  const total=base.length+live.length+papers.length;
+  const abc=substackNews.filter(n=>
+    (activeSrc==='all'||activeSrc==='abc')&&passSearch(n.title)
+  ).sort(sortFn);
+
+  const total=base.length+live.length+papers.length+abc.length;
   const liveHint=isSearching?' ⏳ 搜尋中...':(searchText&&(live.length||papers.length)?` + 即時 ${live.length+papers.length} 則`:'');
-  document.getElementById('stxt').textContent=`顯示 ${total} 則${periodLabel()} / 預載 ${allNews.length} 則${liveHint}`;
+  const abcHint=abc.length&&activeSrc!=='abc'?` + ABC ${abc.length} 篇`:'';
+  document.getElementById('stxt').textContent=`顯示 ${total} 則${periodLabel()} / 預載 ${allNews.length} 則${liveHint}${abcHint}`;
 
   if(total===0){
     list.innerHTML=isSearching?'<div class="loading"><div class="spin"></div><br>搜尋中...</div>':'<div class="empty">📭 沒有符合結果，試試調整時間範圍或關鍵字</div>';
@@ -662,6 +698,11 @@ function render(){
   const cls=viewMode==='grid'?'ngrid':'nlist';
   let h='';
 
+  if(abc.length){
+    h+=`<div class="div-row">📧 Always Be Curious（${abc.length} 篇）</div>`;
+    abc.forEach(n=>{h+=cardHTML(n,'abc');});
+    if(papers.length+live.length+base.length) h+=`<div class="div-row">📰 新聞 / 論文</div>`;
+  }
   if(papers.length){
     h+=`<div class="div-row">📄 arXiv 論文（${papers.length} 篇）</div>`;
     h+='<div class="infobox">💡 arXiv 為學術預印本（cs / physics / eess）。IEDM、VLSI、ISSCC 等 IEEE 付費論文請至 <a href="https://ieeexplore.ieee.org" target="_blank">ieeexplore.ieee.org</a> 查詢。</div>';
@@ -669,7 +710,7 @@ function render(){
     if(live.length+base.length) h+=`<div class="div-row">📰 新聞</div>`;
   }
   if(live.length){
-    if(!papers.length) h+=`<div class="div-row">📡 即時搜尋結果（${live.length} 則）</div>`;
+    if(!papers.length&&!abc.length) h+=`<div class="div-row">📡 即時搜尋結果（${live.length} 則）</div>`;
     live.forEach(n=>{h+=cardHTML(n,'live');});
     if(base.length) h+=`<div class="div-row">📰 已載入新聞（${base.length} 則）</div>`;
   }
@@ -691,8 +732,8 @@ function cardHTML(n,kind){
   const l2k=l1k?detectL2(n.title,l1k):null;
   const l1tag=l1k?`<span class="tl1">${CAT[l1k].emoji} ${CAT[l1k].label}</span>`:'';
   const l2tag=(l2k&&l1k)?`<span class="tl2">${CAT[l1k].subs[l2k].label}</span>`:'';
-  const badge={news:'<span class="badge bn">📰 新聞</span>',live:'<span class="badge bl">⚡ 即時</span>',paper:'<span class="badge bp">📄 論文</span>'}[kind];
-  const cls='card'+(kind==='paper'?' cpaper':kind==='live'?' clive':'');
+  const badge={news:'<span class="badge bn">📰 新聞</span>',live:'<span class="badge bl">⚡ 即時</span>',paper:'<span class="badge bp">📄 論文</span>',abc:'<span class="badge ba">📧 ABC</span>'}[kind];
+  const cls='card'+(kind==='paper'?' cpaper':kind==='live'?' clive':kind==='abc'?' cabc':'');
   const summ=n.summary?`<div class="csumm">${esc(n.summary)}</div>`:'';
   return `<div class="${cls}" onclick="window.open('${esc(n.link)}','_blank')">
 <div class="ctop"><span class="csrc">${esc(n.source)}</span><span class="ctime-txt" title="${ds}">${ago}</span></div>
