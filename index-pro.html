@@ -930,7 +930,7 @@ function render(){
   ).sort(sortFn);
 
   const papers=arxivNews.filter(n=>
-    inRange(n.pub)&&(activeSrc==='all'||activeSrc==='paper')
+    inRange(n.pub)&&(activeSrc==='all'||activeSrc==='paper')&&passSearch(n.title)
   ).sort(sortFn);
 
   const abc=substackNews.filter(n=>
@@ -1036,9 +1036,11 @@ document.getElementById('si').addEventListener('input',e=>{
   searchText=raw.toLowerCase().trim();
 
   if(raw.trim()){
-    // NL auto-detect category
+    // 打字時先 reset 分類，再 auto-detect（避免殘留之前手動選的分類）
+    activeL1='all';activeL2='all';
     const{detL1,detL2}=autoDetectCats(raw);
-    if(detL1&&detL1!==activeL1){activeL1=detL1;activeL2=detL2||'all';renderL1();renderL2();}
+    if(detL1){activeL1=detL1;activeL2=detL2||'all';}
+    renderL1();renderL2();
   } else {
     activeL1='all';activeL2='all';
     document.getElementById('qdisp').className='qdisp';
