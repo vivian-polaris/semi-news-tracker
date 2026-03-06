@@ -342,11 +342,22 @@ let liveTimer;
 let lastParsed={newsQ:'',arQ:'',wantPaper:false,tokens:[]};
 
 // ================================================================
-// Proxy
+// Proxy — 依序嘗試，第一個成功即回傳
 // ================================================================
-const PROX=[u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,u=>`https://corsproxy.io/?${encodeURIComponent(u)}`];
-let pi=0;
-const prox=u=>PROX[pi%PROX.length](u);
+const PROX=[
+  u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`
+];
+async function fetchProxy(url,timeout=13000){
+  for(const p of PROX){
+    try{
+      const r=await fetch(p(url),{signal:AbortSignal.timeout(timeout)});
+      if(r.ok) return r;
+    }catch{}
+  }
+  throw new Error('All proxies failed');
+}
 
 // ================================================================
 // 句子解析
@@ -480,8 +491,7 @@ async function fetchRSS(query){
   const after=afterDate();
   const q=`${query} after:${after}`;
   const url=`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
-  const r=await fetch(prox(url),{signal:AbortSignal.timeout(13000)});
-  if(!r.ok) throw new Error('HTTP '+r.status);
+  const r=await fetchProxy(url);
   const xml=new DOMParser().parseFromString(await r.text(),'text/xml');
   const items=[];
   xml.querySelectorAll('item').forEach(el=>{
@@ -498,8 +508,7 @@ async function fetchRSS(query){
 // ================================================================
 async function fetchArxiv(query){
   const url=`https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(query)}&max_results=20&sortBy=submittedDate&sortOrder=descending`;
-  const r=await fetch(prox(url),{signal:AbortSignal.timeout(13000)});
-  if(!r.ok) throw new Error('arXiv '+r.status);
+  const r=await fetchProxy(url);
   const xml=new DOMParser().parseFromString(await r.text(),'text/xml');
   const items=[];
   xml.querySelectorAll('entry').forEach(el=>{
@@ -512,25 +521,21 @@ async function fetchArxiv(query){
 }
 
 // ================================================================
-// Fetch Always Be Curious (Substack RSS)
+// Fetch Always Be Curious (Substack JSON API)
 // ================================================================
 async function fetchSubstack(){
-  const url='https://alwaysbecurious.substack.com/feed';
+  const url='https://alwaysbecurious.substack.com/api/v1/posts?limit=25&sort=new&type=newsletter';
   try{
-    const r=await fetch(prox(url),{signal:AbortSignal.timeout(13000)});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const xml=new DOMParser().parseFromString(await r.text(),'text/xml');
-    const items=[];
-    xml.querySelectorAll('item').forEach(el=>{
-      const g=s=>(el.querySelector(s)||{textContent:''}).textContent;
-      const title=g('title').replace(/\s+/g,' ').trim();
-      const link=g('link').trim();
-      const pub=g('pubDate');
-      const raw=g('description').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
-      const summary=raw.slice(0,240)+(raw.length>240?'…':'');
-      if(title) items.push({type:'abc',title,link,pub,source:'Always Be Curious',summary});
-    });
-    substackNews=items;
+    const r=await fetchProxy(url);
+    const data=await r.json();
+    substackNews=data.filter(p=>p.title&&p.is_published).map(p=>({
+      type:'abc',
+      title:p.title,
+      link:p.canonical_url||`https://alwaysbecurious.substack.com/p/${p.slug}`,
+      pub:p.post_date,
+      source:'Always Be Curious',
+      summary:(p.subtitle||'').slice(0,240)
+    }));
     render();
   }catch(e){
     console.warn('Substack fetch failed:',e.message);
@@ -549,8 +554,7 @@ async function fetchAll(){
 
   const queries=Object.values(CAT).map(c=>({q:c.kw.slice(0,3).join(' OR ')+' semiconductor'}));
   const res=await Promise.allSettled(queries.map(async({q})=>{
-    try{return await fetchRSS(q);}
-    catch{pi++;try{return await fetchRSS(q);}catch{return[];}}
+    try{return await fetchRSS(q);}catch{return[];}
   }));
 
   const seen=new Set(); allNews=[];
