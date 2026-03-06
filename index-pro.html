@@ -842,8 +842,28 @@ function renderL1(){
 function setL1(k){
   activeL1=(activeL1===k&&activeL2==='all')?'all':k;
   activeL2='all';
-  renderL1();renderL2();render();
+  renderL1();renderL2();
+  clearSearchAndFetch();
 }
+
+function clearSearchAndFetch(){
+  clearTimeout(liveTimer);
+  document.getElementById('si').value='';
+  document.getElementById('qdisp').className='qdisp';
+  searchText='';
+  liveNews=[];arxivNews=[];
+  lastParsed={newsQ:'',arQ:'',wantPaper:false,tokens:[],queryParts:[],entityLabels:[]};
+  if(activeL2!=='all'&&activeL1!=='all'){
+    const sub=CAT[activeL1]?.subs[activeL2];
+    if(sub){doSearchCategory(sub.kw.slice(0,4).join(' OR '),sub.label);return;}
+  }
+  if(activeL1!=='all'){
+    const cat=CAT[activeL1];
+    if(cat){doSearchCategory(cat.kw.slice(0,4).join(' OR '),cat.label);return;}
+  }
+  render();
+}
+
 
 // ================================================================
 // Render L2
@@ -868,7 +888,7 @@ function renderL2(){
   }
   p.innerHTML=h;
 }
-function setL2(k){activeL2=k;renderL2();render();}
+function setL2(k){activeL2=k;renderL2();clearSearchAndFetch();}
 
 // ================================================================
 // Main render
