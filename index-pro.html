@@ -292,8 +292,8 @@ const CAT = {
 // ================================================================
 // 句子搜尋 — 停用詞 & 中→英術語對照
 // ================================================================
-const STOP_ZH = new Set(['的','與','和','及','或','之','是','在','有','了','等','相關','最新','近期','有關','關於','新聞','報導','論文','研究','分析','趨勢','動態','消息','看','找','搜尋','目前','未來','方面','部分','領域','方向','進展','狀況']);
-const STOP_EN = new Set(['the','a','an','and','or','of','in','on','at','for','with','about','is','are','news','article','latest','recent','update','development','trend']);
+const STOP_ZH = new Set(['的','與','和','及','或','之','是','在','有','了','等','相關','最新','近期','有關','關於','新聞','報導','論文','研究','分析','趨勢','動態','消息','看','找','搜尋','目前','未來','方面','部分','領域','方向','進展','狀況','最近','告訴','幫我','想知','什麼','哪些','如何','怎樣']);
+const STOP_EN = new Set(['the','a','an','and','or','of','in','on','at','for','with','about','is','are','news','article','latest','recent','update','development','trend','paper','papers','report','reports','research','find','search','show','get','list','tell','give','what','how','why','when','where','which','who','any','all','some','new','top']);
 
 // 中文術語 → 英文（給 arXiv 用）
 const ZH_EN = {
@@ -355,8 +355,8 @@ function parseSentence(raw){
   const lc=raw.toLowerCase();
   const wantPaper=/論文|paper|preprint|arxiv|ieee|iedm|vlsi|isscc|學術|研究報告|conference/i.test(raw);
 
-  // 切詞（英文按空格，中文保留2字以上片段）
-  let parts=raw.split(/[\s,，。.？?！!、；;：:「」『』【】\[\]()（）]+/).filter(p=>p.length>0);
+  // 切詞（英文按空格，中文在結構詞/標點處切開）
+  let parts=raw.split(/[\s,，。.？?！!、；;：:「」『』【】\[\]()（）的了之與和及或在是有等]+/).filter(p=>p.length>0);
 
   // 移除停用詞
   parts=parts.filter(p=>{
@@ -656,8 +656,13 @@ function setL2(k){activeL2=k;renderL2();render();}
 function passSearch(title){
   if(!searchText) return true;
   const toks=lastParsed.tokens.length?lastParsed.tokens:buildFallbackTokens(searchText);
+  if(!toks.length) return true;
   const t=title.toLowerCase();
-  return toks.some(tk=>t.includes(tk));
+  // 主要 token（非 bigram，長度 >= 3）至少一個要出現；次要 bigram 輔助加分
+  const main=toks.filter(tk=>tk.length>=3);
+  const bi=toks.filter(tk=>tk.length===2);
+  if(main.length) return main.some(tk=>t.includes(tk));
+  return bi.some(tk=>t.includes(tk));
 }
 function buildFallbackTokens(txt){
   const t=txt.toLowerCase().trim(); if(!t) return[];
