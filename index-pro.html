@@ -934,7 +934,7 @@ function render(){
   ).sort(sortFn);
 
   const abc=substackNews.filter(n=>
-    (activeSrc==='all'||activeSrc==='abc')&&inRange(n.pub)&&passSearch(n.title)
+    (activeSrc==='all'||activeSrc==='abc')&&inRange(n.pub)&&passL1(n.title)&&passL2(n.title)&&passSearch(n.title)
   ).sort(sortFn);
 
   const total=base.length+live.length+papers.length+abc.length;
