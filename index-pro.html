@@ -295,7 +295,7 @@ const CAT = {
 // ================================================================
 // 句子搜尋 — 停用詞 & 中→英術語對照
 // ================================================================
-const STOP_ZH = new Set(['的','與','和','及','或','之','是','在','有','了','等','相關','最新','近期','有關','關於','新聞','報導','論文','研究','分析','趨勢','動態','消息','看','找','搜尋','目前','未來','方面','部分','領域','方向','進展','狀況','最近','告訴','幫我','想知','什麼','哪些','如何','怎樣']);
+const STOP_ZH = new Set(['的','與','和','及','或','之','是','在','有','了','等','相關','最新','近期','有關','關於','新聞','報導','論文','研究','分析','趨勢','動態','消息','看','找','搜尋','目前','未來','方面','部分','領域','方向','進展','狀況','最近','告訴','幫我','想知','什麼','哪些','如何','怎樣','所有','介紹','全部','詳細','完整','最好','請問','告訴我','有哪些','關聯','使用','採用','應用','開發','推出','發布','宣布']);
 const STOP_EN = new Set(['the','a','an','and','or','of','in','on','at','for','with','about','is','are','news','article','latest','recent','update','development','trend','paper','papers','report','reports','research','find','search','show','get','list','tell','give','what','how','why','when','where','which','who','any','all','some','new','top']);
 
 // ================================================================
@@ -352,6 +352,14 @@ const NAME_GROUPS = [
   ['sumco','勝高'],
   ['entegris','恩特格里斯'],
   ['dupont','杜邦'],
+  // 車用 / AI 公司
+  ['tesla','特斯拉'],
+  ['mobileye','Mobileye'],
+  ['google','谷歌','alphabet'],
+  ['meta','Meta Platforms'],
+  ['microsoft','微軟'],
+  ['amazon','亞馬遜','aws'],
+  ['openai','OpenAI'],
   // 其他常見
   ['samsung','三星','samsung electronics'],
   ['taiwan','台灣','臺灣'],
@@ -898,7 +906,7 @@ function render(){
 
   const live=liveNews.filter(n=>
     inRange(n.pub)&&passL1(n.title)&&passL2(n.title)&&
-    (activeSrc==='all'||activeSrc==='news')
+    (activeSrc==='all'||activeSrc==='news')&&passSearch(n.title)
   ).sort(sortFn);
 
   const papers=arxivNews.filter(n=>
