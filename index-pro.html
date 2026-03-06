@@ -24,7 +24,8 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 
 /* Search */
 .srch-wrap{position:relative;margin:14px 0 6px}
-.srch-wrap input{width:100%;padding:13px 18px 13px 46px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:.97rem;outline:none;transition:border .2s}
+.srch-wrap input{width:100%;padding:13px 76px 13px 46px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:.97rem;outline:none;transition:border .2s}
+.srch-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);padding:6px 14px;background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:.82rem;font-weight:600}
 .srch-wrap input:focus{border-color:var(--accent)}
 .srch-wrap input::placeholder{color:var(--text2)}
 .srch-ico{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:1.05rem;pointer-events:none}
@@ -136,6 +137,7 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
   <div class="srch-wrap">
     <span class="srch-ico">🔍</span>
     <input type="text" id="si" placeholder="輸入任何句子... 例：TSMC 先進封裝的最新進展 / HBM4 供應鏈動態 / CoWoS 良率論文">
+    <button class="srch-btn" onclick="clearTimeout(liveTimer);doSearch(document.getElementById('si').value.trim())">搜尋</button>
   </div>
   <div class="hint">💡 可以輸入完整句子，系統會自動提取關鍵詞搜尋 · 含「論文/paper/IEEE」自動搜尋 arXiv · 📧 ABC 為 Always Be Curious newsletter</div>
   <div class="qdisp" id="qdisp"></div>
@@ -295,6 +297,83 @@ const CAT = {
 const STOP_ZH = new Set(['的','與','和','及','或','之','是','在','有','了','等','相關','最新','近期','有關','關於','新聞','報導','論文','研究','分析','趨勢','動態','消息','看','找','搜尋','目前','未來','方面','部分','領域','方向','進展','狀況','最近','告訴','幫我','想知','什麼','哪些','如何','怎樣']);
 const STOP_EN = new Set(['the','a','an','and','or','of','in','on','at','for','with','about','is','are','news','article','latest','recent','update','development','trend','paper','papers','report','reports','research','find','search','show','get','list','tell','give','what','how','why','when','where','which','who','any','all','some','new','top']);
 
+// ================================================================
+// 公司中英文對照組 — 搜尋任一名稱自動擴展
+// ================================================================
+const NAME_GROUPS = [
+  // 晶圓代工
+  ['tsmc','台積電','taiwan semiconductor'],
+  ['umc','聯電','united microelectronics'],
+  ['smic','中芯','中芯國際','semiconductor manufacturing international'],
+  ['globalfoundries','格芯','global foundries'],
+  ['samsung foundry','三星代工','samsung foundry services'],
+  ['intel foundry','英特爾代工','intel 18a'],
+  // IC 設計
+  ['nvidia','輝達'],
+  ['amd','超微','advanced micro devices'],
+  ['qualcomm','高通'],
+  ['broadcom','博通'],
+  ['mediatek','聯發科'],
+  ['arm','安謀','arm holdings'],
+  ['intel','英特爾'],
+  ['apple silicon','蘋果晶片'],
+  ['marvell','美滿'],
+  ['renesas','瑞薩'],
+  ['nxp','恩智浦'],
+  ['stmicroelectronics','意法半導體','st micro'],
+  ['infineon','英飛凌'],
+  // 設備
+  ['asml','阿斯麥'],
+  ['applied materials','應用材料','amat'],
+  ['lam research','科林','lam'],
+  ['kla','科磊','kla-tencor'],
+  ['tokyo electron','東京威力','tel'],
+  ['screen','斯科林'],
+  ['advantest','愛德萬測試'],
+  ['teradyne','泰瑞達'],
+  // 記憶體
+  ['sk hynix','海力士','hynix'],
+  ['micron','美光','micron technology'],
+  ['kioxia','鎧俠','toshiba memory'],
+  ['nanya','南亞科','南亞科技'],
+  ['winbond','華邦電'],
+  ['samsung memory','三星記憶體'],
+  // 封裝
+  ['ase','日月光','ase group'],
+  ['amkor','艾克爾'],
+  ['ptc','力成'],
+  ['king yuan','京元電'],
+  // 材料 / EDA
+  ['synopsys','新思科技'],
+  ['cadence','益華電腦','cadence design'],
+  ['ansys','安泰思'],
+  ['shin-etsu','信越化學'],
+  ['sumco','勝高'],
+  ['entegris','恩特格里斯'],
+  ['dupont','杜邦'],
+  // 其他常見
+  ['samsung','三星','samsung electronics'],
+  ['taiwan','台灣'],
+  ['china','中國'],
+  ['korea','韓國'],
+  ['japan','日本'],
+];
+
+// 建立查詢用 map：小寫名稱 → 該組所有名稱
+const NAME_LOOKUP = new Map();
+NAME_GROUPS.forEach((group, i) => {
+  group.forEach(name => NAME_LOOKUP.set(name.toLowerCase(), i));
+});
+
+function expandAliases(toks) {
+  const out = new Set(toks);
+  toks.forEach(tok => {
+    const gi = NAME_LOOKUP.get(tok);
+    if(gi !== undefined) NAME_GROUPS[gi].forEach(a => out.add(a.toLowerCase()));
+  });
+  return [...out];
+}
+
 // 中文術語 → 英文（給 arXiv 用）
 const ZH_EN = {
   '先進封裝':'advanced packaging','晶圓代工':'foundry','台積電':'TSMC','法說會':'investor conference earnings',
@@ -396,14 +475,27 @@ function parseSentence(raw){
     }
   });
 
-  // Google News 查詢（保留原始中英文，去除停用詞）
-  const newsQ=flat.length?flat.join(' '):raw;
+  // Google News 查詢：每個詞加入主要別名（中英互補，讓 Google News 更全面）
+  const qParts=[];
+  flat.forEach(p=>{
+    const gi=NAME_LOOKUP.get(p.toLowerCase());
+    if(gi!==undefined){
+      // 取前2個別名（避免查詢過長）
+      const aliases=NAME_GROUPS[gi].slice(0,2);
+      qParts.push(aliases.length>1?`(${aliases.join(' OR ')})`:aliases[0]);
+    } else {
+      qParts.push(p);
+    }
+  });
+  const newsQ=qParts.length?qParts.join(' '):raw;
 
   // arXiv 查詢（中文術語翻譯為英文）
   const arParts=flat.map(p=>ZH_EN[p]||p);
   const arQ=arParts.length?arParts.join(' '):raw;
 
-  return{newsQ,arQ,wantPaper,tokens:[...tokens].filter(t=>t.length>=2)};
+  // tokens 展開公司別名（本地過濾用）
+  const allTokens=expandAliases([...tokens].filter(t=>t.length>=2));
+  return{newsQ,arQ,wantPaper,tokens:allTokens};
 }
 
 // ================================================================
