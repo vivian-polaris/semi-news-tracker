@@ -302,7 +302,7 @@ const STOP_EN = new Set(['the','a','an','and','or','of','in','on','at','for','wi
 // ================================================================
 const NAME_GROUPS = [
   // 晶圓代工
-  ['tsmc','台積電','taiwan semiconductor'],
+  ['tsmc','台積電','臺積電','taiwan semiconductor'],
   ['umc','聯電','united microelectronics'],
   ['smic','中芯','中芯國際','semiconductor manufacturing international'],
   ['globalfoundries','格芯','global foundries'],
@@ -353,7 +353,7 @@ const NAME_GROUPS = [
   ['dupont','杜邦'],
   // 其他常見
   ['samsung','三星','samsung electronics'],
-  ['taiwan','台灣'],
+  ['taiwan','台灣','臺灣'],
   ['china','中國'],
   ['korea','韓國'],
   ['japan','日本'],
@@ -793,7 +793,7 @@ function render(){
   ).sort(sortFn);
 
   const abc=substackNews.filter(n=>
-    (activeSrc==='all'||activeSrc==='abc')&&passSearch(n.title)
+    (activeSrc==='all'||activeSrc==='abc')&&inRange(n.pub)&&passSearch(n.title)
   ).sort(sortFn);
 
   const total=base.length+live.length+papers.length+abc.length;
