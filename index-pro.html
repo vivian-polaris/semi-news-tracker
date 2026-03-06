@@ -89,6 +89,7 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 .ctop{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px}
 .csrc{color:var(--accent);font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.02em}
 .ctime-txt{color:var(--text2);font-size:.7rem}
+.etag{display:inline-block;background:var(--accent);color:#fff;border-radius:4px;padding:1px 7px;font-size:.72rem;margin:0 2px}
 .ctitle{font-size:.9rem;line-height:1.45;color:var(--text)}
 .ctitle a{color:inherit;text-decoration:none}
 .ctitle a:hover{color:var(--accent)}
@@ -374,6 +375,76 @@ function expandAliases(toks) {
   return [...out];
 }
 
+// ================================================================
+// 半導體技術詞典（NER 用）
+// ================================================================
+const TECH_TERMS=[
+  // 微影製程
+  {label:'EUV',         kw:['euv','extreme ultraviolet','光刻機','曝光機'],            q:'euv lithography semiconductor'},
+  {label:'DUV',         kw:['duv','deep ultraviolet','duv scanner'],                    q:'duv lithography semiconductor'},
+  {label:'GAA/Nanosheet',kw:['gaa','gate-all-around','nanosheet','環繞式閘極','cfet'], q:'gaa nanosheet semiconductor'},
+  {label:'FinFET',      kw:['finfet','fin-fet','鰭式場效'],                             q:'finfet semiconductor'},
+  {label:'2nm',         kw:['2nm','2 nm','n2 node','n2 process'],                       q:'2nm semiconductor'},
+  {label:'3nm',         kw:['3nm','3 nm','n3 node','n3 process'],                       q:'3nm semiconductor'},
+  {label:'先進製程',    kw:['advanced node','先進製程','angstrom node','埃米製程'],      q:'advanced semiconductor process node'},
+  // 先進封裝
+  {label:'CoWoS',       kw:['cowos','co-wos','2.5d interposer','oip technology'],       q:'cowos 2.5d packaging'},
+  {label:'Chiplet',     kw:['chiplet','chiplets','小晶片','die-to-die','ucie'],          q:'chiplet ucie semiconductor'},
+  {label:'3D IC/SoIC',  kw:['3d ic','soic','face-to-face bonding','3d stacking'],       q:'3d ic soic advanced packaging'},
+  {label:'Fan-Out',     kw:['fan-out','fowlp','fan out wafer level'],                   q:'fan-out wafer level packaging'},
+  {label:'先進封裝',    kw:['advanced packaging','先進封裝'],                            q:'advanced packaging semiconductor'},
+  // 記憶體
+  {label:'HBM4',        kw:['hbm4','hbm 4','hbm4e'],                                   q:'hbm4 high bandwidth memory'},
+  {label:'HBM3E',       kw:['hbm3e','hbm 3e'],                                         q:'hbm3e high bandwidth memory'},
+  {label:'HBM',         kw:['hbm3','hbm ','high bandwidth memory','高頻寬記憶體'],      q:'hbm high bandwidth memory'},
+  {label:'DDR5/LPDDR',  kw:['ddr5','lpddr5','lpddr6'],                                 q:'ddr5 lpddr5 memory semiconductor'},
+  {label:'DRAM',        kw:['dram','動態記憶體'],                                        q:'dram memory semiconductor'},
+  {label:'3D NAND',     kw:['3d nand','qlc nand','tlc nand','nand flash','快閃記憶體'], q:'3d nand flash memory'},
+  // AI/運算
+  {label:'AI 晶片',     kw:['ai chip','ai晶片','ai accelerator','npu','ai加速器'],       q:'ai chip accelerator semiconductor'},
+  {label:'Blackwell',   kw:['blackwell','gb200','b200','gb300'],                         q:'nvidia blackwell semiconductor'},
+  {label:'Hopper GPU',  kw:['h100','h200','hopper gpu'],                                q:'nvidia hopper gpu'},
+  // 供應鏈 / 市場
+  {label:'供應鏈',      kw:['supply chain','供應鏈'],                                    q:'semiconductor supply chain'},
+  {label:'出口管制',    kw:['export control','出口管制','chip ban','晶片禁令','entity list'],q:'semiconductor export control'},
+  {label:'產能/擴廠',   kw:['capacity expansion','產能','擴廠','fab expansion','new fab'],q:'semiconductor capacity expansion fab'},
+  {label:'良率',        kw:['yield rate','yield improvement','良率'],                   q:'semiconductor yield improvement'},
+  {label:'法說會/財報', kw:['earnings call','法說會','quarterly result','investor day'], q:'semiconductor earnings quarterly results'},
+  // 材料
+  {label:'矽晶圓',      kw:['silicon wafer','矽晶圓','polished wafer','shin-etsu','sumco'],q:'silicon wafer semiconductor'},
+  {label:'光阻',        kw:['photoresist','光阻','euv resist'],                          q:'photoresist semiconductor'},
+  {label:'特殊氣體',    kw:['special gas','特殊氣體','process chemical','entegris'],     q:'specialty gas semiconductor chemical'},
+];
+
+// 抽取輸入句子裡所有已知半導體實體
+function extractSemiTerms(raw){
+  const lower=raw.toLowerCase();
+  const found=[];
+  const seenQ=new Set();
+
+  // 先掃公司名（NAME_GROUPS）— 較長名稱優先
+  const sortedGroups=[...NAME_GROUPS].sort((a,b)=>b[0].length-a[0].length);
+  sortedGroups.forEach(group=>{
+    const qi=group.slice(0,2).join(' OR ');
+    if(seenQ.has(qi)) return;
+    if(group.some(n=>lower.includes(n.toLowerCase()))){
+      seenQ.add(qi);
+      found.push({label:group[0],tokens:group.map(n=>n.toLowerCase()),query:qi,enQuery:group.find(n=>/^[a-z]/i.test(n))||group[0]});
+    }
+  });
+
+  // 再掃技術詞彙（TECH_TERMS）
+  TECH_TERMS.forEach(term=>{
+    if(seenQ.has(term.q)) return;
+    if(term.kw.some(kw=>lower.includes(kw))){
+      seenQ.add(term.q);
+      found.push({label:term.label,tokens:term.kw,query:term.q,enQuery:term.q});
+    }
+  });
+
+  return found;
+}
+
 // 中文術語 → 英文（給 arXiv 用）
 const ZH_EN = {
   '先進封裝':'advanced packaging','晶圓代工':'foundry','台積電':'TSMC','法說會':'investor conference earnings',
@@ -418,7 +489,7 @@ let viewMode='list'; // 'list' | 'grid'
 let liveTimer;
 
 // Parsed query result
-let lastParsed={newsQ:'',arQ:'',wantPaper:false,tokens:[]};
+let lastParsed={newsQ:'',arQ:'',wantPaper:false,tokens:[],queryParts:[],entityLabels:[]};
 
 // ================================================================
 // Proxy — 依序嘗試，第一個成功即回傳
@@ -439,63 +510,55 @@ async function fetchProxy(url,timeout=13000){
 }
 
 // ================================================================
-// 句子解析
+// 句子解析（優先 NER 實體抽取，fallback 才 tokenize）
 // ================================================================
 function parseSentence(raw){
-  const lc=raw.toLowerCase();
   const wantPaper=/論文|paper|preprint|arxiv|ieee|iedm|vlsi|isscc|學術|研究報告|conference/i.test(raw);
 
-  // 切詞（英文按空格，中文在結構詞/標點處切開）
+  // === Path A：NER 實體抽取 ===
+  const entities=extractSemiTerms(raw);
+  if(entities.length>0){
+    const allToks=new Set();
+    entities.forEach(e=>e.tokens.forEach(t=>allToks.add(t)));
+    const queryParts=entities.slice(0,4).map(e=>e.query);
+    const entityLabels=entities.map(e=>e.label);
+    const newsQ=queryParts.join(' ');
+    const arQ=entities.slice(0,4).map(e=>e.enQuery).join(' ');
+    return{newsQ,arQ,wantPaper,tokens:[...allToks].filter(t=>t.length>=2),queryParts,entityLabels};
+  }
+
+  // === Path B：fallback tokenize（無法識別已知實體時）===
   let parts=raw.split(/[\s,，。.？?！!、；;：:「」『』【】\[\]()（）的了之與和及或在是有等]+/).filter(p=>p.length>0);
+  parts=parts.filter(p=>!STOP_ZH.has(p)&&!STOP_EN.has(p.toLowerCase())&&p.length>=2);
 
-  // 移除停用詞
-  parts=parts.filter(p=>{
-    const pl=p.toLowerCase();
-    return !STOP_ZH.has(p)&&!STOP_EN.has(pl)&&p.length>=2;
-  });
-
-  // 補充：英文部分按空格再切一次；去掉 possessive 's 和特殊符號
   const flat=[];
   parts.forEach(p=>{
-    // normalize: 去掉 possessive 's / 's，去掉非字母數字中文的符號
     const norm=p.replace(/[\u2018\u2019']s\b/gi,'').replace(/[^\w\u4e00-\u9fff]/g,' ').trim();
     const cleaned=norm||p;
     if(/^[a-zA-Z0-9\s]+$/.test(cleaned)){
       cleaned.split(/\s+/).forEach(w=>{if(w.length>=2)flat.push(w);});
-    } else {
-      flat.push(cleaned);
-    }
+    } else { flat.push(cleaned); }
   });
 
-  // 搜尋 Token（含中文 bigram）
   const tokens=new Set(flat.map(t=>t.toLowerCase()));
   flat.forEach(p=>{
-    if(/[\u4e00-\u9fff]/.test(p)&&p.length>2){
+    if(/[\u4e00-\u9fff]/.test(p)&&p.length>2)
       for(let i=0;i<=p.length-2;i++) tokens.add(p.slice(i,i+2));
-    }
   });
 
-  // Google News 查詢：每個詞加入主要別名（中英互補，讓 Google News 更全面）
   const qParts=[];
   flat.forEach(p=>{
     const gi=NAME_LOOKUP.get(p.toLowerCase());
     if(gi!==undefined){
-      // 取前2個別名（避免查詢過長）
-      const aliases=NAME_GROUPS[gi].slice(0,2);
-      qParts.push(aliases.length>1?`(${aliases.join(' OR ')})`:aliases[0]);
-    } else {
-      qParts.push(p);
-    }
+      const al=NAME_GROUPS[gi].slice(0,2);
+      qParts.push(al.length>1?`(${al.join(' OR ')})`:al[0]);
+    } else { qParts.push(p); }
   });
   const newsQ=qParts.length?qParts.join(' '):raw;
-
-  // arXiv 查詢（中文術語翻譯為英文）
   const arParts=flat.map(p=>ZH_EN[p]||p);
   const arQ=arParts.length?arParts.join(' '):raw;
-
-  // tokens 展開公司別名（本地過濾用）
   const allTokens=expandAliases([...tokens].filter(t=>t.length>=2));
-  return{newsQ,arQ,wantPaper,tokens:allTokens};
+  return{newsQ,arQ,wantPaper,tokens:allTokens,queryParts:[newsQ],entityLabels:[]};
 }
 
 // ================================================================
@@ -677,26 +740,38 @@ async function doSearch(raw){
   const parsed=parseSentence(raw);
   lastParsed=parsed;
 
-  // Show query display
+  // 顯示已識別的實體 or 查詢字串
   const qd=document.getElementById('qdisp');
   qd.className='qdisp show';
-  qd.innerHTML=`📤 搜尋 Google News：<strong>${esc(parsed.newsQ)}</strong>`+
-    (parsed.wantPaper?` &nbsp;·&nbsp; arXiv：<strong>${esc(parsed.arQ)}</strong>`:'')+
-    (parsed.newsQ!==raw?` &nbsp;<span style="opacity:.6;font-size:.7rem">（原句已提取關鍵詞）</span>`:'');
+  if(parsed.entityLabels.length>0){
+    qd.innerHTML=`🔍 識別 <strong>${parsed.entityLabels.length}</strong> 個名詞：`+
+      parsed.entityLabels.map(l=>`<span class="etag">${esc(l)}</span>`).join('')+
+      (parsed.wantPaper?` &nbsp;·&nbsp; 含 arXiv 論文`:'');
+  } else {
+    qd.innerHTML=`📤 搜尋 Google News：<strong>${esc(parsed.newsQ)}</strong>`+
+      (parsed.wantPaper?` &nbsp;·&nbsp; arXiv：<strong>${esc(parsed.arQ)}</strong>`:'')+
+      (parsed.newsQ!==raw?` &nbsp;<span style="opacity:.6;font-size:.7rem">（已提取關鍵詞）</span>`:'');
+  }
 
   currentQ=raw; isSearching=true;
-  render(); // 先顯示已有的 ABC / 預載新聞，不等 RSS
+  render();
 
   try{
     const shouldArxiv=activeSrc!=='news'&&activeSrc!=='abc'&&(parsed.wantPaper||activeSrc==='paper');
-    const[nr,ar]=await Promise.allSettled([
-      (activeSrc==='abc')?Promise.resolve([]):fetchRSS(parsed.newsQ),
-      shouldArxiv?fetchArxiv(parsed.arQ):Promise.resolve([])
+    // 每個實體獨立查詢（最多4組並聯），結果合併去重
+    const queries=activeSrc==='abc'?[]:parsed.queryParts.slice(0,4);
+    const[rssArr,ar]=await Promise.all([
+      Promise.all(queries.map(q=>fetchRSS(q).catch(()=>[]))),
+      shouldArxiv?fetchArxiv(parsed.arQ).catch(()=>[]):Promise.resolve([])
     ]);
     if(currentQ!==raw) return;
     const ex=new Set(allNews.map(n=>n.link));
-    liveNews=nr.status==='fulfilled'?nr.value.filter(n=>!ex.has(n.link)):[];
-    arxivNews=ar.status==='fulfilled'?ar.value:[];
+    const seen=new Set();
+    liveNews=rssArr.flat().filter(n=>{
+      if(ex.has(n.link)||seen.has(n.link)) return false;
+      seen.add(n.link); return true;
+    });
+    arxivNews=Array.isArray(ar)?ar:[];
   }catch(e){
     if(currentQ===raw){liveNews=[];arxivNews=[];}
   }
