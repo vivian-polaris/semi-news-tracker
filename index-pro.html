@@ -375,13 +375,16 @@ function parseSentence(raw){
     return !STOP_ZH.has(p)&&!STOP_EN.has(pl)&&p.length>=2;
   });
 
-  // 補充：英文部分按空格再切一次（避免"的新聞"黏著）
+  // 補充：英文部分按空格再切一次；去掉 possessive 's 和特殊符號
   const flat=[];
   parts.forEach(p=>{
-    if(/^[a-zA-Z0-9\s]+$/.test(p)){
-      p.split(/\s+/).forEach(w=>{if(w.length>=2)flat.push(w);});
+    // normalize: 去掉 possessive 's / 's，去掉非字母數字中文的符號
+    const norm=p.replace(/[\u2018\u2019']s\b/gi,'').replace(/[^\w\u4e00-\u9fff]/g,' ').trim();
+    const cleaned=norm||p;
+    if(/^[a-zA-Z0-9\s]+$/.test(cleaned)){
+      cleaned.split(/\s+/).forEach(w=>{if(w.length>=2)flat.push(w);});
     } else {
-      flat.push(p);
+      flat.push(cleaned);
     }
   });
 
@@ -590,7 +593,7 @@ async function doSearch(raw){
     (parsed.newsQ!==raw?` &nbsp;<span style="opacity:.6;font-size:.7rem">（原句已提取關鍵詞）</span>`:'');
 
   currentQ=raw; isSearching=true;
-  document.getElementById('stxt').textContent='🔍 搜尋中...';
+  render(); // 先顯示已有的 ABC / 預載新聞，不等 RSS
 
   try{
     const shouldArxiv=activeSrc!=='news'&&activeSrc!=='abc'&&(parsed.wantPaper||activeSrc==='paper');
