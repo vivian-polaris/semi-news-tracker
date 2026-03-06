@@ -150,10 +150,14 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
 
   <div class="lbl">⏱ 時間範圍</div>
   <div class="row" id="timeRow">
-    <div class="pill p-time"         data-t="today"  onclick="setTime('today')">今天</div>
-    <div class="pill p-time"         data-t="week"   onclick="setTime('week')">本週</div>
-    <div class="pill p-time on"      data-t="month"  onclick="setTime('month')">本月</div>
-    <div class="pill p-time"         data-t="3month" onclick="setTime('3month')">3 個月</div>
+    <div class="pill p-time"         data-t="1h"     onclick="setTime('1h')">1H</div>
+    <div class="pill p-time"         data-t="12h"    onclick="setTime('12h')">12H</div>
+    <div class="pill p-time"         data-t="24h"    onclick="setTime('24h')">24H</div>
+    <div class="pill p-time on"      data-t="3d"     onclick="setTime('3d')">3D</div>
+    <div class="pill p-time"         data-t="7d"     onclick="setTime('7d')">7D</div>
+    <div class="pill p-time"         data-t="1m"     onclick="setTime('1m')">1M</div>
+    <div class="pill p-time"         data-t="3m"     onclick="setTime('3m')">3M</div>
+    <div class="pill p-time"         data-t="1y"     onclick="setTime('1y')">1Y</div>
     <div class="pill p-time"         data-t="custom" onclick="setTime('custom')">✏️ 自訂</div>
   </div>
   <div class="ctime" id="ctime">
@@ -328,7 +332,7 @@ const NL_L2 = {
 // ================================================================
 let allNews=[], liveNews=[], arxivNews=[], substackNews=[];
 let activeL1='all', activeL2='all';
-let timePeriod='month', customStart=null, customEnd=null;
+let timePeriod='3d', customStart=null, customEnd=null;
 let searchText='', activeSrc='all', sortBy='time';
 let isSearching=false, currentQ='';
 let viewMode='list'; // 'list' | 'grid'
@@ -408,10 +412,13 @@ function autoDetectCats(input){
 // ================================================================
 // Date helpers
 // ================================================================
-function daysBack(){return{today:1,week:7,month:30,'3month':90}[timePeriod]||30;}
+function msBack(){
+  const h=3600000,d=86400000;
+  return{'1h':h,'12h':12*h,'24h':24*h,'3d':3*d,'7d':7*d,'1m':30*d,'3m':90*d,'1y':365*d}[timePeriod]||(3*d);
+}
 function afterDate(){
   if(timePeriod==='custom'&&customStart) return customStart.toISOString().split('T')[0];
-  return new Date(Date.now()-daysBack()*86400000).toISOString().split('T')[0];
+  return new Date(Date.now()-msBack()).toISOString().split('T')[0];
 }
 function inRange(pub){
   const d=new Date(pub); if(isNaN(d)) return false;
@@ -421,7 +428,7 @@ function inRange(pub){
     if(customEnd&&d>customEnd) return false;
     return true;
   }
-  return d>=new Date(Date.now()-daysBack()*86400000);
+  return d>=new Date(Date.now()-msBack());
 }
 function timeAgo(pub){
   const d=new Date(pub); if(isNaN(d)) return '';
@@ -433,7 +440,7 @@ function timeAgo(pub){
   return d.toLocaleDateString('zh-TW');
 }
 function periodLabel(){
-  const m={today:'今天',week:'本週',month:'本月','3month':'近3個月'};
+  const m={'1h':'過去 1 小時','12h':'過去 12 小時','24h':'過去 24 小時','3d':'過去 3 天','7d':'過去 7 天','1m':'過去 1 個月','3m':'過去 3 個月','1y':'過去 1 年'};
   if(timePeriod==='custom'){
     const s=customStart?customStart.toLocaleDateString('zh-TW'):'';
     const e=customEnd?customEnd.toLocaleDateString('zh-TW'):'';
