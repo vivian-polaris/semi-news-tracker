@@ -138,7 +138,7 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
   <div class="srch-wrap">
     <span class="srch-ico">🔍</span>
     <input type="text" id="si" placeholder="輸入任何句子... 例：TSMC 先進封裝的最新進展 / HBM4 供應鏈動態 / CoWoS 良率論文">
-    <button class="srch-btn" onclick="clearTimeout(liveTimer);doSearch(document.getElementById('si').value.trim())">搜尋</button>
+    <button class="srch-btn" onclick="triggerSearch()">搜尋</button>
   </div>
   <div class="hint">💡 可以輸入完整句子，系統會自動提取關鍵詞搜尋 · 含「論文/paper/IEEE」自動搜尋 arXiv · 📧 ABC 為 Always Be Curious newsletter</div>
   <div class="qdisp" id="qdisp"></div>
@@ -725,6 +725,44 @@ async function fetchAll(){
   btn.disabled=false; btn.innerHTML='🔄 重新載入';
   fetchSubstack();
   renderL1(); render();
+}
+
+// ================================================================
+// 搜尋按鈕邏輯：有文字→搜文字；空白+分類→搜分類；空白全部→重新載入
+// ================================================================
+function triggerSearch(){
+  clearTimeout(liveTimer);
+  const raw=document.getElementById('si').value.trim();
+  if(raw){ doSearch(raw); return; }
+
+  if(activeL2!=='all'&&activeL1!=='all'){
+    const sub=CAT[activeL1]?.subs[activeL2];
+    if(sub) doSearchCategory(sub.kw.slice(0,4).join(' OR '), sub.label);
+  } else if(activeL1!=='all'){
+    const cat=CAT[activeL1];
+    if(cat) doSearchCategory(cat.kw.slice(0,4).join(' OR '), cat.label);
+  } else {
+    fetchAll();
+  }
+}
+
+async function doSearchCategory(query, label){
+  const qd=document.getElementById('qdisp');
+  qd.className='qdisp show';
+  qd.innerHTML=`📂 分類即時搜尋：<strong>${esc(label)}</strong>`;
+
+  liveNews=[];arxivNews=[];isSearching=true;
+  searchText='';
+  lastParsed={newsQ:'',arQ:'',wantPaper:false,tokens:[],queryParts:[],entityLabels:[]};
+  render();
+
+  try{
+    const r=await fetchRSS(query);
+    const ex=new Set(allNews.map(n=>n.link));
+    liveNews=r.filter(n=>!ex.has(n.link));
+  }catch{}
+  isSearching=false;
+  render();
 }
 
 // ================================================================
