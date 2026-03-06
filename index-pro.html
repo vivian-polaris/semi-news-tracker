@@ -155,10 +155,10 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
     <div class="pill p-time"         data-t="1h"     onclick="setTime('1h')">1小時</div>
     <div class="pill p-time"         data-t="12h"    onclick="setTime('12h')">12小時</div>
     <div class="pill p-time"         data-t="24h"    onclick="setTime('24h')">24小時</div>
-    <div class="pill p-time on"      data-t="3d"     onclick="setTime('3d')">3天</div>
+    <div class="pill p-time"          data-t="3d"     onclick="setTime('3d')">3天</div>
     <div class="pill p-time"         data-t="7d"     onclick="setTime('7d')">7天</div>
     <div class="pill p-time"         data-t="1m"     onclick="setTime('1m')">1個月</div>
-    <div class="pill p-time"         data-t="3m"     onclick="setTime('3m')">3個月</div>
+    <div class="pill p-time on"       data-t="3m"     onclick="setTime('3m')">3個月</div>
     <div class="pill p-time"         data-t="1y"     onclick="setTime('1y')">1年</div>
     <div class="pill p-time"         data-t="custom" onclick="setTime('custom')">✏️ 自訂</div>
   </div>
@@ -411,7 +411,7 @@ const NL_L2 = {
 // ================================================================
 let allNews=[], liveNews=[], arxivNews=[], substackNews=[];
 let activeL1='all', activeL2='all';
-let timePeriod='3d', customStart=null, customEnd=null;
+let timePeriod='3m', customStart=null, customEnd=null;
 let searchText='', activeSrc='all', sortBy='time';
 let isSearching=false, currentQ='';
 let viewMode='list'; // 'list' | 'grid'
