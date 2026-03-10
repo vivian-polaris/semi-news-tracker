@@ -24,12 +24,19 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 
 /* Search */
 .srch-wrap{position:relative;margin:14px 0 6px}
-.srch-wrap input{width:100%;padding:13px 160px 13px 46px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:.97rem;outline:none;transition:border .2s}
-.srch-btn{position:absolute;right:90px;top:50%;transform:translateY(-50%);padding:6px 14px;background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:.82rem;font-weight:600}.ai-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);padding:6px 10px;background:var(--accent2);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:.82rem;font-weight:600}
+.srch-wrap input{width:100%;padding:13px 76px 13px 46px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:.97rem;outline:none;transition:border .2s}
+.srch-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);padding:6px 14px;background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:.82rem;font-weight:600}
 .srch-wrap input:focus{border-color:var(--accent)}
 .srch-wrap input::placeholder{color:var(--text2)}
 .srch-ico{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:1.05rem;pointer-events:none}
 .hint{color:var(--text2);font-size:.73rem;padding:0 3px;margin-bottom:3px}
+.ai-wrap{margin:6px 0 4px}
+.ai-big-btn{width:100%;padding:11px;background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:10px;color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;letter-spacing:.02em;transition:opacity .2s}
+.ai-big-btn:hover{opacity:.88}
+.ai-panel{display:none;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.3);border-radius:12px;padding:14px 16px;margin:6px 0 4px;font-size:.88rem;line-height:1.7;color:var(--text);white-space:pre-wrap}
+.ai-panel.show{display:block}
+.ai-lbl{font-size:.72rem;font-weight:700;color:var(--accent2);letter-spacing:.05em;margin-bottom:6px;display:block}
+.ai-loading{color:var(--text2);font-size:.85rem}
 
 /* Query display */
 .qdisp{display:none;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:7px;padding:6px 12px;font-size:.75rem;color:var(--text2);margin-bottom:8px}
@@ -138,10 +145,14 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
   <div class="srch-wrap">
     <span class="srch-ico">🔍</span>
     <input type="text" id="si" placeholder="輸入任何句子... 例：TSMC 先進封裝的最新進展 / HBM4 供應鏈動態 / CoWoS 良率論文">
-    <button class="srch-btn" onclick="triggerSearch()">搜尋</button><button class="ai-btn" id="aibtn" onclick="askAI()" title="用 Perplexity AI 回答">🤖 問 AI</button>
+    <button class="srch-btn" onclick="triggerSearch()">搜尋</button>
   </div>
   <div class="hint">💡 可以輸入完整句子，系統會自動提取關鍵詞搜尋 · 含「論文/paper/IEEE」自動搜尋 arXiv · 📧 ABC 為 Always Be Curious newsletter</div>
   <div class="qdisp" id="qdisp"></div>
+  <div class="ai-wrap">
+    <button class="ai-big-btn" onclick="askAI()">🤖 問 AI：用人工智慧直接回答</button>
+  </div>
+  <div class="ai-panel" id="aipanel"></div>
 
   <div class="lbl">📂 來源</div>
   <div class="row" id="srcRow">
@@ -1123,9 +1134,26 @@ function toggleView(){
 // ================================================================
 // Search input
 // ================================================================
-function askAI(){
-  const q=document.getElementById('si').value.trim()||'半導體新聞';
-  window.open('https://www.perplexity.ai/search?q='+encodeURIComponent(q),'_blank');
+async function askAI(){
+  const q=document.getElementById('si').value.trim();
+  if(!q){alert('請先輸入關鍵字');return;}
+  const panel=document.getElementById('aipanel');
+  panel.className='ai-panel show';
+  panel.innerHTML='<span class="ai-lbl">🤖 AI 回答中...</span><div class="ai-loading">思考中，請稍候...</div>';
+  try{
+    const r=await fetch('https://text.pollinations.ai/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        messages:[{role:'user',content:'你是半導體產業分析師。請用繁體中文簡潔回答，200字內：'+q}],
+        model:'openai',seed:-1
+      })
+    });
+    const text=await r.text();
+    panel.innerHTML='<span class="ai-lbl">🤖 AI 摘要</span>'+esc(text);
+  }catch(e){
+    panel.innerHTML='<span class="ai-lbl">🤖 AI</span>服務暫時無法使用，請稍後再試。';
+  }
 }
 
 document.getElementById('si').addEventListener('input',e=>{
