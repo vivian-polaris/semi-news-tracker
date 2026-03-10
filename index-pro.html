@@ -870,7 +870,7 @@ function clearSearchAndFetch(){
 // ================================================================
 function renderL2(){
   const p=document.getElementById('l2panel');
-  if(activeL1==='all'){p.className='l2-panel';return;}
+  if(activeL1==='all'){activeL2='all';p.className='l2-panel';return;}
   p.className='l2-panel show';
   const subs=CAT[activeL1].subs;
   const cos=Object.entries(subs).filter(([,s])=>s.t==='co');
@@ -917,7 +917,7 @@ function buildFallbackTokens(txt){
 
 function render(){
   const list=document.getElementById('nlist');
-  const sortFn=sortBy==='time'?(a,b)=>new Date(b.pub)-new Date(a.pub):(a,b)=>a.source.localeCompare(b.source);
+  const sortFn=sortBy==='time'?(a,b)=>{const ad=new Date(a.pub),bd=new Date(b.pub);if(isNaN(ad))return isNaN(bd)?0:1;if(isNaN(bd))return -1;return bd-ad;}:(a,b)=>(a.source||'').localeCompare(b.source||'');
 
   const base=allNews.filter(n=>
     inRange(n.pub)&&passL1(n.title)&&passL2(n.title)&&
@@ -976,6 +976,7 @@ function render(){
 // Card HTML
 // ================================================================
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+function safeUrl(u){try{const url=new URL(u);if(url.protocol==='https:'||url.protocol==='http:')return esc(u);}catch{}return '#';}
 function cardHTML(n,kind){
   const ago=timeAgo(n.pub);
   const date=new Date(n.pub);
@@ -987,9 +988,9 @@ function cardHTML(n,kind){
   const badge={news:'<span class="badge bn">📰 新聞</span>',live:'<span class="badge bl">⚡ 即時</span>',paper:'<span class="badge bp">📄 論文</span>',abc:'<span class="badge ba">📧 ABC</span>'}[kind];
   const cls='card'+(kind==='paper'?' cpaper':kind==='live'?' clive':kind==='abc'?' cabc':'');
   const summ=n.summary?`<div class="csumm">${esc(n.summary)}</div>`:'';
-  return `<div class="${cls}" onclick="window.open('${esc(n.link)}','_blank')">
+  return `<div class="${cls}" data-href="${safeUrl(n.link)}" onclick="var h=this.getAttribute('data-href');if(h&&h!=='#')window.open(h,'_blank')">
 <div class="ctop"><span class="csrc">${esc(n.source)}</span><span class="ctime-txt" title="${ds}">${ago}</span></div>
-<div class="ctitle"><a href="${esc(n.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(n.title)}</a></div>
+<div class="ctitle"><a href="${safeUrl(n.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(n.title)}</a></div>
 ${summ}
 <div class="ctags">${badge}${l1tag}${l2tag}</div>
 </div>`;
@@ -1012,7 +1013,11 @@ function setTime(t){
 }
 function applyCustom(){
   const s=document.getElementById('sd').value,e=document.getElementById('ed').value;
-  if(s&&e&&new Date(s)>new Date(e)){alert('開始日期不能晚於結束');return;}
+  if(s||e){
+    const sd=s?new Date(s):null,ed=e?new Date(e+'T23:59:59'):null;
+    if((sd&&isNaN(sd))||(ed&&isNaN(ed))){alert('日期格式無效');return;}
+    if(sd&&ed&&sd>ed){alert('開始日期不能晚於結束');return;}
+  }
   customStart=s?new Date(s):null;
   customEnd=e?new Date(e+'T23:59:59'):null;
   searchText?doSearch(document.getElementById('si').value):fetchAll();
@@ -1045,7 +1050,7 @@ document.getElementById('si').addEventListener('input',e=>{
     activeL1='all';activeL2='all';
     document.getElementById('qdisp').className='qdisp';
     liveNews=[];arxivNews=[];
-    lastParsed={newsQ:'',arQ:'',wantPaper:false,tokens:[]};
+    lastParsed={newsQ:'',arQ:'',wantPaper:false,tokens:[],queryParts:[],entityLabels:[]};
     renderL1();renderL2();
   }
 
