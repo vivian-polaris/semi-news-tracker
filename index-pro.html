@@ -151,6 +151,18 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
     <div class="pill p-src"    data-s="abc"   onclick="setSrc('abc')">📧 Always Be Curious</div>
   </div>
 
+  <div class="lbl">🗞️ 特定媒體</div>
+  <div class="row" id="outletRow">
+    <div class="pill p-src" data-s="digitimes.com"  onclick="setSrc('digitimes.com')">DIGITIMES</div>
+    <div class="pill p-src" data-s="reuters.com"    onclick="setSrc('reuters.com')">Reuters</div>
+    <div class="pill p-src" data-s="bloomberg.com"  onclick="setSrc('bloomberg.com')">Bloomberg</div>
+    <div class="pill p-src" data-s="anandtech.com"  onclick="setSrc('anandtech.com')">AnandTech</div>
+    <div class="pill p-src" data-s="techcrunch.com" onclick="setSrc('techcrunch.com')">TechCrunch</div>
+    <div class="pill p-src" data-s="theregister.com" onclick="setSrc('theregister.com')">The Register</div>
+    <div class="pill p-src" data-s="spectrum.ieee.org" onclick="setSrc('spectrum.ieee.org')">IEEE Spectrum</div>
+    <div class="pill p-src" data-s="semiwiki.com"   onclick="setSrc('semiwiki.com')">SemiWiki</div>
+  </div>
+
   <div class="lbl">⏱ 時間範圍</div>
   <div class="row" id="timeRow">
     <div class="pill p-time"         data-t="1h"     onclick="setTime('1h')">1小時</div>
@@ -970,18 +982,23 @@ function buildFallbackTokens(txt){
   return[...s].filter(x=>x.length>=2);
 }
 
+function passOutlet(n){
+  if(activeSrc==='all'||activeSrc==='news') return true;
+  if(activeSrc==='paper'||activeSrc==='abc') return false;
+  return n.link.toLowerCase().includes(activeSrc);
+}
 function render(){
   const list=document.getElementById('nlist');
   const sortFn=sortBy==='time'?(a,b)=>{const ad=new Date(a.pub),bd=new Date(b.pub);if(isNaN(ad))return isNaN(bd)?0:1;if(isNaN(bd))return -1;return bd-ad;}:(a,b)=>(a.source||'').localeCompare(b.source||'');
 
   const base=allNews.filter(n=>
     inRange(n.pub)&&passL1(n.title)&&passL2(n.title)&&
-    (activeSrc==='all'||activeSrc==='news')&&passSearch(n.title)
+    passOutlet(n)&&passSearch(n.title)
   ).sort(sortFn);
 
   const live=liveNews.filter(n=>
     inRange(n.pub)&&passL1(n.title)&&passL2(n.title)&&
-    (activeSrc==='all'||activeSrc==='news')&&passSearch(n.title)
+    passOutlet(n)&&passSearch(n.title)
   ).sort(sortFn);
 
   const papers=arxivNews.filter(n=>
@@ -1056,7 +1073,7 @@ ${summ}
 // ================================================================
 function setSrc(s){
   activeSrc=s;
-  document.querySelectorAll('#srcRow .pill').forEach(b=>b.className='pill p-src'+(b.dataset.s===s?' on':''));
+  document.querySelectorAll('#srcRow .pill, #outletRow .pill').forEach(b=>b.className='pill p-src'+(b.dataset.s===s?' on':''));
   if(searchText) doSearch(document.getElementById('si').value);
   else if(s==='paper') fetchArxivDefault();
   else render();
