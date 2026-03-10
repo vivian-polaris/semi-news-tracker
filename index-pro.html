@@ -687,6 +687,26 @@ async function fetchArxiv(query){
 }
 
 // ================================================================
+// Fetch arXiv (browse mode, no search text)
+// ================================================================
+async function fetchArxivDefault(){
+  const btn=document.getElementById('rfbtn');
+  btn.disabled=true; btn.textContent='載入中...';
+  arxivNews=[];isSearching=true;
+  document.getElementById('qdisp').className='qdisp';
+  render();
+  try{
+    const q=activeL1!=='all'
+      ?CAT[activeL1].kw.slice(0,3).join(' ')
+      :'semiconductor';
+    arxivNews=await fetchArxiv(q).catch(()=>[]);
+  }catch{}
+  isSearching=false;
+  btn.disabled=false; btn.innerHTML='🔄 重新載入';
+  render();
+}
+
+// ================================================================
 // Fetch Always Be Curious (Substack JSON API)
 // ================================================================
 async function fetchSubstack(){
@@ -1003,13 +1023,14 @@ function setSrc(s){
   activeSrc=s;
   document.querySelectorAll('#srcRow .pill').forEach(b=>b.className='pill p-src'+(b.dataset.s===s?' on':''));
   if(searchText) doSearch(document.getElementById('si').value);
+  else if(s==='paper') fetchArxivDefault();
   else render();
 }
 function setTime(t){
   timePeriod=t;
   document.querySelectorAll('#timeRow .pill').forEach(b=>b.className='pill p-time'+(b.dataset.t===t?' on':''));
   document.getElementById('ctime').className='ctime'+(t==='custom'?' show':'');
-  if(t!=='custom'){searchText?doSearch(document.getElementById('si').value):fetchAll();}
+  if(t!=='custom'){if(searchText)doSearch(document.getElementById('si').value);else if(activeSrc==='paper')fetchArxivDefault();else fetchAll();}
 }
 function applyCustom(){
   const s=document.getElementById('sd').value,e=document.getElementById('ed').value;
@@ -1020,7 +1041,7 @@ function applyCustom(){
   }
   customStart=s?new Date(s):null;
   customEnd=e?new Date(e+'T23:59:59'):null;
-  searchText?doSearch(document.getElementById('si').value):fetchAll();
+  if(searchText)doSearch(document.getElementById('si').value);else if(activeSrc==='paper')fetchArxivDefault();else fetchAll();
 }
 function setSort(s){
   sortBy=s;
