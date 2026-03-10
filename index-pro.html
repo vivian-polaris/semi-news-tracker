@@ -507,6 +507,12 @@ const PROX=[
   u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`
 ];
+// Extra sources to always include
+const EXTRA_SOURCES=[
+  'digitimes.com','reuters.com','bloomberg.com','anandtech.com',
+  'techcrunch.com','theregister.com','spectrum.ieee.org','semiwiki.com'
+];
+
 async function fetchProxy(url,timeout=13000){
   for(const p of PROX){
     try{
@@ -670,6 +676,25 @@ async function fetchRSS(query){
 }
 
 // ================================================================
+// Fetch Google News RSS (English locale, for specific sources)
+// ================================================================
+async function fetchRSSEn(query){
+  const after=afterDate();
+  const q=`${query} after:${after}`;
+  const url=`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en&gl=US&ceid=US:en`;
+  const r=await fetchProxy(url);
+  const xml=new DOMParser().parseFromString(await r.text(),'text/xml');
+  const items=[];
+  xml.querySelectorAll('item').forEach(el=>{
+    const g=s=>(el.querySelector(s)||{textContent:''}).textContent;
+    const pub=g('pubDate');
+    if(!inRange(pub)) return;
+    items.push({type:'news',title:g('title'),link:g('link'),pub,source:g('source'),summary:''});
+  });
+  return items;
+}
+
+// ================================================================
 // Fetch arXiv
 // ================================================================
 async function fetchArxiv(query){
@@ -745,6 +770,16 @@ async function fetchAll(){
 
   const seen=new Set(); allNews=[];
   res.forEach(r=>{
+    if(r.status==='fulfilled') r.value.forEach(n=>{
+      if(!seen.has(n.link)){seen.add(n.link);allNews.push(n);}
+    });
+  });
+
+  // Fetch from specific sources
+  const srcRes=await Promise.allSettled(
+    EXTRA_SOURCES.map(site=>fetchRSSEn(`site:${site} semiconductor`).catch(()=>[]))
+  );
+  srcRes.forEach(r=>{
     if(r.status==='fulfilled') r.value.forEach(n=>{
       if(!seen.has(n.link)){seen.add(n.link);allNews.push(n);}
     });
