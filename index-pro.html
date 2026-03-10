@@ -149,10 +149,6 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
     <div class="pill p-src"    data-s="news"  onclick="setSrc('news')">📰 新聞</div>
     <div class="pill p-src"    data-s="paper" onclick="setSrc('paper')">📄 論文 (arXiv)</div>
     <div class="pill p-src"    data-s="abc"   onclick="setSrc('abc')">📧 Always Be Curious</div>
-  </div>
-
-  <div class="lbl">🗞️ 特定媒體</div>
-  <div class="row" id="outletRow">
     <div class="pill p-src" data-s="digitimes.com"  onclick="setSrc('digitimes.com')">DIGITIMES</div>
     <div class="pill p-src" data-s="reuters.com"    onclick="setSrc('reuters.com')">Reuters</div>
     <div class="pill p-src" data-s="bloomberg.com"  onclick="setSrc('bloomberg.com')">Bloomberg</div>
@@ -1096,7 +1092,7 @@ ${summ}
 // ================================================================
 function setSrc(s){
   activeSrc=s;
-  document.querySelectorAll('#srcRow .pill, #outletRow .pill').forEach(b=>b.className='pill p-src'+(b.dataset.s===s?' on':''));
+  document.querySelectorAll('#srcRow .pill').forEach(b=>b.className='pill p-src'+(b.dataset.s===s?' on':''));
   if(searchText) doSearch(document.getElementById('si').value);
   else if(s==='paper') fetchArxivDefault();
   else if(EXTRA_SOURCES.includes(s)) fetchOutlet(s);
