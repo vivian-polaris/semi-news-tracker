@@ -744,6 +744,23 @@ async function fetchArxivDefault(){
 }
 
 // ================================================================
+// Fetch specific outlet
+// ================================================================
+async function fetchOutlet(site){
+  const btn=document.getElementById('rfbtn');
+  btn.disabled=true; btn.textContent='載入中...';
+  isSearching=true; render();
+  try{
+    const results=await fetchRSSEn(`site:${site} semiconductor`).catch(()=>[]);
+    const seen=new Set(allNews.map(n=>n.link));
+    results.forEach(n=>{if(!seen.has(n.link)){seen.add(n.link);allNews.push(n);}});
+  }catch{}
+  isSearching=false;
+  btn.disabled=false; btn.innerHTML='🔄 重新載入';
+  render();
+}
+
+// ================================================================
 // Fetch Always Be Curious (Substack JSON API)
 // ================================================================
 async function fetchSubstack(){
@@ -982,10 +999,16 @@ function buildFallbackTokens(txt){
   return[...s].filter(x=>x.length>=2);
 }
 
+const OUTLET_KEY={
+  'digitimes.com':'digitimes','reuters.com':'reuters','bloomberg.com':'bloomberg',
+  'anandtech.com':'anandtech','techcrunch.com':'techcrunch','theregister.com':'register',
+  'spectrum.ieee.org':'ieee spectrum','semiwiki.com':'semiwiki'
+};
 function passOutlet(n){
   if(activeSrc==='all'||activeSrc==='news') return true;
   if(activeSrc==='paper'||activeSrc==='abc') return false;
-  return n.link.toLowerCase().includes(activeSrc);
+  const key=OUTLET_KEY[activeSrc]||activeSrc.split('.')[0];
+  return (n.source||'').toLowerCase().includes(key);
 }
 function render(){
   const list=document.getElementById('nlist');
@@ -1076,6 +1099,7 @@ function setSrc(s){
   document.querySelectorAll('#srcRow .pill, #outletRow .pill').forEach(b=>b.className='pill p-src'+(b.dataset.s===s?' on':''));
   if(searchText) doSearch(document.getElementById('si').value);
   else if(s==='paper') fetchArxivDefault();
+  else if(EXTRA_SOURCES.includes(s)) fetchOutlet(s);
   else render();
 }
 function setTime(t){
