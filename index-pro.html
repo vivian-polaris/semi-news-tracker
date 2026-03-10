@@ -1146,7 +1146,7 @@ async function askAI(){
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         messages:[{role:'user',content:'你是半導體產業分析師。請用繁體中文簡潔回答，200字內：'+q}],
-        model:'openai',seed:-1
+        model:'openai'
       })
     });
     const text=await r.text();
