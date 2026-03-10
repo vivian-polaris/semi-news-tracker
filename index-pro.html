@@ -152,7 +152,7 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
     <div class="pill p-src" data-s="digitimes.com"  onclick="setSrc('digitimes.com')">DIGITIMES</div>
     <div class="pill p-src" data-s="reuters.com"    onclick="setSrc('reuters.com')">Reuters</div>
     <div class="pill p-src" data-s="bloomberg.com"  onclick="setSrc('bloomberg.com')">Bloomberg</div>
-    <div class="pill p-src" data-s="anandtech.com"  onclick="setSrc('anandtech.com')">AnandTech</div>
+    <div class="pill p-src" data-s="tomshardware.com"  onclick="setSrc('tomshardware.com')">Tom's Hardware</div>
     <div class="pill p-src" data-s="techcrunch.com" onclick="setSrc('techcrunch.com')">TechCrunch</div>
     <div class="pill p-src" data-s="theregister.com" onclick="setSrc('theregister.com')">The Register</div>
     <div class="pill p-src" data-s="spectrum.ieee.org" onclick="setSrc('spectrum.ieee.org')">IEEE Spectrum</div>
@@ -517,7 +517,7 @@ const PROX=[
 ];
 // Extra sources to always include
 const EXTRA_SOURCES=[
-  'digitimes.com','reuters.com','bloomberg.com','anandtech.com',
+  'digitimes.com','reuters.com','bloomberg.com','tomshardware.com',
   'techcrunch.com','theregister.com','spectrum.ieee.org','semiwiki.com'
 ];
 
@@ -997,7 +997,7 @@ function buildFallbackTokens(txt){
 
 const OUTLET_KEY={
   'digitimes.com':'digitimes','reuters.com':'reuters','bloomberg.com':'bloomberg',
-  'anandtech.com':'anandtech','techcrunch.com':'techcrunch','theregister.com':'register',
+  'tomshardware.com':'tom','techcrunch.com':'techcrunch','theregister.com':'register',
   'spectrum.ieee.org':'ieee spectrum','semiwiki.com':'semiwiki'
 };
 function passOutlet(n){
