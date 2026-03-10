@@ -24,8 +24,8 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 
 /* Search */
 .srch-wrap{position:relative;margin:14px 0 6px}
-.srch-wrap input{width:100%;padding:13px 76px 13px 46px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:.97rem;outline:none;transition:border .2s}
-.srch-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);padding:6px 14px;background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:.82rem;font-weight:600}
+.srch-wrap input{width:100%;padding:13px 160px 13px 46px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:.97rem;outline:none;transition:border .2s}
+.srch-btn{position:absolute;right:90px;top:50%;transform:translateY(-50%);padding:6px 14px;background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:.82rem;font-weight:600}.ai-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);padding:6px 10px;background:var(--accent2);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:.82rem;font-weight:600}
 .srch-wrap input:focus{border-color:var(--accent)}
 .srch-wrap input::placeholder{color:var(--text2)}
 .srch-ico{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:1.05rem;pointer-events:none}
@@ -138,9 +138,9 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
   <div class="srch-wrap">
     <span class="srch-ico">🔍</span>
     <input type="text" id="si" placeholder="輸入任何句子... 例：TSMC 先進封裝的最新進展 / HBM4 供應鏈動態 / CoWoS 良率論文">
-    <button class="srch-btn" onclick="triggerSearch()">搜尋</button>
+    <button class="srch-btn" onclick="triggerSearch()">搜尋</button><button class="ai-btn" id="aibtn" onclick="askAI()" title="用 Perplexity AI 回答">🤖 問 AI</button>
   </div>
-  <div class="hint">💡 輸入句子或關鍵字，自動搜尋 Google News、科技媒體、arXiv 論文及 Newsletter</div>
+  <div class="hint">💡 可以輸入完整句子，系統會自動提取關鍵詞搜尋 · 含「論文/paper/IEEE」自動搜尋 arXiv · 📧 ABC 為 Always Be Curious newsletter</div>
   <div class="qdisp" id="qdisp"></div>
 
   <div class="lbl">📂 來源</div>
@@ -1123,6 +1123,11 @@ function toggleView(){
 // ================================================================
 // Search input
 // ================================================================
+function askAI(){
+  const q=document.getElementById('si').value.trim()||'半導體新聞';
+  window.open('https://www.perplexity.ai/search?q='+encodeURIComponent(q),'_blank');
+}
+
 document.getElementById('si').addEventListener('input',e=>{
   const raw=e.target.value;
   searchText=raw.toLowerCase().trim();
