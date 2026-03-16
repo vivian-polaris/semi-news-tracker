@@ -110,6 +110,9 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 .bp{background:rgba(139,92,246,.1);color:var(--accent2);border:1px solid rgba(139,92,246,.25)}
 .bl{background:rgba(16,185,129,.1);color:var(--green);border:1px solid rgba(16,185,129,.25)}
 .ba{background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(52,211,153,.3)}
+.bv{background:rgba(255,68,68,.1);color:#f87171;border:1px solid rgba(248,113,113,.3)}
+.card.cvideo{border-left:3px solid #f87171}
+.cthumb{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:6px;margin:4px 0;display:block}
 .tl1{padding:2px 7px;border-radius:3px;font-size:.65rem;background:var(--tag);color:var(--text2)}
 .tl2{padding:2px 7px;border-radius:3px;font-size:.65rem;background:rgba(139,92,246,.08);color:var(--accent2)}
 
@@ -160,6 +163,7 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
     <div class="pill p-src"    data-s="news"  onclick="setSrc('news')">📰 新聞</div>
     <div class="pill p-src"    data-s="paper" onclick="setSrc('paper')">📄 論文 (arXiv)</div>
     <div class="pill p-src"    data-s="abc"   onclick="setSrc('abc')">📧 Always Be Curious</div>
+    <div class="pill p-src"    data-s="youtube" onclick="setSrc('youtube')">📺 YouTube 影片</div>
     <div class="pill p-src" data-s="tomshardware.com"  onclick="setSrc('tomshardware.com')">Tom's Hardware</div>
     <div class="pill p-src" data-s="techcrunch.com" onclick="setSrc('techcrunch.com')">TechCrunch</div>
     <div class="pill p-src" data-s="theregister.com" onclick="setSrc('theregister.com')">The Register</div>
@@ -503,7 +507,7 @@ const NL_L2 = {
 // ================================================================
 // State
 // ================================================================
-let allNews=[], liveNews=[], arxivNews=[], substackNews=[];
+let allNews=[], liveNews=[], arxivNews=[], substackNews=[], youtubeNews=[];
 let activeL1='all', activeL2='all';
 let timePeriod='3m', customStart=null, customEnd=null;
 let searchText='', activeSrc='all', sortBy='time';
@@ -522,6 +526,18 @@ const PROX=[
   u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`
 ];
+// Important company YouTube channel IDs (public RSS, no API key needed)
+const YT_CHANNELS=[
+  {id:'UCHuiy8bXnmK5nisYHUd1J5g',name:'NVIDIA'},
+  {id:'UCj5QUTQMK3TRBRQkMVdZ5nA',name:'Intel'},
+  {id:'UCQRkOKKjOsOuFGqEa0SQJAA',name:'AMD'},
+  {id:'UCRb_e7mkVMyFVzrZWOTaALQ',name:'Qualcomm'},
+  {id:'UCKiLt0FjnZqWrjVbBcP0b8w',name:'ASML'},
+  {id:'UCgPBhzfECiSLbFN_mBpnHdA',name:'Arm'},
+  {id:'UCTjYhVEEUFzmCwS_8JmqAsg',name:'Applied Materials'},
+  {id:'UCVDTBjLnCMN9KWy4PxC-SQw',name:'TSMC'},
+];
+
 // Extra sources to always include
 const EXTRA_SOURCES=[
   'tomshardware.com','techcrunch.com','theregister.com','semiwiki.com'
@@ -786,6 +802,40 @@ async function fetchSubstack(){
 }
 
 // ================================================================
+// Fetch YouTube channel RSS feeds
+// ================================================================
+async function fetchYouTube(){
+  const results=await Promise.allSettled(
+    YT_CHANNELS.map(async({id,name})=>{
+      const url=`https://www.youtube.com/feeds/videos.xml?channel_id=${id}`;
+      try{
+        const r=await fetchProxy(url);
+        const xml=new DOMParser().parseFromString(await r.text(),'text/xml');
+        const items=[];
+        xml.querySelectorAll('entry').forEach(el=>{
+          const g=s=>(el.querySelector(s)||{textContent:''}).textContent.trim();
+          const pub=g('published');
+          if(!inRange(pub)) return;
+          // Extract video ID from the alternate link
+          const linkEl=el.querySelector('link[rel="alternate"]');
+          const href=linkEl?linkEl.getAttribute('href'):'';
+          const vid=href.match(/v=([^&]+)/)?.[1]||'';
+          if(!vid) return;
+          const thumb=`https://i.ytimg.com/vi/${vid}/mqdefault.jpg`;
+          const summ=el.getElementsByTagNameNS('http://search.yahoo.com/mrss/','description')[0]?.textContent?.trim().replace(/\s+/g,' ').slice(0,200)||'';
+          items.push({type:'video',title:g('title'),link:`https://www.youtube.com/watch?v=${vid}`,pub,source:name,summary:summ,thumb});
+        });
+        return items;
+      }catch{return[];}
+    })
+  );
+  const seen=new Set();
+  youtubeNews=results.flatMap(r=>r.status==='fulfilled'?r.value:[])
+    .filter(n=>{if(!n.link||seen.has(n.link))return false;seen.add(n.link);return true;});
+  render();
+}
+
+// ================================================================
 // Page load: per-L1 category fetch
 // ================================================================
 async function fetchAll(){
@@ -818,6 +868,7 @@ async function fetchAll(){
 
   btn.disabled=false; btn.innerHTML='🔄 重新載入';
   fetchSubstack();
+  fetchYouTube();
   renderL1(); render();
 }
 
@@ -1006,6 +1057,8 @@ const OUTLET_KEY={
   'theregister.com':'register','semiwiki.com':'semiwiki'
 };
 function passOutlet(n){
+  if(n.type==='video') return activeSrc==='all'||activeSrc==='youtube';
+  if(activeSrc==='youtube') return false;
   if(activeSrc==='all'||activeSrc==='news') return true;
   if(activeSrc==='paper'||activeSrc==='abc') return false;
   const key=OUTLET_KEY[activeSrc]||activeSrc.split('.')[0];
@@ -1033,10 +1086,15 @@ function render(){
     (activeSrc==='all'||activeSrc==='abc')&&inRange(n.pub)&&passL1(n.title)&&passL2(n.title)&&passSearch(n.title)
   ).sort(sortFn);
 
-  const total=base.length+live.length+papers.length+abc.length;
+  const videos=youtubeNews.filter(n=>
+    (activeSrc==='all'||activeSrc==='youtube')&&inRange(n.pub)&&passSearch(n.title)
+  ).sort(sortFn);
+
+  const total=base.length+live.length+papers.length+abc.length+videos.length;
   const liveHint=isSearching?' ⏳ 搜尋中...':(searchText&&(live.length||papers.length)?` + 即時 ${live.length+papers.length} 則`:'');
   const abcHint=abc.length&&activeSrc!=='abc'?` + ABC ${abc.length} 篇`:'';
-  document.getElementById('stxt').textContent=`顯示 ${total} 則${periodLabel()} / 預載 ${allNews.length} 則${liveHint}${abcHint}`;
+  const ytHint=videos.length&&activeSrc!=='youtube'?` + YT ${videos.length} 部`:'';
+  document.getElementById('stxt').textContent=`顯示 ${total} 則${periodLabel()} / 預載 ${allNews.length} 則${liveHint}${abcHint}${ytHint}`;
 
   if(total===0){
     list.innerHTML=isSearching?'<div class="loading"><div class="spin"></div><br>搜尋中...</div>':'<div class="empty">📭 沒有符合結果，試試調整時間範圍或關鍵字</div>';
@@ -1046,6 +1104,11 @@ function render(){
   const cls=viewMode==='grid'?'ngrid':'nlist';
   let h='';
 
+  if(videos.length){
+    h+=`<div class="div-row">📺 YouTube 影片（${videos.length} 部）</div>`;
+    videos.forEach(n=>{h+=cardHTML(n,'video');});
+    if(abc.length+papers.length+live.length+base.length) h+=`<div class="div-row">📰 新聞 / 論文</div>`;
+  }
   if(abc.length){
     h+=`<div class="div-row">📧 Always Be Curious（${abc.length} 篇）</div>`;
     abc.forEach(n=>{h+=cardHTML(n,'abc');});
@@ -1081,12 +1144,14 @@ function cardHTML(n,kind){
   const l2k=l1k?detectL2(n.title,l1k):null;
   const l1tag=l1k?`<span class="tl1">${CAT[l1k].emoji} ${CAT[l1k].label}</span>`:'';
   const l2tag=(l2k&&l1k)?`<span class="tl2">${CAT[l1k].subs[l2k].label}</span>`:'';
-  const badge={news:'<span class="badge bn">📰 新聞</span>',live:'<span class="badge bl">⚡ 即時</span>',paper:'<span class="badge bp">📄 論文</span>',abc:'<span class="badge ba">📧 ABC</span>'}[kind];
-  const cls='card'+(kind==='paper'?' cpaper':kind==='live'?' clive':kind==='abc'?' cabc':'');
+  const badge={news:'<span class="badge bn">📰 新聞</span>',live:'<span class="badge bl">⚡ 即時</span>',paper:'<span class="badge bp">📄 論文</span>',abc:'<span class="badge ba">📧 ABC</span>',video:'<span class="badge bv">📺 影片</span>'}[kind];
+  const cls='card'+(kind==='paper'?' cpaper':kind==='live'?' clive':kind==='abc'?' cabc':kind==='video'?' cvideo':'');
   const summ=n.summary?`<div class="csumm">${esc(n.summary)}</div>`:'';
+  const thumb=n.thumb?`<img class="cthumb" src="${esc(n.thumb)}" alt="" loading="lazy" onerror="this.style.display='none'">`:'';
   return `<div class="${cls}" data-href="${safeUrl(n.link)}" onclick="var h=this.getAttribute('data-href');if(h&&h!=='#')window.open(h,'_blank')">
 <div class="ctop"><span class="csrc">${esc(n.source)}</span><span class="ctime-txt" title="${ds}">${ago}</span></div>
 <div class="ctitle"><a href="${safeUrl(n.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(n.title)}</a></div>
+${thumb}
 ${summ}
 <div class="ctags">${badge}${l1tag}${l2tag}</div>
 </div>`;
@@ -1101,6 +1166,7 @@ function setSrc(s){
   if(searchText) doSearch(document.getElementById('si').value);
   else if(s==='paper') fetchArxivDefault();
   else if(EXTRA_SOURCES.includes(s)) fetchOutlet(s);
+  else if(s==='youtube'){youtubeNews.length?render():fetchYouTube();}
   else render();
 }
 function setTime(t){
