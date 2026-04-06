@@ -1298,113 +1298,84 @@ async function askAI(){
 }
 
 // ================================================================
-// 每日快訊 — 川普動態 + 戰爭局勢（自動載入，無需輸入）
+// 每日快訊 + 投資人專區 — 共用 AI 呼叫（POST + GET fallback）
 // ================================================================
-async function fetchQuickRSS(query, lang='en'){
-  const url = lang==='en'
-    ? `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en&gl=US&ceid=US:en`
-    : `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
+async function callAI(prompt){
+  // POST first
   try{
-    const r = await fetchProxy(url, 10000);
-    if(!r) return [];
-    const doc = new DOMParser().parseFromString(r,'text/xml');
-    return [...doc.querySelectorAll('item')].slice(0,10).map(i=>({
-      title: i.querySelector('title')?.textContent?.replace(/<[^>]+>/g,'').trim()||'',
-      desc:  i.querySelector('description')?.textContent?.replace(/<[^>]+>/g,'').slice(0,120)||''
-    }));
-  }catch{ return []; }
-}
-
-async function qnSummarize(items, systemPrompt){
-  const lines = items.map((h,i)=>`${i+1}. ${h.title}${h.desc?' — '+h.desc:''}`).join('\n');
-  try{
-    const r = await fetch('https://text.pollinations.ai/',{
+    const r=await fetch('https://text.pollinations.ai/',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        messages:[{role:'user', content: systemPrompt+'\n\n'+lines}],
-        model:'openai', seed: Date.now()
-      })
+      body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'openai'})
     });
-    if(!r.ok) throw new Error(r.status);
-    return await r.text();
-  }catch{ return '⚠️ AI 摘要暫時無法使用，請點 ↻ 重整。'; }
+    if(r.ok){const t=await r.text();if(t&&t.length>20)return t;}
+  }catch{}
+  // GET fallback
+  await new Promise(r=>setTimeout(r,1200));
+  try{
+    const r=await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt.slice(0,900))}?model=openai`);
+    if(r.ok){const t=await r.text();if(t&&t.length>20)return t;}
+  }catch{}
+  return '⚠️ AI 暫時無法使用，請點 ↻ 重整。';
 }
 
+// 川普 — 使用頁面現有的 fetchRSSEn（已測試穩定）
 async function loadTrumpNews(){
   const bodyEl=document.getElementById('trumpBody');
   const timeEl=document.getElementById('trumpTime');
   bodyEl.className='qn-body loading'; bodyEl.textContent='抓取最新新聞...';
   timeEl.textContent='';
-  const items = await fetchQuickRSS('Trump statement OR Trump says OR Trump announces OR Trump tariff OR Trump policy','en');
-  if(!items.length){ bodyEl.className='qn-body'; bodyEl.textContent='暫時抓不到資料，請點 ↻ 重整。'; return; }
+  const items=await fetchRSSEn('Trump').catch(()=>[]);
+  if(!items.length){bodyEl.className='qn-body';bodyEl.textContent='RSS 暫時無法連線，請點 ↻ 重整。';return;}
   bodyEl.textContent='AI 摘要分析中...';
-  const summary = await qnSummarize(items,
-    '你是一位新聞摘要助理。以下是最新的川普相關英文新聞標題（含簡短描述）。請用繁體中文寫一份 150–200 字的重點摘要，說明川普最近說了什麼話、做了什麼決定、有哪些重要政治動態。請分 2–3 個重點條列（每點用「・」開頭），不要加標題，語氣客觀，不評論好壞：');
-  bodyEl.className='qn-body'; bodyEl.textContent=summary;
-  timeEl.textContent='更新時間：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  const headlines=items.slice(0,10).map((h,i)=>`${i+1}. ${h.title}`).join('\n');
+  const summary=await callAI('你是新聞摘要助理。以下是最新川普相關英文新聞標題，請用繁體中文寫150–200字重點摘要，說明川普最近說了什麼、做了什麼決定。分2–3個重點條列（每點用「・」開頭），語氣客觀不評論好壞：\n\n'+headlines);
+  bodyEl.className='qn-body';bodyEl.textContent=summary;
+  timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
+// 戰爭 — 同樣使用 fetchRSSEn
 async function loadWarNews(){
   const bodyEl=document.getElementById('warBody');
   const timeEl=document.getElementById('warTime');
-  bodyEl.className='qn-body loading'; bodyEl.textContent='抓取最新新聞...';
+  bodyEl.className='qn-body loading';bodyEl.textContent='抓取最新新聞...';
   timeEl.textContent='';
-  const [a,b] = await Promise.all([
-    fetchQuickRSS('Ukraine Russia war frontline ceasefire','en'),
-    fetchQuickRSS('Gaza Israel war Middle East conflict Lebanon','en')
+  const [a,b]=await Promise.all([
+    fetchRSSEn('Ukraine Russia war').catch(()=>[]),
+    fetchRSSEn('Gaza Israel war Middle East').catch(()=>[])
   ]);
-  const items=[...a,...b].slice(0,14);
-  if(!items.length){ bodyEl.className='qn-body'; bodyEl.textContent='暫時抓不到資料，請點 ↻ 重整。'; return; }
+  const items=[...a,...b].slice(0,12);
+  if(!items.length){bodyEl.className='qn-body';bodyEl.textContent='RSS 暫時無法連線，請點 ↻ 重整。';return;}
   bodyEl.textContent='AI 摘要分析中...';
-  const summary = await qnSummarize(items,
-    '你是一位新聞摘要助理。以下是最新的國際戰爭衝突英文新聞標題（含簡短描述）。請用繁體中文寫一份 150–200 字的重點摘要，分別說明：(1) 烏俄戰爭最新進展 (2) 以色列-加薩/中東局勢。請用「・烏俄：」與「・中東：」為開頭分段，語氣客觀，不評論好壞：');
-  bodyEl.className='qn-body'; bodyEl.textContent=summary;
-  timeEl.textContent='更新時間：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  const headlines=items.map((h,i)=>`${i+1}. ${h.title}`).join('\n');
+  const summary=await callAI('你是新聞摘要助理。以下是最新國際戰爭衝突英文新聞標題，請用繁體中文寫150–200字摘要，分「・烏俄：」與「・中東：」兩段各自說明最新進展，語氣客觀：\n\n'+headlines);
+  bodyEl.className='qn-body';bodyEl.textContent=summary;
+  timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
 // ================================================================
-// 投資人專區 — 投資時鐘 + VCP 選股
+// 投資人專區 — 投資時鐘 + VCP（純 AI，不需 RSS）
 // ================================================================
-async function invAI(prompt){
-  try{
-    const r=await fetch('https://text.pollinations.ai/',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        messages:[{role:'user',content:prompt}],
-        model:'openai', seed:Date.now()
-      })
-    });
-    if(!r.ok) throw new Error(r.status);
-    return await r.text();
-  }catch{ return '⚠️ AI 暫時無法使用，請點 ↻ 重整。'; }
-}
-
 async function loadInvClock(){
   const bodyEl=document.getElementById('clockBody');
   const timeEl=document.getElementById('clockTime');
-  bodyEl.className='inv-body loading'; bodyEl.textContent='AI 分析投資時鐘中...';
+  bodyEl.className='inv-body loading';bodyEl.textContent='AI 分析投資時鐘中...';
   timeEl.textContent='';
   const today=new Date().toISOString().slice(0,10);
-  const summary=await invAI(
-    `今天是 ${today}。你是一位資深的全球宏觀投資分析師。\n\n請根據你對當前全球經濟環境的了解（通膨趨勢、聯準會利率政策、PMI 數據、企業盈利周期），判斷「投資時鐘」目前最可能走到哪個階段，並說明哪些產業處於順風位置。\n\n請用繁體中文，以以下格式回答：\n\n【當前時鐘位置】：（過熱 / 停滯 / 衰退 / 復甦）\n【核心判斷依據】：2–3點簡要說明\n【順風產業】：列出 3–5 個目前受惠產業（如科技、能源、醫療、金融等）並各附一句理由\n\n語氣客觀，不超過 250 字。`
-  );
-  bodyEl.className='inv-body'; bodyEl.textContent=summary;
-  timeEl.textContent='更新時間：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  const summary=await callAI(`今天${today}。你是全球宏觀投資分析師。請根據當前通膨/聯準會利率/PMI/企業盈利周期，判斷投資時鐘現在走到哪個階段，並說明哪些產業處於順風位置。繁體中文回答，格式：\n【時鐘位置】過熱/停滯/衰退/復甦\n【判斷依據】2–3點\n【順風產業】3–5個，各附一句理由。不超過230字。`);
+  bodyEl.className='inv-body';bodyEl.textContent=summary;
+  timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
 async function loadVCPStocks(){
   const bodyEl=document.getElementById('vcpBody');
   const timeEl=document.getElementById('vcpTime');
-  bodyEl.className='inv-body loading'; bodyEl.textContent='AI 分析 VCP 潛力股中...';
+  bodyEl.className='inv-body loading';bodyEl.textContent='AI 分析 VCP 潛力股中...';
   timeEl.textContent='';
   const today=new Date().toISOString().slice(0,10);
-  const summary=await invAI(
-    `今天是 ${today}。你是一位專注於 Mark Minervini VCP（Volatility Contraction Pattern）選股法的技術分析師，同時了解總體經濟環境。\n\n請根據當前投資時鐘與宏觀環境，從以下產業中各列出 1–2 家最可能符合 VCP 特徵的公司（上市股票）：科技/半導體、AI 基礎建設、能源/天然資源、醫療/生技、金融。\n\n對每家公司請說明：(1) 為何目前宏觀環境對它有利 (2) 為何它可能呈現 VCP 型態（如量縮、底部整理、強相對強度）。\n\n請用繁體中文，格式為每個產業一段，每段格式：\n「產業名：公司A（理由）、公司B（理由）」\n\n不超過 280 字，僅提供分析視角，非投資建議。`
-  );
-  bodyEl.className='inv-body'; bodyEl.textContent=summary;
-  timeEl.textContent='更新時間：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  const summary=await callAI(`今天${today}。你是Mark Minervini VCP選股專家。請從科技/半導體、AI基建、能源、醫療生技、金融五個產業，各列1–2家最符合VCP特徵的上市公司，說明：(1)宏觀環境為何有利 (2)技術面為何像VCP（量縮底部整理/高相對強度）。繁體中文，每產業一段格式「產業：公司A（理由）、公司B（理由）」。不超過260字，僅分析視角非投資建議。`);
+  bodyEl.className='inv-body';bodyEl.textContent=summary;
+  timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
 document.getElementById('si').addEventListener('input',e=>{
@@ -1445,9 +1416,9 @@ document.getElementById('si').addEventListener('keydown',e=>{
 renderL1();renderL2();
 fetchAll();
 loadTrumpNews();
-loadWarNews();
-loadInvClock();
-loadVCPStocks();
+setTimeout(loadWarNews, 2500);
+setTimeout(loadInvClock, 5000);
+setTimeout(loadVCPStocks, 7500);
 </script>
 </body>
 </html>
