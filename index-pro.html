@@ -136,6 +136,22 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 .rfbtn:disabled{opacity:.5;cursor:not-allowed}
 
 footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;border-top:1px solid var(--border);margin-top:28px}
+
+/* 每日快訊區 */
+.quicknews{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 14px}
+@media(max-width:620px){.quicknews{grid-template-columns:1fr}}
+.qn-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-height:110px;display:flex;flex-direction:column}
+.qn-card.trump{border-left:4px solid #ef4444}
+.qn-card.war{border-left:4px solid #f59e0b}
+.qn-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.qn-title{font-size:.78rem;font-weight:700;letter-spacing:.03em}
+.qn-title.trump-t{color:#ef4444}
+.qn-title.war-t{color:#f59e0b}
+.qn-refresh{background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text2);cursor:pointer;font-size:.68rem;padding:2px 8px;transition:all .18s}
+.qn-refresh:hover{border-color:var(--accent2);color:var(--accent2)}
+.qn-body{font-size:.8rem;line-height:1.7;color:var(--text);flex:1;white-space:pre-wrap}
+.qn-body.loading{color:var(--text2);font-style:italic}
+.qn-time{font-size:.62rem;color:var(--text2);margin-top:8px;text-align:right}
 </style>
 </head>
 <body>
@@ -144,6 +160,26 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
     <h1>🔬 半導體新聞追蹤器 Pro</h1>
     <p>google SEO 找不到關鍵資料，來這裡就可以不受 SEO 限制</p>
   </header>
+
+  <div class="lbl">🌐 每日快訊 AI 摘要（自動更新）</div>
+  <div class="quicknews">
+    <div class="qn-card trump">
+      <div class="qn-head">
+        <span class="qn-title trump-t">🇺🇸 川普最新動態</span>
+        <button class="qn-refresh" onclick="loadTrumpNews()">↻ 重整</button>
+      </div>
+      <div class="qn-body loading" id="trumpBody">載入中...</div>
+      <div class="qn-time" id="trumpTime"></div>
+    </div>
+    <div class="qn-card war">
+      <div class="qn-head">
+        <span class="qn-title war-t">⚔️ 戰爭局勢</span>
+        <button class="qn-refresh" onclick="loadWarNews()">↻ 重整</button>
+      </div>
+      <div class="qn-body loading" id="warBody">載入中...</div>
+      <div class="qn-time" id="warTime"></div>
+    </div>
+  </div>
 
   <div class="srch-wrap">
     <span class="srch-ico">🔍</span>
@@ -1222,6 +1258,72 @@ async function askAI(){
   }
 }
 
+// ================================================================
+// 每日快訊 — 川普動態 + 戰爭局勢（自動載入，無需輸入）
+// ================================================================
+async function fetchQuickRSS(query, lang='en'){
+  const url = lang==='en'
+    ? `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en&gl=US&ceid=US:en`
+    : `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
+  try{
+    const r = await fetchProxy(url, 10000);
+    if(!r) return [];
+    const doc = new DOMParser().parseFromString(r,'text/xml');
+    return [...doc.querySelectorAll('item')].slice(0,10).map(i=>({
+      title: i.querySelector('title')?.textContent?.replace(/<[^>]+>/g,'').trim()||'',
+      desc:  i.querySelector('description')?.textContent?.replace(/<[^>]+>/g,'').slice(0,120)||''
+    }));
+  }catch{ return []; }
+}
+
+async function qnSummarize(items, systemPrompt){
+  const lines = items.map((h,i)=>`${i+1}. ${h.title}${h.desc?' — '+h.desc:''}`).join('\n');
+  try{
+    const r = await fetch('https://text.pollinations.ai/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        messages:[{role:'user', content: systemPrompt+'\n\n'+lines}],
+        model:'openai', seed: Date.now()
+      })
+    });
+    if(!r.ok) throw new Error(r.status);
+    return await r.text();
+  }catch{ return '⚠️ AI 摘要暫時無法使用，請點 ↻ 重整。'; }
+}
+
+async function loadTrumpNews(){
+  const bodyEl=document.getElementById('trumpBody');
+  const timeEl=document.getElementById('trumpTime');
+  bodyEl.className='qn-body loading'; bodyEl.textContent='抓取最新新聞...';
+  timeEl.textContent='';
+  const items = await fetchQuickRSS('Trump statement OR Trump says OR Trump announces OR Trump tariff OR Trump policy','en');
+  if(!items.length){ bodyEl.className='qn-body'; bodyEl.textContent='暫時抓不到資料，請點 ↻ 重整。'; return; }
+  bodyEl.textContent='AI 摘要分析中...';
+  const summary = await qnSummarize(items,
+    '你是一位新聞摘要助理。以下是最新的川普相關英文新聞標題（含簡短描述）。請用繁體中文寫一份 150–200 字的重點摘要，說明川普最近說了什麼話、做了什麼決定、有哪些重要政治動態。請分 2–3 個重點條列（每點用「・」開頭），不要加標題，語氣客觀，不評論好壞：');
+  bodyEl.className='qn-body'; bodyEl.textContent=summary;
+  timeEl.textContent='更新時間：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+async function loadWarNews(){
+  const bodyEl=document.getElementById('warBody');
+  const timeEl=document.getElementById('warTime');
+  bodyEl.className='qn-body loading'; bodyEl.textContent='抓取最新新聞...';
+  timeEl.textContent='';
+  const [a,b] = await Promise.all([
+    fetchQuickRSS('Ukraine Russia war frontline ceasefire','en'),
+    fetchQuickRSS('Gaza Israel war Middle East conflict Lebanon','en')
+  ]);
+  const items=[...a,...b].slice(0,14);
+  if(!items.length){ bodyEl.className='qn-body'; bodyEl.textContent='暫時抓不到資料，請點 ↻ 重整。'; return; }
+  bodyEl.textContent='AI 摘要分析中...';
+  const summary = await qnSummarize(items,
+    '你是一位新聞摘要助理。以下是最新的國際戰爭衝突英文新聞標題（含簡短描述）。請用繁體中文寫一份 150–200 字的重點摘要，分別說明：(1) 烏俄戰爭最新進展 (2) 以色列-加薩/中東局勢。請用「・烏俄：」與「・中東：」為開頭分段，語氣客觀，不評論好壞：');
+  bodyEl.className='qn-body'; bodyEl.textContent=summary;
+  timeEl.textContent='更新時間：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
 document.getElementById('si').addEventListener('input',e=>{
   const raw=e.target.value;
   searchText=raw.toLowerCase().trim();
@@ -1259,6 +1361,8 @@ document.getElementById('si').addEventListener('keydown',e=>{
 })();
 renderL1();renderL2();
 fetchAll();
+loadTrumpNews();
+loadWarNews();
 </script>
 </body>
 </html>
