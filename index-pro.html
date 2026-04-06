@@ -197,10 +197,11 @@ header{position:relative}
     <button class="key-btn" onclick="toggleKeyPanel()">⚙️ AI 設定</button>
   </header>
   <div class="key-panel" id="keyPanel">
-    <p>🤖 AI 摘要功能需要 <strong>Google Gemini API Key</strong>（免費，不需信用卡）<br>
-    申請網址：<a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> → 點「Create API key」→ 複製貼上</p>
+    <p>🤖 AI 摘要功能需要 <strong>Groq API Key</strong>（完全免費，無信用卡，台灣可用）<br>
+    ① 開 <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a> → 用 Google 帳號登入<br>
+    ② 點「Create API Key」→ 複製（<code>gsk_...</code> 開頭）→ 貼下方</p>
     <div class="key-row">
-      <input class="key-input" id="keyInput" type="password" placeholder="AIza...">
+      <input class="key-input" id="keyInput" type="password" placeholder="gsk_...">
       <button class="key-save" onclick="saveKey()">儲存</button>
       <button class="key-save" style="background:var(--red)" onclick="clearKey()">清除</button>
     </div>
@@ -1387,11 +1388,11 @@ async function askAI(){
 // ================================================================
 // 清理 AI 回傳的原始 JSON（有些模型會把 reasoning_content 一起吐出來）
 // ================================================================
-// AI 引擎：Google Gemini（免費，不需信用卡）
-// Key 存在 localStorage，不放進程式碼
-// 申請：https://aistudio.google.com/apikey
+// AI 引擎：Groq（完全免費，台灣可用，無信用卡）
+// 申請：https://console.groq.com/keys
+// 免費額度：每天 14,400 次，每分鐘 30 次
 // ================================================================
-function getKey(){ return localStorage.getItem('gemini_key')||''; }
+function getKey(){ return localStorage.getItem('groq_key')||''; }
 function toggleKeyPanel(){
   const p=document.getElementById('keyPanel');
   p.classList.toggle('show');
@@ -1405,46 +1406,46 @@ function updateKeyStatus(){
   if(!s) return;
   const k=getKey();
   s.className='key-status '+(k?'ok':'no');
-  s.textContent=k?'✅ API Key 已設定，AI 功能啟用中':'⚠️ 尚未設定 Key，AI 功能無法使用';
+  s.textContent=k?'✅ Groq Key 已設定，AI 功能啟用中':'⚠️ 尚未設定 Key — 請點上方連結申請（免費 30 秒完成）';
 }
 function saveKey(){
   const k=document.getElementById('keyInput').value.trim();
   if(!k){alert('請輸入 API Key');return;}
-  localStorage.setItem('gemini_key',k);
+  localStorage.setItem('groq_key',k);
   updateKeyStatus();
   document.getElementById('keyPanel').classList.remove('show');
-  // 重新載入 AI 區塊
   loadTrumpNews(); loadWarNews(); loadInvClock(); loadVCPStocks();
 }
 function clearKey(){
-  localStorage.removeItem('gemini_key');
+  localStorage.removeItem('groq_key');
   document.getElementById('keyInput').value='';
   updateKeyStatus();
 }
 
 async function callAI(prompt){
   const key=getKey();
-  if(!key) return '🔑 請點右上角「⚙️ AI 設定」輸入免費 Gemini Key\n申請網址：aistudio.google.com/apikey';
+  if(!key) return '🔑 請點右上角「⚙️ AI 設定」輸入免費 Groq Key（console.groq.com/keys）';
   try{
-    const r=await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
-      {method:'POST',
-       headers:{'Content-Type':'application/json'},
-       body:JSON.stringify({
-         contents:[{parts:[{text:prompt}]}],
-         generationConfig:{maxOutputTokens:500,temperature:0.7}
-       }),
-       signal:AbortSignal.timeout(25000)
-      }
-    );
+    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({
+        messages:[{role:'user',content:prompt}],
+        model:'llama-3.3-70b-versatile',
+        max_tokens:500,
+        temperature:0.7
+      }),
+      signal:AbortSignal.timeout(25000)
+    });
     if(!r.ok){
       const e=await r.json().catch(()=>({}));
       const msg=e.error?.message||r.status;
-      if(r.status===400||r.status===403) return `⚠️ API Key 錯誤或已過期，請重新設定（${msg}）`;
-      return `⚠️ Gemini 回傳錯誤 ${msg}，請稍後再試`;
+      if(r.status===401) return '⚠️ Groq Key 錯誤，請重新設定';
+      if(r.status===429) return '⚠️ 超過每分鐘限額，請稍候 30 秒再點 ↻ 重整';
+      return `⚠️ Groq 錯誤：${msg}`;
     }
     const j=await r.json();
-    const text=j.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    const text=j.choices?.[0]?.message?.content||'';
     if(text.trim().length>10) return text.trim();
     return '⚠️ AI 回覆為空，請點 ↻ 重整';
   }catch(e){
@@ -1611,7 +1612,7 @@ document.getElementById('si').addEventListener('keydown',e=>{
 renderL1();renderL2();
 fetchAll();
 updateKeyStatus();
-// Gemini 免費 API：RPM 限制 15，錯開 5 秒一個
+// Groq 免費 API：RPM 限制 30，錯開 5 秒一個
 loadTrumpNews();
 setTimeout(loadWarNews,  5000);
 setTimeout(loadInvClock, 10000);
