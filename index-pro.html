@@ -1189,10 +1189,10 @@ async function batchZhSumm(){
 
   const numbered=pairs.map((p,i)=>`${i+1}. ${p.title}`).join('\n');
   const raw=await callAI(
-    `以下${pairs.length}條半導體/科技新聞標題，每條寫12字以內繁體中文重點，格式必須是「誰＋做什麼＋數字/結果」。`+
-    `例：「台積電2nm良率達80%」「輝達H200漲價15%」「蘋果砍三星訂單」。`+
-    `絕對禁止：密切關注、緊張情勢、持續發展、值得注意、帶來影響、備受矚目、持續觀察。`+
-    `只輸出數字清單，不加任何說明：\n1. 摘要\n2. 摘要\n\n${numbered}`
+    `以下${pairs.length}條半導體/科技新聞標題，每條寫12字以內重點。規則：人名地名公司名用英文（TSMC、Nvidia、Apple、Trump、China等），其他繁體中文。格式「誰＋做什麼＋數字/結果」。`+
+    `例：「TSMC 2nm良率達80%」「Nvidia H200漲價15%」「Apple砍Samsung訂單」「Trump對China加徵34%關稅」。`+
+    `絕對禁止：密切關注、緊張情勢、持續發展、值得注意、帶來影響、備受矚目。`+
+    `只輸出數字清單：\n1. 摘要\n2. 摘要\n\n${numbered}`
   );
 
   if(!raw || raw.startsWith('⚠️') || raw.startsWith('🔑')) return;
@@ -1465,7 +1465,7 @@ async function loadTrumpNews(){
   if(!items.length){bodyEl.className='qn-body';bodyEl.textContent='RSS 暫時無法連線，請點 ↻ 重整。';return;}
   bodyEl.textContent='AI 摘要分析中...';
   const headlines=items.slice(0,10).map((h,i)=>`${i+1}. ${h.title}`).join('\n');
-  const summary=await callAI('以下是最新川普新聞標題。用繁體中文寫2–3條重點，每條必須有：具體數字或%、人名、國家/公司名、行動結果。禁止用「持續」「關注」「局勢」「緊張」「影響深遠」「值得注意」這類空話。直接說「川普宣布對XX加徵XX%關稅」「簽署XX法案」「與XX通話要求XX」這種格式。每條用「・」開頭，共150字內：\n\n'+headlines);
+  const summary=await callAI('以下是最新川普新聞標題。用繁體中文寫2–3條重點，人名地名國家名全部用英文（Trump、China、Ukraine、Netanyahu等），其他文字用繁體中文。每條必須有：具體數字或%、行動結果。禁止「持續」「關注」「局勢」「緊張」「影響深遠」「值得注意」。格式：「・Trump宣布對China加徵XX%關稅」「・Trump簽署XX法案」。每條「・」開頭，共150字內：\n\n'+headlines);
   bodyEl.className='qn-body';bodyEl.textContent=summary;
   timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
@@ -1485,7 +1485,7 @@ async function loadWarNews(){
   if(!items.length){bodyEl.className='qn-body';bodyEl.textContent='RSS 暫時無法連線，請點 ↻ 重整。';return;}
   bodyEl.textContent='AI 摘要分析中...';
   const headlines=items.map((h,i)=>`${i+1}. ${h.title}`).join('\n');
-  const summary=await callAI('以下是最新戰爭衝突新聞標題。用繁體中文寫三段，每段必須引用可驗證的具體數字。格式：\n・烏俄：城市名+目前控制方+傷亡數（如「俄軍控制庫爾斯克XX%」「烏軍日損失XX人」）或停火談判具體條件（領土%、安全保障名稱）\n・以巴：人質剩餘數字+最新停火協議狀態+加薩死亡累計數\n・伊朗：制裁具體內容（哪條法案、凍結金額）或核濃縮純度%+離心機數量或石油出口量變化%\n禁止：「經濟受影響」「局勢緊張」「持續惡化」等模糊描述，必須說是什麼影響、數字是多少。若標題資料不足，用知識庫最近已知數字補充。每段2句，共180字：\n\n'+headlines);
+  const summary=await callAI('以下是最新戰爭衝突新聞標題。繁體中文輸出，人名地名城市名全部用英文（Putin、Zelensky、Kursk、Gaza、Netanyahu、Khamenei等），其他文字繁體中文。每段必須有具體數字：\n・烏俄：城市英文名+控制方+傷亡數或談判條件（領土%、安全保障協議名稱）\n・以巴：人質剩餘數+停火狀態+Gaza死亡累計數\n・伊朗：制裁法案名+凍結金額 或 核濃縮純度%+離心機數 或 石油出口變化%\n禁止「經濟受影響」「局勢緊張」「持續惡化」，必須給數字。資料不足用知識庫補。每段2句，共180字：\n\n'+headlines);
   bodyEl.className='qn-body';bodyEl.textContent=summary;
   timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
@@ -1555,7 +1555,7 @@ async function loadInvClock(){
   bodyEl.className='inv-body loading';bodyEl.textContent='AI 分析投資時鐘中...';
   timeEl.textContent='';
   const today=new Date().toISOString().slice(0,10);
-  const summary=await callAI(`今天${today}。以美林投資時鐘框架判斷當前階段，用繁體中文嚴格依以下格式輸出，每項必須有具體數字，禁止模糊描述：\n\n【時鐘位置】只填：復甦、過熱、滯脹、再膨脹 其中一個\n【判斷依據】\n・美國CPI：X.X%（YoY），核心PCE：X.X%\n・聯準會利率：X.XX%，下次降息預期：XXXX年X月\n・美國GDP成長：X.X%（最新季），失業率：X.X%\n・企業盈利：S&P500 EPS成長YoY X%\n【建議配置】必須給出具體%數，例：\n・股票 XX%（偏好：科技/能源/原物料，說明原因）\n・債券 XX%（短債/長債，說明存續期）\n・現金 XX%\n・原物料 XX%（黃金/石油，說明原因）\n【風險提示】目前最大下行風險是什麼（具體事件名稱+可能影響%）\n\n禁止：「建議適度配置」「可考慮增持」「視情況調整」這類廢話，必須給明確數字。不超過300字。`);
+  const summary=await callAI(`今天${today}。以美林投資時鐘框架判斷當前階段。繁體中文輸出，人名地名機構名用英文（Fed、Powell、S&P500、OPEC等），其他繁體中文。嚴格依格式，每項必須有數字：\n\n【時鐘位置】只填：復甦、過熱、滯脹、再膨脹 其中一個\n【判斷依據】\n・US CPI：X.X%（YoY），核心PCE：X.X%\n・Fed利率：X.XX%，下次降息預期：XXXX年X月\n・US GDP成長：X.X%（最新季），失業率：X.X%\n・S&P500 EPS成長YoY：X%\n【建議配置】\n・股票 XX%（偏好哪個sector，原因）\n・債券 XX%（短債/長債，存續期）\n・現金 XX%\n・原物料 XX%（Gold/Oil，原因）\n【風險提示】具體事件名稱（英文）+可能影響%\n\n禁止「建議適度配置」「可考慮增持」「視情況調整」。不超過300字。`);
   let phase=null;
   const m=summary.match(/【時鐘位置】[：:]\s*(復甦|過熱|滯脹|再膨脹)/);
   if(m) phase=m[1];
