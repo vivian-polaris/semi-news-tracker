@@ -104,6 +104,8 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 .nlist .ctitle{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ngrid .ctitle{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .csumm{font-size:.76rem;color:var(--text2);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.czh{font-size:.76rem;color:#94a3b8;line-height:1.45;margin-top:3px}
+.czh.loading{color:#374151;font-style:italic;font-size:.7rem}
 .ctags{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:2px}
 .badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:.65rem}
 .bn{background:rgba(59,130,246,.1);color:var(--accent);border:1px solid rgba(59,130,246,.25)}
@@ -1140,6 +1142,44 @@ function passOutlet(n){
   const key=OUTLET_KEY[activeSrc]||activeSrc.split('.')[0];
   return (n.source||'').toLowerCase().includes(key);
 }
+// ================================================================
+// AI 中文摘要 — batch 模式（每次 render 後呼叫，有 cache 不重複）
+// ================================================================
+function titleHash(s){let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h=h&h;}return Math.abs(h).toString(36);}
+const zhCache={};
+let zhTimer=null;
+
+async function batchZhSumm(){
+  // 收集所有目前 DOM 裡還沒有摘要的 card
+  const els=[...document.querySelectorAll('.czh.loading')].slice(0,14);
+  if(!els.length) return;
+  // 標記為處理中，避免重複送
+  els.forEach(el=>el.classList.remove('loading'));
+  const pairs=els.map(el=>({el,title:decodeURIComponent(el.dataset.t||'')})).filter(p=>p.title);
+  if(!pairs.length) return;
+  const numbered=pairs.map((p,i)=>`${i+1}. ${p.title}`).join('\n');
+  const raw=await callAI(`為以下每條新聞標題各寫一句20字以內的繁體中文口語摘要。只輸出「編號. 摘要」每行一條，不要其他文字：\n${numbered}`);
+  if(!raw||raw.startsWith('⚠️')) return;
+  const lines=raw.split('\n').map(l=>l.replace(/^\d+[\.\、\)：:]\s*/,'').trim()).filter(Boolean);
+  pairs.forEach((p,i)=>{
+    const zh=lines[i]||'';
+    if(zh){
+      zhCache[titleHash(p.title)]=zh;
+      p.el.textContent=zh;
+      p.el.style.color='';
+    }
+  });
+  // 如果還有未處理的（超過14條），繼續跑下一批
+  if(document.querySelectorAll('.czh.loading').length){
+    zhTimer=setTimeout(batchZhSumm,3500);
+  }
+}
+
+function scheduleZhSumm(){
+  clearTimeout(zhTimer);
+  zhTimer=setTimeout(batchZhSumm,600);
+}
+
 function render(){
   const list=document.getElementById('nlist');
   const sortFn=sortBy==='time'?(a,b)=>{const ad=new Date(a.pub),bd=new Date(b.pub);if(isNaN(ad))return isNaN(bd)?0:1;if(isNaN(bd))return -1;return bd-ad;}:(a,b)=>(a.source||'').localeCompare(b.source||'');
@@ -1205,6 +1245,7 @@ function render(){
 
   list.className=cls;
   list.innerHTML=h;
+  scheduleZhSumm(); // render 完後批次生成中文摘要
 }
 
 // ================================================================
@@ -1222,13 +1263,16 @@ function cardHTML(n,kind){
   const l2tag=(l2k&&l1k)?`<span class="tl2">${CAT[l1k].subs[l2k].label}</span>`:'';
   const badge={news:'<span class="badge bn">📰 新聞</span>',live:'<span class="badge bl">⚡ 即時</span>',paper:'<span class="badge bp">📄 論文</span>',abc:'<span class="badge ba">📧 ABC</span>',video:'<span class="badge bv">📺 影片</span>'}[kind];
   const cls='card'+(kind==='paper'?' cpaper':kind==='live'?' clive':kind==='abc'?' cabc':kind==='video'?' cvideo':'');
-  const summ=n.summary?`<div class="csumm">${esc(n.summary)}</div>`:'';
   const thumb=n.thumb?`<img class="cthumb" src="${esc(n.thumb)}" alt="" loading="lazy" onerror="this.style.display='none'">`:'';
+  // AI 中文摘要（優先讀 cache，否則顯示佔位）
+  const zhKey=titleHash(n.title);
+  const cached=zhCache[zhKey];
+  const zhDiv=`<div class="czh${cached?'':' loading'}" id="czh-${zhKey}" data-t="${encodeURIComponent(n.title.slice(0,250))}">${cached?esc(cached):'中文摘要生成中...'}</div>`;
   return `<div class="${cls}" data-href="${safeUrl(n.link)}" onclick="var h=this.getAttribute('data-href');if(h&&h!=='#')window.open(h,'_blank')">
 <div class="ctop"><span class="csrc">${esc(n.source)}</span><span class="ctime-txt" title="${ds}">${ago}</span></div>
 <div class="ctitle"><a href="${safeUrl(n.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(n.title)}</a></div>
 ${thumb}
-${summ}
+${zhDiv}
 <div class="ctags">${badge}${l1tag}${l2tag}</div>
 </div>`;
 }
