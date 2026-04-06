@@ -1555,7 +1555,7 @@ async function loadInvClock(){
   bodyEl.className='inv-body loading';bodyEl.textContent='AI 分析投資時鐘中...';
   timeEl.textContent='';
   const today=new Date().toISOString().slice(0,10);
-  const summary=await callAI(`今天${today}。請以美林投資時鐘（Merrill Lynch Investment Clock）框架，根據當前全球總體經濟環境（美國通膨、聯準會政策、GDP產出缺口、企業盈利周期），判斷現在處於哪個階段。\n\n美林時鐘四個階段定義：\n- 復甦：產出缺口收窄、通膨仍低 → 持股票\n- 過熱：高成長、通膨上升 → 持原物料\n- 滯脹：成長下行、通膨仍高 → 持現金\n- 再膨脹：衰退、通膨回落 → 持債券\n\n請用繁體中文，格式如下（嚴格依格式）：\n【時鐘位置】只填寫：復甦、過熱、滯脹、再膨脹 其中一個\n【判斷依據】2–3個重點，說明當前經濟指標如何對應此階段\n【建議配置】此階段最有利的資產類別與受惠產業（3–4個）\n\n不超過250字。`);
+  const summary=await callAI(`今天${today}。以美林投資時鐘框架判斷當前階段，用繁體中文嚴格依以下格式輸出，每項必須有具體數字，禁止模糊描述：\n\n【時鐘位置】只填：復甦、過熱、滯脹、再膨脹 其中一個\n【判斷依據】\n・美國CPI：X.X%（YoY），核心PCE：X.X%\n・聯準會利率：X.XX%，下次降息預期：XXXX年X月\n・美國GDP成長：X.X%（最新季），失業率：X.X%\n・企業盈利：S&P500 EPS成長YoY X%\n【建議配置】必須給出具體%數，例：\n・股票 XX%（偏好：科技/能源/原物料，說明原因）\n・債券 XX%（短債/長債，說明存續期）\n・現金 XX%\n・原物料 XX%（黃金/石油，說明原因）\n【風險提示】目前最大下行風險是什麼（具體事件名稱+可能影響%）\n\n禁止：「建議適度配置」「可考慮增持」「視情況調整」這類廢話，必須給明確數字。不超過300字。`);
   let phase=null;
   const m=summary.match(/【時鐘位置】[：:]\s*(復甦|過熱|滯脹|再膨脹)/);
   if(m) phase=m[1];
