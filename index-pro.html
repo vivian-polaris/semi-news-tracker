@@ -1189,9 +1189,10 @@ async function batchZhSumm(){
 
   const numbered=pairs.map((p,i)=>`${i+1}. ${p.title}`).join('\n');
   const raw=await callAI(
-    `你是新聞編輯。以下是${pairs.length}條新聞標題，請為每條各寫一句**15字以內**的繁體中文摘要。`+
-    `摘要要直接說重點（數字、公司名、事件），不要「密切關注」「緊張情勢」「持續發展」這類廢話。`+
-    `只輸出：\n1. [摘要]\n2. [摘要]\n...\n不要其他任何文字。\n\n${numbered}`
+    `以下${pairs.length}條半導體/科技新聞標題，每條寫12字以內繁體中文重點，格式必須是「誰＋做什麼＋數字/結果」。`+
+    `例：「台積電2nm良率達80%」「輝達H200漲價15%」「蘋果砍三星訂單」。`+
+    `絕對禁止：密切關注、緊張情勢、持續發展、值得注意、帶來影響、備受矚目、持續觀察。`+
+    `只輸出數字清單，不加任何說明：\n1. 摘要\n2. 摘要\n\n${numbered}`
   );
 
   if(!raw || raw.startsWith('⚠️') || raw.startsWith('🔑')) return;
@@ -1464,7 +1465,7 @@ async function loadTrumpNews(){
   if(!items.length){bodyEl.className='qn-body';bodyEl.textContent='RSS 暫時無法連線，請點 ↻ 重整。';return;}
   bodyEl.textContent='AI 摘要分析中...';
   const headlines=items.slice(0,10).map((h,i)=>`${i+1}. ${h.title}`).join('\n');
-  const summary=await callAI('你是新聞摘要助理。以下是最新川普相關英文新聞標題，請用繁體中文寫150–200字重點摘要，說明川普最近說了什麼、做了什麼決定。分2–3個重點條列（每點用「・」開頭），語氣客觀不評論好壞：\n\n'+headlines);
+  const summary=await callAI('以下是最新川普新聞標題。用繁體中文寫2–3條重點，每條必須有：具體數字或%、人名、國家/公司名、行動結果。禁止用「持續」「關注」「局勢」「緊張」「影響深遠」「值得注意」這類空話。直接說「川普宣布對XX加徵XX%關稅」「簽署XX法案」「與XX通話要求XX」這種格式。每條用「・」開頭，共150字內：\n\n'+headlines);
   bodyEl.className='qn-body';bodyEl.textContent=summary;
   timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
@@ -1484,7 +1485,7 @@ async function loadWarNews(){
   if(!items.length){bodyEl.className='qn-body';bodyEl.textContent='RSS 暫時無法連線，請點 ↻ 重整。';return;}
   bodyEl.textContent='AI 摘要分析中...';
   const headlines=items.map((h,i)=>`${i+1}. ${h.title}`).join('\n');
-  const summary=await callAI('你是新聞摘要助理。以下是最新國際戰爭衝突英文新聞標題，請用繁體中文寫200–250字摘要，用三段說明：\n「・烏俄：」烏克蘭與俄羅斯最新戰況或停火談判進展\n「・以巴：」以色列與加薩/哈馬斯最新動態、人質談判、停火情況\n「・伊朗：」伊朗核武/中東緊張局勢最新進展\n如果某段沒有相關標題，請根據你的知識庫寫出該地區截至今日的最新概況（50字以內）。語氣客觀：\n\n'+headlines);
+  const summary=await callAI('以下是最新戰爭衝突新聞標題。用繁體中文寫三段，每段必須有具體地名、人名、數字或傷亡/領土結果。絕對禁止「緊張情勢」「密切關注」「持續發展」「局勢升溫」這類廢話。格式：\n・烏俄：[具體戰況，城市名+進退+傷亡數或談判條件]\n・以巴：[停火狀態+人質數字+最新攻擊地點]\n・伊朗：[核濃縮%或導彈型號或制裁內容]\n若標題中某區資料不足，用知識庫補充最近已知事實（不要說「暫無更新」）。每段2句內，共180字：\n\n'+headlines);
   bodyEl.className='qn-body';bodyEl.textContent=summary;
   timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
