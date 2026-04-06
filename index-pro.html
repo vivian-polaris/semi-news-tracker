@@ -1298,24 +1298,24 @@ async function askAI(){
 }
 
 // ================================================================
-// 每日快訊 + 投資人專區 — 共用 AI 呼叫（POST + GET fallback）
+// 每日快訊 + 投資人專區 — 共用 AI 呼叫（retry 3次，過濾 HTML 錯誤頁）
 // ================================================================
 async function callAI(prompt){
-  // POST first
-  try{
-    const r=await fetch('https://text.pollinations.ai/',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'openai'})
-    });
-    if(r.ok){const t=await r.text();if(t&&t.length>20)return t;}
-  }catch{}
-  // GET fallback
-  await new Promise(r=>setTimeout(r,1200));
-  try{
-    const r=await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt.slice(0,900))}?model=openai`);
-    if(r.ok){const t=await r.text();if(t&&t.length>20)return t;}
-  }catch{}
+  for(let i=0;i<3;i++){
+    try{
+      const r=await fetch('https://text.pollinations.ai/',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'openai'})
+      });
+      if(r.ok){
+        const t=await r.text();
+        // 排除 HTML 錯誤頁（pollinations 有時 200 但回傳 <html>...）
+        if(t && t.length>20 && !t.trim().startsWith('<')) return t;
+      }
+    }catch{}
+    if(i<2) await new Promise(r=>setTimeout(r,3000));
+  }
   return '⚠️ AI 暫時無法使用，請點 ↻ 重整。';
 }
 
@@ -1415,10 +1415,11 @@ document.getElementById('si').addEventListener('keydown',e=>{
 })();
 renderL1();renderL2();
 fetchAll();
+// 每隔 8 秒錯開一個，讓 pollinations.ai 不被同時 rate limit
 loadTrumpNews();
-setTimeout(loadWarNews, 2500);
-setTimeout(loadInvClock, 5000);
-setTimeout(loadVCPStocks, 7500);
+setTimeout(loadWarNews,  8000);
+setTimeout(loadInvClock, 16000);
+setTimeout(loadVCPStocks,24000);
 </script>
 </body>
 </html>
