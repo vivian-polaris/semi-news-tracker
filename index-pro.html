@@ -152,6 +152,23 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
 .qn-body{font-size:.8rem;line-height:1.7;color:var(--text);flex:1;white-space:pre-wrap}
 .qn-body.loading{color:var(--text2);font-style:italic}
 .qn-time{font-size:.62rem;color:var(--text2);margin-top:8px;text-align:right}
+
+/* 投資人專區 */
+.inv-section{margin:10px 0 14px}
+.inv-clock-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+@media(max-width:620px){.inv-clock-row{grid-template-columns:1fr}}
+.inv-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column}
+.inv-card.clock{border-left:4px solid #10b981}
+.inv-card.vcp{border-left:4px solid #f59e0b}
+.inv-card.macro{grid-column:1/-1;border-left:4px solid #8b5cf6}
+.inv-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.inv-title{font-size:.78rem;font-weight:700;letter-spacing:.03em}
+.inv-title.clock-t{color:#10b981}
+.inv-title.vcp-t{color:#f59e0b}
+.inv-title.macro-t{color:#8b5cf6}
+.inv-body{font-size:.8rem;line-height:1.7;color:var(--text);flex:1;white-space:pre-wrap}
+.inv-body.loading{color:var(--text2);font-style:italic}
+.inv-time{font-size:.62rem;color:var(--text2);margin-top:8px;text-align:right}
 </style>
 </head>
 <body>
@@ -178,6 +195,28 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
       </div>
       <div class="qn-body loading" id="warBody">載入中...</div>
       <div class="qn-time" id="warTime"></div>
+    </div>
+  </div>
+
+  <div class="lbl">💹 投資人專區（AI 自動分析）</div>
+  <div class="inv-section">
+    <div class="inv-clock-row">
+      <div class="inv-card clock">
+        <div class="inv-head">
+          <span class="inv-title clock-t">🕐 投資時鐘：現在走到哪？</span>
+          <button class="qn-refresh" onclick="loadInvClock()">↻ 重整</button>
+        </div>
+        <div class="inv-body loading" id="clockBody">載入中...</div>
+        <div class="inv-time" id="clockTime"></div>
+      </div>
+      <div class="inv-card vcp">
+        <div class="inv-head">
+          <span class="inv-title vcp-t">📈 VCP 潛力股（各產業受惠公司）</span>
+          <button class="qn-refresh" onclick="loadVCPStocks()">↻ 重整</button>
+        </div>
+        <div class="inv-body loading" id="vcpBody">載入中...</div>
+        <div class="inv-time" id="vcpTime"></div>
+      </div>
     </div>
   </div>
 
@@ -1324,6 +1363,50 @@ async function loadWarNews(){
   timeEl.textContent='更新時間：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
+// ================================================================
+// 投資人專區 — 投資時鐘 + VCP 選股
+// ================================================================
+async function invAI(prompt){
+  try{
+    const r=await fetch('https://text.pollinations.ai/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        messages:[{role:'user',content:prompt}],
+        model:'openai', seed:Date.now()
+      })
+    });
+    if(!r.ok) throw new Error(r.status);
+    return await r.text();
+  }catch{ return '⚠️ AI 暫時無法使用，請點 ↻ 重整。'; }
+}
+
+async function loadInvClock(){
+  const bodyEl=document.getElementById('clockBody');
+  const timeEl=document.getElementById('clockTime');
+  bodyEl.className='inv-body loading'; bodyEl.textContent='AI 分析投資時鐘中...';
+  timeEl.textContent='';
+  const today=new Date().toISOString().slice(0,10);
+  const summary=await invAI(
+    `今天是 ${today}。你是一位資深的全球宏觀投資分析師。\n\n請根據你對當前全球經濟環境的了解（通膨趨勢、聯準會利率政策、PMI 數據、企業盈利周期），判斷「投資時鐘」目前最可能走到哪個階段，並說明哪些產業處於順風位置。\n\n請用繁體中文，以以下格式回答：\n\n【當前時鐘位置】：（過熱 / 停滯 / 衰退 / 復甦）\n【核心判斷依據】：2–3點簡要說明\n【順風產業】：列出 3–5 個目前受惠產業（如科技、能源、醫療、金融等）並各附一句理由\n\n語氣客觀，不超過 250 字。`
+  );
+  bodyEl.className='inv-body'; bodyEl.textContent=summary;
+  timeEl.textContent='更新時間：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+async function loadVCPStocks(){
+  const bodyEl=document.getElementById('vcpBody');
+  const timeEl=document.getElementById('vcpTime');
+  bodyEl.className='inv-body loading'; bodyEl.textContent='AI 分析 VCP 潛力股中...';
+  timeEl.textContent='';
+  const today=new Date().toISOString().slice(0,10);
+  const summary=await invAI(
+    `今天是 ${today}。你是一位專注於 Mark Minervini VCP（Volatility Contraction Pattern）選股法的技術分析師，同時了解總體經濟環境。\n\n請根據當前投資時鐘與宏觀環境，從以下產業中各列出 1–2 家最可能符合 VCP 特徵的公司（上市股票）：科技/半導體、AI 基礎建設、能源/天然資源、醫療/生技、金融。\n\n對每家公司請說明：(1) 為何目前宏觀環境對它有利 (2) 為何它可能呈現 VCP 型態（如量縮、底部整理、強相對強度）。\n\n請用繁體中文，格式為每個產業一段，每段格式：\n「產業名：公司A（理由）、公司B（理由）」\n\n不超過 280 字，僅提供分析視角，非投資建議。`
+  );
+  bodyEl.className='inv-body'; bodyEl.textContent=summary;
+  timeEl.textContent='更新時間：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
 document.getElementById('si').addEventListener('input',e=>{
   const raw=e.target.value;
   searchText=raw.toLowerCase().trim();
@@ -1363,6 +1446,8 @@ renderL1();renderL2();
 fetchAll();
 loadTrumpNews();
 loadWarNews();
+loadInvClock();
+loadVCPStocks();
 </script>
 </body>
 </html>
