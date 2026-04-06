@@ -138,6 +138,21 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 .rfbtn:disabled{opacity:.5;cursor:not-allowed}
 
 footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;border-top:1px solid var(--border);margin-top:28px}
+/* API Key 設定 */
+header{position:relative}
+.key-btn{position:absolute;top:0;right:0;background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--text2);cursor:pointer;font-size:.75rem;padding:4px 10px;transition:all .2s}
+.key-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.key-panel{display:none;background:var(--card);border:1px solid var(--accent2);border-radius:10px;padding:14px 16px;margin:8px 0 4px;font-size:.82rem}
+.key-panel.show{display:block}
+.key-panel p{color:var(--text2);font-size:.75rem;margin-bottom:8px;line-height:1.6}
+.key-panel a{color:var(--accent2)}
+.key-row{display:flex;gap:8px;align-items:center}
+.key-input{flex:1;padding:7px 10px;background:var(--tag);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:.82rem;outline:none}
+.key-input:focus{border-color:var(--accent2)}
+.key-save{padding:7px 16px;background:var(--accent2);border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:.82rem;font-weight:600;white-space:nowrap}
+.key-status{font-size:.72rem;margin-top:6px}
+.key-status.ok{color:var(--green)}
+.key-status.no{color:var(--orange)}
 
 /* 每日快訊區 */
 .quicknews{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 14px}
@@ -178,7 +193,18 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
   <header>
     <h1>✨ 半導體好好玩 × Vivian</h1>
     <p>跟 Vivian 一起乘著半導體 AI 產業的風賺錢 🚀 &nbsp;·&nbsp; 不受 Google SEO 限制 &nbsp;·&nbsp; 不聽股市明牌，只看到真相</p>
+    <button class="key-btn" onclick="toggleKeyPanel()">⚙️ AI 設定</button>
   </header>
+  <div class="key-panel" id="keyPanel">
+    <p>🤖 AI 摘要功能需要 <strong>Google Gemini API Key</strong>（免費，不需信用卡）<br>
+    申請網址：<a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> → 點「Create API key」→ 複製貼上</p>
+    <div class="key-row">
+      <input class="key-input" id="keyInput" type="password" placeholder="AIza...">
+      <button class="key-save" onclick="saveKey()">儲存</button>
+      <button class="key-save" style="background:var(--red)" onclick="clearKey()">清除</button>
+    </div>
+    <div class="key-status" id="keyStatus"></div>
+  </div>
 
   <div class="lbl">🌐 每日快訊 AI 摘要（自動更新）</div>
   <div class="quicknews">
@@ -1346,74 +1372,70 @@ async function askAI(){
 // 每日快訊 + 投資人專區 — 共用 AI 呼叫（retry 3次，過濾 HTML 錯誤頁）
 // ================================================================
 // 清理 AI 回傳的原始 JSON（有些模型會把 reasoning_content 一起吐出來）
-function cleanAIText(t){
-  if(!t) return '';
-  // 移除 <think>...</think> 鏈式思考塊
-  t=t.replace(/<think>[\s\S]*?<\/think>/gi,'').trim();
-  // 如果是 JSON，嘗試多種格式提取
-  if(t.startsWith('{')){
-    try{
-      const j=JSON.parse(t);
-      // OpenAI Chat Completions 格式
-      const c1=j.choices?.[0]?.message?.content;
-      if(c1 && c1.trim().length>5) return c1.trim();
-      // 直接 content 欄位
-      if(j.content && typeof j.content==='string' && j.content.trim().length>5) return j.content.trim();
-      // message 欄位
-      if(j.message && typeof j.message==='string' && j.message.trim().length>5) return j.message.trim();
-    }catch{}
-    // regex 抓所有 "content":"..." 配對，取最長的（最可能是真正回答）
-    const all=[...t.matchAll(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"/g)];
-    const best=all.map(m=>m[1].replace(/\\n/g,'\n').replace(/\\"/g,'"').trim()).filter(s=>s.length>10).sort((a,b)=>b.length-a.length)[0];
-    if(best) return best;
-    return ''; // 真的抓不到，讓 retry 繼續
+// ================================================================
+// AI 引擎：Google Gemini（免費，不需信用卡）
+// Key 存在 localStorage，不放進程式碼
+// 申請：https://aistudio.google.com/apikey
+// ================================================================
+function getKey(){ return localStorage.getItem('gemini_key')||''; }
+function toggleKeyPanel(){
+  const p=document.getElementById('keyPanel');
+  p.classList.toggle('show');
+  if(p.classList.contains('show')){
+    document.getElementById('keyInput').value=getKey();
+    updateKeyStatus();
   }
-  return t;
+}
+function updateKeyStatus(){
+  const s=document.getElementById('keyStatus');
+  if(!s) return;
+  const k=getKey();
+  s.className='key-status '+(k?'ok':'no');
+  s.textContent=k?'✅ API Key 已設定，AI 功能啟用中':'⚠️ 尚未設定 Key，AI 功能無法使用';
+}
+function saveKey(){
+  const k=document.getElementById('keyInput').value.trim();
+  if(!k){alert('請輸入 API Key');return;}
+  localStorage.setItem('gemini_key',k);
+  updateKeyStatus();
+  document.getElementById('keyPanel').classList.remove('show');
+  // 重新載入 AI 區塊
+  loadTrumpNews(); loadWarNews(); loadInvClock(); loadVCPStocks();
+}
+function clearKey(){
+  localStorage.removeItem('gemini_key');
+  document.getElementById('keyInput').value='';
+  updateKeyStatus();
 }
 
-// AI 服務：Pollinations.ai (免費代理) — GET 端點優先（純文字，無 JSON 問題），POST 作 fallback
 async function callAI(prompt){
-  const short=prompt.slice(0,900);
-  // ① GET 端點（回傳純文字，最穩定）
+  const key=getKey();
+  if(!key) return '🔑 請點右上角「⚙️ AI 設定」輸入免費 Gemini Key\n申請網址：aistudio.google.com/apikey';
   try{
-    const r=await fetch(`https://text.pollinations.ai/${encodeURIComponent(short)}?model=openai`,
-      {signal:AbortSignal.timeout(22000)});
-    if(r.ok){
-      const raw=await r.text();
-      const t=cleanAIText(raw);
-      if(t && t.length>15 && !t.trim().startsWith('<')) return t;
+    const r=await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+      {method:'POST',
+       headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({
+         contents:[{parts:[{text:prompt}]}],
+         generationConfig:{maxOutputTokens:500,temperature:0.7}
+       }),
+       signal:AbortSignal.timeout(25000)
+      }
+    );
+    if(!r.ok){
+      const e=await r.json().catch(()=>({}));
+      const msg=e.error?.message||r.status;
+      if(r.status===400||r.status===403) return `⚠️ API Key 錯誤或已過期，請重新設定（${msg}）`;
+      return `⚠️ Gemini 回傳錯誤 ${msg}，請稍後再試`;
     }
-  }catch{}
-  // ② POST 端點，換 mistral 模型（不會產生 reasoning_content）
-  try{
-    const r=await fetch('https://text.pollinations.ai/',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'mistral'}),
-      signal:AbortSignal.timeout(22000)
-    });
-    if(r.ok){
-      const raw=await r.text();
-      const t=cleanAIText(raw);
-      if(t && t.length>15 && !t.trim().startsWith('<')) return t;
-    }
-  }catch{}
-  // ③ POST 端點，openai 模型再試一次
-  await new Promise(r=>setTimeout(r,2000));
-  try{
-    const r=await fetch('https://text.pollinations.ai/',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'openai'}),
-      signal:AbortSignal.timeout(22000)
-    });
-    if(r.ok){
-      const raw=await r.text();
-      const t=cleanAIText(raw);
-      if(t && t.length>15 && !t.trim().startsWith('<')) return t;
-    }
-  }catch{}
-  return '⚠️ AI 暫時無法使用，請點 ↻ 重整。';
+    const j=await r.json();
+    const text=j.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    if(text.trim().length>10) return text.trim();
+    return '⚠️ AI 回覆為空，請點 ↻ 重整';
+  }catch(e){
+    return `⚠️ 網路連線問題（${e.message}），請點 ↻ 重整`;
+  }
 }
 
 // 川普 — 使用頁面現有的 fetchRSSEn（已測試穩定）
@@ -1438,15 +1460,15 @@ async function loadWarNews(){
   bodyEl.className='qn-body loading';bodyEl.textContent='抓取最新新聞...';
   timeEl.textContent='';
   const [a,b,c]=await Promise.all([
-    fetchRSSEn('Ukraine Russia war frontline').catch(()=>[]),
-    fetchRSSEn('Israel Gaza Hamas war').catch(()=>[]),
-    fetchRSSEn('Iran Israel strike missile attack').catch(()=>[])
+    fetchRSSEn('Ukraine Russia Zelensky Putin war ceasefire 2025').catch(()=>[]),
+    fetchRSSEn('Israel Gaza Hamas ceasefire hostage 2025').catch(()=>[]),
+    fetchRSSEn('Iran Israel Middle East attack nuclear 2025').catch(()=>[])
   ]);
   const items=[...a,...b,...c].slice(0,15);
   if(!items.length){bodyEl.className='qn-body';bodyEl.textContent='RSS 暫時無法連線，請點 ↻ 重整。';return;}
   bodyEl.textContent='AI 摘要分析中...';
   const headlines=items.map((h,i)=>`${i+1}. ${h.title}`).join('\n');
-  const summary=await callAI('你是新聞摘要助理。以下是最新國際戰爭衝突英文新聞標題，請用繁體中文寫200–250字摘要，用三段分別說明：「・烏俄：」烏克蘭俄羅斯戰況、「・以巴：」以色列加薩哈馬斯最新進展、「・伊朗：」伊朗與以色列/中東緊張局勢。如果某條線沒有新消息就寫「暫無重大更新」。語氣客觀：\n\n'+headlines);
+  const summary=await callAI('你是新聞摘要助理。以下是最新國際戰爭衝突英文新聞標題，請用繁體中文寫200–250字摘要，用三段說明：\n「・烏俄：」烏克蘭與俄羅斯最新戰況或停火談判進展\n「・以巴：」以色列與加薩/哈馬斯最新動態、人質談判、停火情況\n「・伊朗：」伊朗核武/中東緊張局勢最新進展\n如果某段沒有相關標題，請根據你的知識庫寫出該地區截至今日的最新概況（50字以內）。語氣客觀：\n\n'+headlines);
   bodyEl.className='qn-body';bodyEl.textContent=summary;
   timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
@@ -1574,11 +1596,12 @@ document.getElementById('si').addEventListener('keydown',e=>{
 })();
 renderL1();renderL2();
 fetchAll();
-// 每隔 8 秒錯開一個，讓 pollinations.ai 不被同時 rate limit
+updateKeyStatus();
+// Gemini 免費 API：RPM 限制 15，錯開 5 秒一個
 loadTrumpNews();
-setTimeout(loadWarNews,  8000);
-setTimeout(loadInvClock, 16000);
-setTimeout(loadVCPStocks,24000);
+setTimeout(loadWarNews,  5000);
+setTimeout(loadInvClock, 10000);
+setTimeout(loadVCPStocks,15000);
 </script>
 </body>
 </html>
