@@ -1178,39 +1178,38 @@ const zhCache={};
 let zhTimer=null;
 
 async function batchZhSumm(){
-  const els=[...document.querySelectorAll('.czh.loading')].slice(0,14);
+  const els=[...document.querySelectorAll('.czh.loading')].slice(0,6); // 每批 6 條，減少 token 和解析問題
   if(!els.length) return;
   els.forEach(el=>el.classList.remove('loading'));
+
+  if(!getKey()) return; // 無 key 就不處理（元素已空白，CSS:empty 隱藏）
+
   const pairs=els.map(el=>({el,title:decodeURIComponent(el.dataset.t||'')})).filter(p=>p.title);
   if(!pairs.length) return;
 
-  // 沒有 Key → 直接隱藏佔位，不顯示錯誤文字在每張 card
-  if(!getKey()){
-    pairs.forEach(p=>{p.el.textContent='';p.el.style.display='none';});
-    return;
-  }
-
   const numbered=pairs.map((p,i)=>`${i+1}. ${p.title}`).join('\n');
-  const raw=await callAI(`為以下每條新聞標題各寫一句20字以內的繁體中文口語摘要。只輸出「編號. 摘要」每行一條，不要其他文字：\n${numbered}`);
+  const raw=await callAI(
+    `你是新聞編輯。以下是${pairs.length}條新聞標題，請為每條各寫一句**15字以內**的繁體中文摘要。`+
+    `摘要要直接說重點（數字、公司名、事件），不要「密切關注」「緊張情勢」「持續發展」這類廢話。`+
+    `只輸出：\n1. [摘要]\n2. [摘要]\n...\n不要其他任何文字。\n\n${numbered}`
+  );
 
-  // API 失敗（任何錯誤訊息）→ 隱藏佔位
-  if(!raw || raw.startsWith('⚠️') || raw.startsWith('🔑')){
-    pairs.forEach(p=>{p.el.textContent='';p.el.style.display='none';});
-    return;
-  }
+  if(!raw || raw.startsWith('⚠️') || raw.startsWith('🔑')) return;
 
-  const lines=raw.split('\n').map(l=>l.replace(/^\d+[\.\、\)：:]\s*/,'').trim()).filter(Boolean);
+  // 解析：跳過沒有數字開頭的行（preamble），取有 "數字." 開頭的行
+  const lines=raw.split('\n')
+    .filter(l=>/^\d+[\.\、\)：:]\s*\S/.test(l.trim()))
+    .map(l=>l.replace(/^\d+[\.\、\)：:]\s*/,'').replace(/\[|\]/g,'').trim());
+
   pairs.forEach((p,i)=>{
     const zh=lines[i]||'';
-    if(zh){
+    if(zh && zh.length>2 && zh.length<80){
       zhCache[titleHash(p.title)]=zh;
       p.el.textContent=zh;
-      p.el.style.color='';
-    } else {
-      p.el.textContent='';p.el.style.display='none'; // 解析失敗就隱藏
     }
+    // 失敗時保持空白（CSS:empty 自動隱藏）
   });
-  // 繼續跑下一批（如果還有超過 14 條）
+
   if(document.querySelectorAll('.czh.loading').length){
     zhTimer=setTimeout(batchZhSumm,4000);
   }
@@ -1218,7 +1217,8 @@ async function batchZhSumm(){
 
 function scheduleZhSumm(){
   clearTimeout(zhTimer);
-  zhTimer=setTimeout(batchZhSumm,600);
+  // 8 秒 debounce：新聞分批載入會多次呼叫 render()，等全部穩定後才跑
+  zhTimer=setTimeout(batchZhSumm,8000);
 }
 
 function render(){
@@ -1308,7 +1308,8 @@ function cardHTML(n,kind){
   // AI 中文摘要（優先讀 cache，否則顯示佔位）
   const zhKey=titleHash(n.title);
   const cached=zhCache[zhKey];
-  const zhDiv=`<div class="czh${cached?'':' loading'}" id="czh-${zhKey}" data-t="${encodeURIComponent(n.title.slice(0,250))}">${cached?esc(cached):'中文摘要生成中...'}</div>`;
+  // 無 cache 時留空（CSS .czh:empty 自動隱藏），有 cache 才顯示
+  const zhDiv=`<div class="czh${cached?'':' loading'}" id="czh-${zhKey}" data-t="${encodeURIComponent(n.title.slice(0,250))}">${cached?esc(cached):''}</div>`;
   return `<div class="${cls}" data-href="${safeUrl(n.link)}" onclick="var h=this.getAttribute('data-href');if(h&&h!=='#')window.open(h,'_blank')">
 <div class="ctop"><span class="csrc">${esc(n.source)}</span><span class="ctime-txt" title="${ds}">${ago}</span></div>
 <div class="ctitle"><a href="${safeUrl(n.link)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(n.title)}</a></div>
@@ -1566,10 +1567,29 @@ async function loadInvClock(){
 async function loadVCPStocks(){
   const bodyEl=document.getElementById('vcpBody');
   const timeEl=document.getElementById('vcpTime');
-  bodyEl.className='inv-body loading';bodyEl.textContent='AI 分析 VCP 潛力股中...';
+  bodyEl.className='inv-body loading';bodyEl.textContent='AI 分析台股 VCP 中...';
   timeEl.textContent='';
   const today=new Date().toISOString().slice(0,10);
-  const summary=await callAI(`今天${today}。你是Mark Minervini VCP選股專家。請從科技/半導體、AI基建、能源、醫療生技、金融五個產業，各列1–2家最符合VCP特徵的上市公司，說明：(1)宏觀環境為何有利 (2)技術面為何像VCP（量縮底部整理/高相對強度）。繁體中文，每產業一段格式「產業：公司A（理由）、公司B（理由）」。不超過260字，僅分析視角非投資建議。`);
+  const summary=await callAI(
+`今天${today}，你是專注台灣股市的Mark Minervini VCP（Volatility Contraction Pattern）選股專家。
+
+VCP真正定義：
+・股票經歷一波大漲後進入整理
+・每次回調幅度逐步收縮（如 -25% → -15% → -8% → -4%）
+・每次整理時間也縮短
+・成交量在整理期萎縮，突破時放量
+・RS（相對強度）維持高位
+
+請從以下台股族群選出2-3支最有可能正在形成VCP底部的個股，給出股票代碼+名稱：
+・AI伺服器/散熱：廣達2382、緯穎6669、奇鋐3017、雙鴻3324、川湖2059
+・半導體：台積電2330、聯發科2454、矽力-KY6415、創意3443
+・CoWoS/先進封裝：日月光3711、南茂8150
+・電源/被動元件：台達電2308、國巨2327
+・PCB：臻鼎-KY4958、欣興3037
+
+說明每支：(1)目前整理型態是否符合量縮收斂 (2)川普關稅/AI需求對它影響 (3)若突破需觀察哪個價位。
+格式「代碼 股名：VCP判斷 / 關鍵價位」每股一行。繁體中文，不超過280字，僅供分析參考非投資建議。`
+  );
   bodyEl.className='inv-body';bodyEl.textContent=summary;
   timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
