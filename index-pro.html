@@ -1334,21 +1334,22 @@ async function loadTrumpNews(){
   timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
-// 戰爭 — 同樣使用 fetchRSSEn
+// 戰爭 — 三條 RSS：烏俄 + 以巴 + 伊朗
 async function loadWarNews(){
   const bodyEl=document.getElementById('warBody');
   const timeEl=document.getElementById('warTime');
   bodyEl.className='qn-body loading';bodyEl.textContent='抓取最新新聞...';
   timeEl.textContent='';
-  const [a,b]=await Promise.all([
-    fetchRSSEn('Ukraine Russia war').catch(()=>[]),
-    fetchRSSEn('Gaza Israel war Middle East').catch(()=>[])
+  const [a,b,c]=await Promise.all([
+    fetchRSSEn('Ukraine Russia war frontline').catch(()=>[]),
+    fetchRSSEn('Israel Gaza Hamas war').catch(()=>[]),
+    fetchRSSEn('Iran Israel strike missile attack').catch(()=>[])
   ]);
-  const items=[...a,...b].slice(0,12);
+  const items=[...a,...b,...c].slice(0,15);
   if(!items.length){bodyEl.className='qn-body';bodyEl.textContent='RSS 暫時無法連線，請點 ↻ 重整。';return;}
   bodyEl.textContent='AI 摘要分析中...';
   const headlines=items.map((h,i)=>`${i+1}. ${h.title}`).join('\n');
-  const summary=await callAI('你是新聞摘要助理。以下是最新國際戰爭衝突英文新聞標題，請用繁體中文寫150–200字摘要，分「・烏俄：」與「・中東：」兩段各自說明最新進展，語氣客觀：\n\n'+headlines);
+  const summary=await callAI('你是新聞摘要助理。以下是最新國際戰爭衝突英文新聞標題，請用繁體中文寫200–250字摘要，用三段分別說明：「・烏俄：」烏克蘭俄羅斯戰況、「・以巴：」以色列加薩哈馬斯最新進展、「・伊朗：」伊朗與以色列/中東緊張局勢。如果某條線沒有新消息就寫「暫無重大更新」。語氣客觀：\n\n'+headlines);
   bodyEl.className='qn-body';bodyEl.textContent=summary;
   timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
