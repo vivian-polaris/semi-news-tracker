@@ -174,8 +174,8 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
 <body>
 <div class="wrap">
   <header>
-    <h1>🔬 半導體新聞追蹤器 Pro</h1>
-    <p>google SEO 找不到關鍵資料，來這裡就可以不受 SEO 限制</p>
+    <h1>✨ 半導體好好玩 × Vivian</h1>
+    <p>跟 Vivian 一起乘著半導體 AI 產業的風賺錢 🚀 &nbsp;·&nbsp; 不受 Google SEO 限制 &nbsp;·&nbsp; 不聽股市明牌，只看到真相</p>
   </header>
 
   <div class="lbl">🌐 每日快訊 AI 摘要（自動更新）</div>
@@ -203,10 +203,11 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
     <div class="inv-clock-row">
       <div class="inv-card clock">
         <div class="inv-head">
-          <span class="inv-title clock-t">🕐 投資時鐘：現在走到哪？</span>
+          <span class="inv-title clock-t">🕐 投資時鐘</span>
           <button class="qn-refresh" onclick="loadInvClock()">↻ 重整</button>
         </div>
-        <div class="inv-body loading" id="clockBody">載入中...</div>
+        <div id="clockSvg" style="margin:6px 0 10px"></div>
+        <div class="inv-body loading" id="clockBody">AI 分析中...</div>
         <div class="inv-time" id="clockTime"></div>
       </div>
       <div class="inv-card vcp">
@@ -249,11 +250,11 @@ footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;borde
   <div class="row" id="timeRow">
     <div class="pill p-time"         data-t="1h"     onclick="setTime('1h')">1小時</div>
     <div class="pill p-time"         data-t="12h"    onclick="setTime('12h')">12小時</div>
-    <div class="pill p-time"         data-t="24h"    onclick="setTime('24h')">24小時</div>
+    <div class="pill p-time on"       data-t="24h"    onclick="setTime('24h')">24小時</div>
     <div class="pill p-time"          data-t="3d"     onclick="setTime('3d')">3天</div>
     <div class="pill p-time"         data-t="7d"     onclick="setTime('7d')">7天</div>
     <div class="pill p-time"         data-t="1m"     onclick="setTime('1m')">1個月</div>
-    <div class="pill p-time on"       data-t="3m"     onclick="setTime('3m')">3個月</div>
+    <div class="pill p-time"          data-t="3m"     onclick="setTime('3m')">3個月</div>
     <div class="pill p-time"         data-t="1y"     onclick="setTime('1y')">1年</div>
     <div class="pill p-time"         data-t="custom" onclick="setTime('custom')">✏️ 自訂</div>
   </div>
@@ -584,7 +585,7 @@ const NL_L2 = {
 // ================================================================
 let allNews=[], liveNews=[], arxivNews=[], substackNews=[], youtubeNews=[];
 let activeL1='all', activeL2='all';
-let timePeriod='3m', customStart=null, customEnd=null;
+let timePeriod='24h', customStart=null, customEnd=null;
 let searchText='', activeSrc='all', sortBy='time';
 let isSearching=false, currentQ='';
 let viewMode='list'; // 'list' | 'grid'
@@ -1300,6 +1301,23 @@ async function askAI(){
 // ================================================================
 // 每日快訊 + 投資人專區 — 共用 AI 呼叫（retry 3次，過濾 HTML 錯誤頁）
 // ================================================================
+// 清理 AI 回傳的原始 JSON（有些模型會把 reasoning_content 一起吐出來）
+function cleanAIText(t){
+  if(!t) return '';
+  // 移除 <think>...</think> 鏈式思考塊
+  t=t.replace(/<think>[\s\S]*?<\/think>/gi,'').trim();
+  // 如果整個回傳是 JSON（以 { 開頭），嘗試提取 content 欄位
+  if(t.startsWith('{')){
+    try{const j=JSON.parse(t); if(j.content) return j.content.trim();}catch{}
+    // JSON 不完整時用 regex 抓 "content":"..."
+    const cm=t.match(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    if(cm) return cm[1].replace(/\\n/g,'\n').replace(/\\"/g,'"').trim();
+    // 完全抓不到 content 就回空，讓 retry 繼續
+    return '';
+  }
+  return t;
+}
+
 async function callAI(prompt){
   for(let i=0;i<3;i++){
     try{
@@ -1309,8 +1327,8 @@ async function callAI(prompt){
         body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'openai'})
       });
       if(r.ok){
-        const t=await r.text();
-        // 排除 HTML 錯誤頁（pollinations 有時 200 但回傳 <html>...）
+        const raw=await r.text();
+        const t=cleanAIText(raw);
         if(t && t.length>20 && !t.trim().startsWith('<')) return t;
       }
     }catch{}
@@ -1357,13 +1375,75 @@ async function loadWarNews(){
 // ================================================================
 // 投資人專區 — 投資時鐘 + VCP（純 AI，不需 RSS）
 // ================================================================
+function drawClock(activePhase){
+  // 四象限：順時針從12點 → 復甦→過熱→停滯→衰退
+  const phases=[
+    {id:'復甦',sub:'Equities',color:'#10b981',dim:'rgba(16,185,129,0.1)',start:0,  end:90, mid:45 },
+    {id:'過熱',sub:'Commodities',color:'#f59e0b',dim:'rgba(245,158,11,0.1)',start:90, end:180,mid:135},
+    {id:'停滯',sub:'Cash',color:'#ef4444',dim:'rgba(239,68,68,0.1)',   start:180,end:270,mid:225},
+    {id:'衰退',sub:'Bonds',color:'#3b82f6',dim:'rgba(59,130,246,0.1)', start:270,end:360,mid:315},
+  ];
+  const R=88,r=30,CX=100,CY=100;
+  function pt(deg,radius){
+    const rad=(deg-90)*Math.PI/180;
+    return [CX+radius*Math.cos(rad), CY+radius*Math.sin(rad)];
+  }
+  function arc(s,e,active,color,dim){
+    const [x1,y1]=pt(s,R),[x2,y2]=pt(e,R);
+    const [ix2,iy2]=pt(e,r),[ix1,iy1]=pt(s,r);
+    return `<path d="M${x1} ${y1}A${R} ${R} 0 0 1 ${x2} ${y2}L${ix2} ${iy2}A${r} ${r} 0 0 0 ${ix1} ${iy1}Z" fill="${active?color:dim}" stroke="#0a0e17" stroke-width="1.5"/>`;
+  }
+  let s=`<svg viewBox="0 0 200 200" width="190" height="190" style="display:block;margin:0 auto">`;
+  // Sectors
+  phases.forEach(p=>{
+    const on=(p.id===activePhase);
+    s+=arc(p.start,p.end,on,p.color,p.dim);
+    const [lx,ly]=pt(p.mid,(R+r)/2);
+    const op=on?'1':'0.45';
+    s+=`<text x="${lx}" y="${ly-7}" text-anchor="middle" fill="${on?'#fff':p.color}" font-size="12" font-weight="${on?'700':'500'}" opacity="${op}" font-family="sans-serif">${p.id}</text>`;
+    s+=`<text x="${lx}" y="${ly+8}" text-anchor="middle" fill="${on?'#fff':p.color}" font-size="8" opacity="${op}" font-family="sans-serif">${p.sub}</text>`;
+  });
+  // Divider lines
+  [[0],[90],[180],[270]].forEach(([d])=>{
+    const [x1,y1]=pt(d,r+1),[x2,y2]=pt(d,R-1);
+    s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#0a0e17" stroke-width="2"/>`;
+  });
+  // Center
+  s+=`<circle cx="${CX}" cy="${CY}" r="${r}" fill="#0d1117" stroke="#1e2a42" stroke-width="1.5"/>`;
+  s+=`<text x="${CX}" y="${CY-14}" text-anchor="middle" fill="#475569" font-size="7" font-family="sans-serif">GDP ↑</text>`;
+  s+=`<text x="${CX}" y="${CY+20}" text-anchor="middle" fill="#475569" font-size="7" font-family="sans-serif">GDP ↓</text>`;
+  s+=`<text x="${CX-17}" y="${CY+3}" text-anchor="middle" fill="#475569" font-size="7" font-family="sans-serif">CPI↓</text>`;
+  s+=`<text x="${CX+17}" y="${CY+3}" text-anchor="middle" fill="#475569" font-size="7" font-family="sans-serif">CPI↑</text>`;
+  // Needle
+  if(activePhase){
+    const ap=phases.find(p=>p.id===activePhase);
+    if(ap){
+      const [nx,ny]=pt(ap.mid,R-16);
+      const [b1x,b1y]=pt(ap.mid-90,7),[b2x,b2y]=pt(ap.mid+90,7);
+      s+=`<polygon points="${CX},${CY} ${b1x},${b1y} ${nx},${ny} ${b2x},${b2y}" fill="${ap.color}" opacity="0.9"/>`;
+      s+=`<circle cx="${nx}" cy="${ny}" r="5" fill="${ap.color}"><animate attributeName="opacity" values="1;0.3;1" dur="1.8s" repeatCount="indefinite"/></circle>`;
+      s+=`<circle cx="${CX}" cy="${CY}" r="5" fill="${ap.color}" stroke="#0a0e17" stroke-width="1.5"/>`;
+    }
+  }
+  s+=`</svg>`;
+  return s;
+}
+
 async function loadInvClock(){
+  const svgEl=document.getElementById('clockSvg');
   const bodyEl=document.getElementById('clockBody');
   const timeEl=document.getElementById('clockTime');
+  svgEl.innerHTML=drawClock(null); // 空時鐘先顯示
   bodyEl.className='inv-body loading';bodyEl.textContent='AI 分析投資時鐘中...';
   timeEl.textContent='';
   const today=new Date().toISOString().slice(0,10);
-  const summary=await callAI(`今天${today}。你是全球宏觀投資分析師。請根據當前通膨/聯準會利率/PMI/企業盈利周期，判斷投資時鐘現在走到哪個階段，並說明哪些產業處於順風位置。繁體中文回答，格式：\n【時鐘位置】過熱/停滯/衰退/復甦\n【判斷依據】2–3點\n【順風產業】3–5個，各附一句理由。不超過230字。`);
+  const summary=await callAI(`今天${today}。你是全球宏觀投資分析師。請根據當前通膨/聯準會利率/PMI/企業盈利周期，判斷投資時鐘現在走到哪個階段，並說明哪些產業處於順風位置。繁體中文回答，格式：\n【時鐘位置】只填寫：過熱、停滯、衰退、復甦 其中一個詞\n【判斷依據】2–3點\n【順風產業】3–5個，各附一句理由。不超過230字。`);
+  // 解析時鐘位置（優先從【時鐘位置】行抓）
+  let phase=null;
+  const m=summary.match(/【時鐘位置】[：:]\s*(過熱|停滯|衰退|復甦)/);
+  if(m) phase=m[1];
+  else { for(const p of ['過熱','停滯','衰退','復甦']) if(summary.includes(p)){phase=p;break;} }
+  svgEl.innerHTML=drawClock(phase);
   bodyEl.className='inv-body';bodyEl.textContent=summary;
   timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
