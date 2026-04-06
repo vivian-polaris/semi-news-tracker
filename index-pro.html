@@ -1350,34 +1350,69 @@ function cleanAIText(t){
   if(!t) return '';
   // 移除 <think>...</think> 鏈式思考塊
   t=t.replace(/<think>[\s\S]*?<\/think>/gi,'').trim();
-  // 如果整個回傳是 JSON（以 { 開頭），嘗試提取 content 欄位
+  // 如果是 JSON，嘗試多種格式提取
   if(t.startsWith('{')){
-    try{const j=JSON.parse(t); if(j.content) return j.content.trim();}catch{}
-    // JSON 不完整時用 regex 抓 "content":"..."
-    const cm=t.match(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-    if(cm) return cm[1].replace(/\\n/g,'\n').replace(/\\"/g,'"').trim();
-    // 完全抓不到 content 就回空，讓 retry 繼續
-    return '';
+    try{
+      const j=JSON.parse(t);
+      // OpenAI Chat Completions 格式
+      const c1=j.choices?.[0]?.message?.content;
+      if(c1 && c1.trim().length>5) return c1.trim();
+      // 直接 content 欄位
+      if(j.content && typeof j.content==='string' && j.content.trim().length>5) return j.content.trim();
+      // message 欄位
+      if(j.message && typeof j.message==='string' && j.message.trim().length>5) return j.message.trim();
+    }catch{}
+    // regex 抓所有 "content":"..." 配對，取最長的（最可能是真正回答）
+    const all=[...t.matchAll(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"/g)];
+    const best=all.map(m=>m[1].replace(/\\n/g,'\n').replace(/\\"/g,'"').trim()).filter(s=>s.length>10).sort((a,b)=>b.length-a.length)[0];
+    if(best) return best;
+    return ''; // 真的抓不到，讓 retry 繼續
   }
   return t;
 }
 
+// AI 服務：Pollinations.ai (免費代理) — GET 端點優先（純文字，無 JSON 問題），POST 作 fallback
 async function callAI(prompt){
-  for(let i=0;i<3;i++){
-    try{
-      const r=await fetch('https://text.pollinations.ai/',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'openai'})
-      });
-      if(r.ok){
-        const raw=await r.text();
-        const t=cleanAIText(raw);
-        if(t && t.length>20 && !t.trim().startsWith('<')) return t;
-      }
-    }catch{}
-    if(i<2) await new Promise(r=>setTimeout(r,3000));
-  }
+  const short=prompt.slice(0,900);
+  // ① GET 端點（回傳純文字，最穩定）
+  try{
+    const r=await fetch(`https://text.pollinations.ai/${encodeURIComponent(short)}?model=openai`,
+      {signal:AbortSignal.timeout(22000)});
+    if(r.ok){
+      const raw=await r.text();
+      const t=cleanAIText(raw);
+      if(t && t.length>15 && !t.trim().startsWith('<')) return t;
+    }
+  }catch{}
+  // ② POST 端點，換 mistral 模型（不會產生 reasoning_content）
+  try{
+    const r=await fetch('https://text.pollinations.ai/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'mistral'}),
+      signal:AbortSignal.timeout(22000)
+    });
+    if(r.ok){
+      const raw=await r.text();
+      const t=cleanAIText(raw);
+      if(t && t.length>15 && !t.trim().startsWith('<')) return t;
+    }
+  }catch{}
+  // ③ POST 端點，openai 模型再試一次
+  await new Promise(r=>setTimeout(r,2000));
+  try{
+    const r=await fetch('https://text.pollinations.ai/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'openai'}),
+      signal:AbortSignal.timeout(22000)
+    });
+    if(r.ok){
+      const raw=await r.text();
+      const t=cleanAIText(raw);
+      if(t && t.length>15 && !t.trim().startsWith('<')) return t;
+    }
+  }catch{}
   return '⚠️ AI 暫時無法使用，請點 ↻ 重整。';
 }
 
