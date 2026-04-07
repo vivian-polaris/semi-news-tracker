@@ -1409,6 +1409,23 @@ document.getElementById('si').addEventListener('keydown',e=>{
 renderL1();renderL2();
 fetchAll();
 updateKeyStatus();
+
+// Hotkey: Alt+R = 重新搜尋（不清除 API key）
+document.addEventListener('keydown',e=>{
+  if(e.altKey&&e.key.toLowerCase()==='r'){
+    e.preventDefault();
+    const q=document.getElementById('si').value.trim();
+    if(q) doSearch(q); else fetchAll();
+    const tip=document.createElement('div');
+    tip.textContent='↻ Alt+R：重整中...';
+    tip.style.cssText='position:fixed;bottom:20px;right:20px;background:#a855f7;color:#fff;padding:8px 16px;border-radius:12px;font-size:.78rem;font-weight:700;z-index:9999;animation:fadeOut 2.5s ease forwards';
+    document.body.appendChild(tip);
+    setTimeout(()=>tip.remove(),2500);
+  }
+});
+const _style=document.createElement('style');
+_style.textContent='@keyframes fadeOut{0%,80%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(10px)}}';
+document.head.appendChild(_style);
 </script>
 </body>
 </html>

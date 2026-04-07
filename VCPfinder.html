@@ -1101,7 +1101,25 @@ function setSort(k,el){
 
   // Auto-load AI sections
   setTimeout(()=>{loadTrump();loadSemi();loadClock();loadMacro();},500);
+
+  // Hotkey: Alt+R = 重新整理 AI 快訊（不清除 API key）
+  document.addEventListener('keydown',e=>{
+    if(e.altKey&&e.key.toLowerCase()==='r'){
+      e.preventDefault();
+      loadTrump();loadSemi();loadClock();loadMacro();
+      const tip=document.createElement('div');
+      tip.textContent='↻ Alt+R：重整 AI 快訊中...';
+      tip.style.cssText='position:fixed;bottom:20px;right:20px;background:var(--purple);color:#fff;padding:8px 16px;border-radius:12px;font-size:.78rem;font-weight:700;z-index:9999;animation:fadeOut 2.5s ease forwards';
+      document.body.appendChild(tip);
+      setTimeout(()=>tip.remove(),2500);
+    }
+  });
 })();
+
+// CSS for toast animation
+const _style=document.createElement('style');
+_style.textContent='@keyframes fadeOut{0%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateY(10px)}}';
+document.head.appendChild(_style);
 </script>
 </body>
 </html>
