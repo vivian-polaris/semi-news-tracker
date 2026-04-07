@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✨ VCP Finder — 台股強勢股</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#fdf4ff;
+  --bg2:#fff8f1;
+  --card:#ffffff;
+  --card2:#fdf4ff;
+  --border:#e9d5ff;
+  --border2:#fce7f3;
+  --purple:#a855f7;
+  --pink:#ec4899;
+  --mint:#10b981;
+  --orange:#f97316;
+  --red:#ef4444;
+  --sky:#38bdf8;
+  --yellow:#fbbf24;
+  --text:#1e1b4b;
+  --text2:#7c6f9e;
+  --tag:#f5f3ff;
+  --shadow:rgba(168,85,247,.12);
+  --shadow2:rgba(236,72,153,.1);
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:linear-gradient(135deg,#fdf4ff 0%,#fff8f1 40%,#f0fdf4 80%,#fef3c7 100%);
+  background-attachment:fixed;
+  color:var(--text);
+  min-height:100vh;
+}
+.wrap{max-width:1200px;margin:0 auto;padding:16px 18px}
+
+/* ── Header ── */
+header{text-align:center;padding:28px 0 16px;position:relative}
+.back-btn{position:absolute;left:0;top:28px;padding:6px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:20px;color:var(--text2);cursor:pointer;font-size:.75rem;text-decoration:none;display:inline-block;transition:all .2s;box-shadow:0 2px 8px var(--shadow)}
+.back-btn:hover{border-color:var(--purple);color:var(--purple);transform:translateY(-1px)}
+.key-btn{position:absolute;right:0;top:28px;padding:6px 14px;background:var(--card);border:1.5px solid var(--border2);border-radius:20px;color:var(--text2);cursor:pointer;font-size:.75rem;transition:all .2s;box-shadow:0 2px 8px var(--shadow2)}
+.key-btn:hover{border-color:var(--pink);color:var(--pink)}
+.deco{font-size:2.8rem;display:block;margin-bottom:6px;line-height:1}
+h1{font-size:2rem;background:linear-gradient(135deg,var(--purple),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;font-weight:800;letter-spacing:-.02em}
+header p{color:var(--text2);font-size:.82rem;line-height:1.7}
+.subtitle-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.72rem;font-weight:700;background:linear-gradient(135deg,#f3e8ff,#fce7f3);color:var(--purple);border:1px solid var(--border);margin-left:6px}
+
+/* ── API Key Panel ── */
+.key-panel{display:none;background:var(--card);border:1.5px solid var(--border2);border-radius:20px;padding:18px 20px;margin:8px 0 12px;box-shadow:0 4px 20px var(--shadow2)}
+.key-panel.show{display:block}
+.key-panel p{color:var(--text2);font-size:.77rem;margin-bottom:10px;line-height:1.6}
+.key-panel a{color:var(--purple)}
+.key-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.key-input{flex:1;padding:8px 12px;background:var(--tag);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:.82rem;outline:none}
+.key-input:focus{border-color:var(--purple)}
+.key-save{padding:8px 16px;background:linear-gradient(135deg,var(--purple),var(--pink));border:none;border-radius:12px;color:#fff;cursor:pointer;font-size:.82rem;font-weight:700}
+.key-status{font-size:.72rem;margin-top:4px}
+.key-ok{color:var(--mint)} .key-no{color:var(--orange)}
+
+/* ── Labubu Card Base ── */
+.lcard{background:var(--card);border-radius:20px;padding:18px 20px;box-shadow:0 4px 20px var(--shadow)}
+
+/* ── 每日快訊 ── */
+.news-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 16px}
+@media(max-width:640px){.news-grid{grid-template-columns:1fr}}
+.news-card{background:var(--card);border-radius:20px;padding:16px 18px;min-height:120px;display:flex;flex-direction:column;box-shadow:0 4px 20px var(--shadow)}
+.news-card.trump{border-left:4px solid var(--red)}
+.news-card.semi{border-left:4px solid var(--purple)}
+.news-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.news-title{font-size:.8rem;font-weight:800;letter-spacing:.03em;display:flex;align-items:center;gap:5px}
+.news-title.t-trump{color:var(--red)}
+.news-title.t-semi{color:var(--purple)}
+.news-refresh{background:transparent;border:1.5px solid var(--border);border-radius:12px;color:var(--text2);cursor:pointer;font-size:.68rem;padding:3px 9px;transition:all .18s}
+.news-refresh:hover{border-color:var(--purple);color:var(--purple)}
+.news-body{font-size:.8rem;line-height:1.75;color:var(--text);flex:1;white-space:pre-wrap}
+.news-body.loading{color:var(--text2);font-style:italic;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.news-time{font-size:.62rem;color:var(--text2);margin-top:8px;text-align:right}
+
+/* ── 投資人專區 ── */
+.inv-title-row{display:flex;align-items:center;gap:8px;margin:4px 0 10px}
+.inv-main-title{font-size:.75rem;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:.06em}
+.inv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+@media(max-width:640px){.inv-grid{grid-template-columns:1fr}}
+.inv-card{background:var(--card);border-radius:20px;padding:16px 18px;display:flex;flex-direction:column;box-shadow:0 4px 20px var(--shadow);min-height:150px}
+.inv-card.c-clock{border-top:3px solid var(--mint)}
+.inv-card.c-vcp{border-top:3px solid var(--yellow)}
+.inv-card.c-macro{border-top:3px solid var(--sky)}
+.inv-card.c-stars{border-top:3px solid var(--pink)}
+.inv-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.inv-label{font-size:.75rem;font-weight:800;letter-spacing:.04em;display:flex;align-items:center;gap:5px}
+.lbl-clock{color:var(--mint)} .lbl-vcp{color:var(--yellow)} .lbl-macro{color:var(--sky)} .lbl-stars{color:var(--pink)}
+.inv-rf{background:transparent;border:1.5px solid var(--border);border-radius:12px;color:var(--text2);cursor:pointer;font-size:.65rem;padding:2px 8px;transition:all .16s}
+.inv-rf:hover{border-color:var(--purple);color:var(--purple)}
+.inv-body{font-size:.78rem;line-height:1.7;color:var(--text);flex:1;white-space:pre-wrap}
+.inv-body.loading{color:var(--text2);font-style:italic;animation:pulse 1.5s ease-in-out infinite}
+.inv-time{font-size:.6rem;color:var(--text2);margin-top:6px;text-align:right}
+
+/* ── Clock Mini ── */
+.clock-phase{display:flex;align-items:center;gap:10px}
+.clock-badge{padding:4px 12px;border-radius:20px;font-size:.78rem;font-weight:800;color:#fff}
+.clock-asset{font-size:.85rem;font-weight:700;color:var(--text)}
+.clock-sub{font-size:.72rem;color:var(--text2);margin-top:3px}
+
+/* ── VCP Scan Box ── */
+.scan-section-title{font-size:.75rem;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:.06em;margin:4px 0 10px;display:flex;align-items:center;gap:6px}
+.scan-box{background:var(--card);border:1.5px solid var(--border);border-radius:20px;padding:18px 20px;margin-bottom:12px;box-shadow:0 4px 20px var(--shadow)}
+.scan-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.scan-btn{padding:11px 28px;background:linear-gradient(135deg,var(--purple),var(--pink));border:none;border-radius:16px;color:#fff;font-size:.95rem;font-weight:800;cursor:pointer;transition:all .2s;white-space:nowrap;letter-spacing:.02em;box-shadow:0 4px 15px var(--shadow)}
+.scan-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px var(--shadow)}
+.scan-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.scan-info{color:var(--text2);font-size:.8rem;flex:1;line-height:1.55}
+.scan-info strong{color:var(--purple)}
+
+/* ── Progress ── */
+.prog-wrap{margin-top:14px;display:none}
+.prog-wrap.show{display:block}
+.prog-bg{height:8px;background:var(--tag);border-radius:20px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--pink));border-radius:20px;transition:width .25s;width:0%}
+.prog-text{font-size:.72rem;color:var(--text2);margin-top:5px}
+
+/* ── Summary ── */
+.sum-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
+@media(max-width:680px){.sum-grid{grid-template-columns:repeat(2,1fr)}}
+.sum-card{background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:0 3px 12px var(--shadow);text-align:center}
+.sum-label{font-size:.65rem;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.sum-val{font-size:1.8rem;font-weight:800}
+.sum-sub{font-size:.67rem;color:var(--text2);margin-top:2px}
+
+/* ── Filters ── */
+.filter-box{background:var(--card);border-radius:16px;padding:12px 16px;margin-bottom:10px;box-shadow:0 3px 12px var(--shadow)}
+.filter-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:7px}
+.filter-row:last-child{margin-bottom:0}
+.flabel{color:var(--text2);font-size:.67rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;min-width:56px;flex-shrink:0}
+.pill{padding:5px 13px;border-radius:20px;border:1.5px solid var(--border);background:var(--tag);color:var(--text2);cursor:pointer;font-size:.77rem;transition:all .16s;user-select:none;font-weight:500}
+.pill:hover{border-color:var(--purple);color:var(--purple)}
+.pill.f-on{background:linear-gradient(135deg,var(--purple),var(--pink));border-color:transparent;color:#fff;font-weight:700}
+.pill.s-on{background:linear-gradient(135deg,#06b6d4,var(--mint));border-color:transparent;color:#fff}
+.pill.g-on{background:linear-gradient(135deg,var(--mint),#059669);border-color:transparent;color:#fff}
+
+/* ── Stats bar ── */
+.stats-bar{display:flex;justify-content:space-between;align-items:center;margin:8px 2px 6px;flex-wrap:wrap;gap:6px}
+.stats-l{color:var(--text2);font-size:.8rem}
+.stats-l strong{color:var(--purple);font-weight:700}
+.sort-row{display:flex;gap:5px;flex-wrap:wrap}
+.srt{padding:4px 11px;border:1.5px solid var(--border);border-radius:12px;color:var(--text2);cursor:pointer;font-size:.72rem;background:var(--card);transition:all .16s;font-weight:500}
+.srt.on{color:var(--purple);border-color:var(--purple);background:#f5f3ff;font-weight:700}
+.srt:hover{color:var(--purple);border-color:var(--purple)}
+
+/* ── Table ── */
+.tbl-wrap{overflow-x:auto;border-radius:16px;border:1.5px solid var(--border);background:var(--card);box-shadow:0 4px 20px var(--shadow)}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+thead th{background:#faf5ff;color:var(--text2);font-size:.67rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:11px 13px;text-align:left;border-bottom:1.5px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;transition:color .15s}
+thead th:hover{color:var(--purple)}
+thead th.th-on{color:var(--purple)}
+tbody tr{border-bottom:1px solid #f3f4f6;transition:background .12s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#faf5ff}
+tbody td{padding:10px 13px;vertical-align:middle}
+
+/* ── Table cell styles ── */
+.tc{font-weight:800;color:var(--purple);font-size:.88rem;white-space:nowrap}
+.tc a{color:inherit;text-decoration:none}
+.tc a:hover{text-decoration:underline}
+.tn{color:var(--text);font-weight:600;white-space:nowrap}
+.tsec{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.65rem;font-weight:700;background:#f5f3ff;color:var(--purple);border:1px solid var(--border);white-space:nowrap}
+.tprice{font-weight:800;font-size:.9rem;color:var(--text)}
+
+/* ── MA dots ── */
+.ma-row{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.madot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ma-mini{font-size:.6rem;color:var(--text2)}
+
+/* ── Pct badge ── */
+.pct-b{display:inline-block;padding:3px 8px;border-radius:10px;font-size:.75rem;font-weight:700;white-space:nowrap}
+.pct-A{background:#d1fae5;color:#065f46}
+.pct-B{background:#fef3c7;color:#92400e}
+.pct-C{background:#fee2e2;color:#991b1b}
+
+/* ── Signal tags ── */
+.sig{font-size:.65rem;padding:2px 7px;border-radius:8px;white-space:nowrap;font-weight:600}
+.sig-g{background:#d1fae5;color:#065f46}
+.sig-o{background:#fef3c7;color:#92400e}
+.sig-r{background:#fee2e2;color:#991b1b}
+.sig-n{background:#f3f4f6;color:#6b7280}
+
+/* ── Score ── */
+.scr-wrap{display:flex;align-items:center;gap:7px}
+.scr-bg{width:50px;height:6px;border-radius:20px;background:#e9d5ff;overflow:hidden;flex-shrink:0}
+.scr-fill{height:100%;border-radius:20px}
+.fA{background:linear-gradient(90deg,#10b981,#34d399)}
+.fB{background:linear-gradient(90deg,#f59e0b,#fcd34d)}
+.fC{background:linear-gradient(90deg,#6366f1,#818cf8)}
+.fD{background:#d1d5db}
+.scr-num{font-weight:800;font-size:.9rem}
+.sA{color:#059669} .sB{color:#d97706} .sC{color:#4f46e5} .sD{color:#9ca3af}
+
+/* ── Grade badge ── */
+.grade{display:inline-block;padding:3px 10px;border-radius:10px;font-size:.7rem;font-weight:800;letter-spacing:.05em}
+.gA{background:#d1fae5;color:#065f46}
+.gB{background:#fef3c7;color:#92400e}
+.gC{background:#e0e7ff;color:#3730a3}
+.gD{background:#f3f4f6;color:#6b7280}
+
+/* ── TV link ── */
+.tv-btn{padding:3px 9px;border:1.5px solid var(--border);border-radius:10px;background:var(--card);color:var(--text2);cursor:pointer;font-size:.68rem;transition:all .16s;text-decoration:none;display:inline-block;font-weight:600}
+.tv-btn:hover{border-color:#2962ff;color:#2962ff;background:#eff6ff}
+
+/* ── Error ── */
+.err-box{background:#fef2f2;border:1.5px solid #fecaca;border-radius:12px;padding:12px 16px;color:#991b1b;font-size:.78rem;margin:8px 0;display:none}
+
+/* ── Info note ── */
+.note{background:#f5f3ff;border:1.5px solid var(--border);border-radius:16px;padding:12px 16px;font-size:.77rem;color:var(--text2);margin:10px 0 14px;line-height:1.65}
+.note a{color:var(--purple);text-decoration:none}
+.note a:hover{text-decoration:underline}
+.note strong{color:var(--text)}
+
+/* ── Loading ── */
+.load-row td,.empty-row td{text-align:center;padding:44px;color:var(--text2);font-size:.85rem}
+.spin{display:inline-block;width:18px;height:18px;border:3px solid var(--border);border-top-color:var(--purple);border-radius:50%;animation:sp .7s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── Legend ── */
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin:8px 2px 14px;font-size:.72rem;color:var(--text2)}
+.leg{display:flex;align-items:center;gap:5px}
+.legdot{width:9px;height:9px;border-radius:50%}
+
+/* ── Section divider ── */
+.sec-div{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:16px 0}
+
+@media(max-width:640px){
+  .back-btn,.key-btn{position:static;margin-bottom:8px;display:inline-block}
+  thead th,tbody td{padding:8px 9px;font-size:.73rem}
+}
+
+footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;border-top:1.5px solid var(--border);margin-top:24px;line-height:1.9}
+footer a{color:var(--purple);text-decoration:none}
+footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ── Header ── -->
+<header>
+  <a href="index-pro.html" class="back-btn">← 返回新聞</a>
+  <button class="key-btn" onclick="toggleKeyPanel()">⚙️ API Key</button>
+  <span class="deco">🐰✨</span>
+  <h1>VCP Finder</h1>
+  <p>台股強勢股自動掃描 <span class="subtitle-badge">Mark Minervini VCP</span><br>
+  每日快訊 · 投資人專區 · 智能篩選</p>
+</header>
+
+<!-- ── Key Panel ── -->
+<div class="key-panel" id="keyPanel">
+  <p>設定 <a href="https://console.groq.com" target="_blank">Groq API Key</a>（免費，每日限額），享 AI 快訊摘要。
+  也可設定 <a href="https://platform.deepseek.com" target="_blank">DeepSeek Key</a> 作備援。</p>
+  <div class="key-row">
+    <input class="key-input" id="groqInput" type="password" placeholder="Groq API Key（gsk_...）">
+    <button class="key-save" onclick="saveGroq()">儲存</button>
+  </div>
+  <div class="key-row">
+    <input class="key-input" id="dsInput" type="password" placeholder="DeepSeek API Key（sk-...）">
+    <button class="key-save" onclick="saveDs()">儲存</button>
+  </div>
+  <div class="key-status key-no" id="keyStatus">未設定 Key（使用免費 Pollinations 備援）</div>
+</div>
+
+<!-- ── 每日快訊 ── -->
+<div class="inv-title-row" style="margin-top:6px">
+  <span style="font-size:1rem">🗞️</span>
+  <span class="inv-main-title">每日快訊 AI 摘要</span>
+  <span style="font-size:.7rem;color:var(--text2)">自動更新</span>
+</div>
+<div class="news-grid">
+  <div class="news-card trump">
+    <div class="news-head">
+      <div class="news-title t-trump">🦊 Trump 政策動態</div>
+      <button class="news-refresh" onclick="loadTrump()">↻ 刷新</button>
+    </div>
+    <div class="news-body loading" id="trumpBody">載入中...</div>
+    <div class="news-time" id="trumpTime"></div>
+  </div>
+  <div class="news-card semi">
+    <div class="news-head">
+      <div class="news-title t-semi">💜 台股半導體快訊</div>
+      <button class="news-refresh" onclick="loadSemi()">↻ 刷新</button>
+    </div>
+    <div class="news-body loading" id="semiBody">載入中...</div>
+    <div class="news-time" id="semiTime"></div>
+  </div>
+</div>
+
+<!-- ── 投資人專區 ── -->
+<div class="inv-title-row">
+  <span style="font-size:1rem">🌟</span>
+  <span class="inv-main-title">投資人專區</span>
+</div>
+<div class="inv-grid">
+  <!-- 1. 投資時鐘 -->
+  <div class="inv-card c-clock">
+    <div class="inv-head">
+      <div class="inv-label lbl-clock">⏰ 美林投資時鐘</div>
+      <button class="inv-rf" onclick="loadClock()">↻</button>
+    </div>
+    <div class="inv-body" id="clockBody" style="flex:1">
+      <div class="clock-phase" id="clockPhase" style="margin-bottom:8px">
+        <span class="clock-badge" id="clockBadge" style="background:var(--purple)">分析中...</span>
+      </div>
+      <div class="clock-asset" id="clockAsset"></div>
+      <div class="clock-sub" id="clockSub"></div>
+    </div>
+    <div class="inv-time" id="clockTime"></div>
+  </div>
+
+  <!-- 2. VCP 掃描統計 -->
+  <div class="inv-card c-vcp">
+    <div class="inv-head">
+      <div class="inv-label lbl-vcp">📊 VCP 掃描結果</div>
+      <button class="inv-rf" onclick="updateVcpCard()">↻</button>
+    </div>
+    <div class="inv-body" id="vcpCardBody">尚未掃描，請點擊下方「開始掃描」</div>
+    <div class="inv-time" id="vcpCardTime"></div>
+  </div>
+
+  <!-- 3. 總經快報 -->
+  <div class="inv-card c-macro">
+    <div class="inv-head">
+      <div class="inv-label lbl-macro">🌐 總經環境快報</div>
+      <button class="inv-rf" onclick="loadMacro()">↻</button>
+    </div>
+    <div class="inv-body loading" id="macroBody">載入中...</div>
+    <div class="inv-time" id="macroTime"></div>
+  </div>
+
+  <!-- 4. 強勢股排行 -->
+  <div class="inv-card c-stars">
+    <div class="inv-head">
+      <div class="inv-label lbl-stars">🌸 今日強勢股 Top 5</div>
+      <button class="inv-rf" onclick="updateStarsCard()">↻</button>
+    </div>
+    <div class="inv-body" id="starsBody">掃描後自動顯示 VCP 高分股票</div>
+    <div class="inv-time" id="starsTime"></div>
+  </div>
+</div>
+
+<div class="sec-div"></div>
+
+<!-- ── VCP 掃描 ── -->
+<div class="scan-section-title">
+  <span>🔍</span> VCP 自動掃描
+  <span style="font-size:.68rem;color:var(--text2);font-weight:400;letter-spacing:0">台股 {{ TOTAL }} 支 · Yahoo Finance</span>
+</div>
+
+<div class="scan-box">
+  <div class="scan-row">
+    <button class="scan-btn" id="scanBtn" onclick="startScan()">✨ 開始掃描 VCP</button>
+    <div class="scan-info" id="scanInfo">
+      點擊掃描，自動抓取台股日線歷史數據並計算 VCP 分數。<strong>約需 60–90 秒</strong>。
+    </div>
+  </div>
+  <div class="prog-wrap" id="progWrap">
+    <div class="prog-bg"><div class="prog-fill" id="progFill"></div></div>
+    <div class="prog-text" id="progText">準備中...</div>
+  </div>
+</div>
+
+<div class="err-box" id="errBox"></div>
+
+<!-- ── Summary ── -->
+<div class="sum-grid" id="sumGrid" style="display:none">
+  <div class="sum-card">
+    <div class="sum-label">✅ 已掃描</div>
+    <div class="sum-val" id="sumScanned" style="color:var(--purple)">—</div>
+    <div class="sum-sub">支成功取得數據</div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-label">🌸 VCP 候選 ≥60</div>
+    <div class="sum-val" id="sumVcp" style="color:var(--yellow)">—</div>
+    <div class="sum-sub">支符合條件</div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-label">⭐ 強力 VCP ≥80</div>
+    <div class="sum-val" id="sumStrong" style="color:var(--mint)">—</div>
+    <div class="sum-sub">支高分候選</div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-label">🕐 更新時間</div>
+    <div class="sum-val" id="sumTime" style="font-size:.85rem;color:var(--text)">—</div>
+    <div class="sum-sub">30 分鐘內免重新掃描</div>
+  </div>
+</div>
+
+<!-- ── Filters ── -->
+<div class="filter-box" id="filterBox" style="display:none">
+  <div class="filter-row" id="scoreRow">
+    <span class="flabel">VCP 分數</span>
+    <span class="pill f-on" onclick="setScore(0,this)">全部</span>
+    <span class="pill" onclick="setScore(40,this)">≥ 40</span>
+    <span class="pill" onclick="setScore(60,this)">≥ 60 候選 🌸</span>
+    <span class="pill" onclick="setScore(70,this)">≥ 70</span>
+    <span class="pill" onclick="setScore(80,this)">≥ 80 強力 ⭐</span>
+  </div>
+  <div class="filter-row" id="pctRow">
+    <span class="flabel">距高點</span>
+    <span class="pill f-on" onclick="setPct(999,this)">全部</span>
+    <span class="pill" onclick="setPct(10,this)">≤ 10%</span>
+    <span class="pill" onclick="setPct(15,this)">≤ 15%</span>
+    <span class="pill" onclick="setPct(20,this)">≤ 20%</span>
+    <span class="pill" onclick="setPct(25,this)">≤ 25%</span>
+  </div>
+  <div class="filter-row" id="secRow">
+    <span class="flabel">產業</span>
+    <span class="pill s-on" data-sec="ALL" onclick="setSec('ALL',this)">全部</span>
+  </div>
+  <div class="filter-row">
+    <span class="flabel">其他</span>
+    <span class="pill" id="stg2Pill" onclick="toggleStage2(this)">僅 Stage 2</span>
+    <span class="pill" id="hideErrPill" onclick="toggleHideErr(this)">隱藏無數據</span>
+  </div>
+</div>
+
+<!-- ── Stats + Sort ── -->
+<div class="stats-bar" id="statsBar" style="display:none">
+  <div class="stats-l">顯示 <strong id="showN">0</strong> / <strong id="totalN">0</strong> 支</div>
+  <div class="sort-row">
+    <button class="srt on" onclick="setSort('score',this)">VCP分數↓</button>
+    <button class="srt" onclick="setSort('pct',this)">距高點↑</button>
+    <button class="srt" onclick="setSort('price',this)">股價</button>
+    <button class="srt" onclick="setSort('code',this)">代號</button>
+  </div>
+</div>
+
+<!-- ── Note ── -->
+<div class="note">
+  💡 <strong>VCP 四大條件：</strong>Stage 2 上升趨勢（股價 &gt; MA50 &gt; MA150 &gt; MA200）· 距 52 週高點 &lt;25% · ATR 波動率收縮 · 成交量萎縮。
+  分數 ≥ 80 為強力候選。若數據載入失敗，可試掛 VPN，或使用
+  <a href="https://www.tradingview.com/" target="_blank">TradingView</a> ·
+  <a href="https://www.finlab.tw" target="_blank">FinLab</a> ·
+  <a href="https://www.wantgoo.com/screener" target="_blank">玩股網</a>。
+</div>
+
+<!-- ── Table ── -->
+<div class="tbl-wrap" id="tblWrap">
+<table>
+  <thead>
+    <tr>
+      <th onclick="setSort('code')">代號 ⇅</th>
+      <th onclick="setSort('name')">名稱</th>
+      <th>產業</th>
+      <th onclick="setSort('price')">現價 ⇅</th>
+      <th onclick="setSort('pct')" class="th-on">距52W高 ⇅</th>
+      <th>MA 排列</th>
+      <th>ATR 收縮</th>
+      <th>量能</th>
+      <th onclick="setSort('score')">VCP 分數 ⇅</th>
+      <th>評級</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody id="tblBody">
+    <tr class="load-row"><td colspan="11">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="legend" id="legendDiv" style="display:none">
+  <div class="leg"><div class="legdot" style="background:#059669"></div>A 強力VCP ≥80 ⭐</div>
+  <div class="leg"><div class="legdot" style="background:#d97706"></div>B 候選 60–79 🌸</div>
+  <div class="leg"><div class="legdot" style="background:#4f46e5"></div>C 弱訊號 40–59</div>
+  <div class="leg"><div class="legdot" style="background:#9ca3af"></div>D 未達標 &lt;40</div>
+  <span style="margin-left:auto;color:var(--text2);font-size:.7rem">
+    <span style="color:#059669">●</span> MA上方 &nbsp;<span style="color:#dc2626">●</span> MA下方
+  </span>
+</div>
+
+<footer>
+  🐰✨ VCP Finder · 台股 Volatility Contraction Pattern 掃描<br>
+  VCP 理論出自 Mark Minervini《超級績效》· 僅供研究參考，不構成投資建議<br>
+  延伸資源：
+  <a href="https://www.tradingview.com/" target="_blank">TradingView VCP腳本</a> ·
+  <a href="https://www.finlab.tw/成長飆股怎麼找？超級績效選股法大解密" target="_blank">FinLab 台股VCP</a> ·
+  <a href="https://cevisub.com/technical-analysis-guide/vcp-pattern-taiwan-stocks-high-win-rate-buy-points/" target="_blank">VCP台股教學</a> ·
+  <a href="https://www.wantgoo.com/screener" target="_blank">玩股網選股器</a>
+</footer>
+</div>
+
+<!-- ════════════════════ SCRIPT ════════════════════ -->
+<script>
+// ─── Stock List ────────────────────────────────────────────────────────────
+const STOCKS = [
+  // 半導體製造
+  {code:'2330',name:'台積電',   sector:'半導體',   ex:'TW'},
+  {code:'2303',name:'聯電',     sector:'半導體',   ex:'TW'},
+  {code:'5347',name:'世界先進', sector:'半導體',   ex:'TW'},
+  {code:'6770',name:'力積電',   sector:'半導體',   ex:'TW'},
+  {code:'2311',name:'日月光投控',sector:'封測',    ex:'TW'},
+  // IC 設計
+  {code:'2454',name:'聯發科',   sector:'IC設計',   ex:'TW'},
+  {code:'3034',name:'聯詠',     sector:'IC設計',   ex:'TW'},
+  {code:'2379',name:'瑞昱',     sector:'IC設計',   ex:'TW'},
+  {code:'6415',name:'矽力-KY', sector:'IC設計',   ex:'TWO'},
+  {code:'8299',name:'群聯',     sector:'IC設計',   ex:'TWO'},
+  {code:'3661',name:'世芯-KY', sector:'IC設計',   ex:'TWO'},
+  {code:'3443',name:'創意',     sector:'IC設計',   ex:'TWO'},
+  {code:'4966',name:'譜瑞-KY', sector:'IC設計',   ex:'TWO'},
+  {code:'2388',name:'威盛',     sector:'IC設計',   ex:'TW'},
+  // 記憶體
+  {code:'2344',name:'華邦電',   sector:'記憶體',   ex:'TW'},
+  {code:'2408',name:'南亞科',   sector:'記憶體',   ex:'TW'},
+  {code:'2337',name:'旺宏',     sector:'記憶體',   ex:'TW'},
+  // 電子代工 EMS
+  {code:'2317',name:'鴻海',     sector:'電子代工', ex:'TW'},
+  {code:'2382',name:'廣達',     sector:'電子代工', ex:'TW'},
+  {code:'4938',name:'和碩',     sector:'電子代工', ex:'TW'},
+  {code:'2356',name:'英業達',   sector:'電子代工', ex:'TW'},
+  {code:'3231',name:'緯創',     sector:'電子代工', ex:'TW'},
+  {code:'2324',name:'仁寶',     sector:'電子代工', ex:'TW'},
+  // 電腦品牌
+  {code:'2357',name:'華碩',     sector:'電腦',     ex:'TW'},
+  {code:'2376',name:'技嘉',     sector:'電腦',     ex:'TW'},
+  {code:'2353',name:'宏碁',     sector:'電腦',     ex:'TW'},
+  // 電源/零組件
+  {code:'2308',name:'台達電',   sector:'電源',     ex:'TW'},
+  {code:'2327',name:'國巨',     sector:'被動元件', ex:'TW'},
+  {code:'2301',name:'光寶科',   sector:'電子',     ex:'TW'},
+  {code:'2395',name:'研華',     sector:'工業電腦', ex:'TW'},
+  {code:'2049',name:'上銀',     sector:'精密機械', ex:'TW'},
+  // 光學/機殼
+  {code:'3008',name:'大立光',   sector:'光學',     ex:'TW'},
+  {code:'2474',name:'可成',     sector:'機殼',     ex:'TW'},
+  // 伺服器/散熱
+  {code:'6669',name:'緯穎',     sector:'伺服器',   ex:'TW'},
+  {code:'3017',name:'奇鋐',     sector:'散熱',     ex:'TW'},
+  {code:'3003',name:'健策',     sector:'散熱',     ex:'TW'},
+  // 連接器/PCB
+  {code:'3533',name:'嘉澤',     sector:'連接器',   ex:'TWO'},
+  {code:'3037',name:'欣興',     sector:'PCB',      ex:'TW'},
+  {code:'2368',name:'金像電',   sector:'PCB',      ex:'TW'},
+  // 面板
+  {code:'2409',name:'友達',     sector:'面板',     ex:'TW'},
+  {code:'3481',name:'群創',     sector:'面板',     ex:'TW'},
+  // 金融
+  {code:'2881',name:'富邦金',   sector:'金融',     ex:'TW'},
+  {code:'2882',name:'國泰金',   sector:'金融',     ex:'TW'},
+  {code:'2886',name:'兆豐金',   sector:'金融',     ex:'TW'},
+  {code:'2891',name:'中信金',   sector:'金融',     ex:'TW'},
+  {code:'2884',name:'玉山金',   sector:'金融',     ex:'TW'},
+  {code:'2892',name:'第一金',   sector:'金融',     ex:'TW'},
+  // 電信
+  {code:'2412',name:'中華電',   sector:'電信',     ex:'TW'},
+  {code:'3045',name:'台灣大',   sector:'電信',     ex:'TW'},
+  {code:'4904',name:'遠傳',     sector:'電信',     ex:'TW'},
+  // 傳產/化工
+  {code:'2002',name:'中鋼',     sector:'鋼鐵',     ex:'TW'},
+  {code:'1301',name:'台塑',     sector:'化工',     ex:'TW'},
+  {code:'1303',name:'南亞',     sector:'化工',     ex:'TW'},
+  {code:'6505',name:'台化',     sector:'化工',     ex:'TW'},
+  // 汽車/新能源
+  {code:'2207',name:'和泰車',   sector:'汽車',     ex:'TW'},
+  {code:'1590',name:'亞德客-KY',sector:'工業自動化',ex:'TW'},
+  {code:'6443',name:'元晶',     sector:'太陽能',   ex:'TW'},
+  // 生技
+  {code:'1707',name:'葡萄王',   sector:'生技',     ex:'TW'},
+];
+
+// ─── State ────────────────────────────────────────────────────────────────
+let allResults=[], scoreMin=0, pctMax=999, secFilter='ALL';
+let onlyStage2=false, hideErr=false, sortKey='score', sortAsc=false, scanning=false;
+
+// ─── Key helpers ──────────────────────────────────────────────────────────
+const getKey=()=>localStorage.getItem('groq_key')||'';
+const getDsKey=()=>localStorage.getItem('deepseek_key')||'';
+function toggleKeyPanel(){document.getElementById('keyPanel').classList.toggle('show');updateKeyStatus();}
+function updateKeyStatus(){
+  const s=document.getElementById('keyStatus');
+  const g=getKey(), d=getDsKey();
+  if(g&&d){s.className='key-status key-ok';s.textContent='✅ Groq + DeepSeek 已設定';}
+  else if(g){s.className='key-status key-ok';s.textContent='✅ Groq Key 已設定 · DeepSeek 未設定';}
+  else if(d){s.className='key-status key-ok';s.textContent='✅ DeepSeek Key 已設定 · Groq 未設定';}
+  else{s.className='key-status key-no';s.textContent='⚠️ 未設定 Key（使用免費 Pollinations 備援，速度較慢）';}
+}
+function saveGroq(){
+  const v=document.getElementById('groqInput').value.trim();
+  if(v){localStorage.setItem('groq_key',v);updateKeyStatus();}
+}
+function saveDs(){
+  const v=document.getElementById('dsInput').value.trim();
+  if(v){localStorage.setItem('deepseek_key',v);updateKeyStatus();}
+}
+
+// ─── AI Calls ─────────────────────────────────────────────────────────────
+function fetchTimed(url, opts, ms=25000){
+  const c=new AbortController(); const t=setTimeout(()=>c.abort(),ms);
+  return fetch(url,{...opts,signal:c.signal}).finally(()=>clearTimeout(t));
+}
+
+async function callAIFree(prompt){
+  const r=await fetchTimed('https://text.pollinations.ai/',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'openai'})
+  },35000);
+  const t=await r.text();
+  if(t&&t.trim().length>10&&!t.trim().startsWith('<!')) return t.trim();
+  throw new Error('bad response');
+}
+
+async function callAI(prompt){
+  const gk=getKey(), dk=getDsKey();
+  if(gk){
+    try{
+      const r=await fetchTimed('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk},
+        body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'llama-3.3-70b-versatile',max_tokens:500,temperature:0.7})
+      });
+      if(r.status===429) return '⚠️ Groq 超過每分鐘限額，請稍候再點 ↻';
+      if(r.ok){const j=await r.json();const t=j.choices?.[0]?.message?.content||'';if(t.trim().length>10)return t.trim();}
+    }catch(_){}
+  }
+  if(dk){
+    try{
+      const r=await fetchTimed('https://api.deepseek.com/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+dk},
+        body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'deepseek-chat',max_tokens:500,temperature:0.7})
+      });
+      if(r.ok){const j=await r.json();const t=j.choices?.[0]?.message?.content||'';if(t.trim().length>10)return t.trim();}
+    }catch(_){}
+  }
+  if(!gk&&!dk){try{return await callAIFree(prompt);}catch(_){}}
+  return '⚠️ AI 暫時無法回應，請點 ↻ 重整';
+}
+
+// ─── RSS fetch (via allorigins) ────────────────────────────────────────────
+async function fetchRSS(query){
+  const url=`https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
+  const proxy=`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+  try{
+    const r=await fetchTimed(proxy,{},12000);
+    const xml=await r.text();
+    const items=[...xml.matchAll(/<item>[\s\S]*?<\/item>/g)].slice(0,10).map(m=>{
+      const title=(m[0].match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)||m[0].match(/<title>(.*?)<\/title>/))?.[1]||'';
+      return {title:title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')};
+    }).filter(x=>x.title);
+    return items;
+  }catch(_){return [];}
+}
+
+// ─── 每日快訊 ─────────────────────────────────────────────────────────────
+async function loadTrump(){
+  const b=document.getElementById('trumpBody'), t=document.getElementById('trumpTime');
+  b.className='news-body loading'; b.textContent='抓取最新新聞...'; t.textContent='';
+  const items=await fetchRSS('Trump tariff semiconductor Taiwan chip 2025').catch(()=>[]);
+  b.textContent='AI 分析中...';
+  const prompt=items.length
+    ? '你是半導體投資分析師。以下是最新 Trump 新聞標題。繁體中文，公司人名用英文。轉換為投資情報 3 條「・」開頭，160字內：(1)政策具體數字 (2)哪類美股 sector 漲/跌 (3)TSMC/台股影響。禁用傷亡局勢外交。\n\n'+items.map((x,i)=>`${i+1}. ${x.title}`).join('\n')
+    : '今天'+new Date().toLocaleDateString('zh-TW')+'。你是半導體投資分析師。繁體中文，公司人名用英文。分析 Trump 關稅政策對台灣半導體的影響 3 條「・」開頭，160字內：(1)關稅具體數字 (2)受影響 sector (3)TSMC/台股應對策略。禁用傷亡局勢外交。';
+  const res=await callAI(prompt);
+  b.className='news-body'; b.textContent=res;
+  t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+async function loadSemi(){
+  const b=document.getElementById('semiBody'), t=document.getElementById('semiTime');
+  b.className='news-body loading'; b.textContent='抓取最新新聞...'; t.textContent='';
+  const items=await fetchRSS('Taiwan semiconductor TSMC chip stock 2025').catch(()=>[]);
+  b.textContent='AI 分析中...';
+  const prompt=items.length
+    ? '你是台灣半導體股票分析師。以下是最新新聞標題。繁體中文，公司代號用英文或台灣股號。轉換為投資情報 3 條「・」開頭，160字內：(1)台積電/半導體最新動態 (2)外資動向/法人買賣超 (3)今日關注個股。\n\n'+items.map((x,i)=>`${i+1}. ${x.title}`).join('\n')
+    : '今天'+new Date().toLocaleDateString('zh-TW')+'。你是台灣半導體股票分析師。繁體中文，公司代號用英文或台灣股號。分析台股半導體現況 3 條「・」開頭，160字內：(1)台積電最新進展 (2)外資動向 (3)值得關注個股理由。';
+  const res=await callAI(prompt);
+  b.className='news-body'; b.textContent=res;
+  t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+// ─── 投資時鐘 ─────────────────────────────────────────────────────────────
+async function loadClock(){
+  const badge=document.getElementById('clockBadge');
+  const asset=document.getElementById('clockAsset');
+  const sub=document.getElementById('clockSub');
+  const t=document.getElementById('clockTime');
+  badge.textContent='分析中...'; badge.style.background='var(--border)'; asset.textContent=''; sub.textContent='';
+  const prompt='今天'+new Date().toLocaleDateString('zh-TW')+'。判斷目前美林投資時鐘所在象限：復甦/過熱/滯脹/再膨脹。回覆格式（嚴格）：\n象限：[復甦|過熱|滯脹|再膨脹]\n推薦資產：[股票|原物料|現金|債券]\n理由：[30字內，含Fed政策+通膨數字]\n投資建議：[台股操作策略，30字內]';
+  const res=await callAI(prompt);
+  const phaseM=res.match(/象限[：:]\s*([^\n]+)/); const phase=phaseM?phaseM[1].trim():'未知';
+  const assetM=res.match(/推薦資產[：:]\s*([^\n]+)/); const assetTxt=assetM?assetM[1].trim():'';
+  const hintM=res.match(/投資建議[：:]\s*([^\n]+)/); const hintTxt=hintM?hintM[1].trim():'';
+  const colors={'復甦':'#10b981','過熱':'#f59e0b','滯脹':'#ef4444','再膨脹':'#8b5cf6'};
+  const col=colors[phase]||'var(--purple)';
+  badge.textContent=phase; badge.style.background=col;
+  asset.textContent=assetTxt||res.slice(0,60);
+  sub.textContent=hintTxt;
+  t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+async function loadMacro(){
+  const b=document.getElementById('macroBody'), t=document.getElementById('macroTime');
+  b.className='inv-body loading'; b.textContent='AI 分析中...'; t.textContent='';
+  const items=await fetchRSS('Fed interest rate inflation GDP global economy 2025').catch(()=>[]);
+  const prompt=items.length
+    ? '你是總經分析師。以下是最新總經新聞。繁體中文，數字保留英文。3 條「・」開頭，160字內：(1)Fed 利率政策最新(2)通膨/GDP數字(3)對台股/新興市場影響。\n\n'+items.slice(0,8).map((x,i)=>`${i+1}. ${x.title}`).join('\n')
+    : '今天'+new Date().toLocaleDateString('zh-TW')+'。你是總經分析師。繁體中文，數字保留英文。分析全球總經環境 3 條「・」開頭，160字內：(1)Fed 利率預期 (2)全球景氣 (3)台股資金面影響。';
+  const res=await callAI(prompt);
+  b.className='inv-body'; b.textContent=res;
+  t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+function updateVcpCard(){
+  const b=document.getElementById('vcpCardBody'), t=document.getElementById('vcpCardTime');
+  if(!allResults.length){b.textContent='尚未掃描，請點擊下方「開始掃描」';return;}
+  const withVcp=allResults.filter(r=>r.vcp);
+  const top=withVcp.filter(r=>r.vcp.score>=60).sort((a,b)=>b.vcp.score-a.vcp.score);
+  b.textContent=`掃描 ${withVcp.length} 支 · VCP候選 ${withVcp.filter(r=>r.vcp.score>=60).length} 支\n強力VCP≥80：${withVcp.filter(r=>r.vcp.score>=80).length} 支\n\nStage 2 股票：${withVcp.filter(r=>r.vcp.stage2).length} 支\n距高點≤15%：${withVcp.filter(r=>r.vcp.pctH<=15).length} 支\nATR收縮：${withVcp.filter(r=>r.vcp.atrSig==='g').length} 支`;
+  t.textContent='掃描於 '+new Date().toLocaleTimeString('zh-TW');
+}
+
+function updateStarsCard(){
+  const b=document.getElementById('starsBody'), t=document.getElementById('starsTime');
+  if(!allResults.length){b.textContent='掃描後自動顯示 VCP 高分股票';return;}
+  const top=allResults.filter(r=>r.vcp&&r.vcp.score>=60).sort((a,b)=>b.vcp.score-a.vcp.score).slice(0,5);
+  if(!top.length){b.textContent='尚未找到 VCP 候選股（分數 ≥60）';return;}
+  b.textContent=top.map((r,i)=>`${i+1}. ${r.code} ${r.name}  ${r.vcp.score}分  -${r.vcp.pctH}%`).join('\n');
+  t.textContent='更新：'+new Date().toLocaleTimeString('zh-TW');
+}
+
+// ─── VCP Math ──────────────────────────────────────────────────────────────
+function sma(arr, n){
+  if(!arr||arr.length<n)return null;
+  const v=arr.slice(0,n).filter(x=>x!=null&&isFinite(x));
+  if(v.length<Math.ceil(n*.8))return null;
+  return v.reduce((a,b)=>a+b,0)/v.length;
+}
+function calcATR(data,n){
+  if(!data||data.length<n+1)return null;
+  let s=0,c=0;
+  for(let i=0;i<n&&i<data.length-1;i++){
+    const{high:h,low:l}=data[i],pc=data[i+1].close;
+    if(h==null||l==null||pc==null)continue;
+    s+=Math.max(h-l,Math.abs(h-pc),Math.abs(l-pc));c++;
+  }
+  return c>0?s/c:null;
+}
+function calcVCP(data){
+  if(!data||data.length<55)return null;
+  const closes=data.map(d=>d.close),highs=data.map(d=>d.high);
+  const volumes=data.map(d=>d.volume);
+  const price=closes[0];
+  if(!price||price<=0)return null;
+  const ma50=sma(closes,50);
+  const ma150=data.length>=150?sma(closes,150):null;
+  const ma200=data.length>=200?sma(closes,200):null;
+  const h52=Math.max(...highs.slice(0,Math.min(252,highs.length)).filter(v=>v!=null&&isFinite(v)));
+  const pctH=h52>0?((h52-price)/h52)*100:999;
+  const atr10=calcATR(data,10),atr20=calcATR(data,20);
+  const atrRat=(atr10&&atr20&&atr20>0)?atr10/atr20:null;
+  const v5=sma(volumes.slice(0,5),5),v20=sma(volumes.slice(0,20),20);
+  const vRat=(v5&&v20&&v20>0)?v5/v20:null;
+  let score=0;
+  const abM200=ma200!=null&&price>ma200;
+  const abM150=ma150!=null&&price>ma150;
+  const abM50=ma50!=null&&price>ma50;
+  const perf=ma50!=null&&ma150!=null&&ma200!=null&&ma50>ma150&&ma150>ma200;
+  if(abM200)score+=10;if(abM150)score+=5;if(abM50)score+=5;if(perf)score+=10;
+  if(pctH<25)score+=10;if(pctH<15)score+=10;
+  let atrL='—',atrS='n';
+  if(atrRat!=null){
+    if(atrRat<0.75){score+=30;atrL='強收縮';atrS='g';}
+    else if(atrRat<0.90){score+=15;atrL='收縮中';atrS='o';}
+    else{atrL='未收縮';atrS='r';}
+  }
+  let volL='—',volS='n';
+  if(vRat!=null){
+    if(vRat<0.70){score+=20;volL='強縮量';volS='g';}
+    else if(vRat<0.85){score+=10;volL='縮量';volS='o';}
+    else{volL='量持平';volS='r';}
+  }
+  return{
+    score:Math.min(Math.round(score),100),price,
+    ma50:ma50?+ma50.toFixed(2):null,
+    ma150:ma150?+ma150.toFixed(2):null,
+    ma200:ma200?+ma200.toFixed(2):null,
+    h52:+h52.toFixed(2),pctH:+pctH.toFixed(1),
+    abM50,abM150,abM200,perfOrd:perf,stage2:abM50&&abM150&&abM200,
+    atrL,atrS,atrRat:atrRat?+atrRat.toFixed(3):null,
+    volL,volS,vRat:vRat?+vRat.toFixed(2):null
+  };
+}
+
+// ─── Fetch ────────────────────────────────────────────────────────────────
+const PROXIES=['','https://corsproxy.io/?'];
+function fetchTO(url,ms=9000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal}).finally(()=>clearTimeout(t));}
+async function fetchYahoo(sym){
+  const base=`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1y&includePrePost=false`;
+  for(const px of PROXIES){
+    const url=px?px+encodeURIComponent(base):base;
+    try{
+      const res=await fetchTO(url);if(!res.ok)continue;
+      const json=await res.json();
+      const r=json?.chart?.result?.[0];if(!r?.timestamp)continue;
+      const q=r.indicators?.quote?.[0]??{};
+      const arr=r.timestamp.map((t,i)=>({
+        date:new Date(t*1000),open:q.open?.[i]??null,high:q.high?.[i]??null,
+        low:q.low?.[i]??null,close:q.close?.[i]??null,volume:q.volume?.[i]??null
+      })).filter(d=>d.close!==null&&d.close>0);
+      arr.reverse();return arr;
+    }catch(_){}
+  }
+  return null;
+}
+
+// ─── Scan ─────────────────────────────────────────────────────────────────
+const delay=ms=>new Promise(r=>setTimeout(r,ms));
+async function startScan(){
+  if(scanning)return;scanning=true;
+  const btn=document.getElementById('scanBtn');
+  const info=document.getElementById('scanInfo');
+  const pW=document.getElementById('progWrap');
+  const pF=document.getElementById('progFill');
+  const pT=document.getElementById('progText');
+  const err=document.getElementById('errBox');
+  btn.disabled=true;btn.textContent='⏳ 掃描中...';
+  pW.classList.add('show');err.style.display='none';allResults=[];
+  const stocks=[...new Map(STOCKS.map(s=>[s.code,s])).values()];
+  const total=stocks.length;let done=0,failed=0;
+  info.innerHTML=`正在掃描 <strong>${total}</strong> 支股票，請耐心等待...`;
+  const BATCH=4;
+  for(let i=0;i<total;i+=BATCH){
+    const batch=stocks.slice(i,i+BATCH);
+    await Promise.all(batch.map(async s=>{
+      const sym=`${s.code}.${s.ex}`;
+      const data=await fetchYahoo(sym);
+      const vcp=data?calcVCP(data):null;
+      if(!data)failed++;
+      allResults.push({...s,sym,vcp,noData:!data});
+      done++;
+      pF.style.width=Math.round(done/total*100)+'%';
+      pT.textContent=`${done}/${total}  ${s.code} ${s.name}${data?'':' ⚠️'}`;
+    }));
+    if(i+BATCH<total)await delay(350);
+  }
+  scanning=false;btn.disabled=false;btn.textContent='🔄 重新掃描';
+  pT.textContent=`✅ 掃描完成！成功 ${done-failed} 支，無數據 ${failed} 支`;
+  if(failed>total*0.5){err.style.display='';err.textContent=`⚠️ 超過半數無法取得數據（${failed}/${total}），可能是 CORS 限制或網路問題。建議掛 VPN 或改用 TradingView/FinLab。`;}
+  try{sessionStorage.setItem('vcpCache',JSON.stringify({results:allResults,ts:Date.now()}));}catch(_){}
+  renderAll();
+  updateVcpCard();updateStarsCard();
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────
+function grade(s){return s>=80?'A':s>=60?'B':s>=40?'C':'D';}
+function sc(s){return s>=80?'A':s>=60?'B':s>=40?'C':'D';}
+function fmtP(p){return p>=100?p.toFixed(0):p>=10?p.toFixed(1):p.toFixed(2);}
+
+function renderAll(){
+  document.getElementById('sumGrid').style.display='';
+  document.getElementById('filterBox').style.display='';
+  document.getElementById('statsBar').style.display='';
+  document.getElementById('legendDiv').style.display='';
+  const wd=allResults.filter(r=>r.vcp);
+  document.getElementById('sumScanned').textContent=wd.length;
+  document.getElementById('sumVcp').textContent=wd.filter(r=>r.vcp.score>=60).length;
+  document.getElementById('sumStrong').textContent=wd.filter(r=>r.vcp.score>=80).length;
+  document.getElementById('sumTime').textContent=new Date().toLocaleTimeString('zh-TW');
+  // Sector pills
+  const secs=[...new Set(STOCKS.map(s=>s.sector))].sort();
+  const secRow=document.getElementById('secRow');
+  secRow.querySelectorAll('[data-sec]:not([data-sec="ALL"])').forEach(p=>p.remove());
+  secs.forEach(s=>{
+    const p=document.createElement('span');p.className='pill';p.dataset.sec=s;
+    p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);
+  });
+  renderTable();
+}
+
+function getFiltered(){
+  return allResults.filter(r=>{
+    if(hideErr&&!r.vcp)return false;
+    if(!r.vcp)return true;
+    if(r.vcp.score<scoreMin)return false;
+    if(r.vcp.pctH>pctMax)return false;
+    if(secFilter!=='ALL'&&r.sector!==secFilter)return false;
+    if(onlyStage2&&!r.vcp.stage2)return false;
+    return true;
+  });
+}
+function getSorted(list){
+  return [...list].sort((a,b)=>{
+    const av=a.vcp,bv=b.vcp;
+    if(sortKey==='score'){const va=av?.score??-1,vb=bv?.score??-1;return sortAsc?va-vb:vb-va;}
+    if(sortKey==='pct'){const va=av?.pctH??999,vb=bv?.pctH??999;return sortAsc?va-vb:vb-va;}
+    if(sortKey==='price'){const va=av?.price??0,vb=bv?.price??0;return sortAsc?va-vb:vb-va;}
+    if(sortKey==='code'||sortKey==='name'){return sortAsc?a[sortKey].localeCompare(b[sortKey]):b[sortKey].localeCompare(a[sortKey]);}
+    return 0;
+  });
+}
+
+function renderTable(){
+  const filtered=getFiltered(),sorted=getSorted(filtered);
+  const counted=allResults.filter(r=>r.vcp).length;
+  document.getElementById('showN').textContent=sorted.length;
+  document.getElementById('totalN').textContent=counted;
+  const tbody=document.getElementById('tblBody');
+  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="11">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
+  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="11">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
+  tbody.innerHTML=sorted.map(r=>{
+    const v=r.vcp;
+    const tv=`https://www.tradingview.com/chart/?symbol=TWSE%3A${r.code}`;
+    if(!v){
+      return `<tr style="opacity:.45">
+        <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
+        <td class="tn">${r.name}</td>
+        <td><span class="tsec">${r.sector}</span></td>
+        <td colspan="7" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
+        <td><a href="${tv}" target="_blank" class="tv-btn">TV圖</a></td>
+      </tr>`;
+    }
+    const g=grade(v.score),s=sc(v.score);
+    const pBadge=v.pctH<15?'pct-A':v.pctH<25?'pct-B':'pct-C';
+    const maHTML=[
+      v.ma50!=null?`<div class="leg" title="MA50: ${v.ma50}"><div class="legdot" style="background:${v.abM50?'#059669':'#dc2626'}"></div><span class="ma-mini">50</span></div>`:'',
+      v.ma150!=null?`<div class="leg" title="MA150: ${v.ma150}"><div class="legdot" style="background:${v.abM150?'#059669':'#dc2626'}"></div><span class="ma-mini">150</span></div>`:'',
+      v.ma200!=null?`<div class="leg" title="MA200: ${v.ma200}"><div class="legdot" style="background:${v.abM200?'#059669':'#dc2626'}"></div><span class="ma-mini">200</span></div>`:'',
+    ].join('');
+    const atrHTML=v.atrL!=='—'
+      ?`<span class="sig sig-${v.atrS}">${v.atrL}</span>${v.atrRat!=null?`<br><span style="font-size:.6rem;color:#9ca3af">${v.atrRat}</span>`:''}`
+      :'<span style="color:#d1d5db">—</span>';
+    const volHTML=v.volL!=='—'
+      ?`<span class="sig sig-${v.volS}">${v.volL}</span>${v.vRat!=null?`<br><span style="font-size:.6rem;color:#9ca3af">${v.vRat}</span>`:''}`
+      :'<span style="color:#d1d5db">—</span>';
+    return `<tr>
+      <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
+      <td class="tn">${r.name}</td>
+      <td><span class="tsec">${r.sector}</span></td>
+      <td class="tprice">NT$${fmtP(v.price)}</td>
+      <td><span class="pct-b ${pBadge}">-${v.pctH}%</span></td>
+      <td><div class="ma-row">${maHTML||'—'}</div></td>
+      <td>${atrHTML}</td>
+      <td>${volHTML}</td>
+      <td>
+        <div class="scr-wrap">
+          <div class="scr-bg"><div class="scr-fill f${s}" style="width:${v.score}%"></div></div>
+          <span class="scr-num s${s}">${v.score}</span>
+        </div>
+      </td>
+      <td><span class="grade g${g}">${g}</span></td>
+      <td><a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── Filter Controls ──────────────────────────────────────────────────────
+function setScore(v,el){
+  scoreMin=v;
+  document.getElementById('scoreRow').querySelectorAll('.pill').forEach(p=>p.classList.remove('f-on'));
+  el.classList.add('f-on');renderTable();
+}
+function setPct(v,el){
+  pctMax=v;
+  document.getElementById('pctRow').querySelectorAll('.pill').forEach(p=>p.classList.remove('f-on'));
+  el.classList.add('f-on');renderTable();
+}
+function setSec(v,el){
+  secFilter=v;
+  document.querySelectorAll('[data-sec]').forEach(p=>p.classList.remove('s-on'));
+  el.classList.add('s-on');renderTable();
+}
+function toggleStage2(el){onlyStage2=!onlyStage2;el.classList.toggle('g-on',onlyStage2);renderTable();}
+function toggleHideErr(el){hideErr=!hideErr;el.classList.toggle('g-on',hideErr);renderTable();}
+function setSort(k,el){
+  if(sortKey===k)sortAsc=!sortAsc;
+  else{sortKey=k;sortAsc=(k==='pct'||k==='code'||k==='name');}
+  document.querySelectorAll('.srt').forEach(b=>b.classList.remove('on'));
+  if(el)el.classList.add('on');
+  renderTable();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────
+(function init(){
+  // Update stock count in header
+  const unique=[...new Map(STOCKS.map(s=>[s.code,s])).values()];
+  document.querySelector('.scan-section-title span:last-child').textContent=`台股 ${unique.length} 支 · Yahoo Finance`;
+
+  updateKeyStatus();
+
+  // Restore cache
+  try{
+    const raw=sessionStorage.getItem('vcpCache');
+    if(!raw)return;
+    const{results,ts}=JSON.parse(raw);
+    const age=(Date.now()-ts)/60000;
+    if(age>30)return;
+    allResults=results;
+    document.getElementById('scanBtn').textContent='🔄 重新掃描';
+    document.getElementById('scanInfo').innerHTML=`上次掃描：<strong>${new Date(ts).toLocaleTimeString('zh-TW')}</strong>（${Math.round(age)} 分鐘前）`;
+    renderAll();updateVcpCard();updateStarsCard();
+  }catch(_){}
+
+  // Auto-load AI sections
+  setTimeout(()=>{loadTrump();loadSemi();loadClock();loadMacro();},500);
+})();
+</script>
+</body>
+</html>
