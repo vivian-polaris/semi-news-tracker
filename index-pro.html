@@ -224,6 +224,10 @@ header{position:relative}
       <button class="key-save" style="background:var(--red)" onclick="clearDsKey()">清除</button>
     </div>
     <div class="key-status" id="dsKeyStatus"></div>
+    <hr style="border-color:var(--border);margin:12px 0 10px">
+    <p style="color:var(--text2);font-size:.75rem;margin-bottom:8px">🔗 <strong>分享給同事</strong>：產生一個包含 Key 的網址，對方開一次就自動儲存。</p>
+    <button class="key-save" style="width:100%;background:var(--accent)" onclick="copyShareLink()">🔗 複製分享連結</button>
+    <div class="key-status" id="shareStatus" style="margin-top:6px"></div>
   </div>
 
 <div class="lbl">📂 來源</div>
@@ -1506,6 +1510,32 @@ function clearDsKey(){
   document.getElementById('dsKeyInput').value='';
   updateKeyStatus();
 }
+function copyShareLink(){
+  const gk=getKey();
+  const dk=getDsKey();
+  if(!gk&&!dk){
+    document.getElementById('shareStatus').textContent='⚠️ 請先設定至少一個 Key';
+    return;
+  }
+  const base=window.location.origin+window.location.pathname;
+  const params=[];
+  if(gk) params.push('groq='+encodeURIComponent(gk));
+  if(dk) params.push('ds='+encodeURIComponent(dk));
+  const shareUrl=base+(params.length?'#'+params.join('&'):'')
+  navigator.clipboard.writeText(shareUrl).then(()=>{
+    const s=document.getElementById('shareStatus');
+    s.className='key-status ok';
+    s.textContent='✅ 連結已複製！將連結傳給同事，對方開一次即可自動儲存 Key';
+    setTimeout(()=>s.textContent='',4000);
+  }).catch(()=>{
+    const s=document.getElementById('shareStatus');
+    s.className='key-status no';
+    s.textContent=shareUrl;
+    s.style.wordBreak='break-all';
+    s.style.userSelect='all';
+  });
+}
+
 async function callAIDeepSeek(prompt){
   const key=getDsKey();
   if(!key) return null;
@@ -1784,12 +1814,29 @@ document.getElementById('si').addEventListener('keydown',e=>{
   const now=new Date(),ago=new Date(now-30*86400000);
   document.getElementById('ed').value=toDateStr(now);
   document.getElementById('sd').value=toDateStr(ago);
-  // URL param 自動載入 Key（分享用）
-  const urlParams=new URLSearchParams(window.location.search);
-  const urlGroq=urlParams.get('groq');
-  const urlDs=urlParams.get('ds');
-  if(urlGroq && urlGroq.startsWith('gsk_') && /^[ -~]+$/.test(urlGroq)){localStorage.setItem('groq_key',urlGroq);console.log('Loaded Groq key from URL');}
-  if(urlDs && urlDs.startsWith('sk-') && /^[ -~]+$/.test(urlDs)){localStorage.setItem('deepseek_key',urlDs);console.log('Loaded DeepSeek key from URL');}
+  // URL param 或 hash fragment 自動載入 Key（分享用）
+  // 支援 ?groq=... 或 #groq=... （hash 不會傳到伺服器，更安全）
+  (function loadKeysFromUrl(){
+    const search=new URLSearchParams(window.location.search);
+    const hash=new URLSearchParams(window.location.hash.replace(/^#/,''));
+    const gk=search.get('groq')||hash.get('groq')||'';
+    const dk=search.get('ds')||hash.get('ds')||'';
+    if(gk && /^gsk_[ -~]+$/.test(gk)){
+      localStorage.setItem('groq_key',gk);
+      setCookie('groq_key',gk,365);
+      // 載入後清除 URL 中的 Key（避免展示在地址列）
+      const clean=window.location.pathname+window.location.search.replace(/[?&]groq=[^&]*/,'').replace(/^&/,'?')||window.location.pathname;
+      history.replaceState(null,'',clean);
+      console.log('Groq key loaded from URL');
+    }
+    if(dk && /^sk-[ -~]+$/.test(dk)){
+      localStorage.setItem('deepseek_key',dk);
+      setCookie('deepseek_key',dk,365);
+      const clean2=window.location.pathname+window.location.search.replace(/[?&]ds=[^&]*/,'').replace(/^&/,'?')||window.location.pathname;
+      history.replaceState(null,'',clean2);
+      console.log('DeepSeek key loaded from URL');
+    }
+  })();
 })();
 renderL1();renderL2();
 fetchAll();
