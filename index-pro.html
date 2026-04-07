@@ -23,12 +23,9 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 .lbl{color:var(--text2);font-size:.72rem;font-weight:600;letter-spacing:.04em;margin:12px 0 5px 2px;text-transform:uppercase}
 
 /* Search */
-.srch-row{display:flex;gap:8px;align-items:center;margin:14px 0 6px}
-.srch-wrap{position:relative;flex:1}
-.srch-wrap input{width:100%;padding:13px 138px 13px 46px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:.97rem;outline:none;transition:border .2s}
+.srch-wrap{position:relative;margin:14px 0 6px}
+.srch-wrap input{width:100%;padding:13px 76px 13px 46px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:.97rem;outline:none;transition:border .2s}
 .srch-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);padding:6px 14px;background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:.82rem;font-weight:600}
-.ai-in-btn{position:absolute;right:74px;top:50%;transform:translateY(-50%);padding:6px 12px;background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:.82rem;font-weight:700;transition:opacity .2s}
-.ai-in-btn:hover{opacity:.85}
 .srch-wrap input:focus{border-color:var(--accent)}
 .srch-wrap input::placeholder{color:var(--text2)}
 .srch-ico{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:1.05rem;pointer-events:none}
@@ -36,8 +33,6 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 .ai-wrap{margin:6px 0 4px}
 .ai-big-btn{width:100%;padding:11px;background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:10px;color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;letter-spacing:.02em;transition:opacity .2s}
 .ai-big-btn:hover{opacity:.88}
-.ai-side-btn{padding:13px 16px;background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:12px;color:#fff;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity .2s;flex-shrink:0}
-.ai-side-btn:hover{opacity:.88}
 .ai-panel{display:none;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.3);border-radius:12px;padding:14px 16px;margin:6px 0 4px;font-size:.88rem;line-height:1.7;color:var(--text);white-space:pre-wrap}
 .ai-panel.show{display:block}
 .ai-lbl{font-size:.72rem;font-weight:700;color:var(--accent2);letter-spacing:.05em;margin-bottom:6px;display:block}
@@ -121,7 +116,6 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 .bv{background:rgba(255,68,68,.1);color:#f87171;border:1px solid rgba(248,113,113,.3)}
 .card.cvideo{border-left:3px solid #f87171}.card.cvideo::after{content:'';display:block;clear:both}
 .cthumb{width:140px;aspect-ratio:16/9;object-fit:cover;border-radius:5px;float:right;margin:0 0 4px 10px}
-.yt-grid .card{font-size:.75rem;padding:7px 8px}.yt-grid .ctitle{font-size:.78rem;-webkit-line-clamp:2}.yt-grid .cthumb{width:100%;float:none;aspect-ratio:16/9;margin:0 0 5px}.yt-grid .ctop{font-size:.65rem}
 .tl1{padding:2px 7px;border-radius:3px;font-size:.65rem;background:var(--tag);color:var(--text2)}
 .tl2{padding:2px 7px;border-radius:3px;font-size:.65rem;background:rgba(139,92,246,.08);color:var(--accent2)}
 
@@ -140,9 +134,6 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 
 /* Refresh */
 .rfwrap{display:flex;justify-content:center;margin:8px 0}
-.latest-btn{width:100%;padding:13px;background:linear-gradient(135deg,#1d4ed8,#3b82f6);border:none;border-radius:12px;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.03em;transition:all .2s;margin:12px 0 4px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 12px rgba(59,130,246,.25)}
-.latest-btn:hover{opacity:.9;box-shadow:0 4px 20px rgba(59,130,246,.4);transform:translateY(-1px)}
-.latest-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .rfbtn{padding:7px 20px;background:var(--card);border:1px solid var(--border);border-radius:7px;color:var(--text2);cursor:pointer;font-size:.8rem;transition:all .2s}
 .rfbtn:hover{border-color:var(--accent);color:var(--accent)}
 .rfbtn:disabled{opacity:.5;cursor:not-allowed}
@@ -164,38 +155,6 @@ header{position:relative}
 .key-status.ok{color:var(--green)}
 .key-status.no{color:var(--orange)}
 
-/* 每日快訊區 */
-.quicknews{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 14px}
-@media(max-width:620px){.quicknews{grid-template-columns:1fr}}
-.qn-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-height:110px;display:flex;flex-direction:column}
-.qn-card.trump{border-left:4px solid #ef4444}
-.qn-card.war{border-left:4px solid #f59e0b}
-.qn-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
-.qn-title{font-size:.78rem;font-weight:700;letter-spacing:.03em}
-.qn-title.trump-t{color:#ef4444}
-.qn-title.war-t{color:#f59e0b}
-.qn-refresh{background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text2);cursor:pointer;font-size:.68rem;padding:2px 8px;transition:all .18s}
-.qn-refresh:hover{border-color:var(--accent2);color:var(--accent2)}
-.qn-body{font-size:.8rem;line-height:1.7;color:var(--text);flex:1;white-space:pre-wrap}
-.qn-body.loading{color:var(--text2);font-style:italic}
-.qn-time{font-size:.62rem;color:var(--text2);margin-top:8px;text-align:right}
-
-/* 投資人專區 */
-.inv-section{margin:10px 0 14px}
-.inv-clock-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
-@media(max-width:620px){.inv-clock-row{grid-template-columns:1fr}}
-.inv-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column}
-.inv-card.clock{border-left:4px solid #10b981}
-.inv-card.vcp{border-left:4px solid #f59e0b}
-.inv-card.macro{grid-column:1/-1;border-left:4px solid #8b5cf6}
-.inv-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
-.inv-title{font-size:.78rem;font-weight:700;letter-spacing:.03em}
-.inv-title.clock-t{color:#10b981}
-.inv-title.vcp-t{color:#f59e0b}
-.inv-title.macro-t{color:#8b5cf6}
-.inv-body{font-size:.8rem;line-height:1.7;color:var(--text);flex:1;white-space:pre-wrap}
-.inv-body.loading{color:var(--text2);font-style:italic}
-.inv-time{font-size:.62rem;color:var(--text2);margin-top:8px;text-align:right}
 </style>
 </head>
 <body>
@@ -203,7 +162,7 @@ header{position:relative}
   <header>
     <h1>✨ Vivian的半導體好好玩</h1>
     <p>乘著半AI的翅膀 🚀 &nbsp;·&nbsp; 不受 Google SEO 限制 &nbsp;·&nbsp; 不聽股市明牌，只看到真相</p>
-    <button class="key-btn" onclick="toggleKeyPanel()">⚙️</button>
+    <button class="key-btn" onclick="toggleKeyPanel()">⚙️ AI 設定</button>
   </header>
   <div class="key-panel" id="keyPanel">
     <p>🤖 AI 摘要功能需要 <strong>Groq API Key</strong>（完全免費，無信用卡，台灣可用）<br>
@@ -215,24 +174,22 @@ header{position:relative}
       <button class="key-save" style="background:var(--red)" onclick="clearKey()">清除</button>
     </div>
     <div class="key-status" id="keyStatus"></div>
-    <hr style="border-color:var(--border);margin:12px 0 10px">
-    <p>🌊 <strong>DeepSeek API Key</strong>（免費額度，無信用卡，台灣可用）<br>
-    ① <a href="https://platform.deepseek.com/api_keys" target="_blank">platform.deepseek.com</a> → 註冊 → 建立 Key（<code>sk-</code> 開頭）<br>
-    ② 貼下方 — 沒有任何 Key 時自動用免費 Pollinations 服務</p>
-    <div class="key-row">
-      <input class="key-input" id="dsKeyInput" type="password" placeholder="sk-...">
-      <button class="key-save" onclick="saveDsKey()">儲存</button>
-      <button class="key-save" style="background:var(--red)" onclick="clearDsKey()">清除</button>
-    </div>
-    <div class="key-status" id="dsKeyStatus"></div>
-    <hr style="border-color:var(--border);margin:12px 0 10px">
-    <p style="color:var(--text2);font-size:.75rem;margin-bottom:8px">🔗 <strong>分享給同事</strong>：產生一個包含 Key 的網址，對方開一次就自動儲存。</p>
-    <button class="key-save" style="width:100%;background:var(--accent)" onclick="copyShareLink()">🔗 複製分享連結</button>
-    <button class="key-save" style="width:100%;background:#6366f1;margin-top:6px" onclick="changeSettingsPwd()">🔒 設定/變更開啟密碼</button>
-    <div class="key-status" id="shareStatus" style="margin-top:6px"></div>
   </div>
 
-<div class="lbl">📂 來源</div>
+
+  <div class="srch-wrap">
+    <span class="srch-ico">🔍</span>
+    <input type="text" id="si" placeholder="輸入任何句子... 例：TSMC 先進封裝的最新進展 / HBM4 供應鏈動態 / CoWoS 良率論文">
+    <button class="srch-btn" onclick="triggerSearch()">搜尋</button>
+  </div>
+  <div class="hint">💡 可以輸入完整句子，系統會自動提取關鍵詞搜尋 · 含「論文/paper/IEEE」自動搜尋 arXiv · 📧 ABC 為 Always Be Curious newsletter</div>
+  <div class="qdisp" id="qdisp"></div>
+  <div class="ai-wrap">
+    <button class="ai-big-btn" onclick="askAI()">🤖 問 AI：用人工智慧直接回答</button>
+  </div>
+  <div class="ai-panel" id="aipanel"></div>
+
+  <div class="lbl">📂 來源</div>
   <div class="row" id="srcRow">
     <div class="pill p-src on" data-s="all"   onclick="setSrc('all')">🌐 全部</div>
     <div class="pill p-src"    data-s="news"  onclick="setSrc('news')">📰 新聞</div>
@@ -249,9 +206,9 @@ header{position:relative}
   <div class="row" id="timeRow">
     <div class="pill p-time"         data-t="1h"     onclick="setTime('1h')">1小時</div>
     <div class="pill p-time"         data-t="12h"    onclick="setTime('12h')">12小時</div>
-    <div class="pill p-time"          data-t="24h"    onclick="setTime('24h')">24小時</div>
+    <div class="pill p-time on"       data-t="24h"    onclick="setTime('24h')">24小時</div>
     <div class="pill p-time"          data-t="3d"     onclick="setTime('3d')">3天</div>
-    <div class="pill p-time on"       data-t="7d"     onclick="setTime('7d')">7天</div>
+    <div class="pill p-time"         data-t="7d"     onclick="setTime('7d')">7天</div>
     <div class="pill p-time"         data-t="1m"     onclick="setTime('1m')">1個月</div>
     <div class="pill p-time"          data-t="3m"     onclick="setTime('3m')">3個月</div>
     <div class="pill p-time"         data-t="1y"     onclick="setTime('1y')">1年</div>
@@ -268,17 +225,9 @@ header{position:relative}
 
   <div class="l2-panel" id="l2panel"></div>
 
-  <div class="srch-wrap">
-    <span class="srch-ico">🔍</span>
-    <input type="text" id="si" placeholder="輸入任何句子... 例：TSMC 先進封裝、HBM4、CoWoS 良率">
-    <button class="ai-in-btn" onclick="askAI()">🤖 問 AI</button>
-    <button class="srch-btn" onclick="triggerSearch()">搜尋</button>
+  <div class="rfwrap">
+    <button class="rfbtn" id="rfbtn" onclick="fetchAll()">🔄 重新載入</button>
   </div>
-  <div class="qdisp" id="qdisp"></div>
-  <div class="ai-panel" id="aipanel"></div>
-
-  <button class="latest-btn" id="rfbtn" onclick="fetchAll()">🗞 最新半導體新聞</button>
-
 
   <div class="stats">
     <span class="sl" id="stxt">載入中...</span>
@@ -293,48 +242,6 @@ header{position:relative}
     <div class="loading"><div class="spin"></div><br>正在載入新聞...</div>
   </div>
 
-  <div class="lbl">🌐 每日快訊 AI 摘要（自動更新）</div>
-  <div class="quicknews">
-    <div class="qn-card trump">
-      <div class="qn-head">
-        <span class="qn-title trump-t">🇺🇸 Trump 政策 × 股市影響</span>
-        <button class="qn-refresh" onclick="loadTrumpNews()">↻ 重整</button>
-      </div>
-      <div class="qn-body loading" id="trumpBody">載入中...</div>
-      <div class="qn-time" id="trumpTime"></div>
-    </div>
-    <div class="qn-card war">
-      <div class="qn-head">
-        <span class="qn-title war-t">🌍 地緣計畫 × 資金流向</span>
-        <button class="qn-refresh" onclick="loadWarNews()">↻ 重整</button>
-      </div>
-      <div class="qn-body loading" id="warBody">載入中...</div>
-      <div class="qn-time" id="warTime"></div>
-    </div>
-  </div>
-
-  <div class="lbl">💹 投資人專區（AI 自動分析）</div>
-  <div class="inv-section">
-    <div class="inv-clock-row">
-      <div class="inv-card clock">
-        <div class="inv-head">
-          <span class="inv-title clock-t">🕐 美林時鐘幾點？</span>
-          <button class="qn-refresh" onclick="loadInvClock(true)">↻ 重整</button>
-        </div>
-        <div id="clockSvg" style="margin:6px 0 10px"></div>
-        <div class="inv-body loading" id="clockBody">AI 分析中...</div>
-        <div class="inv-time" id="clockTime"></div>
-      </div>
-      <div class="inv-card vcp">
-        <div class="inv-head">
-          <span class="inv-title vcp-t">📈 VCP 潛力股（不構成投資建議）</span>
-          <button class="qn-refresh" onclick="loadVCPStocks(true)">↻ 重整</button>
-        </div>
-        <div class="inv-body loading" id="vcpBody">載入中...</div>
-        <div class="inv-time" id="vcpTime"></div>
-      </div>
-    </div>
-  </div>
   <footer>半導體新聞追蹤器 Pro © 2026 &nbsp;·&nbsp; Google News RSS + arXiv API + Always Be Curious &nbsp;·&nbsp; 雙層分類</footer>
 </div>
 <script>
@@ -630,35 +537,11 @@ const NL_L2 = {
 };
 
 // ================================================================
-// YouTube 頻道清單（半導體 / 科技）
-// ================================================================
-const YT_CHANNELS = [
-  // Magnificent 7 官方頻道
-  {id:'UCHuiy8bXnmK5nisYHUd1J5g', name:'NVIDIA'},           // NVIDIA 官方
-  {id:'UCE_M8A5yxnLfW0KghEeajjw', name:'Apple'},            // Apple 官方
-  {id:'UCFtEEv80fQVKkD4h1PF-Xqw', name:'Microsoft'},        // Microsoft 官方
-  {id:'UCK8sQmJBp8GCxrOtXWBpyEA', name:'Google'},           // Google 官方
-  {id:'UC04FyDIvYXNecpbG8gyOw4A', name:'Meta'},             // Meta 官方
-  {id:'UC5WjFrtBdHnqASsr7dHFHw',  name:'Tesla'},            // Tesla 官方
-  // 半導體分析
-  {id:'UC1LpsuAUaKoMzzJSEt5WImw', name:'Asianometry'},      // 半導體產業深度分析
-  {id:'UCOmJ_6fuGfWjkZMi2aH_MNA', name:'TSMC'},             // 台積電官方
-];
-
-// 額外新要圖源（指定網站自動抓取）
-const EXTRA_SOURCES = [
-  'tomshardware.com',
-  'techcrunch.com',
-  'theregister.com',
-  'semiwiki.com',
-];
-
-// ================================================================
 // State
 // ================================================================
 let allNews=[], liveNews=[], arxivNews=[], substackNews=[], youtubeNews=[];
 let activeL1='all', activeL2='all';
-let timePeriod='7d', customStart=null, customEnd=null;
+let timePeriod='24h', customStart=null, customEnd=null;
 let searchText='', activeSrc='all', sortBy='time';
 let isSearching=false, currentQ='';
 let viewMode='list'; // 'list' | 'grid'
@@ -668,25 +551,38 @@ let liveTimer;
 let lastParsed={newsQ:'',arQ:'',wantPaper:false,tokens:[],queryParts:[],entityLabels:[]};
 
 // ================================================================
-// Proxy — 4個代理同時發起，Promise.any 取最快成功的
+// Proxy — 依序嘗試，第一個成功即回傳
 // ================================================================
-async function fetchProxy(url,timeout=12000){
-  const enc=encodeURIComponent(url);
-  const t={signal:AbortSignal.timeout(timeout)};
-  const ok=r=>{if(!r.ok) throw new Error(`HTTP ${r.status}`);return r;};
-  try{
-    return await Promise.any([
-      fetch(`https://corsproxy.io/?${enc}`,t).then(ok),
-      fetch(`https://api.allorigins.win/get?url=${enc}`,t).then(ok).then(r=>r.json()).then(j=>{
-        if(!j.contents||j.contents.length<50) throw new Error('empty');
-        return new Response(j.contents,{status:200,headers:{'Content-Type':'text/xml;charset=utf-8'}});
-      }),
-      fetch(`https://api.codetabs.com/v1/proxy?quest=${enc}`,t).then(ok),
-      fetch(`https://api.allorigins.win/raw?url=${enc}`,t).then(ok),
-    ]);
-  }catch{
-    throw new Error('All proxies failed');
+const PROX=[
+  u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`
+];
+// Important company YouTube channel IDs (public RSS, no API key needed)
+const YT_CHANNELS=[
+  {id:'UCHuiy8bXnmK5nisYHUd1J5g',name:'NVIDIA'},
+  {id:'UCj5QUTQMK3TRBRQkMVdZ5nA',name:'Intel'},
+  {id:'UCQRkOKKjOsOuFGqEa0SQJAA',name:'AMD'},
+  {id:'UCRb_e7mkVMyFVzrZWOTaALQ',name:'Qualcomm'},
+  {id:'UCKiLt0FjnZqWrjVbBcP0b8w',name:'ASML'},
+  {id:'UCgPBhzfECiSLbFN_mBpnHdA',name:'Arm'},
+  {id:'UCTjYhVEEUFzmCwS_8JmqAsg',name:'Applied Materials'},
+  {id:'UCVDTBjLnCMN9KWy4PxC-SQw',name:'TSMC'},
+];
+
+// Extra sources to always include
+const EXTRA_SOURCES=[
+  'tomshardware.com','techcrunch.com','theregister.com','semiwiki.com'
+];
+
+async function fetchProxy(url,timeout=13000){
+  for(const p of PROX){
+    try{
+      const r=await fetch(p(url),{signal:AbortSignal.timeout(timeout)});
+      if(r.ok) return r;
+    }catch{}
   }
+  throw new Error('All proxies failed');
 }
 
 // ================================================================
@@ -826,12 +722,11 @@ function passL2(title){
 // Fetch Google News RSS
 // ================================================================
 async function fetchRSS(query){
-  const q=query;
+  const after=afterDate();
+  const q=`${query} after:${after}`;
   const url=`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
   const r=await fetchProxy(url);
-  const txt=await r.text();
-  const xml=new DOMParser().parseFromString(txt,'text/xml');
-  if(xml.querySelector('parsererror')) throw new Error('non-XML response');
+  const xml=new DOMParser().parseFromString(await r.text(),'text/xml');
   const items=[];
   xml.querySelectorAll('item').forEach(el=>{
     const g=s=>(el.querySelector(s)||{textContent:''}).textContent;
@@ -846,12 +741,11 @@ async function fetchRSS(query){
 // Fetch Google News RSS (English locale, for specific sources)
 // ================================================================
 async function fetchRSSEn(query){
-  const q=query;
+  const after=afterDate();
+  const q=`${query} after:${after}`;
   const url=`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en&gl=US&ceid=US:en`;
   const r=await fetchProxy(url);
-  const txt=await r.text();
-  const xml=new DOMParser().parseFromString(txt,'text/xml');
-  if(xml.querySelector('parsererror')) throw new Error('non-XML response');
+  const xml=new DOMParser().parseFromString(await r.text(),'text/xml');
   const items=[];
   xml.querySelectorAll('item').forEach(el=>{
     const g=s=>(el.querySelector(s)||{textContent:''}).textContent;
@@ -982,7 +876,6 @@ async function fetchAll(){
   list.innerHTML='<div class="loading"><div class="spin"></div><br>正在載入新聞...</div>';
   btn.disabled=true; btn.textContent='載入中...';
 
-  try{
   const queries=Object.values(CAT).map(c=>({q:c.kw.slice(0,3).join(' OR ')+' semiconductor'}));
   const res=await Promise.allSettled(queries.map(async({q})=>{
     try{return await fetchRSS(q);}catch{return[];}
@@ -1005,13 +898,10 @@ async function fetchAll(){
     });
   });
 
-  }catch(e){console.warn("fetchAll:",e);}
-  finally{
-    btn.disabled=false; btn.innerHTML="🔄 重新載入";
-    fetchSubstack();
-    fetchYouTube();
-    renderL1(); render();
-  }
+  btn.disabled=false; btn.innerHTML='🔄 重新載入';
+  fetchSubstack();
+  fetchYouTube();
+  renderL1(); render();
 }
 
 // ================================================================
@@ -1218,19 +1108,19 @@ async function batchZhSumm(){
   if(!els.length) return;
   els.forEach(el=>el.classList.remove('loading'));
 
+  if(!getKey()) return; // 無 key 就不處理（元素已空白，CSS:empty 隱藏）
+
   const pairs=els.map(el=>({el,title:decodeURIComponent(el.dataset.t||'')})).filter(p=>p.title);
   if(!pairs.length) return;
 
   const numbered=pairs.map((p,i)=>`${i+1}. ${p.title}`).join('\n');
-  const zhPrompt=`以下${pairs.length}條半導體/科技新聞標題，每條寫12字以內重點。規則：人名地名公司名用英文（TSMC、Nvidia、Apple、Trump、China等），其他繁體中文。格式「誰＋做什麼＋數字/結果」。`+
+  const raw=await callAI(
+    `以下${pairs.length}條半導體/科技新聞標題，每條寫12字以內重點。規則：人名地名公司名用英文（TSMC、Nvidia、Apple、Trump、China等），其他繁體中文。格式「誰＋做什麼＋數字/結果」。`+
     `例：「TSMC 2nm良率達80%」「Nvidia H200漲價15%」「Apple砍Samsung訂單」「Trump對China加徵34%關稅」。`+
     `絕對禁止：密切關注、緊張情勢、持續發展、值得注意、帶來影響、備受矚目。`+
-    `只輸出數字清單：\n1. 摘要\n2. 摘要\n\n${numbered}`;
-  // 摘要用三層 fallback：Groq → DeepSeek → Pollinations（摘要量小，匿名請求不會觸發 429）
-  let raw=await callAI(zhPrompt).catch(()=>'');
-  if((!raw || raw.startsWith('⚠️')) && !getKey() && !getDsKey()){
-    raw=await callAIFree(zhPrompt).catch(()=>'');
-  }
+    `只輸出數字清單：\n1. 摘要\n2. 摘要\n\n${numbered}`
+  );
+
   if(!raw || raw.startsWith('⚠️') || raw.startsWith('🔑')) return;
 
   // 解析：跳過沒有數字開頭的行（preamble），取有 "數字." 開頭的行
@@ -1291,7 +1181,7 @@ function render(){
   document.getElementById('stxt').textContent=`顯示 ${total} 則${periodLabel()} / 預載 ${allNews.length} 則${liveHint}${abcHint}${ytHint}`;
 
   if(total===0){
-    list.innerHTML=isSearching?'<div class="loading"><div class="spin"></div><br>搜尋中...</div>':'<div class="empty">📭 沒有符合結果<br><span style="font-size:.75rem;color:var(--text2)">可能原因：代理服務暫時無法連線，請按「🔄 重新載入」再試，或調整時間範圍</span></div>';
+    list.innerHTML=isSearching?'<div class="loading"><div class="spin"></div><br>搜尋中...</div>':'<div class="empty">📭 沒有符合結果，試試調整時間範圍或關鍵字</div>';
     return;
   }
 
@@ -1300,9 +1190,7 @@ function render(){
 
   if(videos.length){
     h+=`<div class="div-row">📺 YouTube 影片（${videos.length} 部）</div>`;
-    h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px" class="yt-grid">';
     videos.forEach(n=>{h+=cardHTML(n,'video');});
-    h+='</div>';
     if(abc.length+papers.length+live.length+base.length) h+=`<div class="div-row">📰 新聞 / 論文</div>`;
   }
   if(abc.length){
@@ -1423,79 +1311,13 @@ async function askAI(){
   }
 }
 
-// ================================================================
-// 每日快訊 + 投資人專區 — 共用 AI 呼叫（retry 3次，過濾 HTML 錯誤頁）
-// ================================================================
-// 清理 AI 回傳的原始 JSON（有些模型會把 reasoning_content 一起吐出來）
-// ================================================================
-// AI 引擎：Groq（完全免費，台灣可用，無信用卡）
-// 申請：https://console.groq.com/keys
-// 免費額度：每天 14,400 次，每分鐘 30 次
-// ================================================================
-// ================================================================
-// Cookie 輔助儲存 Key（比 localStorage 更耐清除，保存 1 年）
-// ================================================================
-function setCookie(name,val,days){
-  const d=new Date(); d.setTime(d.getTime()+days*86400000);
-  document.cookie=name+'='+encodeURIComponent(val)+';expires='+d.toUTCString()+';path=/;SameSite=Lax';
-}
-function getCookie(name){
-  const m=document.cookie.match('(?:^|; )'+name+'=([^;]*)');
-  return m?decodeURIComponent(m[1]):'';
-}
-function delCookie(name){
-  document.cookie=name+'=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
-}
-function getKey(){
-  // localStorage 優先，如果為空則用 cookie 備援
-  const ls=(localStorage.getItem('groq_key')||'').replace(/[^ -~]/g,'').trim();
-  if(ls) return ls;
-  const ck=getCookie('groq_key').replace(/[^ -~]/g,'').trim();
-  if(ck){localStorage.setItem('groq_key',ck);} // 復原到 localStorage
-  return ck;
-}
-function getDsKey(){
-  const ls=(localStorage.getItem('deepseek_key')||'').replace(/[^ -~]/g,'').trim();
-  if(ls) return ls;
-  const ck=getCookie('deepseek_key').replace(/[^ -~]/g,'').trim();
-  if(ck){localStorage.setItem('deepseek_key',ck);}
-  return ck;
-}
+function getKey(){ return localStorage.getItem('groq_key')||''; }
 function toggleKeyPanel(){
-  const panel=document.getElementById('keyPanel');
-  if(panel.classList.contains('show')){
-    panel.classList.remove('show');
-    return;
-  }
-  // Check if password is set
-  const savedPwd=localStorage.getItem('settings_pwd');
-  if(savedPwd){
-    const entered=prompt('請輸入設定密碼：');
-    if(entered===null) return; // user cancelled
-    if(entered!==savedPwd){
-      alert('❌ 密碼錯誤');
-      return;
-    }
-  }
-  panel.classList.add('show');
-  document.getElementById('keyInput').value=getKey();
-  document.getElementById('dsKeyInput').value=getDsKey();
-  updateKeyStatus();
-}
-function changeSettingsPwd(){
-  const current=localStorage.getItem('settings_pwd');
-  if(current){
-    const verify=prompt('請輸入目前密碼以繼續：');
-    if(verify!==current){alert('❌ 密碼錯誤');return;}
-  }
-  const np=prompt('設定新密碼（留空=取消密碼保護）：');
-  if(np===null) return;
-  if(np.trim()===''){
-    localStorage.removeItem('settings_pwd');
-    alert('✅ 密碼已取消，設定頁面不再需要密碼');
-  } else {
-    localStorage.setItem('settings_pwd',np.trim());
-    alert('✅ 密碼已設定。下次開啟設定需輸入密碼。');
+  const p=document.getElementById('keyPanel');
+  p.classList.toggle('show');
+  if(p.classList.contains('show')){
+    document.getElementById('keyInput').value=getKey();
+    updateKeyStatus();
   }
 }
 function updateKeyStatus(){
@@ -1503,646 +1325,51 @@ function updateKeyStatus(){
   if(!s) return;
   const k=getKey();
   s.className='key-status '+(k?'ok':'no');
-  s.textContent=k?'✅ Groq Key 已儲存（localStorage + Cookie）':'ℹ️ 尚未設定 Groq Key';
-  const ds=document.getElementById('dsKeyStatus');
-  if(ds){
-    const dk=getDsKey();
-    ds.className='key-status '+(dk?'ok':'no');
-    ds.textContent=dk?'✅ DeepSeek Key 已儲存（localStorage + Cookie）':'ℹ️ 尚未設定 DeepSeek Key — 無 Key 時自動用 Pollinations 免費服務';
-  }
+  s.textContent=k?'✅ Groq Key 已設定，AI 功能啟用中':'⚠️ 尚未設定 Key — 請點上方連結申請（免費 30 秒完成）';
 }
 function saveKey(){
-  const raw=document.getElementById('keyInput').value.trim();
-  if(!raw){alert('請輸入 API Key');return;}
-  const k=raw.replace(/[^ -~]/g,'').trim();
-  if(!k){alert('Key含非法字元，請重新貼上正確的gsk_開頭Key');return;}
+  const k=document.getElementById('keyInput').value.trim();
+  if(!k){alert('請輸入 API Key');return;}
   localStorage.setItem('groq_key',k);
-  setCookie('groq_key',k,365); // 同時存到 cookie，保存 1 年
   updateKeyStatus();
   document.getElementById('keyPanel').classList.remove('show');
-  loadTrumpNews(); loadWarNews(); loadInvClock(); loadVCPStocks();
 }
 function clearKey(){
   localStorage.removeItem('groq_key');
-  delCookie('groq_key');
   document.getElementById('keyInput').value='';
   updateKeyStatus();
 }
 
-// ================================================================
-// DeepSeek API
-// ================================================================
-function saveDsKey(){
-  const raw=document.getElementById('dsKeyInput').value.trim();
-  if(!raw){alert('請輸入 DeepSeek Key');return;}
-  const k=raw.replace(/[^ -~]/g,'').trim();
-  if(!k){alert('Key含非法字元，請重新貼上');return;}
-  localStorage.setItem('deepseek_key',k);
-  setCookie('deepseek_key',k,365); // 同時存到 cookie，保存 1 年
-  updateKeyStatus();
-  document.getElementById('keyPanel').classList.remove('show');
-  loadTrumpNews(); loadWarNews(); loadInvClock(); loadVCPStocks();
-}
-function clearDsKey(){
-  localStorage.removeItem('deepseek_key');
-  delCookie('deepseek_key');
-  document.getElementById('dsKeyInput').value='';
-  updateKeyStatus();
-}
-function copyShareLink(){
-  const gk=getKey();
-  const dk=getDsKey();
-  if(!gk&&!dk){
-    document.getElementById('shareStatus').textContent='⚠️ 請先設定至少一個 Key';
-    return;
-  }
-  const base=window.location.origin+window.location.pathname;
-  const params=[];
-  if(gk) params.push('groq='+encodeURIComponent(gk));
-  if(dk) params.push('ds='+encodeURIComponent(dk));
-  const shareUrl=base+(params.length?'#'+params.join('&'):'')
-  navigator.clipboard.writeText(shareUrl).then(()=>{
-    const s=document.getElementById('shareStatus');
-    s.className='key-status ok';
-    s.textContent='✅ 連結已複製！將連結傳給同事，對方開一次即可自動儲存 Key';
-    setTimeout(()=>s.textContent='',4000);
-  }).catch(()=>{
-    const s=document.getElementById('shareStatus');
-    s.className='key-status no';
-    s.textContent=shareUrl;
-    s.style.wordBreak='break-all';
-    s.style.userSelect='all';
-  });
-}
-
-async function callAIDeepSeek(prompt){
-  const key=getDsKey();
-  if(!key) return null;
-  if(!/^[ -~]+$/.test(key)){localStorage.removeItem('deepseek_key');return null;}
+async function callAI(prompt){
+  const key=getKey();
+  if(!key) return '🔑 請點右上角「⚙️ AI 設定」輸入免費 Groq Key（console.groq.com/keys）';
   try{
-    const r=await fetch('https://api.deepseek.com/v1/chat/completions',{
+    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-      body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'deepseek-chat',max_tokens:500,temperature:0.7}),
-      signal:AbortSignal.timeout(30000)
+      body:JSON.stringify({
+        messages:[{role:'user',content:prompt}],
+        model:'llama-3.3-70b-versatile',
+        max_tokens:500,
+        temperature:0.7
+      }),
+      signal:AbortSignal.timeout(25000)
     });
     if(!r.ok){
       const e=await r.json().catch(()=>({}));
-      if(r.status===401){localStorage.removeItem('deepseek_key');return '⚠️ DeepSeek Key 錯誤，請重新設定';}
-      if(r.status===429) return '⚠️ DeepSeek 超過限額，請稍後再試';
-      return null;
+      const msg=e.error?.message||r.status;
+      if(r.status===401) return '⚠️ Groq Key 錯誤，請重新設定';
+      if(r.status===429) return '⚠️ 超過每分鐘限額，請稍候 30 秒再點 ↻ 重整';
+      return `⚠️ Groq 錯誤：${msg}`;
     }
     const j=await r.json();
     const text=j.choices?.[0]?.message?.content||'';
-    return text.trim().length>10?text.trim():null;
-  }catch(e){return null;}
-}
-
-// Pollinations.ai fallback（免 API Key，無需註冊）
-async function callAIFree(prompt){
-  try{
-    const r=await fetch('https://text.pollinations.ai/',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'openai'}),
-      signal:AbortSignal.timeout(30000)
-    });
-    const text=await r.text();
-    if(text&&text.trim().length>10&&!text.trim().startsWith('<!')) return text.trim();
-    throw new Error('bad response');
-  }catch(e){throw new Error('callAIFree:'+e.message);}
-}
-
-// ================================================================
-// 統一 AI 呼叫：Groq → DeepSeek → Pollinations（三層 fallback，沒有 Key 也能用）
-// ================================================================
-// 低溫度 AI 呼叫（用於需要穩定輸出的場景，如投資時鐘）
-async function callAILowTemp(prompt){
-  const groqKey=getKey();
-  if(groqKey&&/^[ -~]+$/.test(groqKey)){
-    try{
-      const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey},
-        body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'llama-3.3-70b-versatile',max_tokens:600,temperature:0.1}),
-        signal:AbortSignal.timeout(25000)
-      });
-      if(r.ok){
-        const j=await r.json();
-        const text=j.choices?.[0]?.message?.content||'';
-        if(text.trim().length>10) return text.trim();
-      }
-    }catch(e){}
-  }
-  const dsKey=getDsKey();
-  if(dsKey){
-    try{
-      const r=await fetch('https://api.deepseek.com/v1/chat/completions',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+dsKey},
-        body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'deepseek-chat',max_tokens:600,temperature:0.1}),
-        signal:AbortSignal.timeout(30000)
-      });
-      if(r.ok){
-        const j=await r.json();
-        const text=j.choices?.[0]?.message?.content||'';
-        if(text.trim().length>10) return text.trim();
-      }
-    }catch(e){}
-  }
-  return '';
-}
-
-async function callAI(prompt){
-  const groqKey=getKey();
-  const hasDs=!!getDsKey();
-  const hasAnyKey=!!groqKey||hasDs;
-
-  // 1. Groq
-  if(groqKey){
-    if(!/^[ -~]+$/.test(groqKey)){localStorage.removeItem('groq_key');delCookie('groq_key');}
-    else{
-      try{
-        const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-          method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey},
-          body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'llama-3.3-70b-versatile',max_tokens:500,temperature:0.7}),
-          signal:AbortSignal.timeout(25000)
-        });
-        if(r.status===401){localStorage.removeItem('groq_key');delCookie('groq_key');}
-        else if(r.status===429){return '⚠️ Groq 超過每分鐘限額，請稍候 30 秒再點 ↻ 重整';}
-        else if(r.ok){
-          const j=await r.json();
-          const text=j.choices?.[0]?.message?.content||'';
-          if(text.trim().length>10) return text.trim();
-        }
-      }catch(e){}
-    }
-  }
-
-  // 2. DeepSeek
-  if(hasDs){
-    const dsResult=await callAIDeepSeek(prompt);
-    if(dsResult) return dsResult;
-  }
-
-  // 3. Pollinations — 只有在沒有任何 Key 時才用（避免有 Key 時也打 Pollinations 造成 429）
-  if(!hasAnyKey){
-    try{
-      return await callAIFree(prompt);
-    }catch(e){
-      return '⚠️ AI 服務暫時無法連線，請在 ⚙️ 設定免費 Groq Key';
-    }
-  }
-
-  return '⚠️ AI 暫時無法回應，請點 ↻ 重整';
-}
-
-// 川普 — 使用頁面現有的 fetchRSSEn（已測試穩定）
-async function loadTrumpNews(){
-  const bodyEl=document.getElementById('trumpBody');
-  const timeEl=document.getElementById('trumpTime');
-  bodyEl.className='qn-body loading'; bodyEl.textContent='抓取最新新聞...';
-  timeEl.textContent='';
-  try{
-  const items=await fetchRSSEn('Trump tariff stock market semiconductor Taiwan chip').catch(()=>[]);
-  const trumpPrompt=`今天${new Date().toLocaleDateString('zh-TW')}。你是半導體/科技股票分析師。繁體中文，公司人名國家用英文。將 Trump 最新動態轉換為投資情報，3 條「・」開頭，150字內：
-・政策：Trump 做了什麼（具體數字）
-・美股：哪類 sector 漲？哪類跌？（defense / chip / energy / retail）
-・台股：TSMC / 半導體首當其衝？資金往哪跑？
-禁用：傷亡人數、外交辭令、局勢描述。`;
-  if(!items.length){
-    bodyEl.textContent='RSS 無法連線，AI 知識庫分析中...';
-    const s=await callAI(trumpPrompt).catch(()=>'');
-    bodyEl.className='qn-body';
-    bodyEl.textContent=(s&&!s.startsWith('⚠️')&&!s.startsWith('🔑'))?s:'RSS 暫時無法連線，請點 ↻ 重整。';
-    if(s&&!s.startsWith('⚠️')&&!s.startsWith('🔑')) timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+'（知識庫）';
-    return;
-  }
-  bodyEl.textContent='AI 摘要分析中...';
-  const headlines=items.slice(0,10).map((h,i)=>`${i+1}. ${h.title}`).join('\n');
-  const summary=await callAI('你是半導體/科技股票分析師。以下是最新 Trump 新聞標題。繁體中文，公司國家人名用英文。轉換為投資情報 3 條「・」開頭，150字內：(1)政策具體數字 (2)哪類美股 sector 漲/跌 (3)TSMC/台股影響。禁用：傷亡局勢外交。\n\n'+headlines);
-  bodyEl.className='qn-body';bodyEl.textContent=summary;
-  timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-  }catch{bodyEl.className="qn-body";bodyEl.textContent="⚠️ 載入失敗，請點 ↻ 重整。";}
-}
-
-// 戰爭 — 三條 RSS：烏俄 + 以巴 + 伊朗
-async function loadWarNews(){
-  const bodyEl=document.getElementById('warBody');
-  const timeEl=document.getElementById('warTime');
-  bodyEl.className='qn-body loading';bodyEl.textContent='抓取最新新聞...';
-  timeEl.textContent='';
-  try{
-  const [a,b,c]=await Promise.all([
-    fetchRSSEn('Ukraine Russia war defense stocks LMT RTX Raytheon oil').catch(()=>[]),
-    fetchRSSEn('Israel Gaza war oil gold defense industry stocks 2025').catch(()=>[]),
-    fetchRSSEn('Taiwan strait China TSMC semiconductor supply chain risk').catch(()=>[])
-  ]);
-  const items=[...a,...b,...c].slice(0,15);
-  const warPrompt=`今天${new Date().toLocaleDateString('zh-TW')}。你是地緣政治專注的資金流分析師。繁體中文，公司地名人名用英文。將地緣衝突轉換為資金流影響，3 條「・」開頭，150字內：
-・防禦股：哪個衝突 → LMT/RTX/NOC 等 defense sector 漲/跌？
-・能源商品：衝突對石油/天然氣/黃金的影響（具體%）
-・台灣風險：地緣緊張對TSMC供應鏈的影響，高風險時資金往哪躲？
-禁用：傷亡人數、局勢描述。只要資產影響。`;
-  if(!items.length){
-    bodyEl.textContent='RSS 無法連線，AI 知識庫分析中...';
-    const s=await callAI(warPrompt).catch(()=>'');
-    bodyEl.className='qn-body';
-    bodyEl.textContent=(s&&!s.startsWith('⚠️')&&!s.startsWith('🔑'))?s:'RSS 暫時無法連線，請點 ↻ 重整。';
-    if(s&&!s.startsWith('⚠️')&&!s.startsWith('🔑')) timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+'（知識庫）';
-    return;
-  }
-  bodyEl.textContent='AI 摘要分析中...';
-  const headlines=items.map((h,i)=>`${i+1}. ${h.title}`).join('\n');
-  const summary=await callAI('你是地緣政治專注的資金流分析師。以下是最新地緣衝突標題。繁體中文，公司地名人名用英文。轉換為資金流影響 3 條「・」開頭，150字內：(1)具體事件 (2)哪類資產漲/跌（defense/energy/gold/TSMC）(3)具體%或數字。禁用：傷亡人數局勢描述。\n\n'+headlines);
-  bodyEl.className='qn-body';bodyEl.textContent=summary;
-  timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-  }catch{bodyEl.className="qn-body";bodyEl.textContent="⚠️ 載入失敗，請點 ↻ 重整。";}
-}
-
-// ================================================================
-// 投資人專區 — 投資時鐘 + VCP（純 AI，不需 RSS）
-// ================================================================
-// 美林投資時鐘（順時針：復甦→過熱→滯脹→再膨脹）
-// 來源：Merrill Lynch Investment Clock
-// 復甦(12→3)：產出缺口收窄、通膨低  → 持有股票  年均報酬 19.9%
-// 過熱(3→6)：高成長、通膨升溫        → 持有原物料 年均報酬 19.7%
-// 滯脹(6→9)：成長下行、通膨仍高      → 持有現金  年均報酬 28.6%(防禦)
-// 再膨脹(9→12)：衰退、通膨回落       → 持有債券  年均報酬  9.8%
-function drawClock(activePhase){
-  const phases=[
-    {id:'復甦', asset:'📈 股票', ret:'19.9%', color:'#10b981',dim:'rgba(16,185,129,0.1)',start:0,  end:90, mid:45 },
-    {id:'過熱', asset:'🛢 原物料',ret:'19.7%', color:'#f59e0b',dim:'rgba(245,158,11,0.1)',start:90, end:180,mid:135},
-    {id:'滯脹', asset:'💵 現金', ret:'28.6%', color:'#ef4444',dim:'rgba(239,68,68,0.1)', start:180,end:270,mid:225},
-    {id:'再膨脹',asset:'📊 債券', ret:'9.8%',  color:'#8b5cf6',dim:'rgba(139,92,246,0.1)',start:270,end:360,mid:315},
-  ];
-  const R=88,r=32,CX=100,CY=100;
-  function pt(deg,radius){const rad=(deg-90)*Math.PI/180;return[CX+radius*Math.cos(rad),CY+radius*Math.sin(rad)];}
-  function arc(s,e,active,color,dim){
-    const[x1,y1]=pt(s,R),[x2,y2]=pt(e,R),[ix2,iy2]=pt(e,r),[ix1,iy1]=pt(s,r);
-    return `<path d="M${x1} ${y1}A${R} ${R} 0 0 1 ${x2} ${y2}L${ix2} ${iy2}A${r} ${r} 0 0 0 ${ix1} ${iy1}Z" fill="${active?color:dim}" stroke="#0a0e17" stroke-width="1.5"/>`;
-  }
-  let s=`<svg viewBox="0 0 200 200" width="200" height="200" style="display:block;margin:0 auto">`;
-  phases.forEach(p=>{
-    const on=(p.id===activePhase);
-    s+=arc(p.start,p.end,on,p.color,p.dim);
-    const[lx,ly]=pt(p.mid,(R+r)/2);
-    const op=on?'1':'0.4';
-    s+=`<text x="${lx}" y="${ly-10}" text-anchor="middle" fill="${on?'#fff':p.color}" font-size="11" font-weight="${on?'700':'500'}" opacity="${op}" font-family="sans-serif">${p.id}</text>`;
-    s+=`<text x="${lx}" y="${ly+4}"  text-anchor="middle" fill="${on?'#fff':p.color}" font-size="8"  opacity="${op}" font-family="sans-serif">${p.asset}</text>`;
-    s+=`<text x="${lx}" y="${ly+15}" text-anchor="middle" fill="${on?'#fff':p.color}" font-size="7"  opacity="${on?'0.8':'0.3'}" font-family="sans-serif">${p.ret}</text>`;
-  });
-  // 分隔線
-  [[0],[90],[180],[270]].forEach(([d])=>{const[x1,y1]=pt(d,r+1),[x2,y2]=pt(d,R-1);s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#0a0e17" stroke-width="2"/>`;});
-  // 中心圓
-  s+=`<circle cx="${CX}" cy="${CY}" r="${r}" fill="#0d1117" stroke="#1e2a42" stroke-width="1.5"/>`;
-  s+=`<text x="${CX}" y="${CY-16}" text-anchor="middle" fill="#475569" font-size="6.5" font-family="sans-serif">產出↑</text>`;
-  s+=`<text x="${CX}" y="${CY+22}" text-anchor="middle" fill="#475569" font-size="6.5" font-family="sans-serif">產出↓</text>`;
-  s+=`<text x="${CX-18}" y="${CY+3}" text-anchor="middle" fill="#475569" font-size="6.5" font-family="sans-serif">通膨↓</text>`;
-  s+=`<text x="${CX+18}" y="${CY+3}" text-anchor="middle" fill="#475569" font-size="6.5" font-family="sans-serif">通膨↑</text>`;
-  // 順時針箭頭提示
-  s+=`<text x="${CX}" y="${CY+4}" text-anchor="middle" fill="#334155" font-size="9" font-family="sans-serif">↻</text>`;
-  // 指針
-  if(activePhase){
-    const ap=phases.find(p=>p.id===activePhase);
-    if(ap){
-      const[nx,ny]=pt(ap.mid,R-14);
-      const[b1x,b1y]=pt(ap.mid-90,7),[b2x,b2y]=pt(ap.mid+90,7);
-      s+=`<polygon points="${CX},${CY} ${b1x},${b1y} ${nx},${ny} ${b2x},${b2y}" fill="${ap.color}" opacity="0.92"/>`;
-      s+=`<circle cx="${nx}" cy="${ny}" r="5" fill="${ap.color}"><animate attributeName="opacity" values="1;0.25;1" dur="1.8s" repeatCount="indefinite"/></circle>`;
-      s+=`<circle cx="${CX}" cy="${CY}" r="5" fill="${ap.color}" stroke="#0a0e17" stroke-width="1.5"/>`;
-    }
-  }
-  s+=`</svg>`;
-  return s;
-}
-
-async function loadInvClock(forceRefresh=false){
-  const svgEl=document.getElementById('clockSvg');
-  const bodyEl=document.getElementById('clockBody');
-  const timeEl=document.getElementById('clockTime');
-  // 每日快取：同一天不重複呼叫 AI，避免每次結果不同
-  const today=new Date().toISOString().slice(0,10);
-  const cacheKey='inv_clock_'+today;
-  const cached=localStorage.getItem(cacheKey);
-  if(cached&&!forceRefresh){
-    try{
-      const {phase,summary,time}=JSON.parse(cached);
-      svgEl.innerHTML=drawClock(phase);
-      bodyEl.className='inv-body';bodyEl.textContent=summary;
-      timeEl.textContent=time+' （今日快取，↻ 強制更新）';
-      return;
-    }catch{}
-  }
-  svgEl.innerHTML=drawClock(null);
-  bodyEl.className='inv-body loading';bodyEl.textContent='AI 分析投資時鐘中...';
-  timeEl.textContent='';
-  try{
-  const clockPrompt=`你是宏觀經濟分析師。今天${today}。
-美林投資時鐘是季度/月度指標，基於最新公開宏觀數據判斷當前所在階段。
-繁體中文，機構人名地名用英文（Fed、Powell、S&P500等）。
-嚴格按格式，每項必須有真實數字：
-
-【時鐘位置】只填一個：復甦、過熱、滯脹、再膨脹
-【判斷依據】
-・US CPI：X.X%（YoY），核心PCE：X.X%
-・Fed利率：X.XX%，下次降息預期：XXXX年X月
-・US GDP成長：X.X%（最新季），失業率：X.X%
-・S&P500最近走勢：XXX
-【建議配置】
-・股票 XX%（偏好哪個sector）
-・債券 XX%（短債/長債）
-・現金 XX%
-・原物料 XX%（Gold/Oil）
-【風險提示】具體事件（英文）+影響%
-
-注意：此分析基於季度宏觀趨勢，不隨每日市場波動改變。`;
-  // 使用低溫度讓結果穩定（不用 callAI 因為它用 0.7）
-  let summary = await callAILowTemp(clockPrompt);
-  if(!summary||summary.startsWith("⚠️")) summary=await callAI(clockPrompt);
-  let phase=null;
-  const m=summary.match(/【時鐘位置】[：:]\s*(復甦|過熱|滯脹|再膨脹)/);
-  if(m) phase=m[1];
-  else { for(const ph of ['滯脹','再膨脹','過熱','復甦']) if(summary.includes(ph)){phase=ph;break;} }
-  svgEl.innerHTML=drawClock(phase);
-  bodyEl.className='inv-body';bodyEl.textContent=summary;
-  const timeStr='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-  timeEl.textContent=timeStr;
-  // 快取到明天
-  localStorage.setItem(cacheKey,JSON.stringify({phase,summary,time:timeStr}));
-  }catch{bodyEl.className='inv-body';bodyEl.textContent='⚠️ 載入失敗，請點 ↻ 重整。';}
-}
-
-// ================================================================
-// VCP 分析 — 使用台灣證交所 (TWSE) 真實日 K 資料
-// 嚴格 VCP 標準（Mark Minervini）：Stage2 + 波幅收縮 + 量縮
-// ================================================================
-const VCP_STOCKS = [
-  // 半導體製造
-  {code:'2330',name:'台積電',   group:'半導體'},
-  {code:'2454',name:'聯發科',   group:'半導體'},
-  {code:'3443',name:'創意',     group:'半導體'},
-  {code:'5347',name:'世界先進', group:'半導體'},
-  {code:'2408',name:'南亞科',   group:'半導體'},
-  {code:'2303',name:'聯電',     group:'半導體'},
-  // 先進封裝
-  {code:'3711',name:'日月光',   group:'封裝'},
-  {code:'2449',name:'京元電',   group:'封裝'},
-  {code:'8150',name:'南茂',     group:'封裝'},
-  // AI 伺服器/散熱
-  {code:'2382',name:'廣達',     group:'AI伺服器'},
-  {code:'2356',name:'英業達',   group:'AI伺服器'},
-  {code:'2059',name:'川湖',     group:'機殼'},
-  {code:'3017',name:'奇鋐',     group:'散熱'},
-  {code:'3324',name:'雙鴻',     group:'散熱'},
-  {code:'6670',name:'復盛應用', group:'散熱'},
-  // 電源/被動元件
-  {code:'2308',name:'台達電',   group:'電源'},
-  {code:'2327',name:'國巨',     group:'被動元件'},
-  {code:'2379',name:'瑞昱',     group:'IC設計'},
-  // PCB
-  {code:'3037',name:'欣興',     group:'PCB'},
-  {code:'4958',name:'臻鼎-KY', group:'PCB'},
-  {code:'8046',name:'南電',     group:'PCB'},
-  // 網通/連接器
-  {code:'2317',name:'鴻海',     group:'EMS'},
-  {code:'2357',name:'華碩',     group:'品牌PC'},
-  {code:'2353',name:'宏碁',     group:'品牌PC'},
-  {code:'2395',name:'研華',     group:'工業電腦'},
-  // 記憶體/儲存
-  {code:'2344',name:'華邦電',   group:'記憶體'},
-  {code:'3474',name:'華亞科',   group:'記憶體'},
-  // 面板
-  {code:'2409',name:'友達',     group:'面板'},
-  {code:'3481',name:'群創',     group:'面板'},
-  // 光學/感測
-  {code:'3008',name:'大立光',   group:'光學'},
-  {code:'2439',name:'美律',     group:'聲學'},
-  // 生技/醫療（避開高本益比，留幾支）
-  {code:'4743',name:'合一',     group:'生技'},
-  {code:'6547',name:'高端疫苗', group:'生技'},
-  // 金融
-  {code:'2882',name:'國泰金',   group:'金融'},
-  {code:'2884',name:'玉山金',   group:'金融'},
-];
-
-async function fetchTWSEMonth(code, year, month) {
-  const dateStr = year.toString() + month.toString().padStart(2,'0') + '01';
-  const url = `https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY?stockNo=${code}&date=${dateStr}&response=json`;
-  try {
-    const r = await fetchProxy(url, 12000);
-    const data = await r.json();
-    if (data.stat !== 'OK' || !data.data) return [];
-    return data.data.map(row => {
-      const parts = row[0].split('/');
-      const close = parseFloat((row[6]||'0').replace(/,/g,''));
-      const high  = parseFloat((row[4]||'0').replace(/,/g,''));
-      const low   = parseFloat((row[5]||'0').replace(/,/g,''));
-      const vol   = parseFloat((row[1]||'0').replace(/,/g,''));
-      return {close, high, low, vol};
-    }).filter(d => !isNaN(d.close) && d.close > 0);
-  } catch(e) { return []; }
-}
-
-async function fetchTWSE3Months(code) {
-  const now = new Date();
-  const months = [];
-  for (let i = 2; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push({year: d.getFullYear(), month: d.getMonth() + 1});
-  }
-  const results = await Promise.all(months.map(m => fetchTWSEMonth(code, m.year, m.month)));
-  return results.flat();
-}
-
-function calcMA(arr, n) {
-  if (arr.length < n) return NaN;
-  const slice = arr.slice(-n);
-  return slice.reduce((a,b)=>a+b,0) / n;
-}
-
-function analyzeVCP(data) {
-  if (data.length < 30) return null;
-
-  const closes  = data.map(d => d.close);
-  const highs   = data.map(d => d.high);
-  const lows    = data.map(d => d.low);
-  const vols    = data.map(d => d.vol);
-  const n       = closes.length;
-  const current = closes[n-1];
-
-  // Moving averages
-  const ma20 = calcMA(closes, Math.min(20, n));
-  const ma50 = calcMA(closes, Math.min(50, n));
-  const ma10 = calcMA(closes, Math.min(10, n));
-
-  // Stage 2：price > MA20 > MA50，且 MA20 在過去 10 天呈上升
-  const ma20_10dAgo = calcMA(closes.slice(0,-10), Math.min(20, n-10));
-  const stage2 = current > ma20 && ma20 > ma50 && ma20 > ma20_10dAgo;
-
-  // 週度波幅（每 5 個交易日計算一次）
-  const weekRanges = [];
-  for (let i = 0; i + 4 < n; i += 5) {
-    const wh = Math.max(...highs.slice(i, i+5));
-    const wl = Math.min(...lows.slice(i, i+5));
-    if (wh > 0) weekRanges.push((wh - wl) / wh * 100);
-  }
-
-  // 至少需要 6 週資料
-  if (weekRanges.length < 6) return null;
-
-  const recent3 = weekRanges.slice(-3);
-  const prev3   = weekRanges.slice(-6, -3);
-
-  const recentAvgRange = recent3.reduce((a,b)=>a+b,0) / recent3.length;
-  const prevAvgRange   = prev3.reduce((a,b)=>a+b,0)   / prev3.length;
-
-  // 波幅收縮：最近 3 週平均波幅 < 之前 3 週平均波幅 × 0.75
-  const rangeContracting = recentAvgRange < prevAvgRange * 0.75;
-
-  // 連續收縮次數
-  let contractionCount = 0;
-  for (let i = 1; i < recent3.length; i++) {
-    if (recent3[i] < recent3[i-1]) contractionCount++;
-  }
-
-  // 量縮：最近 10 日均量 < 過去 30 日均量 × 0.80
-  const vol10 = vols.slice(-10).reduce((a,b)=>a+b,0) / 10;
-  const vol30 = vols.slice(-30).reduce((a,b)=>a+b,0) / Math.min(30, vols.length);
-  const volContracting = vol10 < vol30 * 0.80;
-
-  // 距離高點（近 3 個月高點）
-  const periodHigh = Math.max(...highs);
-  const fromHighPct = (periodHigh - current) / periodHigh * 100;
-
-  // 距離高點 < 20%（有機會突破）
-  const nearPivot = fromHighPct < 20;
-
-  // VCP 評分（滿分 100）
-  let score = 0;
-  if (stage2)          score += 35;  // Stage 2 是基本門檻
-  if (rangeContracting) score += 30; // 波幅收縮
-  if (volContracting)  score += 20;  // 量縮
-  if (nearPivot)       score += 15;  // 接近高點
-
-  return {
-    current, ma20, ma50, ma10,
-    periodHigh,
-    fromHighPct: fromHighPct.toFixed(1),
-    stage2, rangeContracting, volContracting, nearPivot,
-    recentRange: recentAvgRange.toFixed(1),
-    prevRange: prevAvgRange.toFixed(1),
-    contractionCount,
-    score,
-    days: n
-  };
-}
-
-async function loadVCPStocks(forceRefresh=false){
-  const bodyEl = document.getElementById('vcpBody');
-  const timeEl = document.getElementById('vcpTime');
-
-  // 每日快取
-  const today = new Date().toISOString().slice(0,10);
-  const cacheKey = 'vcp_result_' + today;
-  const cached = localStorage.getItem(cacheKey);
-  if (cached && !forceRefresh) {
-    try {
-      const {html, time} = JSON.parse(cached);
-      bodyEl.className = 'inv-body';
-      bodyEl.innerHTML = html;
-      timeEl.textContent = time + '（今日快取，↻ 強制更新）';
-      return;
-    } catch{}
-  }
-
-  bodyEl.className = 'inv-body loading';
-  bodyEl.innerHTML = '從台灣證交所抓取真實日 K 資料中...';
-  timeEl.textContent = '';
-
-  try {
-    // Fetch all stocks in parallel
-    const results = await Promise.all(
-      VCP_STOCKS.map(async s => {
-        const data = await fetchTWSE3Months(s.code);
-        const analysis = analyzeVCP(data);
-        return {...s, data, analysis};
-      })
-    );
-
-    // Filter: only show confirmed VCP (score >= 70, must have stage2 + rangeContracting)
-    const confirmed = results
-      .filter(s => s.analysis && s.analysis.score >= 70
-                && s.analysis.stage2 && s.analysis.rangeContracting)
-      .sort((a,b) => b.analysis.score - a.analysis.score);
-
-    if (confirmed.length === 0) {
-      const topScore = results
-        .filter(s => s.analysis)
-        .sort((a,b) => b.analysis.score - a.analysis.score)
-        .slice(0,2);
-
-      let msg = '<div style="font-size:.8rem;line-height:1.8">';
-      msg += '<b>⚠️ 目前無符合嚴格 VCP 標準的個股</b><br>';
-      msg += '<span style="font-size:.72rem;color:#64748b">條件：Stage2 + 波幅收縮 + 量縮。需同時滿足全部條件。</span><br><br>';
-      if (topScore.length > 0) {
-        msg += '分數最高（尚未達標）：<br>';
-        topScore.forEach(s => {
-          const a = s.analysis;
-          msg += `・${s.code} ${s.name}（${a.score}分）${a.stage2?'✓Stage2':'✗Stage2'} ${a.rangeContracting?'✓波幅收縮':'✗波幅收縮'} ${a.volContracting?'✓量縮':'✗量縮'}<br>`;
-        });
-      }
-      msg += '</div>';
-      bodyEl.className = 'inv-body';
-      bodyEl.innerHTML = msg;
-      timeEl.textContent = '資料來源：台灣證交所 TWSE ｜' + today;
-      return;
-    }
-
-    let html = '<div style="font-size:.82rem;line-height:2">';
-    html += `<b style="color:#f59e0b">✓ 通過嚴格 VCP 篩選（${confirmed.length} 檔）</b><br>`;
-    html += '<span style="font-size:.68rem;color:#64748b;line-height:1.4;display:block;margin-bottom:8px">條件：Stage2 ✓ + 波幅收縮 ✓ + 量縮 ✓（資料來源：TWSE 近3個月日K）</span>';
-
-    confirmed.forEach(s => {
-      const a = s.analysis;
-      const tvLink = `https://www.tradingview.com/chart/?symbol=TWSE:${s.code}`;
-      const score = a.score;
-      const scoreColor = score >= 90 ? '#10b981' : score >= 80 ? '#f59e0b' : '#94a3b8';
-      html += `<div style="border:1px solid #1e2a42;border-radius:8px;padding:8px 10px;margin-bottom:6px;background:#131a2b">`;
-      html += `<div style="display:flex;justify-content:space-between;align-items:center">`;
-      html += `<span><b style="color:#e2e8f0">${s.code} ${s.name}</b> <span style="font-size:.68rem;color:#64748b">${s.group}</span></span>`;
-      html += `<span style="color:${scoreColor};font-weight:700;font-size:.85rem">VCP ${score}分</span>`;
-      html += `</div>`;
-      html += `<div style="font-size:.72rem;color:#94a3b8;margin-top:3px">`;
-      html += `收盤 ${a.current} ｜距高點 -${a.fromHighPct}% ｜波幅 ${a.recentRange}%（前 ${a.prevRange}%）`;
-      html += `</div>`;
-      html += `<div style="font-size:.7rem;margin-top:4px">`;
-      html += `<span style="color:#10b981">✓Stage2</span> `;
-      html += `<span style="color:#10b981">✓波幅收縮</span> `;
-      html += a.volContracting ? `<span style="color:#10b981">✓量縮</span> ` : `<span style="color:#f59e0b">△量未縮</span> `;
-      html += a.nearPivot ? `<span style="color:#10b981">✓近高點</span>` : `<span style="color:#64748b">距高點偏遠</span>`;
-      html += `</div>`;
-      html += `<div style="margin-top:5px"><a href="${tvLink}" target="_blank" style="font-size:.68rem;color:#3b82f6;text-decoration:none">📈 TradingView 確認圖形 →</a></div>`;
-      html += `</div>`;
-    });
-    html += '<span style="font-size:.65rem;color:#475569">⚠️ 不構成投資建議。VCP需自行確認突破點與成交量。</span>';
-    html += '</div>';
-
-    const timeStr = '資料來源：TWSE ｜' + today;
-    bodyEl.className = 'inv-body';
-    bodyEl.innerHTML = html;
-    timeEl.textContent = timeStr;
-
-    // Cache for the day
-    localStorage.setItem(cacheKey, JSON.stringify({html, time: timeStr}));
-
-  } catch(e) {
-    bodyEl.className = 'inv-body';
-    bodyEl.textContent = '⚠️ 台灣證交所 API 連線失敗，請點 ↻ 重整。錯誤：' + e.message;
+    if(text.trim().length>10) return text.trim();
+    return '⚠️ AI 回覆為空，請點 ↻ 重整';
+  }catch(e){
+    return `⚠️ 網路連線問題（${e.message}），請點 ↻ 重整`;
   }
 }
-
 
 document.getElementById('si').addEventListener('input',e=>{
   const raw=e.target.value;
@@ -2178,38 +1405,10 @@ document.getElementById('si').addEventListener('keydown',e=>{
   const now=new Date(),ago=new Date(now-30*86400000);
   document.getElementById('ed').value=toDateStr(now);
   document.getElementById('sd').value=toDateStr(ago);
-  // URL param 或 hash fragment 自動載入 Key（分享用）
-  // 支援 ?groq=... 或 #groq=... （hash 不會傳到伺服器，更安全）
-  (function loadKeysFromUrl(){
-    const search=new URLSearchParams(window.location.search);
-    const hash=new URLSearchParams(window.location.hash.replace(/^#/,''));
-    const gk=search.get('groq')||hash.get('groq')||'';
-    const dk=search.get('ds')||hash.get('ds')||'';
-    if(gk && /^gsk_[ -~]+$/.test(gk)){
-      localStorage.setItem('groq_key',gk);
-      setCookie('groq_key',gk,365);
-      // 載入後清除 URL 中的 Key（避免展示在地址列）
-      const clean=window.location.pathname+window.location.search.replace(/[?&]groq=[^&]*/,'').replace(/^&/,'?')||window.location.pathname;
-      history.replaceState(null,'',clean);
-      console.log('Groq key loaded from URL');
-    }
-    if(dk && /^sk-[ -~]+$/.test(dk)){
-      localStorage.setItem('deepseek_key',dk);
-      setCookie('deepseek_key',dk,365);
-      const clean2=window.location.pathname+window.location.search.replace(/[?&]ds=[^&]*/,'').replace(/^&/,'?')||window.location.pathname;
-      history.replaceState(null,'',clean2);
-      console.log('DeepSeek key loaded from URL');
-    }
-  })();
 })();
 renderL1();renderL2();
 fetchAll();
 updateKeyStatus();
-// Groq 免費 API：RPM 限制 30，錯開 5 秒一個
-loadTrumpNews();
-setTimeout(loadWarNews,  5000);
-setTimeout(loadInvClock, 10000);
-setTimeout(()=>loadVCPStocks(false),15000);
 </script>
 </body>
 </html>

@@ -102,6 +102,7 @@ header p{color:var(--text2);font-size:.82rem;line-height:1.7}
 .clock-badge{padding:4px 12px;border-radius:20px;font-size:.78rem;font-weight:800;color:#fff}
 .clock-asset{font-size:.85rem;font-weight:700;color:var(--text)}
 .clock-sub{font-size:.72rem;color:var(--text2);margin-top:3px}
+#clockSvg{display:block;margin:4px auto 8px}
 
 /* ── VCP Scan Box ── */
 .scan-section-title{font-size:.75rem;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:.06em;margin:4px 0 10px;display:flex;align-items:center;gap:6px}
@@ -270,13 +271,13 @@ footer a:hover{text-decoration:underline}
 <!-- ── 每日快訊 ── -->
 <div class="inv-title-row" style="margin-top:6px">
   <span style="font-size:1rem">🗞️</span>
-  <span class="inv-main-title">每日快訊 AI 摘要</span>
-  <span style="font-size:.7rem;color:var(--text2)">自動更新</span>
+  <span class="inv-main-title">市場震撼彈</span>
+  <span style="font-size:.7rem;color:var(--text2)">跟錢有關的才算重要</span>
 </div>
 <div class="news-grid">
   <div class="news-card trump">
     <div class="news-head">
-      <div class="news-title t-trump">🦊 Trump 政策動態</div>
+      <div class="news-title t-trump">🌍 川普+戰爭→美股台股衝擊</div>
       <button class="news-refresh" onclick="loadTrump()">↻ 刷新</button>
     </div>
     <div class="news-body loading" id="trumpBody">載入中...</div>
@@ -304,6 +305,7 @@ footer a:hover{text-decoration:underline}
       <div class="inv-label lbl-clock">⏰ 美林投資時鐘</div>
       <button class="inv-rf" onclick="loadClock()">↻</button>
     </div>
+    <div id="clockSvg"></div>
     <div class="inv-body" id="clockBody" style="flex:1">
       <div class="clock-phase" id="clockPhase" style="margin-bottom:8px">
         <span class="clock-badge" id="clockBadge" style="background:var(--purple)">分析中...</span>
@@ -334,15 +336,6 @@ footer a:hover{text-decoration:underline}
     <div class="inv-time" id="macroTime"></div>
   </div>
 
-  <!-- 4. 強勢股排行 -->
-  <div class="inv-card c-stars">
-    <div class="inv-head">
-      <div class="inv-label lbl-stars">🌸 今日強勢股 Top 5</div>
-      <button class="inv-rf" onclick="updateStarsCard()">↻</button>
-    </div>
-    <div class="inv-body" id="starsBody">掃描後自動顯示 VCP 高分股票</div>
-    <div class="inv-time" id="starsTime"></div>
-  </div>
 </div>
 
 <div class="sec-div"></div>
@@ -359,6 +352,20 @@ footer a:hover{text-decoration:underline}
     <div class="scan-info" id="scanInfo">
       點擊掃描，自動抓取台股日線歷史數據並計算 VCP 分數。<strong>約需 60–90 秒</strong>。
     </div>
+  </div>
+  <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+    <div style="font-size:.72rem;font-weight:800;color:var(--purple);margin-bottom:6px">
+      📋 從玩股網匯入股票代號
+      <a href="https://www.wantgoo.com/screener" target="_blank" style="color:var(--text2);font-weight:400;margin-left:8px">開啟玩股網 →</a>
+    </div>
+    <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
+      <textarea id="importInput" rows="2" placeholder="貼上股票代號，用逗號、空格或換行分隔&#10;例：2330,2454,3034 或 2330 2454 3034" style="flex:1;min-width:200px;padding:8px 10px;background:var(--tag);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:.78rem;outline:none;resize:vertical;font-family:inherit"></textarea>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button onclick="importStocks()" style="padding:8px 14px;background:linear-gradient(135deg,var(--purple),var(--pink));border:none;border-radius:10px;color:#fff;cursor:pointer;font-size:.75rem;font-weight:700;white-space:nowrap">匯入並掃描</button>
+        <button onclick="resetStocks()" style="padding:8px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);cursor:pointer;font-size:.75rem;white-space:nowrap">還原預設清單</button>
+      </div>
+    </div>
+    <div id="importStatus" style="font-size:.7rem;color:var(--text2);margin-top:5px"></div>
   </div>
   <div class="prog-wrap" id="progWrap">
     <div class="prog-bg"><div class="prog-fill" id="progFill"></div></div>
@@ -652,11 +659,40 @@ async function fetchRSS(query){
 async function loadTrump(){
   const b=document.getElementById('trumpBody'), t=document.getElementById('trumpTime');
   b.className='news-body loading'; b.textContent='抓取最新新聞...'; t.textContent='';
-  const items=await fetchRSS('Trump tariff semiconductor Taiwan chip 2025').catch(()=>[]);
+  const [a,c,d]=await Promise.all([
+    fetchRSS('Trump tariff trade war stock market 2025').catch(()=>[]),
+    fetchRSS('Iran Israel nuclear deadline sanction 2025').catch(()=>[]),
+    fetchRSS('Ukraine Russia ceasefire oil price 2025').catch(()=>[])
+  ]);
+  const items=[...a,...c,...d].slice(0,15);
   b.textContent='AI 分析中...';
+  const today=new Date().toLocaleDateString('zh-TW');
   const prompt=items.length
-    ? '你是半導體投資分析師。以下是最新 Trump 新聞標題。繁體中文，公司人名用英文。轉換為投資情報 3 條「・」開頭，160字內：(1)政策具體數字 (2)哪類美股 sector 漲/跌 (3)TSMC/台股影響。禁用傷亡局勢外交。\n\n'+items.map((x,i)=>`${i+1}. ${x.title}`).join('\n')
-    : '今天'+new Date().toLocaleDateString('zh-TW')+'。你是半導體投資分析師。繁體中文，公司人名用英文。分析 Trump 關稅政策對台灣半導體的影響 3 條「・」開頭，160字內：(1)關稅具體數字 (2)受影響 sector (3)TSMC/台股應對策略。禁用傷亡局勢外交。';
+    ? `今天${today}。你是股市分析師，定義「重要」＝跟錢有關、會讓股票漲跌。以下是最新新聞，繁體中文，人名機構用英文。分析格式（每條「・」開頭，共200字內）：
+
+【Trump動向→美股影響】
+・具體政策或聲明+受影響sector（Nvidia/AMD/半導體/石油等）+估計漲跌%
+・第二條
+
+【戰爭地緣→市場影響】
+・Iran/Ukraine/Israel最重要的1條（必須是影響石油/軍工/避險資產的）+影響哪類美股
+
+【台股衝擊】
+・上述事件對TSMC/台灣半導體/台幣的直接影響+外資動向
+
+禁止：「局勢緊張」「持續關注」「值得觀察」。必須給數字。\n\n`+items.map((x,i)=>`${i+1}. ${x.title}`).join('\n')
+    : `今天${today}。你是股市分析師，定義「重要」＝跟錢有關、會讓股票漲跌。繁體中文，人名機構用英文。分析格式（每條「・」開頭，共200字內）：
+
+【Trump動向→美股影響】
+・Trump最新關稅/政策+受影響sector（Nvidia/AMD/半導體/石油等）+估計漲跌%
+
+【戰爭地緣→市場影響】
+・Iran核談判現況或Ukraine停火最新+影響石油/軍工/避險資產的數字
+
+【台股衝擊】
+・上述事件對TSMC/台幣/外資動向的直接影響
+
+禁止：「局勢緊張」「持續關注」。必須給數字。`;
   const res=await callAI(prompt);
   b.className='news-body'; b.textContent=res;
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
@@ -676,19 +712,70 @@ async function loadSemi(){
 }
 
 // ─── 投資時鐘 ─────────────────────────────────────────────────────────────
+function drawClock(activePhase){
+  const phases=[
+    {id:'復甦', asset:'📈 股票', ret:'19.9%', color:'#10b981',dim:'rgba(16,185,129,0.1)',start:0,  end:90, mid:45 },
+    {id:'過熱', asset:'🛢 原物料',ret:'19.7%', color:'#f59e0b',dim:'rgba(245,158,11,0.1)',start:90, end:180,mid:135},
+    {id:'滯脹', asset:'💵 現金', ret:'28.6%', color:'#ef4444',dim:'rgba(239,68,68,0.1)', start:180,end:270,mid:225},
+    {id:'再膨脹',asset:'📊 債券', ret:'9.8%',  color:'#8b5cf6',dim:'rgba(139,92,246,0.1)',start:270,end:360,mid:315},
+  ];
+  const R=88,r=32,CX=100,CY=100;
+  function pt(deg,radius){const rad=(deg-90)*Math.PI/180;return[CX+radius*Math.cos(rad),CY+radius*Math.sin(rad)];}
+  function arc(s,e,active,color,dim){
+    const[x1,y1]=pt(s,R),[x2,y2]=pt(e,R),[ix2,iy2]=pt(e,r),[ix1,iy1]=pt(s,r);
+    return `<path d="M${x1} ${y1}A${R} ${R} 0 0 1 ${x2} ${y2}L${ix2} ${iy2}A${r} ${r} 0 0 0 ${ix1} ${iy1}Z" fill="${active?color:dim}" stroke="#e9d5ff" stroke-width="1.5"/>`;
+  }
+  let s=`<svg viewBox="0 0 200 200" width="180" height="180" style="display:block;margin:0 auto">`;
+  phases.forEach(p=>{
+    const on=(p.id===activePhase);
+    s+=arc(p.start,p.end,on,p.color,p.dim);
+    const[lx,ly]=pt(p.mid,(R+r)/2);
+    const op=on?'1':'0.4';
+    s+=`<text x="${lx}" y="${ly-10}" text-anchor="middle" fill="${on?'#fff':p.color}" font-size="11" font-weight="${on?'700':'500'}" opacity="${op}" font-family="sans-serif">${p.id}</text>`;
+    s+=`<text x="${lx}" y="${ly+4}"  text-anchor="middle" fill="${on?'#fff':p.color}" font-size="8"  opacity="${op}" font-family="sans-serif">${p.asset}</text>`;
+    s+=`<text x="${lx}" y="${ly+15}" text-anchor="middle" fill="${on?'#fff':p.color}" font-size="7"  opacity="${on?'0.8':'0.3'}" font-family="sans-serif">${p.ret}</text>`;
+  });
+  [[0],[90],[180],[270]].forEach(([d])=>{const[x1,y1]=pt(d,r+1),[x2,y2]=pt(d,R-1);s+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#e9d5ff" stroke-width="2"/>`;});
+  s+=`<circle cx="${CX}" cy="${CY}" r="${r}" fill="#fdf4ff" stroke="#e9d5ff" stroke-width="1.5"/>`;
+  s+=`<text x="${CX}" y="${CY-16}" text-anchor="middle" fill="#9ca3af" font-size="6.5" font-family="sans-serif">產出↑</text>`;
+  s+=`<text x="${CX}" y="${CY+22}" text-anchor="middle" fill="#9ca3af" font-size="6.5" font-family="sans-serif">產出↓</text>`;
+  s+=`<text x="${CX-18}" y="${CY+3}" text-anchor="middle" fill="#9ca3af" font-size="6.5" font-family="sans-serif">通膨↓</text>`;
+  s+=`<text x="${CX+18}" y="${CY+3}" text-anchor="middle" fill="#9ca3af" font-size="6.5" font-family="sans-serif">通膨↑</text>`;
+  s+=`<text x="${CX}" y="${CY+4}" text-anchor="middle" fill="#d8b4fe" font-size="9" font-family="sans-serif">↻</text>`;
+  if(activePhase){
+    const ap=phases.find(p=>p.id===activePhase);
+    if(ap){
+      const[nx,ny]=pt(ap.mid,R-14);
+      const[b1x,b1y]=pt(ap.mid-90,7),[b2x,b2y]=pt(ap.mid+90,7);
+      s+=`<polygon points="${CX},${CY} ${b1x},${b1y} ${nx},${ny} ${b2x},${b2y}" fill="${ap.color}" opacity="0.92"/>`;
+      s+=`<circle cx="${nx}" cy="${ny}" r="5" fill="${ap.color}"><animate attributeName="opacity" values="1;0.25;1" dur="1.8s" repeatCount="indefinite"/></circle>`;
+      s+=`<circle cx="${CX}" cy="${CY}" r="5" fill="${ap.color}" stroke="#e9d5ff" stroke-width="1.5"/>`;
+    }
+  }
+  s+=`</svg>`;
+  return s;
+}
+
 async function loadClock(){
+  const svgEl=document.getElementById('clockSvg');
   const badge=document.getElementById('clockBadge');
   const asset=document.getElementById('clockAsset');
   const sub=document.getElementById('clockSub');
   const t=document.getElementById('clockTime');
+  svgEl.innerHTML=drawClock(null);
   badge.textContent='分析中...'; badge.style.background='var(--border)'; asset.textContent=''; sub.textContent='';
-  const prompt='今天'+new Date().toLocaleDateString('zh-TW')+'。判斷目前美林投資時鐘所在象限：復甦/過熱/滯脹/再膨脹。回覆格式（嚴格）：\n象限：[復甦|過熱|滯脹|再膨脹]\n推薦資產：[股票|原物料|現金|債券]\n理由：[30字內，含Fed政策+通膨數字]\n投資建議：[台股操作策略，30字內]';
+  const today=new Date().toISOString().slice(0,10);
+  const prompt=`今天${today}。判斷目前美林投資時鐘所在象限：復甦/過熱/滯脹/再膨脹。回覆格式（嚴格）：\n象限：[復甦|過熱|滯脹|再膨脹]\n推薦資產：[股票|原物料|現金|債券]\n理由：[30字內，含Fed政策+通膨數字]\n投資建議：[台股操作策略，30字內]`;
   const res=await callAI(prompt);
   const phaseM=res.match(/象限[：:]\s*([^\n]+)/); const phase=phaseM?phaseM[1].trim():'未知';
   const assetM=res.match(/推薦資產[：:]\s*([^\n]+)/); const assetTxt=assetM?assetM[1].trim():'';
   const hintM=res.match(/投資建議[：:]\s*([^\n]+)/); const hintTxt=hintM?hintM[1].trim():'';
   const colors={'復甦':'#10b981','過熱':'#f59e0b','滯脹':'#ef4444','再膨脹':'#8b5cf6'};
   const col=colors[phase]||'var(--purple)';
+  let activePhase=null;
+  for(const p of ['滯脹','再膨脹','過熱','復甦']) if(res.includes(p)){activePhase=p;break;}
+  if(phaseM) activePhase=phase;
+  svgEl.innerHTML=drawClock(activePhase);
   badge.textContent=phase; badge.style.background=col;
   asset.textContent=assetTxt||res.slice(0,60);
   sub.textContent=hintTxt;
@@ -716,13 +803,28 @@ function updateVcpCard(){
   t.textContent='掃描於 '+new Date().toLocaleTimeString('zh-TW');
 }
 
-function updateStarsCard(){
-  const b=document.getElementById('starsBody'), t=document.getElementById('starsTime');
-  if(!allResults.length){b.textContent='掃描後自動顯示 VCP 高分股票';return;}
-  const top=allResults.filter(r=>r.vcp&&r.vcp.score>=60).sort((a,b)=>b.vcp.score-a.vcp.score).slice(0,5);
-  if(!top.length){b.textContent='尚未找到 VCP 候選股（分數 ≥60）';return;}
-  b.textContent=top.map((r,i)=>`${i+1}. ${r.code} ${r.name}  ${r.vcp.score}分  -${r.vcp.pctH}%`).join('\n');
-  t.textContent='更新：'+new Date().toLocaleTimeString('zh-TW');
+// ─── Import stocks from paste ──────────────────────────────────────────────
+const DEFAULT_STOCKS=[...STOCKS];
+function importStocks(){
+  const raw=document.getElementById('importInput').value;
+  const status=document.getElementById('importStatus');
+  const codes=[...new Set(raw.split(/[\s,，、\n]+/).map(s=>s.trim()).filter(s=>/^\d{4,6}$/.test(s)))];
+  if(!codes.length){status.textContent='⚠️ 未找到有效股票代號（需4位數字，如 2330）';return;}
+  // Build stock list from pasted codes
+  const existing=new Map(DEFAULT_STOCKS.map(s=>[s.code,s]));
+  STOCKS.length=0;
+  codes.forEach(c=>{
+    STOCKS.push(existing.get(c)||{code:c,name:c,sector:'匯入',ex:'TW'});
+  });
+  document.querySelector('.scan-section-title span:last-child').textContent=`台股 ${STOCKS.length} 支 · Yahoo Finance`;
+  status.textContent=`✅ 已匯入 ${codes.length} 支：${codes.slice(0,5).join(', ')}${codes.length>5?' ...':''}`;
+  startScan();
+}
+function resetStocks(){
+  STOCKS.length=0; DEFAULT_STOCKS.forEach(s=>STOCKS.push(s));
+  document.querySelector('.scan-section-title span:last-child').textContent=`台股 ${STOCKS.length} 支 · Yahoo Finance`;
+  document.getElementById('importInput').value='';
+  document.getElementById('importStatus').textContent='已還原預設清單（'+STOCKS.length+' 支）';
 }
 
 // ─── VCP Math ──────────────────────────────────────────────────────────────
@@ -845,7 +947,7 @@ async function startScan(){
   if(failed>total*0.5){err.style.display='';err.textContent=`⚠️ 超過半數無法取得數據（${failed}/${total}），可能是 CORS 限制或網路問題。建議掛 VPN 或改用 TradingView/FinLab。`;}
   try{sessionStorage.setItem('vcpCache',JSON.stringify({results:allResults,ts:Date.now()}));}catch(_){}
   renderAll();
-  updateVcpCard();updateStarsCard();
+  updateVcpCard();
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────
@@ -994,7 +1096,7 @@ function setSort(k,el){
     allResults=results;
     document.getElementById('scanBtn').textContent='🔄 重新掃描';
     document.getElementById('scanInfo').innerHTML=`上次掃描：<strong>${new Date(ts).toLocaleTimeString('zh-TW')}</strong>（${Math.round(age)} 分鐘前）`;
-    renderAll();updateVcpCard();updateStarsCard();
+    renderAll();updateVcpCard();
   }catch(_){}
 
   // Auto-load AI sections
