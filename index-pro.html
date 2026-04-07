@@ -1178,18 +1178,15 @@ async function batchZhSumm(){
   if(!els.length) return;
   els.forEach(el=>el.classList.remove('loading'));
 
-  if(!getKey()) return; // 無 key 就不處理（元素已空白，CSS:empty 隱藏）
-
   const pairs=els.map(el=>({el,title:decodeURIComponent(el.dataset.t||'')})).filter(p=>p.title);
   if(!pairs.length) return;
 
   const numbered=pairs.map((p,i)=>`${i+1}. ${p.title}`).join('\n');
-  const raw=await callAI(
-    `以下${pairs.length}條半導體/科技新聞標題，每條寫12字以內重點。規則：人名地名公司名用英文（TSMC、Nvidia、Apple、Trump、China等），其他繁體中文。格式「誰＋做什麼＋數字/結果」。`+
+  const zhPrompt=`以下${pairs.length}條半導體/科技新聞標題，每條寫12字以內重點。規則：人名地名公司名用英文（TSMC、Nvidia、Apple、Trump、China等），其他繁體中文。格式「誰＋做什麼＋數字/結果」。`+
     `例：「TSMC 2nm良率達80%」「Nvidia H200漲價15%」「Apple砍Samsung訂單」「Trump對China加徵34%關稅」。`+
     `絕對禁止：密切關注、緊張情勢、持續發展、值得注意、帶來影響、備受矚目。`+
-    `只輸出數字清單：\n1. 摘要\n2. 摘要\n\n${numbered}`
-  );
+    `只輸出數字清單：\n1. 摘要\n2. 摘要\n\n${numbered}`;
+  const raw=getKey()?await callAI(zhPrompt).catch(()=>''):await callAIFree(zhPrompt).catch(()=>'');
 
   if(!raw || raw.startsWith('⚠️') || raw.startsWith('🔑')) return;
 
@@ -1454,6 +1451,21 @@ async function callAI(prompt){
   }
 }
 
+// Pollinations.ai fallback（免 API Key，用於 RSS 失敗或無 Groq Key 時）
+async function callAIFree(prompt){
+  try{
+    const r=await fetch('https://text.pollinations.ai/',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'openai'}),
+      signal:AbortSignal.timeout(25000)
+    });
+    const text=await r.text();
+    if(text&&text.trim().length>10&&!text.trim().startsWith('<!')) return text.trim();
+    throw new Error('bad response');
+  }catch(e){throw new Error('callAIFree:'+e.message);}
+}
+
 // 川普 — 使用頁面現有的 fetchRSSEn（已測試穩定）
 async function loadTrumpNews(){
   const bodyEl=document.getElementById('trumpBody');
@@ -1462,7 +1474,15 @@ async function loadTrumpNews(){
   timeEl.textContent='';
   try{
   const items=await fetchRSSEn('Trump').catch(()=>[]);
-  if(!items.length){bodyEl.className='qn-body';bodyEl.textContent='RSS 暫時無法連線，請點 ↻ 重整。';return;}
+  const trumpPrompt=`今天${new Date().toLocaleDateString('zh-TW')}。繁體中文輸出，人名地名國家名全部用英文（Trump、China、Ukraine、NATO等）。寫最近Trump重要動態2–3條，每條必須有具體數字或%，每條「・」開頭，共150字內。禁止「持續」「關注」「局勢」「緊張」。`;
+  if(!items.length){
+    bodyEl.textContent='RSS 無法連線，AI 知識庫分析中...';
+    const s=getKey()?await callAI(trumpPrompt).catch(()=>''):await callAIFree(trumpPrompt).catch(()=>'');
+    bodyEl.className='qn-body';
+    bodyEl.textContent=(s&&!s.startsWith('⚠️')&&!s.startsWith('🔑'))?s:'RSS 暫時無法連線，請點 ↻ 重整。';
+    if(s&&!s.startsWith('⚠️')&&!s.startsWith('🔑')) timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+'（知識庫）';
+    return;
+  }
   bodyEl.textContent='AI 摘要分析中...';
   const headlines=items.slice(0,10).map((h,i)=>`${i+1}. ${h.title}`).join('\n');
   const summary=await callAI('以下是最新川普新聞標題。用繁體中文寫2–3條重點，人名地名國家名全部用英文（Trump、China、Ukraine、Netanyahu等），其他文字用繁體中文。每條必須有：具體數字或%、行動結果。禁止「持續」「關注」「局勢」「緊張」「影響深遠」「值得注意」。格式：「・Trump宣布對China加徵XX%關稅」「・Trump簽署XX法案」。每條「・」開頭，共150字內：\n\n'+headlines);
@@ -1484,7 +1504,15 @@ async function loadWarNews(){
     fetchRSSEn('Iran Israel Middle East attack nuclear 2025').catch(()=>[])
   ]);
   const items=[...a,...b,...c].slice(0,15);
-  if(!items.length){bodyEl.className='qn-body';bodyEl.textContent='RSS 暫時無法連線，請點 ↻ 重整。';return;}
+  const warPrompt=`今天${new Date().toLocaleDateString('zh-TW')}。繁體中文輸出，人名地名城市名全部用英文。依以下格式，每段必須有具體數字，共180字內：\n・烏俄：城市名+控制方+傷亡數或談判條件\n・以巴：人質剩餘數+停火狀態+Gaza死亡累計數\n・伊朗：制裁或核情勢具體數字\n禁止「局勢緊張」「持續惡化」「經濟受影響」。`;
+  if(!items.length){
+    bodyEl.textContent='RSS 無法連線，AI 知識庫分析中...';
+    const s=getKey()?await callAI(warPrompt).catch(()=>''):await callAIFree(warPrompt).catch(()=>'');
+    bodyEl.className='qn-body';
+    bodyEl.textContent=(s&&!s.startsWith('⚠️')&&!s.startsWith('🔑'))?s:'RSS 暫時無法連線，請點 ↻ 重整。';
+    if(s&&!s.startsWith('⚠️')&&!s.startsWith('🔑')) timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+'（知識庫）';
+    return;
+  }
   bodyEl.textContent='AI 摘要分析中...';
   const headlines=items.map((h,i)=>`${i+1}. ${h.title}`).join('\n');
   const summary=await callAI('以下是最新戰爭衝突新聞標題。繁體中文輸出，人名地名城市名全部用英文（Putin、Zelensky、Kursk、Gaza、Netanyahu、Khamenei等），其他文字繁體中文。每段必須有具體數字：\n・烏俄：城市英文名+控制方+傷亡數或談判條件（領土%、安全保障協議名稱）\n・以巴：人質剩餘數+停火狀態+Gaza死亡累計數\n・伊朗：制裁法案名+凍結金額 或 核濃縮純度%+離心機數 或 石油出口變化%\n禁止「經濟受影響」「局勢緊張」「持續惡化」，必須給數字。資料不足用知識庫補。每段2句，共180字：\n\n'+headlines);
