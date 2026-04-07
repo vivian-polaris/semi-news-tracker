@@ -340,6 +340,32 @@ footer a:hover{text-decoration:underline}
 
 <div class="sec-div"></div>
 
+<!-- ── 每日自動掃描結果 ── -->
+<div class="scan-section-title">
+  <span>🤖</span> 每日自動掃描結果
+  <span id="dailyLabel" style="font-size:.68rem;color:var(--text2);font-weight:400;letter-spacing:0">GitHub Actions 每日 16:45 自動執行</span>
+</div>
+<div class="scan-box" id="dailyBox">
+  <div id="dailyStatus" style="font-size:.8rem;color:var(--text2)">
+    <span class="spin"></span> 載入昨日掃描結果...
+  </div>
+  <!-- 盤中監控面板 -->
+  <div id="intradayPanel" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <button id="monitorBtn" onclick="toggleMonitor()" style="padding:8px 18px;background:linear-gradient(135deg,var(--mint),#059669);border:none;border-radius:12px;color:#fff;font-size:.82rem;font-weight:700;cursor:pointer">
+        ▶ 開始盤中監控
+      </button>
+      <div style="font-size:.75rem;color:var(--text2);flex:1">
+        每 15 分鐘重抓 VCP 候選股報價，偵測突破昨高（買點信號）
+      </div>
+      <div id="monitorCountdown" style="font-size:.78rem;font-weight:700;color:var(--mint);min-width:80px;text-align:right"></div>
+    </div>
+    <div id="breakoutAlert" style="display:none;margin-top:10px;background:#d1fae5;border:1.5px solid #6ee7b7;border-radius:12px;padding:10px 14px;font-size:.8rem;color:#065f46"></div>
+  </div>
+</div>
+
+<div class="sec-div"></div>
+
 <!-- ── VCP 掃描 ── -->
 <div class="scan-section-title">
   <span>🔍</span> VCP 自動掃描
@@ -1168,7 +1194,7 @@ function renderTable(){
       <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
       <td class="tn">${r.name}</td>
       <td><span class="tsec">${r.sector}</span></td>
-      <td class="tprice">NT$${fmtP(v.price)}</td>
+      <td class="tprice">${v._livePrice?`<span style="color:var(--mint)">NT$${fmtP(v._livePrice)}</span><br><span style="font-size:.6rem;color:var(--text2)">收 ${fmtP(v.price)}</span>`:`NT$${fmtP(v.price)}`}</td>
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span></td>
       <td><div class="ma-row">${maHTML||'—'}</div></td>
       <td>${atrHTML}</td>
@@ -1211,10 +1237,144 @@ function setSort(k,el){
   renderTable();
 }
 
+// ─── Daily JSON loader ────────────────────────────────────────────────────
+async function loadDailyResults(){
+  const statusEl=document.getElementById('dailyStatus');
+  const labelEl =document.getElementById('dailyLabel');
+  try{
+    const r=await fetch('vcp_daily.json?t='+Date.now());
+    const data=await r.json();
+    if(!data.scanDate||!data.stocks?.length){
+      statusEl.innerHTML='⏳ 尚無自動掃描結果。GitHub Actions 將於每個交易日 16:45 自動執行首次掃描。<br><span style="font-size:.7rem">你也可以到 GitHub repo → Actions → Daily VCP Scan → Run workflow 手動觸發。</span>';
+      return;
+    }
+    // Load results into allResults
+    allResults=data.stocks.map(s=>({...s}));
+    labelEl.textContent=`上次掃描：${data.scanDate} ${data.scanTime} · 共 ${data.totalScanned} 支 · VCP候選 ${data.vcpCandidates} 支`;
+    statusEl.innerHTML=`
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+        <div><span style="font-size:1.4rem;font-weight:800;color:var(--purple)">${data.vcpCandidates}</span><span style="font-size:.72rem;color:var(--text2);margin-left:4px">VCP 候選股</span></div>
+        <div><span style="font-size:1.4rem;font-weight:800;color:var(--mint)">${data.stocks.filter(s=>s.vcp?.score>=80).length}</span><span style="font-size:.72rem;color:var(--text2);margin-left:4px">強力 ≥80</span></div>
+        <div><span style="font-size:1.4rem;font-weight:800;color:var(--yellow)">${data.stocks.filter(s=>s.vcp?.stage2).length}</span><span style="font-size:.72rem;color:var(--text2);margin-left:4px">Stage 2</span></div>
+        <div style="font-size:.72rem;color:var(--text2)">掃描 ${data.totalScanned}/${data.totalStocks} 支 · ${data.scanDate} ${data.scanTime} 更新</div>
+      </div>`;
+    document.getElementById('intradayPanel').style.display='';
+    // Render into main table
+    renderAll();updateVcpCard();
+    // Rebuild sector pills from loaded data
+    const secs=[...new Set(allResults.map(s=>s.sector))].sort();
+    const secRow=document.getElementById('secRow');
+    secRow.querySelectorAll('[data-sec]:not([data-sec="ALL"])').forEach(p=>p.remove());
+    secs.forEach(s=>{const p=document.createElement('span');p.className='pill';p.dataset.sec=s;p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);});
+    document.getElementById('sumGrid').style.display='';
+    document.getElementById('filterBox').style.display='';
+    document.getElementById('statsBar').style.display='';
+    document.getElementById('legendDiv').style.display='';
+    document.getElementById('sumScanned').textContent=data.totalScanned;
+    document.getElementById('sumVcp').textContent=data.stocks.filter(s=>s.vcp?.score>=60).length;
+    document.getElementById('sumStrong').textContent=data.stocks.filter(s=>s.vcp?.score>=80).length;
+    document.getElementById('sumTime').textContent=data.scanDate+' '+data.scanTime;
+  }catch(e){
+    statusEl.innerHTML='⚠️ 無法載入自動掃描結果（'+e.message+'）。請使用下方手動掃描。';
+  }
+}
+
+// ─── Intraday monitor ─────────────────────────────────────────────────────
+let monitorTimer=null, monitorActive=false, monitorNextAt=null;
+const MONITOR_INTERVAL=15*60*1000; // 15 minutes
+
+function toggleMonitor(){
+  if(monitorActive) stopMonitor(); else startMonitor();
+}
+function startMonitor(){
+  monitorActive=true;
+  document.getElementById('monitorBtn').textContent='⏹ 停止監控';
+  document.getElementById('monitorBtn').style.background='linear-gradient(135deg,var(--red),#dc2626)';
+  runMonitorCycle();
+}
+function stopMonitor(){
+  monitorActive=false;
+  clearTimeout(monitorTimer);
+  document.getElementById('monitorBtn').textContent='▶ 開始盤中監控';
+  document.getElementById('monitorBtn').style.background='linear-gradient(135deg,var(--mint),#059669)';
+  document.getElementById('monitorCountdown').textContent='';
+}
+async function runMonitorCycle(){
+  if(!monitorActive)return;
+  const candidates=allResults.filter(r=>r.vcp&&r.vcp.score>=40);
+  if(!candidates.length){
+    document.getElementById('monitorCountdown').textContent='無候選股';
+    return;
+  }
+  document.getElementById('monitorCountdown').textContent=`🔄 更新中 (${candidates.length}支)`;
+
+  // Fetch latest quotes for candidates
+  const breakouts=[];
+  const BATCH=6;
+  for(let i=0;i<candidates.length;i+=BATCH){
+    if(!monitorActive)return;
+    const batch=candidates.slice(i,i+BATCH);
+    await Promise.all(batch.map(async s=>{
+      try{
+        const sym=s.sym||`${s.code}.${s.ex||'TW'}`;
+        const url=`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=5d&includePrePost=false`;
+        const r=await fetchTO(url,8000);
+        const j=await r.json();
+        const res=j?.chart?.result?.[0];
+        if(!res?.indicators?.quote?.[0])return;
+        const q=res.indicators.quote[0];
+        const n=q.close.length-1;
+        const todayClose=q.close[n], todayHigh=q.high[n], prevHigh=q.high[n-1];
+        if(!todayClose||!prevHigh)return;
+        // Update current price in allResults
+        const found=allResults.find(r=>r.code===s.code);
+        if(found&&found.vcp){
+          found.vcp._livePrice=+todayClose.toFixed(2);
+          found.vcp._todayHigh=+todayHigh.toFixed(2);
+        }
+        // Breakout: today's close > previous day's high
+        if(todayClose>prevHigh*1.005){
+          breakouts.push({...s,livePrice:todayClose,prevHigh,pct:((todayClose/prevHigh-1)*100).toFixed(1)});
+        }
+      }catch(_){}
+    }));
+    await delay(300);
+  }
+
+  // Show breakout alerts
+  const alertEl=document.getElementById('breakoutAlert');
+  if(breakouts.length){
+    alertEl.style.display='';
+    alertEl.innerHTML='🚀 <strong>突破昨高信號</strong>（可能買點）：<br>'+
+      breakouts.map(b=>`・<strong>${b.code} ${b.name}</strong>  現價 NT$${b.livePrice.toFixed(2)}  突破 +${b.pct}%`).join('<br>');
+  } else {
+    alertEl.style.display='none';
+  }
+
+  // Re-render table with live prices
+  renderTable();
+
+  // Schedule next cycle
+  monitorNextAt=Date.now()+MONITOR_INTERVAL;
+  updateCountdown();
+}
+function updateCountdown(){
+  if(!monitorActive)return;
+  const remaining=Math.max(0,Math.round((monitorNextAt-Date.now())/1000));
+  const m=Math.floor(remaining/60), s=remaining%60;
+  document.getElementById('monitorCountdown').textContent=`下次更新 ${m}:${s.toString().padStart(2,'0')}`;
+  if(remaining<=0){
+    runMonitorCycle();
+  } else {
+    monitorTimer=setTimeout(updateCountdown,1000);
+  }
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────
 (function init(){
 
   updateKeyStatus();
+  loadDailyResults();
 
   // Restore cache
   try{
