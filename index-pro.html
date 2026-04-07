@@ -25,8 +25,10 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 /* Search */
 .srch-row{display:flex;gap:8px;align-items:center;margin:14px 0 6px}
 .srch-wrap{position:relative;flex:1}
-.srch-wrap input{width:100%;padding:13px 76px 13px 46px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:.97rem;outline:none;transition:border .2s}
+.srch-wrap input{width:100%;padding:13px 138px 13px 46px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:.97rem;outline:none;transition:border .2s}
 .srch-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);padding:6px 14px;background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:.82rem;font-weight:600}
+.ai-in-btn{position:absolute;right:74px;top:50%;transform:translateY(-50%);padding:6px 12px;background:linear-gradient(135deg,var(--accent2),var(--accent));border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:.82rem;font-weight:700;transition:opacity .2s}
+.ai-in-btn:hover{opacity:.85}
 .srch-wrap input:focus{border-color:var(--accent)}
 .srch-wrap input::placeholder{color:var(--text2)}
 .srch-ico{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:1.05rem;pointer-events:none}
@@ -253,15 +255,12 @@ header{position:relative}
       </div>
     </div>
   </div>
-<div class="srch-row">
-    <div class="srch-wrap">
-      <span class="srch-ico">🔍</span>
-      <input type="text" id="si" placeholder="輸入任何句子... 例：TSMC 先進封裝的最新進展 / HBM4 供應鏈動態 / CoWoS 良率論文">
-      <button class="srch-btn" onclick="triggerSearch()">搜尋</button>
-    </div>
-    <button class="ai-side-btn" onclick="askAI()">🤖 問 AI</button>
+<div class="srch-wrap">
+    <span class="srch-ico">🔍</span>
+    <input type="text" id="si" placeholder="輸入任何句子... 例：TSMC 先進封裝、HBM4、CoWoS 良率">
+    <button class="ai-in-btn" onclick="askAI()">🤖 問 AI</button>
+    <button class="srch-btn" onclick="triggerSearch()">搜尋</button>
   </div>
-  <div class="hint">💡 可以輸入完整句子，系統會自動提取關鍵詞搜尋 · 含「論文/paper/IEEE」自動搜尋 arXiv · 📧 ABC 為 Always Be Curious newsletter</div>
   <div class="qdisp" id="qdisp"></div>
   <div class="ai-panel" id="aipanel"></div>
 
@@ -955,6 +954,7 @@ async function fetchAll(){
   list.innerHTML='<div class="loading"><div class="spin"></div><br>正在載入新聞...</div>';
   btn.disabled=true; btn.textContent='載入中...';
 
+  try{
   const queries=Object.values(CAT).map(c=>({q:c.kw.slice(0,3).join(' OR ')+' semiconductor'}));
   const res=await Promise.allSettled(queries.map(async({q})=>{
     try{return await fetchRSS(q);}catch{return[];}
@@ -977,11 +977,13 @@ async function fetchAll(){
     });
   });
 
-  btn.disabled=false; btn.innerHTML='🔄 重新載入';
-  fetchSubstack();
-  fetchYouTube();
-  renderL1(); render();
-}
+  }catch(e){console.warn("fetchAll:",e);}
+  finally{
+    btn.disabled=false; btn.innerHTML="🔄 重新載入";
+    fetchSubstack();
+    fetchYouTube();
+    renderL1(); render();
+  }
 
 // ================================================================
 // 搜尋按鈕邏輯：有文字→搜文字；空白+分類→搜分類；空白全部→重新載入
@@ -1466,6 +1468,7 @@ async function loadTrumpNews(){
   const timeEl=document.getElementById('trumpTime');
   bodyEl.className='qn-body loading'; bodyEl.textContent='抓取最新新聞...';
   timeEl.textContent='';
+  try{
   const items=await fetchRSSEn('Trump').catch(()=>[]);
   if(!items.length){bodyEl.className='qn-body';bodyEl.textContent='RSS 暫時無法連線，請點 ↻ 重整。';return;}
   bodyEl.textContent='AI 摘要分析中...';
@@ -1473,6 +1476,7 @@ async function loadTrumpNews(){
   const summary=await callAI('以下是最新川普新聞標題。用繁體中文寫2–3條重點，人名地名國家名全部用英文（Trump、China、Ukraine、Netanyahu等），其他文字用繁體中文。每條必須有：具體數字或%、行動結果。禁止「持續」「關注」「局勢」「緊張」「影響深遠」「值得注意」。格式：「・Trump宣布對China加徵XX%關稅」「・Trump簽署XX法案」。每條「・」開頭，共150字內：\n\n'+headlines);
   bodyEl.className='qn-body';bodyEl.textContent=summary;
   timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  }catch{bodyEl.className="qn-body";bodyEl.textContent="⚠️ 載入失敗，請點 ↻ 重整。";}
 }
 
 // 戰爭 — 三條 RSS：烏俄 + 以巴 + 伊朗
@@ -1481,6 +1485,7 @@ async function loadWarNews(){
   const timeEl=document.getElementById('warTime');
   bodyEl.className='qn-body loading';bodyEl.textContent='抓取最新新聞...';
   timeEl.textContent='';
+  try{
   const [a,b,c]=await Promise.all([
     fetchRSSEn('Ukraine Russia Zelensky Putin war ceasefire 2025').catch(()=>[]),
     fetchRSSEn('Israel Gaza Hamas ceasefire hostage 2025').catch(()=>[]),
@@ -1493,6 +1498,7 @@ async function loadWarNews(){
   const summary=await callAI('以下是最新戰爭衝突新聞標題。繁體中文輸出，人名地名城市名全部用英文（Putin、Zelensky、Kursk、Gaza、Netanyahu、Khamenei等），其他文字繁體中文。每段必須有具體數字：\n・烏俄：城市英文名+控制方+傷亡數或談判條件（領土%、安全保障協議名稱）\n・以巴：人質剩餘數+停火狀態+Gaza死亡累計數\n・伊朗：制裁法案名+凍結金額 或 核濃縮純度%+離心機數 或 石油出口變化%\n禁止「經濟受影響」「局勢緊張」「持續惡化」，必須給數字。資料不足用知識庫補。每段2句，共180字：\n\n'+headlines);
   bodyEl.className='qn-body';bodyEl.textContent=summary;
   timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  }catch{bodyEl.className="qn-body";bodyEl.textContent="⚠️ 載入失敗，請點 ↻ 重整。";}
 }
 
 // ================================================================
@@ -1560,6 +1566,7 @@ async function loadInvClock(){
   bodyEl.className='inv-body loading';bodyEl.textContent='AI 分析投資時鐘中...';
   timeEl.textContent='';
   const today=new Date().toISOString().slice(0,10);
+  try{
   const summary=await callAI(`今天${today}。以美林投資時鐘框架判斷當前階段。繁體中文輸出，人名地名機構名用英文（Fed、Powell、S&P500、OPEC等），其他繁體中文。嚴格依格式，每項必須有數字：\n\n【時鐘位置】只填：復甦、過熱、滯脹、再膨脹 其中一個\n【判斷依據】\n・US CPI：X.X%（YoY），核心PCE：X.X%\n・Fed利率：X.XX%，下次降息預期：XXXX年X月\n・US GDP成長：X.X%（最新季），失業率：X.X%\n・S&P500 EPS成長YoY：X%\n【建議配置】\n・股票 XX%（偏好哪個sector，原因）\n・債券 XX%（短債/長債，存續期）\n・現金 XX%\n・原物料 XX%（Gold/Oil，原因）\n【風險提示】具體事件名稱（英文）+可能影響%\n\n禁止「建議適度配置」「可考慮增持」「視情況調整」。不超過300字。`);
   let phase=null;
   const m=summary.match(/【時鐘位置】[：:]\s*(復甦|過熱|滯脹|再膨脹)/);
@@ -1568,6 +1575,7 @@ async function loadInvClock(){
   svgEl.innerHTML=drawClock(phase);
   bodyEl.className='inv-body';bodyEl.textContent=summary;
   timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  }catch{bodyEl.className="inv-body";bodyEl.textContent="⚠️ 載入失敗，請點 ↻ 重整。";}
 }
 
 async function loadVCPStocks(){
@@ -1575,6 +1583,7 @@ async function loadVCPStocks(){
   const timeEl=document.getElementById('vcpTime');
   bodyEl.className='inv-body loading';bodyEl.textContent='AI 分析台股 VCP 中...';
   timeEl.textContent='';
+  try{
   const today=new Date().toISOString().slice(0,10);
   const summary=await callAI(
 `今天${today}，以下是台股VCP觀察名單（上市/上櫃/ETF）。
@@ -1603,6 +1612,7 @@ ETF：00891國泰半導體、00929富邦台灣優勢、00881國泰台灣5G+`
   );
   bodyEl.className='inv-body';bodyEl.textContent=summary;
   timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  }catch{bodyEl.className="inv-body";bodyEl.textContent="⚠️ 載入失敗，請點 ↻ 重整。";}
 }
 
 document.getElementById('si').addEventListener('input',e=>{
