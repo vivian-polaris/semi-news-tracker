@@ -1417,7 +1417,35 @@ async function askAI(){
 // 申請：https://console.groq.com/keys
 // 免費額度：每天 14,400 次，每分鐘 30 次
 // ================================================================
-function getKey(){ return (localStorage.getItem('groq_key')||'').replace(/[^ -~]/g,'').trim(); }
+// ================================================================
+// Cookie 輔助儲存 Key（比 localStorage 更耐清除，保存 1 年）
+// ================================================================
+function setCookie(name,val,days){
+  const d=new Date(); d.setTime(d.getTime()+days*86400000);
+  document.cookie=name+'='+encodeURIComponent(val)+';expires='+d.toUTCString()+';path=/;SameSite=Lax';
+}
+function getCookie(name){
+  const m=document.cookie.match('(?:^|; )'+name+'=([^;]*)');
+  return m?decodeURIComponent(m[1]):'';
+}
+function delCookie(name){
+  document.cookie=name+'=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
+}
+function getKey(){
+  // localStorage 優先，如果為空則用 cookie 備援
+  const ls=(localStorage.getItem('groq_key')||'').replace(/[^ -~]/g,'').trim();
+  if(ls) return ls;
+  const ck=getCookie('groq_key').replace(/[^ -~]/g,'').trim();
+  if(ck){localStorage.setItem('groq_key',ck);} // 復原到 localStorage
+  return ck;
+}
+function getDsKey(){
+  const ls=(localStorage.getItem('deepseek_key')||'').replace(/[^ -~]/g,'').trim();
+  if(ls) return ls;
+  const ck=getCookie('deepseek_key').replace(/[^ -~]/g,'').trim();
+  if(ck){localStorage.setItem('deepseek_key',ck);}
+  return ck;
+}
 function toggleKeyPanel(){
   const p=document.getElementById('keyPanel');
   p.classList.toggle('show');
@@ -1432,12 +1460,12 @@ function updateKeyStatus(){
   if(!s) return;
   const k=getKey();
   s.className='key-status '+(k?'ok':'no');
-  s.textContent=k?'✅ Groq Key 已設定':'ℹ️ 尚未設定 Groq Key';
+  s.textContent=k?'✅ Groq Key 已儲存（localStorage + Cookie）':'ℹ️ 尚未設定 Groq Key';
   const ds=document.getElementById('dsKeyStatus');
   if(ds){
     const dk=getDsKey();
     ds.className='key-status '+(dk?'ok':'no');
-    ds.textContent=dk?'✅ DeepSeek Key 已設定':'ℹ️ 尚未設定 DeepSeek Key — 無 Key 時自動用 Pollinations 免費服務';
+    ds.textContent=dk?'✅ DeepSeek Key 已儲存（localStorage + Cookie）':'ℹ️ 尚未設定 DeepSeek Key — 無 Key 時自動用 Pollinations 免費服務';
   }
 }
 function saveKey(){
@@ -1446,12 +1474,14 @@ function saveKey(){
   const k=raw.replace(/[^ -~]/g,'').trim();
   if(!k){alert('Key含非法字元，請重新貼上正確的gsk_開頭Key');return;}
   localStorage.setItem('groq_key',k);
+  setCookie('groq_key',k,365); // 同時存到 cookie，保存 1 年
   updateKeyStatus();
   document.getElementById('keyPanel').classList.remove('show');
   loadTrumpNews(); loadWarNews(); loadInvClock(); loadVCPStocks();
 }
 function clearKey(){
   localStorage.removeItem('groq_key');
+  delCookie('groq_key');
   document.getElementById('keyInput').value='';
   updateKeyStatus();
 }
@@ -1459,19 +1489,20 @@ function clearKey(){
 // ================================================================
 // DeepSeek API
 // ================================================================
-function getDsKey(){ return (localStorage.getItem('deepseek_key')||'').replace(/[^ -~]/g,'').trim(); }
 function saveDsKey(){
   const raw=document.getElementById('dsKeyInput').value.trim();
   if(!raw){alert('請輸入 DeepSeek Key');return;}
   const k=raw.replace(/[^ -~]/g,'').trim();
   if(!k){alert('Key含非法字元，請重新貼上');return;}
   localStorage.setItem('deepseek_key',k);
+  setCookie('deepseek_key',k,365); // 同時存到 cookie，保存 1 年
   updateKeyStatus();
   document.getElementById('keyPanel').classList.remove('show');
   loadTrumpNews(); loadWarNews(); loadInvClock(); loadVCPStocks();
 }
 function clearDsKey(){
   localStorage.removeItem('deepseek_key');
+  delCookie('deepseek_key');
   document.getElementById('dsKeyInput').value='';
   updateKeyStatus();
 }
