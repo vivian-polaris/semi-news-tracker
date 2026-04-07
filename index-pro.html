@@ -228,6 +228,7 @@ header{position:relative}
     <hr style="border-color:var(--border);margin:12px 0 10px">
     <p style="color:var(--text2);font-size:.75rem;margin-bottom:8px">🔗 <strong>分享給同事</strong>：產生一個包含 Key 的網址，對方開一次就自動儲存。</p>
     <button class="key-save" style="width:100%;background:var(--accent)" onclick="copyShareLink()">🔗 複製分享連結</button>
+    <button class="key-save" style="width:100%;background:#6366f1;margin-top:6px" onclick="changeSettingsPwd()">🔒 設定/變更開啟密碼</button>
     <div class="key-status" id="shareStatus" style="margin-top:6px"></div>
   </div>
 
@@ -1461,12 +1462,40 @@ function getDsKey(){
   return ck;
 }
 function toggleKeyPanel(){
-  const p=document.getElementById('keyPanel');
-  p.classList.toggle('show');
-  if(p.classList.contains('show')){
-    document.getElementById('keyInput').value=getKey();
-    document.getElementById('dsKeyInput').value=getDsKey();
-    updateKeyStatus();
+  const panel=document.getElementById('keyPanel');
+  if(panel.classList.contains('show')){
+    panel.classList.remove('show');
+    return;
+  }
+  // Check if password is set
+  const savedPwd=localStorage.getItem('settings_pwd');
+  if(savedPwd){
+    const entered=prompt('請輸入設定密碼：');
+    if(entered===null) return; // user cancelled
+    if(entered!==savedPwd){
+      alert('❌ 密碼錯誤');
+      return;
+    }
+  }
+  panel.classList.add('show');
+  document.getElementById('keyInput').value=getKey();
+  document.getElementById('dsKeyInput').value=getDsKey();
+  updateKeyStatus();
+}
+function changeSettingsPwd(){
+  const current=localStorage.getItem('settings_pwd');
+  if(current){
+    const verify=prompt('請輸入目前密碼以繼續：');
+    if(verify!==current){alert('❌ 密碼錯誤');return;}
+  }
+  const np=prompt('設定新密碼（留空=取消密碼保護）：');
+  if(np===null) return;
+  if(np.trim()===''){
+    localStorage.removeItem('settings_pwd');
+    alert('✅ 密碼已取消，設定頁面不再需要密碼');
+  } else {
+    localStorage.setItem('settings_pwd',np.trim());
+    alert('✅ 密碼已設定。下次開啟設定需輸入密碼。');
   }
 }
 function updateKeyStatus(){
