@@ -295,7 +295,7 @@ header{position:relative}
   <div class="quicknews">
     <div class="qn-card trump">
       <div class="qn-head">
-        <span class="qn-title trump-t">🇺🇸 川普投顧開示</span>
+        <span class="qn-title trump-t">🇺🇸 Trump 政策 × 股市影響</span>
         <button class="qn-refresh" onclick="loadTrumpNews()">↻ 重整</button>
       </div>
       <div class="qn-body loading" id="trumpBody">載入中...</div>
@@ -303,7 +303,7 @@ header{position:relative}
     </div>
     <div class="qn-card war">
       <div class="qn-head">
-        <span class="qn-title war-t">⚔️ 戰爭打不完</span>
+        <span class="qn-title war-t">🌍 地緣計畫 × 資金流向</span>
         <button class="qn-refresh" onclick="loadWarNews()">↻ 重整</button>
       </div>
       <div class="qn-body loading" id="warBody">載入中...</div>
@@ -631,12 +631,16 @@ const NL_L2 = {
 // YouTube 頻道清單（半導體 / 科技）
 // ================================================================
 const YT_CHANNELS = [
-  {id:'UCTIFSHKFMiRn2bXQrCUA_Tg', name:'EE Times'},
-  {id:'UCXuqSBlHAE6Xw-yeJA0Tunw', name:'Linus Tech Tips'},
-  {id:'UCVmHJRlIjS8jI2jj0oiPbYg', name:'Moore’s Law Is Dead'},
-  {id:'UC9-y-6csu5WGm29I7JiwpnA', name:'Computerphile'},
-  {id:'UCnUYZLuoy1rq1aVMwx4aTzw', name:'GN Tech'},
-  {id:'UCddiUEpeqJcYeBxX1IVBKvQ', name:'The Chip Letter'},
+  // 半導體技術 & 產業分析
+  {id:'UCGkNIfHDPLlAGmgGR8e7UNg', name:'Asianometry'},         // 半導體產業深度分析
+  {id:'UCddiUEpeqJcYeBxX1IVBKvQ', name:'The Chip Letter'},     // 半導體產業 newsletter
+  {id:'UCTIFSHKFMiRn2bXQrCUA_Tg', name:'EE Times'},            // 工程師媒體
+  {id:'UCVmHJRlIjS8jI2jj0oiPbYg', name:'Moore’s Law Is Dead'}, // 半導體技術分析
+  // 科技公司官方
+  {id:'UCBcRF18a7Qf58cCRy5xuWwQ', name:'NVIDIA'},              // NVIDIA 官方
+  {id:'UCOmJ_6fuGfWjkZMi2aH_MNA', name:'TSMC'},               // 台積電官方
+  {id:'UCsXVk37bltHxD1rDPwtNM8Q', name:'Kurzgesagt'},         // 科普（偶有半導體主題）
+  {id:'UCnUYZLuoy1rq1aVMwx4aTzw', name:'GamersNexus'},        // GPU/晶片測評
 ];
 
 // 額外新要圖源（指定網站自動抓取）
@@ -1634,8 +1638,12 @@ async function loadTrumpNews(){
   bodyEl.className='qn-body loading'; bodyEl.textContent='抓取最新新聞...';
   timeEl.textContent='';
   try{
-  const items=await fetchRSSEn('Trump').catch(()=>[]);
-  const trumpPrompt=`今天${new Date().toLocaleDateString('zh-TW')}。繁體中文輸出，人名地名國家名全部用英文（Trump、China、Ukraine、NATO等）。寫最近Trump重要動態2–3條，每條必須有具體數字或%，每條「・」開頭，共150字內。禁止「持續」「關注」「局勢」「緊張」。`;
+  const items=await fetchRSSEn('Trump tariff stock market semiconductor Taiwan chip').catch(()=>[]);
+  const trumpPrompt=`今天${new Date().toLocaleDateString('zh-TW')}。你是半導體/科技股票分析師。繁體中文，公司人名國家用英文。將 Trump 最新動態轉換為投資情報，3 條「・」開頭，150字內：
+・政策：Trump 做了什麼（具體數字）
+・美股：哪類 sector 漲？哪類跌？（defense / chip / energy / retail）
+・台股：TSMC / 半導體首當其衝？資金往哪跑？
+禁用：傷亡人數、外交辭令、局勢描述。`;
   if(!items.length){
     bodyEl.textContent='RSS 無法連線，AI 知識庫分析中...';
     const s=await callAI(trumpPrompt).catch(()=>'');
@@ -1646,7 +1654,7 @@ async function loadTrumpNews(){
   }
   bodyEl.textContent='AI 摘要分析中...';
   const headlines=items.slice(0,10).map((h,i)=>`${i+1}. ${h.title}`).join('\n');
-  const summary=await callAI('以下是最新川普新聞標題。用繁體中文寫2–3條重點，人名地名國家名全部用英文（Trump、China、Ukraine、Netanyahu等），其他文字用繁體中文。每條必須有：具體數字或%、行動結果。禁止「持續」「關注」「局勢」「緊張」「影響深遠」「值得注意」。格式：「・Trump宣布對China加徵XX%關稅」「・Trump簽署XX法案」。每條「・」開頭，共150字內：\n\n'+headlines);
+  const summary=await callAI('你是半導體/科技股票分析師。以下是最新 Trump 新聞標題。繁體中文，公司國家人名用英文。轉換為投資情報 3 條「・」開頭，150字內：(1)政策具體數字 (2)哪類美股 sector 漲/跌 (3)TSMC/台股影響。禁用：傷亡局勢外交。\n\n'+headlines);
   bodyEl.className='qn-body';bodyEl.textContent=summary;
   timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
   }catch{bodyEl.className="qn-body";bodyEl.textContent="⚠️ 載入失敗，請點 ↻ 重整。";}
@@ -1660,12 +1668,16 @@ async function loadWarNews(){
   timeEl.textContent='';
   try{
   const [a,b,c]=await Promise.all([
-    fetchRSSEn('Ukraine Russia Zelensky Putin war ceasefire 2025').catch(()=>[]),
-    fetchRSSEn('Israel Gaza Hamas ceasefire hostage 2025').catch(()=>[]),
-    fetchRSSEn('Iran Israel Middle East attack nuclear 2025').catch(()=>[])
+    fetchRSSEn('Ukraine Russia war defense stocks LMT RTX Raytheon oil').catch(()=>[]),
+    fetchRSSEn('Israel Gaza war oil gold defense industry stocks 2025').catch(()=>[]),
+    fetchRSSEn('Taiwan strait China TSMC semiconductor supply chain risk').catch(()=>[])
   ]);
   const items=[...a,...b,...c].slice(0,15);
-  const warPrompt=`今天${new Date().toLocaleDateString('zh-TW')}。繁體中文輸出，人名地名城市名全部用英文。依以下格式，每段必須有具體數字，共180字內：\n・烏俄：城市名+控制方+傷亡數或談判條件\n・以巴：人質剩餘數+停火狀態+Gaza死亡累計數\n・伊朗：制裁或核情勢具體數字\n禁止「局勢緊張」「持續惡化」「經濟受影響」。`;
+  const warPrompt=`今天${new Date().toLocaleDateString('zh-TW')}。你是地緣政治專注的資金流分析師。繁體中文，公司地名人名用英文。將地緣衝突轉換為資金流影響，3 條「・」開頭，150字內：
+・防禦股：哪個衝突 → LMT/RTX/NOC 等 defense sector 漲/跌？
+・能源商品：衝突對石油/天然氣/黃金的影響（具體%）
+・台灣風險：地緣緊張對TSMC供應鏈的影響，高風險時資金往哪躲？
+禁用：傷亡人數、局勢描述。只要資產影響。`;
   if(!items.length){
     bodyEl.textContent='RSS 無法連線，AI 知識庫分析中...';
     const s=await callAI(warPrompt).catch(()=>'');
@@ -1676,7 +1688,7 @@ async function loadWarNews(){
   }
   bodyEl.textContent='AI 摘要分析中...';
   const headlines=items.map((h,i)=>`${i+1}. ${h.title}`).join('\n');
-  const summary=await callAI('以下是最新戰爭衝突新聞標題。繁體中文輸出，人名地名城市名全部用英文（Putin、Zelensky、Kursk、Gaza、Netanyahu、Khamenei等），其他文字繁體中文。每段必須有具體數字：\n・烏俄：城市英文名+控制方+傷亡數或談判條件（領土%、安全保障協議名稱）\n・以巴：人質剩餘數+停火狀態+Gaza死亡累計數\n・伊朗：制裁法案名+凍結金額 或 核濃縮純度%+離心機數 或 石油出口變化%\n禁止「經濟受影響」「局勢緊張」「持續惡化」，必須給數字。資料不足用知識庫補。每段2句，共180字：\n\n'+headlines);
+  const summary=await callAI('你是地緣政治專注的資金流分析師。以下是最新地緣衝突標題。繁體中文，公司地名人名用英文。轉換為資金流影響 3 條「・」開頭，150字內：(1)具體事件 (2)哪類資產漲/跌（defense/energy/gold/TSMC）(3)具體%或數字。禁用：傷亡人數局勢描述。\n\n'+headlines);
   bodyEl.className='qn-body';bodyEl.textContent=summary;
   timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
   }catch{bodyEl.className="qn-body";bodyEl.textContent="⚠️ 載入失敗，請點 ↻ 重整。";}
