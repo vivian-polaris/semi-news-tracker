@@ -343,29 +343,34 @@ footer a:hover{text-decoration:underline}
 <!-- ── VCP 掃描 ── -->
 <div class="scan-section-title">
   <span>🔍</span> VCP 自動掃描
-  <span style="font-size:.68rem;color:var(--text2);font-weight:400;letter-spacing:0">台股 {{ TOTAL }} 支 · Yahoo Finance</span>
+  <span id="scanSrcLabel" style="font-size:.68rem;color:var(--text2);font-weight:400;letter-spacing:0">預設 57 支 · Yahoo Finance</span>
 </div>
 
 <div class="scan-box">
+  <!-- 掃描來源選擇 -->
+  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;align-items:center">
+    <span style="font-size:.68rem;font-weight:800;color:var(--text2);letter-spacing:.05em;text-transform:uppercase">掃描範圍</span>
+    <span class="pill s-on" id="src-preset" onclick="setScanSrc('preset',this)">預設清單 57支</span>
+    <span class="pill" id="src-tse" onclick="setScanSrc('tse',this)">🇹🇼 全上市 TSE ~900支</span>
+    <span class="pill" id="src-all" onclick="setScanSrc('all',this)">🇹🇼 全台灣 TSE+OTC ~1700支</span>
+    <span class="pill" id="src-custom" onclick="setScanSrc('custom',this)">自訂匯入</span>
+  </div>
+
+  <!-- 自訂匯入區 -->
+  <div id="customImportArea" style="display:none;margin-bottom:12px;border-top:1px solid var(--border);padding-top:12px">
+    <div style="font-size:.72rem;color:var(--text2);margin-bottom:6px">
+      貼上股票代號（逗號/空格/換行） ·
+      <a href="https://www.wantgoo.com/screener" target="_blank" style="color:var(--purple)">玩股網選股器 →</a>
+    </div>
+    <textarea id="importInput" rows="2" placeholder="例：2330,2454,3034,6669" style="width:100%;padding:8px 10px;background:var(--tag);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:.78rem;outline:none;resize:vertical;font-family:inherit"></textarea>
+    <div id="importStatus" style="font-size:.7rem;color:var(--text2);margin-top:4px"></div>
+  </div>
+
+  <!-- 掃描按鈕 -->
   <div class="scan-row">
     <button class="scan-btn" id="scanBtn" onclick="startScan()">✨ 開始掃描 VCP</button>
-    <div class="scan-info" id="scanInfo">
-      點擊掃描，自動抓取台股日線歷史數據並計算 VCP 分數。<strong>約需 60–90 秒</strong>。
-    </div>
-  </div>
-  <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
-    <div style="font-size:.72rem;font-weight:800;color:var(--purple);margin-bottom:6px">
-      📋 從玩股網匯入股票代號
-      <a href="https://www.wantgoo.com/screener" target="_blank" style="color:var(--text2);font-weight:400;margin-left:8px">開啟玩股網 →</a>
-    </div>
-    <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap">
-      <textarea id="importInput" rows="2" placeholder="貼上股票代號，用逗號、空格或換行分隔&#10;例：2330,2454,3034 或 2330 2454 3034" style="flex:1;min-width:200px;padding:8px 10px;background:var(--tag);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:.78rem;outline:none;resize:vertical;font-family:inherit"></textarea>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <button onclick="importStocks()" style="padding:8px 14px;background:linear-gradient(135deg,var(--purple),var(--pink));border:none;border-radius:10px;color:#fff;cursor:pointer;font-size:.75rem;font-weight:700;white-space:nowrap">匯入並掃描</button>
-        <button onclick="resetStocks()" style="padding:8px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:10px;color:var(--text2);cursor:pointer;font-size:.75rem;white-space:nowrap">還原預設清單</button>
-      </div>
-    </div>
-    <div id="importStatus" style="font-size:.7rem;color:var(--text2);margin-top:5px"></div>
+    <button id="cancelBtn" onclick="cancelScan()" style="display:none;padding:11px 20px;background:var(--card);border:1.5px solid var(--red);border-radius:16px;color:var(--red);font-size:.85rem;font-weight:700;cursor:pointer">⏹ 停止</button>
+    <div class="scan-info" id="scanInfo">只顯示 VCP 候選股，掃描中即時更新。全台灣掃描約 <strong>8–15 分鐘</strong>。</div>
   </div>
   <div class="prog-wrap" id="progWrap">
     <div class="prog-bg"><div class="prog-fill" id="progFill"></div></div>
@@ -403,8 +408,8 @@ footer a:hover{text-decoration:underline}
 <div class="filter-box" id="filterBox" style="display:none">
   <div class="filter-row" id="scoreRow">
     <span class="flabel">VCP 分數</span>
-    <span class="pill f-on" onclick="setScore(0,this)">全部</span>
-    <span class="pill" onclick="setScore(40,this)">≥ 40</span>
+    <span class="pill" onclick="setScore(0,this)">全部</span>
+    <span class="pill f-on" onclick="setScore(40,this)">≥ 40 VCP初步</span>
     <span class="pill" onclick="setScore(60,this)">≥ 60 候選 🌸</span>
     <span class="pill" onclick="setScore(70,this)">≥ 70</span>
     <span class="pill" onclick="setScore(80,this)">≥ 80 強力 ⭐</span>
@@ -573,8 +578,9 @@ const STOCKS = [
 ];
 
 // ─── State ────────────────────────────────────────────────────────────────
-let allResults=[], scoreMin=0, pctMax=999, secFilter='ALL';
-let onlyStage2=false, hideErr=false, sortKey='score', sortAsc=false, scanning=false;
+let allResults=[], scoreMin=40, pctMax=999, secFilter='ALL';
+let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
+let scanCancelled=false, scanSrc='preset';
 
 // ─── Key helpers ──────────────────────────────────────────────────────────
 const getKey=()=>localStorage.getItem('groq_key')||'';
@@ -803,28 +809,88 @@ function updateVcpCard(){
   t.textContent='掃描於 '+new Date().toLocaleTimeString('zh-TW');
 }
 
-// ─── Import stocks from paste ──────────────────────────────────────────────
+// ─── Scan source management ────────────────────────────────────────────────
 const DEFAULT_STOCKS=[...STOCKS];
-function importStocks(){
-  const raw=document.getElementById('importInput').value;
-  const status=document.getElementById('importStatus');
-  const codes=[...new Set(raw.split(/[\s,，、\n]+/).map(s=>s.trim()).filter(s=>/^\d{4,6}$/.test(s)))];
-  if(!codes.length){status.textContent='⚠️ 未找到有效股票代號（需4位數字，如 2330）';return;}
-  // Build stock list from pasted codes
-  const existing=new Map(DEFAULT_STOCKS.map(s=>[s.code,s]));
-  STOCKS.length=0;
-  codes.forEach(c=>{
-    STOCKS.push(existing.get(c)||{code:c,name:c,sector:'匯入',ex:'TW'});
-  });
-  document.querySelector('.scan-section-title span:last-child').textContent=`台股 ${STOCKS.length} 支 · Yahoo Finance`;
-  status.textContent=`✅ 已匯入 ${codes.length} 支：${codes.slice(0,5).join(', ')}${codes.length>5?' ...':''}`;
-  startScan();
+
+function setScanSrc(src, el){
+  scanSrc=src;
+  document.querySelectorAll('[id^="src-"]').forEach(p=>p.classList.remove('s-on'));
+  el.classList.add('s-on');
+  document.getElementById('customImportArea').style.display=src==='custom'?'block':'none';
+  const labels={'preset':'預設清單 57支','tse':'全上市 TSE ~900支','all':'全台灣 TSE+OTC ~1700支','custom':'自訂匯入'};
+  document.getElementById('scanSrcLabel').textContent=labels[src]+' · Yahoo Finance';
 }
-function resetStocks(){
-  STOCKS.length=0; DEFAULT_STOCKS.forEach(s=>STOCKS.push(s));
-  document.querySelector('.scan-section-title span:last-child').textContent=`台股 ${STOCKS.length} 支 · Yahoo Finance`;
-  document.getElementById('importInput').value='';
-  document.getElementById('importStatus').textContent='已還原預設清單（'+STOCKS.length+' 支）';
+
+// Fetch full stock list from TWSE and TPEX open APIs
+async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
+  const statusEl=document.getElementById('progText');
+  const results=[];
+
+  if(includeTSE){
+    statusEl.textContent='從 TWSE 取得上市股票清單...';
+    try{
+      // TWSE open API - CORS-friendly public API
+      const r=await fetchTO('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL',20000);
+      const data=await r.json();
+      data.forEach(s=>{
+        const code=(s.Code||s.code||'').trim();
+        const name=(s.Name||s.name||code).trim();
+        if(/^\d{4}$/.test(code)) // 4-digit = common stock (skip ETFs 0050-style, warrants)
+          results.push({code,name,sector:'上市',ex:'TW'});
+      });
+      statusEl.textContent=`✅ 上市：取得 ${results.length} 支`;
+    }catch(e){
+      statusEl.textContent='⚠️ TWSE API 連線失敗，使用預設清單補充';
+      DEFAULT_STOCKS.filter(s=>s.ex==='TW').forEach(s=>{
+        if(!results.find(r=>r.code===s.code)) results.push(s);
+      });
+    }
+  }
+
+  if(includeOTC){
+    const otcStart=results.length;
+    statusEl.textContent=`上市 ${results.length} 支 ✅，從 TPEX 取得上櫃清單...`;
+    // Try TPEX open API endpoints
+    const tpexUrls=[
+      'https://www.tpex.org.tw/openapi/v1/tpex_mainboard_perday_quotation',
+      'https://api.allorigins.win/raw?url='+encodeURIComponent('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_perday_quotation')
+    ];
+    let otcOk=false;
+    for(const url of tpexUrls){
+      try{
+        const r=await fetchTO(url,20000);
+        const data=await r.json();
+        if(!Array.isArray(data)||!data.length) continue;
+        const sample=data[0];
+        // Handle different possible field name formats
+        const codeKey=Object.keys(sample).find(k=>k.toLowerCase().includes('code')||k.toLowerCase().includes('securities'));
+        const nameKey=Object.keys(sample).find(k=>k.toLowerCase().includes('name')||k.toLowerCase().includes('company'));
+        data.forEach(s=>{
+          const code=(codeKey?s[codeKey]:'').trim();
+          const name=(nameKey?s[nameKey]:code).trim();
+          if(/^\d{4}$/.test(code)&&!results.find(r=>r.code===code))
+            results.push({code,name,sector:'上櫃',ex:'TWO'});
+        });
+        otcOk=true;
+        break;
+      }catch(_){}
+    }
+    if(!otcOk){
+      statusEl.textContent='⚠️ TPEX API 連線失敗，以預設上櫃清單補充';
+      DEFAULT_STOCKS.filter(s=>s.ex==='TWO').forEach(s=>{
+        if(!results.find(r=>r.code===s.code)) results.push(s);
+      });
+    }
+    statusEl.textContent=`上市 ${otcStart} 支 + 上櫃 ${results.length-otcStart} 支 ✅，準備掃描...`;
+  }
+
+  return results;
+}
+
+function cancelScan(){
+  scanCancelled=true;
+  document.getElementById('cancelBtn').style.display='none';
+  document.getElementById('progText').textContent='⏹ 已停止掃描';
 }
 
 // ─── VCP Math ──────────────────────────────────────────────────────────────
@@ -914,40 +980,107 @@ async function fetchYahoo(sym){
 
 // ─── Scan ─────────────────────────────────────────────────────────────────
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
+
 async function startScan(){
-  if(scanning)return;scanning=true;
+  if(scanning)return;
+  scanning=true; scanCancelled=false;
   const btn=document.getElementById('scanBtn');
-  const info=document.getElementById('scanInfo');
+  const cancelBtn=document.getElementById('cancelBtn');
   const pW=document.getElementById('progWrap');
   const pF=document.getElementById('progFill');
   const pT=document.getElementById('progText');
   const err=document.getElementById('errBox');
-  btn.disabled=true;btn.textContent='⏳ 掃描中...';
-  pW.classList.add('show');err.style.display='none';allResults=[];
-  const stocks=[...new Map(STOCKS.map(s=>[s.code,s])).values()];
-  const total=stocks.length;let done=0,failed=0;
-  info.innerHTML=`正在掃描 <strong>${total}</strong> 支股票，請耐心等待...`;
-  const BATCH=4;
+  btn.disabled=true; btn.textContent='⏳ 掃描中...';
+  cancelBtn.style.display='';
+  pW.classList.add('show'); err.style.display='none';
+  allResults=[];
+
+  // Show table immediately so results stream in live
+  document.getElementById('sumGrid').style.display='';
+  document.getElementById('filterBox').style.display='';
+  document.getElementById('statsBar').style.display='';
+  document.getElementById('legendDiv').style.display='';
+  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="11"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
+
+  // Get stock list based on selected source
+  let stocks;
+  if(scanSrc==='custom'){
+    const raw=document.getElementById('importInput').value;
+    const codes=[...new Set(raw.split(/[\s,，、\n]+/).map(s=>s.trim()).filter(s=>/^\d{4,6}$/.test(s)))];
+    if(!codes.length){
+      document.getElementById('importStatus').textContent='⚠️ 請先貼上股票代號';
+      scanning=false; btn.disabled=false; btn.textContent='✨ 開始掃描 VCP';
+      cancelBtn.style.display='none'; return;
+    }
+    const existingMap=new Map(DEFAULT_STOCKS.map(s=>[s.code,s]));
+    stocks=codes.map(c=>existingMap.get(c)||{code:c,name:c,sector:'匯入',ex:'TW'});
+    document.getElementById('importStatus').textContent=`已匯入 ${stocks.length} 支`;
+  } else if(scanSrc==='tse'){
+    stocks=await fetchAllTWStocks(true,false);
+  } else if(scanSrc==='all'){
+    stocks=await fetchAllTWStocks(true,true);
+  } else {
+    stocks=[...new Map(STOCKS.map(s=>[s.code,s])).values()];
+  }
+
+  if(scanCancelled){scanning=false;btn.disabled=false;btn.textContent='✨ 開始掃描 VCP';cancelBtn.style.display='none';return;}
+
+  const total=stocks.length;
+  let done=0, failed=0, vcpFound=0;
+  document.getElementById('scanSrcLabel').textContent=`${total} 支 · Yahoo Finance`;
+
+  // Rebuild sector filter pills
+  const secs=[...new Set(stocks.map(s=>s.sector))].sort();
+  const secRow=document.getElementById('secRow');
+  secRow.querySelectorAll('[data-sec]:not([data-sec="ALL"])').forEach(p=>p.remove());
+  secs.forEach(s=>{const p=document.createElement('span');p.className='pill';p.dataset.sec=s;p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);});
+
+  const BATCH=scanSrc==='preset'?4:6;
+  const DELAY=scanSrc==='preset'?350:250;
+  const startTime=Date.now();
+
   for(let i=0;i<total;i+=BATCH){
+    if(scanCancelled) break;
     const batch=stocks.slice(i,i+BATCH);
     await Promise.all(batch.map(async s=>{
+      if(scanCancelled)return;
       const sym=`${s.code}.${s.ex}`;
       const data=await fetchYahoo(sym);
       const vcp=data?calcVCP(data):null;
       if(!data)failed++;
+      if(vcp&&vcp.score>=40) vcpFound++;
       allResults.push({...s,sym,vcp,noData:!data});
       done++;
-      pF.style.width=Math.round(done/total*100)+'%';
-      pT.textContent=`${done}/${total}  ${s.code} ${s.name}${data?'':' ⚠️'}`;
     }));
-    if(i+BATCH<total)await delay(350);
+    // Update progress
+    const pct=Math.round(done/total*100);
+    pF.style.width=pct+'%';
+    const elapsed=(Date.now()-startTime)/1000;
+    const eta=done>0?Math.round((total-done)*(elapsed/done)):0;
+    const etaStr=eta>60?`${Math.round(eta/60)}分${eta%60}秒`:eta>0?`${eta}秒`:'';
+    pT.textContent=`${done}/${total}（${pct}%）· VCP候選：${vcpFound}支 · 無數據：${failed}支${etaStr?' · 剩餘約'+etaStr:''}`;
+
+    // Live table update every batch
+    if(done%BATCH===0||i+BATCH>=total) renderTable();
+    // Update summary counts
+    document.getElementById('sumScanned').textContent=allResults.filter(r=>r.vcp).length;
+    document.getElementById('sumVcp').textContent=allResults.filter(r=>r.vcp&&r.vcp.score>=60).length;
+    document.getElementById('sumStrong').textContent=allResults.filter(r=>r.vcp&&r.vcp.score>=80).length;
+    document.getElementById('sumTime').textContent=new Date().toLocaleTimeString('zh-TW');
+
+    if(i+BATCH<total)await delay(DELAY);
   }
-  scanning=false;btn.disabled=false;btn.textContent='🔄 重新掃描';
-  pT.textContent=`✅ 掃描完成！成功 ${done-failed} 支，無數據 ${failed} 支`;
-  if(failed>total*0.5){err.style.display='';err.textContent=`⚠️ 超過半數無法取得數據（${failed}/${total}），可能是 CORS 限制或網路問題。建議掛 VPN 或改用 TradingView/FinLab。`;}
-  try{sessionStorage.setItem('vcpCache',JSON.stringify({results:allResults,ts:Date.now()}));}catch(_){}
+
+  scanning=false; btn.disabled=false;
+  btn.textContent=scanCancelled?'✨ 重新掃描':'🔄 重新掃描';
+  cancelBtn.style.display='none';
+  pT.textContent=scanCancelled
+    ?`⏹ 已停止 · 已掃 ${done}/${total} 支，VCP候選 ${vcpFound} 支`
+    :`✅ 完成！共 ${done-failed} 支成功，VCP候選 ${vcpFound} 支，無數據 ${failed} 支`;
+  if(!scanCancelled&&failed>total*0.5){err.style.display='';err.textContent=`⚠️ 超過半數無法取得數據（${failed}/${total}），可能是 CORS 限制或網路問題。建議掛 VPN 或改用 TradingView/FinLab。`;}
   renderAll();
   updateVcpCard();
+  try{sessionStorage.setItem('vcpCache',JSON.stringify({results:allResults,ts:Date.now()}));}catch(_){}
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────
@@ -965,21 +1098,21 @@ function renderAll(){
   document.getElementById('sumVcp').textContent=wd.filter(r=>r.vcp.score>=60).length;
   document.getElementById('sumStrong').textContent=wd.filter(r=>r.vcp.score>=80).length;
   document.getElementById('sumTime').textContent=new Date().toLocaleTimeString('zh-TW');
-  // Sector pills
-  const secs=[...new Set(STOCKS.map(s=>s.sector))].sort();
-  const secRow=document.getElementById('secRow');
-  secRow.querySelectorAll('[data-sec]:not([data-sec="ALL"])').forEach(p=>p.remove());
-  secs.forEach(s=>{
-    const p=document.createElement('span');p.className='pill';p.dataset.sec=s;
-    p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);
-  });
+  // Sector pills (only rebuild if not already done by startScan)
+  if(!document.querySelector('[data-sec]:not([data-sec="ALL"])')){
+    const secs=[...new Set(allResults.map(s=>s.sector))].sort();
+    const secRow=document.getElementById('secRow');
+    secs.forEach(s=>{
+      const p=document.createElement('span');p.className='pill';p.dataset.sec=s;
+      p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);
+    });
+  }
   renderTable();
 }
 
 function getFiltered(){
   return allResults.filter(r=>{
-    if(hideErr&&!r.vcp)return false;
-    if(!r.vcp)return true;
+    if(!r.vcp)return false; // default: hide stocks with no data or score=0
     if(r.vcp.score<scoreMin)return false;
     if(r.vcp.pctH>pctMax)return false;
     if(secFilter!=='ALL'&&r.sector!==secFilter)return false;
@@ -1080,9 +1213,6 @@ function setSort(k,el){
 
 // ─── Init ─────────────────────────────────────────────────────────────────
 (function init(){
-  // Update stock count in header
-  const unique=[...new Map(STOCKS.map(s=>[s.code,s])).values()];
-  document.querySelector('.scan-section-title span:last-child').textContent=`台股 ${unique.length} 支 · Yahoo Finance`;
 
   updateKeyStatus();
 
