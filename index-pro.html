@@ -121,6 +121,7 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 .bv{background:rgba(255,68,68,.1);color:#f87171;border:1px solid rgba(248,113,113,.3)}
 .card.cvideo{border-left:3px solid #f87171}.card.cvideo::after{content:'';display:block;clear:both}
 .cthumb{width:140px;aspect-ratio:16/9;object-fit:cover;border-radius:5px;float:right;margin:0 0 4px 10px}
+.yt-grid .card{font-size:.75rem;padding:7px 8px}.yt-grid .ctitle{font-size:.78rem;-webkit-line-clamp:2}.yt-grid .cthumb{width:100%;float:none;aspect-ratio:16/9;margin:0 0 5px}.yt-grid .ctop{font-size:.65rem}
 .tl1{padding:2px 7px;border-radius:3px;font-size:.65rem;background:var(--tag);color:var(--text2)}
 .tl2{padding:2px 7px;border-radius:3px;font-size:.65rem;background:rgba(139,92,246,.08);color:var(--accent2)}
 
@@ -202,7 +203,7 @@ header{position:relative}
   <header>
     <h1>✨ Vivian的半導體好好玩</h1>
     <p>乘著半AI的翅膀 🚀 &nbsp;·&nbsp; 不受 Google SEO 限制 &nbsp;·&nbsp; 不聽股市明牌，只看到真相</p>
-    <button class="key-btn" onclick="toggleKeyPanel()">⚙️ AI 設定</button>
+    <button class="key-btn" onclick="toggleKeyPanel()">⚙️</button>
   </header>
   <div class="key-panel" id="keyPanel">
     <p>🤖 AI 摘要功能需要 <strong>Groq API Key</strong>（完全免費，無信用卡，台灣可用）<br>
@@ -326,7 +327,7 @@ header{position:relative}
       <div class="inv-card vcp">
         <div class="inv-head">
           <span class="inv-title vcp-t">📈 VCP 潛力股（不構成投資建議）</span>
-          <button class="qn-refresh" onclick="loadVCPStocks()">↻ 重整</button>
+          <button class="qn-refresh" onclick="loadVCPStocks(true)">↻ 重整</button>
         </div>
         <div class="inv-body loading" id="vcpBody">載入中...</div>
         <div class="inv-time" id="vcpTime"></div>
@@ -1298,7 +1299,7 @@ function render(){
 
   if(videos.length){
     h+=`<div class="div-row">📺 YouTube 影片（${videos.length} 部）</div>`;
-    h+='<div class="ngrid" style="margin-bottom:8px">';
+    h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px" class="yt-grid">';
     videos.forEach(n=>{h+=cardHTML(n,'video');});
     h+='</div>';
     if(abc.length+papers.length+live.length+base.length) h+=`<div class="div-row">📰 新聞 / 論文</div>`;
@@ -1844,41 +1845,250 @@ async function loadInvClock(forceRefresh=false){
   }catch{bodyEl.className='inv-body';bodyEl.textContent='⚠️ 載入失敗，請點 ↻ 重整。';}
 }
 
-async function loadVCPStocks(){
-  const bodyEl=document.getElementById('vcpBody');
-  const timeEl=document.getElementById('vcpTime');
-  bodyEl.className='inv-body loading';bodyEl.textContent='AI 分析台股 VCP 中...';
-  timeEl.textContent='';
-  try{
-  const today=new Date().toISOString().slice(0,10);
-  const summary=await callAI(
-`今天${today}，以下是台股VCP觀察名單（上市/上櫃/ETF）。
+// ================================================================
+// VCP 分析 — 使用台灣證交所 (TWSE) 真實日 K 資料
+// 嚴格 VCP 標準（Mark Minervini）：Stage2 + 波幅收縮 + 量縮
+// ================================================================
+const VCP_STOCKS = [
+  // 半導體製造
+  {code:'2330',name:'台積電',   group:'半導體'},
+  {code:'2454',name:'聯發科',   group:'半導體'},
+  {code:'3443',name:'創意',     group:'半導體'},
+  {code:'5347',name:'世界先進', group:'半導體'},
+  {code:'2408',name:'南亞科',   group:'半導體'},
+  // 先進封裝
+  {code:'3711',name:'日月光',   group:'封裝'},
+  {code:'8150',name:'南茂',     group:'封裝'},
+  {code:'2449',name:'京元電',   group:'封裝'},
+  // AI 伺服器/散熱
+  {code:'2382',name:'廣達',     group:'AI伺服器'},
+  {code:'2059',name:'川湖',     group:'AI伺服器'},
+  {code:'3017',name:'奇鋐',     group:'散熱'},
+  {code:'3324',name:'雙鴻',     group:'散熱'},
+  // 電源/被動
+  {code:'2308',name:'台達電',   group:'電源'},
+  {code:'2327',name:'國巨',     group:'被動元件'},
+  // PCB
+  {code:'3037',name:'欣興',     group:'PCB'},
+  {code:'4958',name:'臻鼎-KY', group:'PCB'},
+];
 
-從下列全部股票中，依VCP型態成熟度排出兩個分類，嚴格按此格式輸出，禁止任何解釋：
-
-🏆 前5名VCP（最接近突破點，量縮收斂最完整）：
-代碼 股名、代碼 股名、代碼 股名、代碼 股名、代碼 股名
-
-📋 其它VCP（⚠️待觀察 / ❌不符合，同行列出全部剩餘）：
-族群名： 代碼股名⚠️ 代碼股名❌ ...（每族群一行）
-
-不知道的填⚠️，禁止任何說明文字。
-AI伺服器/散熱（上市）：廣達2382、緯穎6669、奇鋐3017、雙鴻3324、川湖2059、建準2421
-AI伺服器/散熱（上櫃）：訊凱6452、力致3483、超眾6230、泰碩3338
-半導體（上市）：台積電2330、聯發科2454、創意3443、世界先進5347、南亞科2408
-半導體（上櫃）：矽力-KY6415、譜瑞-KY4966、M31積體6643、晶心科技6533、立積電子4968
-CoWoS/封裝（上市）：日月光3711、南茂8150、京元電子2449
-CoWoS/封裝（上櫃）：精材3374、頎邦6147、欣銓3264
-電源/被動元件（上市）：台達電2308、國巨2327、華新科2492
-電源/被動元件（上櫃）：致茂2360、美隆電6715
-PCB（上市）：臻鼎-KY4958、欣興3037、健鼎3044
-PCB（上櫃）：博智3560、嘉聯益6153
-ETF：00891國泰半導體、00929富邦台灣優勢、00881國泰台灣5G+`
-  );
-  bodyEl.className='inv-body';bodyEl.textContent=summary;
-  timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-  }catch{bodyEl.className="inv-body";bodyEl.textContent="⚠️ 載入失敗，請點 ↻ 重整。";}
+async function fetchTWSEMonth(code, year, month) {
+  const dateStr = year.toString() + month.toString().padStart(2,'0') + '01';
+  const url = `https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY?stockNo=${code}&date=${dateStr}&response=json`;
+  try {
+    const r = await fetchProxy(url, 12000);
+    const data = await r.json();
+    if (data.stat !== 'OK' || !data.data) return [];
+    return data.data.map(row => {
+      const parts = row[0].split('/');
+      const close = parseFloat((row[6]||'0').replace(/,/g,''));
+      const high  = parseFloat((row[4]||'0').replace(/,/g,''));
+      const low   = parseFloat((row[5]||'0').replace(/,/g,''));
+      const vol   = parseFloat((row[1]||'0').replace(/,/g,''));
+      return {close, high, low, vol};
+    }).filter(d => !isNaN(d.close) && d.close > 0);
+  } catch(e) { return []; }
 }
+
+async function fetchTWSE3Months(code) {
+  const now = new Date();
+  const months = [];
+  for (let i = 2; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({year: d.getFullYear(), month: d.getMonth() + 1});
+  }
+  const results = await Promise.all(months.map(m => fetchTWSEMonth(code, m.year, m.month)));
+  return results.flat();
+}
+
+function calcMA(arr, n) {
+  if (arr.length < n) return NaN;
+  const slice = arr.slice(-n);
+  return slice.reduce((a,b)=>a+b,0) / n;
+}
+
+function analyzeVCP(data) {
+  if (data.length < 30) return null;
+
+  const closes  = data.map(d => d.close);
+  const highs   = data.map(d => d.high);
+  const lows    = data.map(d => d.low);
+  const vols    = data.map(d => d.vol);
+  const n       = closes.length;
+  const current = closes[n-1];
+
+  // Moving averages
+  const ma20 = calcMA(closes, Math.min(20, n));
+  const ma50 = calcMA(closes, Math.min(50, n));
+  const ma10 = calcMA(closes, Math.min(10, n));
+
+  // Stage 2：price > MA20 > MA50，且 MA20 在過去 10 天呈上升
+  const ma20_10dAgo = calcMA(closes.slice(0,-10), Math.min(20, n-10));
+  const stage2 = current > ma20 && ma20 > ma50 && ma20 > ma20_10dAgo;
+
+  // 週度波幅（每 5 個交易日計算一次）
+  const weekRanges = [];
+  for (let i = 0; i + 4 < n; i += 5) {
+    const wh = Math.max(...highs.slice(i, i+5));
+    const wl = Math.min(...lows.slice(i, i+5));
+    if (wh > 0) weekRanges.push((wh - wl) / wh * 100);
+  }
+
+  // 至少需要 6 週資料
+  if (weekRanges.length < 6) return null;
+
+  const recent3 = weekRanges.slice(-3);
+  const prev3   = weekRanges.slice(-6, -3);
+
+  const recentAvgRange = recent3.reduce((a,b)=>a+b,0) / recent3.length;
+  const prevAvgRange   = prev3.reduce((a,b)=>a+b,0)   / prev3.length;
+
+  // 波幅收縮：最近 3 週平均波幅 < 之前 3 週平均波幅 × 0.75
+  const rangeContracting = recentAvgRange < prevAvgRange * 0.75;
+
+  // 連續收縮次數
+  let contractionCount = 0;
+  for (let i = 1; i < recent3.length; i++) {
+    if (recent3[i] < recent3[i-1]) contractionCount++;
+  }
+
+  // 量縮：最近 10 日均量 < 過去 30 日均量 × 0.80
+  const vol10 = vols.slice(-10).reduce((a,b)=>a+b,0) / 10;
+  const vol30 = vols.slice(-30).reduce((a,b)=>a+b,0) / Math.min(30, vols.length);
+  const volContracting = vol10 < vol30 * 0.80;
+
+  // 距離高點（近 3 個月高點）
+  const periodHigh = Math.max(...highs);
+  const fromHighPct = (periodHigh - current) / periodHigh * 100;
+
+  // 距離高點 < 20%（有機會突破）
+  const nearPivot = fromHighPct < 20;
+
+  // VCP 評分（滿分 100）
+  let score = 0;
+  if (stage2)          score += 35;  // Stage 2 是基本門檻
+  if (rangeContracting) score += 30; // 波幅收縮
+  if (volContracting)  score += 20;  // 量縮
+  if (nearPivot)       score += 15;  // 接近高點
+
+  return {
+    current, ma20, ma50, ma10,
+    periodHigh,
+    fromHighPct: fromHighPct.toFixed(1),
+    stage2, rangeContracting, volContracting, nearPivot,
+    recentRange: recentAvgRange.toFixed(1),
+    prevRange: prevAvgRange.toFixed(1),
+    contractionCount,
+    score,
+    days: n
+  };
+}
+
+async function loadVCPStocks(forceRefresh=false){
+  const bodyEl = document.getElementById('vcpBody');
+  const timeEl = document.getElementById('vcpTime');
+
+  // 每日快取
+  const today = new Date().toISOString().slice(0,10);
+  const cacheKey = 'vcp_result_' + today;
+  const cached = localStorage.getItem(cacheKey);
+  if (cached && !forceRefresh) {
+    try {
+      const {html, time} = JSON.parse(cached);
+      bodyEl.className = 'inv-body';
+      bodyEl.innerHTML = html;
+      timeEl.textContent = time + '（今日快取，↻ 強制更新）';
+      return;
+    } catch{}
+  }
+
+  bodyEl.className = 'inv-body loading';
+  bodyEl.innerHTML = '從台灣證交所抓取真實日 K 資料中...';
+  timeEl.textContent = '';
+
+  try {
+    // Fetch all stocks in parallel
+    const results = await Promise.all(
+      VCP_STOCKS.map(async s => {
+        const data = await fetchTWSE3Months(s.code);
+        const analysis = analyzeVCP(data);
+        return {...s, data, analysis};
+      })
+    );
+
+    // Filter: only show confirmed VCP (score >= 70, must have stage2 + rangeContracting)
+    const confirmed = results
+      .filter(s => s.analysis && s.analysis.score >= 70
+                && s.analysis.stage2 && s.analysis.rangeContracting)
+      .sort((a,b) => b.analysis.score - a.analysis.score);
+
+    if (confirmed.length === 0) {
+      const topScore = results
+        .filter(s => s.analysis)
+        .sort((a,b) => b.analysis.score - a.analysis.score)
+        .slice(0,2);
+
+      let msg = '<div style="font-size:.8rem;line-height:1.8">';
+      msg += '<b>⚠️ 目前無符合嚴格 VCP 標準的個股</b><br>';
+      msg += '<span style="font-size:.72rem;color:#64748b">條件：Stage2 + 波幅收縮 + 量縮。需同時滿足全部條件。</span><br><br>';
+      if (topScore.length > 0) {
+        msg += '分數最高（尚未達標）：<br>';
+        topScore.forEach(s => {
+          const a = s.analysis;
+          msg += `・${s.code} ${s.name}（${a.score}分）${a.stage2?'✓Stage2':'✗Stage2'} ${a.rangeContracting?'✓波幅收縮':'✗波幅收縮'} ${a.volContracting?'✓量縮':'✗量縮'}<br>`;
+        });
+      }
+      msg += '</div>';
+      bodyEl.className = 'inv-body';
+      bodyEl.innerHTML = msg;
+      timeEl.textContent = '資料來源：台灣證交所 TWSE ｜' + today;
+      return;
+    }
+
+    let html = '<div style="font-size:.82rem;line-height:2">';
+    html += `<b style="color:#f59e0b">✓ 通過嚴格 VCP 篩選（${confirmed.length} 檔）</b><br>`;
+    html += '<span style="font-size:.68rem;color:#64748b;line-height:1.4;display:block;margin-bottom:8px">條件：Stage2 ✓ + 波幅收縮 ✓ + 量縮 ✓（資料來源：TWSE 近3個月日K）</span>';
+
+    confirmed.forEach(s => {
+      const a = s.analysis;
+      const tvLink = `https://www.tradingview.com/chart/?symbol=TWSE:${s.code}`;
+      const score = a.score;
+      const scoreColor = score >= 90 ? '#10b981' : score >= 80 ? '#f59e0b' : '#94a3b8';
+      html += `<div style="border:1px solid #1e2a42;border-radius:8px;padding:8px 10px;margin-bottom:6px;background:#131a2b">`;
+      html += `<div style="display:flex;justify-content:space-between;align-items:center">`;
+      html += `<span><b style="color:#e2e8f0">${s.code} ${s.name}</b> <span style="font-size:.68rem;color:#64748b">${s.group}</span></span>`;
+      html += `<span style="color:${scoreColor};font-weight:700;font-size:.85rem">VCP ${score}分</span>`;
+      html += `</div>`;
+      html += `<div style="font-size:.72rem;color:#94a3b8;margin-top:3px">`;
+      html += `收盤 ${a.current} ｜距高點 -${a.fromHighPct}% ｜波幅 ${a.recentRange}%（前 ${a.prevRange}%）`;
+      html += `</div>`;
+      html += `<div style="font-size:.7rem;margin-top:4px">`;
+      html += `<span style="color:#10b981">✓Stage2</span> `;
+      html += `<span style="color:#10b981">✓波幅收縮</span> `;
+      html += a.volContracting ? `<span style="color:#10b981">✓量縮</span> ` : `<span style="color:#f59e0b">△量未縮</span> `;
+      html += a.nearPivot ? `<span style="color:#10b981">✓近高點</span>` : `<span style="color:#64748b">距高點偏遠</span>`;
+      html += `</div>`;
+      html += `<div style="margin-top:5px"><a href="${tvLink}" target="_blank" style="font-size:.68rem;color:#3b82f6;text-decoration:none">📈 TradingView 確認圖形 →</a></div>`;
+      html += `</div>`;
+    });
+    html += '<span style="font-size:.65rem;color:#475569">⚠️ 不構成投資建議。VCP需自行確認突破點與成交量。</span>';
+    html += '</div>';
+
+    const timeStr = '資料來源：TWSE ｜' + today;
+    bodyEl.className = 'inv-body';
+    bodyEl.innerHTML = html;
+    timeEl.textContent = timeStr;
+
+    // Cache for the day
+    localStorage.setItem(cacheKey, JSON.stringify({html, time: timeStr}));
+
+  } catch(e) {
+    bodyEl.className = 'inv-body';
+    bodyEl.textContent = '⚠️ 台灣證交所 API 連線失敗，請點 ↻ 重整。錯誤：' + e.message;
+  }
+}
+
 
 document.getElementById('si').addEventListener('input',e=>{
   const raw=e.target.value;
@@ -1945,7 +2155,7 @@ updateKeyStatus();
 loadTrumpNews();
 setTimeout(loadWarNews,  5000);
 setTimeout(loadInvClock, 10000);
-setTimeout(loadVCPStocks,15000);
+setTimeout(()=>loadVCPStocks(false),15000);
 </script>
 </body>
 </html>
