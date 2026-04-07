@@ -1578,10 +1578,13 @@ async function callAIFree(prompt){
 // 統一 AI 呼叫：Groq → DeepSeek → Pollinations（三層 fallback，沒有 Key 也能用）
 // ================================================================
 async function callAI(prompt){
-  // 1. Groq
   const groqKey=getKey();
+  const hasDs=!!getDsKey();
+  const hasAnyKey=!!groqKey||hasDs;
+
+  // 1. Groq
   if(groqKey){
-    if(!/^[ -~]+$/.test(groqKey)){localStorage.removeItem('groq_key');}
+    if(!/^[ -~]+$/.test(groqKey)){localStorage.removeItem('groq_key');delCookie('groq_key');}
     else{
       try{
         const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
@@ -1590,7 +1593,7 @@ async function callAI(prompt){
           body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'llama-3.3-70b-versatile',max_tokens:500,temperature:0.7}),
           signal:AbortSignal.timeout(25000)
         });
-        if(r.status===401){localStorage.removeItem('groq_key');}
+        if(r.status===401){localStorage.removeItem('groq_key');delCookie('groq_key');}
         else if(r.status===429){return '⚠️ Groq 超過每分鐘限額，請稍候 30 秒再點 ↻ 重整';}
         else if(r.ok){
           const j=await r.json();
@@ -1600,16 +1603,23 @@ async function callAI(prompt){
       }catch(e){}
     }
   }
+
   // 2. DeepSeek
-  const dsResult=await callAIDeepSeek(prompt);
-  if(dsResult&&!dsResult.startsWith('⚠️')) return dsResult;
-  if(dsResult&&dsResult.startsWith('⚠️')) return dsResult;
-  // 3. Pollinations (free, no key)
-  try{
-    return await callAIFree(prompt);
-  }catch(e){
-    return '⚠️ AI 服務暫時無法連線，請點 ↻ 重整，或在 ⚙️ 設定 Groq/DeepSeek Key';
+  if(hasDs){
+    const dsResult=await callAIDeepSeek(prompt);
+    if(dsResult) return dsResult;
   }
+
+  // 3. Pollinations — 只有在沒有任何 Key 時才用（避免有 Key 時也打 Pollinations 造成 429）
+  if(!hasAnyKey){
+    try{
+      return await callAIFree(prompt);
+    }catch(e){
+      return '⚠️ AI 服務暫時無法連線，請在 ⚙️ 設定免費 Groq Key';
+    }
+  }
+
+  return '⚠️ AI 暫時無法回應，請點 ↻ 重整';
 }
 
 // 川普 — 使用頁面現有的 fetchRSSEn（已測試穩定）
