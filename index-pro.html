@@ -317,7 +317,7 @@ header{position:relative}
       <div class="inv-card clock">
         <div class="inv-head">
           <span class="inv-title clock-t">🕐 美林時鐘幾點？</span>
-          <button class="qn-refresh" onclick="loadInvClock()">↻ 重整</button>
+          <button class="qn-refresh" onclick="loadInvClock(true)">↻ 重整</button>
         </div>
         <div id="clockSvg" style="margin:6px 0 10px"></div>
         <div class="inv-body loading" id="clockBody">AI 分析中...</div>
@@ -1586,6 +1586,43 @@ async function callAIFree(prompt){
 // ================================================================
 // 統一 AI 呼叫：Groq → DeepSeek → Pollinations（三層 fallback，沒有 Key 也能用）
 // ================================================================
+// 低溫度 AI 呼叫（用於需要穩定輸出的場景，如投資時鐘）
+async function callAILowTemp(prompt){
+  const groqKey=getKey();
+  if(groqKey&&/^[ -~]+$/.test(groqKey)){
+    try{
+      const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+groqKey},
+        body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'llama-3.3-70b-versatile',max_tokens:600,temperature:0.1}),
+        signal:AbortSignal.timeout(25000)
+      });
+      if(r.ok){
+        const j=await r.json();
+        const text=j.choices?.[0]?.message?.content||'';
+        if(text.trim().length>10) return text.trim();
+      }
+    }catch(e){}
+  }
+  const dsKey=getDsKey();
+  if(dsKey){
+    try{
+      const r=await fetch('https://api.deepseek.com/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+dsKey},
+        body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'deepseek-chat',max_tokens:600,temperature:0.1}),
+        signal:AbortSignal.timeout(30000)
+      });
+      if(r.ok){
+        const j=await r.json();
+        const text=j.choices?.[0]?.message?.content||'';
+        if(text.trim().length>10) return text.trim();
+      }
+    }catch(e){}
+  }
+  return '';
+}
+
 async function callAI(prompt){
   const groqKey=getKey();
   const hasDs=!!getDsKey();
@@ -1751,24 +1788,60 @@ function drawClock(activePhase){
   return s;
 }
 
-async function loadInvClock(){
+async function loadInvClock(forceRefresh=false){
   const svgEl=document.getElementById('clockSvg');
   const bodyEl=document.getElementById('clockBody');
   const timeEl=document.getElementById('clockTime');
+  // 每日快取：同一天不重複呼叫 AI，避免每次結果不同
+  const today=new Date().toISOString().slice(0,10);
+  const cacheKey='inv_clock_'+today;
+  const cached=localStorage.getItem(cacheKey);
+  if(cached&&!forceRefresh){
+    try{
+      const {phase,summary,time}=JSON.parse(cached);
+      svgEl.innerHTML=drawClock(phase);
+      bodyEl.className='inv-body';bodyEl.textContent=summary;
+      timeEl.textContent=time+' （今日快取，↻ 強制更新）';
+      return;
+    }catch{}
+  }
   svgEl.innerHTML=drawClock(null);
   bodyEl.className='inv-body loading';bodyEl.textContent='AI 分析投資時鐘中...';
   timeEl.textContent='';
-  const today=new Date().toISOString().slice(0,10);
   try{
-  const summary=await callAI(`今天${today}。以美林投資時鐘框架判斷當前階段。繁體中文輸出，人名地名機構名用英文（Fed、Powell、S&P500、OPEC等），其他繁體中文。嚴格依格式，每項必須有數字：\n\n【時鐘位置】只填：復甦、過熱、滯脹、再膨脹 其中一個\n【判斷依據】\n・US CPI：X.X%（YoY），核心PCE：X.X%\n・Fed利率：X.XX%，下次降息預期：XXXX年X月\n・US GDP成長：X.X%（最新季），失業率：X.X%\n・S&P500 EPS成長YoY：X%\n【建議配置】\n・股票 XX%（偏好哪個sector，原因）\n・債券 XX%（短債/長債，存續期）\n・現金 XX%\n・原物料 XX%（Gold/Oil，原因）\n【風險提示】具體事件名稱（英文）+可能影響%\n\n禁止「建議適度配置」「可考慮增持」「視情況調整」。不超過300字。`);
+  const clockPrompt=`你是宏觀經濟分析師。今天${today}。
+美林投資時鐘是季度/月度指標，基於最新公開宏觀數據判斷當前所在階段。
+繁體中文，機構人名地名用英文（Fed、Powell、S&P500等）。
+嚴格按格式，每項必須有真實數字：
+
+【時鐘位置】只填一個：復甦、過熱、滯脹、再膨脹
+【判斷依據】
+・US CPI：X.X%（YoY），核心PCE：X.X%
+・Fed利率：X.XX%，下次降息預期：XXXX年X月
+・US GDP成長：X.X%（最新季），失業率：X.X%
+・S&P500最近走勢：XXX
+【建議配置】
+・股票 XX%（偏好哪個sector）
+・債券 XX%（短債/長債）
+・現金 XX%
+・原物料 XX%（Gold/Oil）
+【風險提示】具體事件（英文）+影響%
+
+注意：此分析基於季度宏觀趨勢，不隨每日市場波動改變。`;
+  // 使用低溫度讓結果穩定（不用 callAI 因為它用 0.7）
+  let summary = await callAILowTemp(clockPrompt);
+  if(!summary||summary.startsWith("⚠️")) summary=await callAI(clockPrompt);
   let phase=null;
   const m=summary.match(/【時鐘位置】[：:]\s*(復甦|過熱|滯脹|再膨脹)/);
   if(m) phase=m[1];
-  else { for(const p of ['滯脹','再膨脹','過熱','復甦']) if(summary.includes(p)){phase=p;break;} }
+  else { for(const ph of ['滯脹','再膨脹','過熱','復甦']) if(summary.includes(ph)){phase=ph;break;} }
   svgEl.innerHTML=drawClock(phase);
   bodyEl.className='inv-body';bodyEl.textContent=summary;
-  timeEl.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-  }catch{bodyEl.className="inv-body";bodyEl.textContent="⚠️ 載入失敗，請點 ↻ 重整。";}
+  const timeStr='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  timeEl.textContent=timeStr;
+  // 快取到明天
+  localStorage.setItem(cacheKey,JSON.stringify({phase,summary,time:timeStr}));
+  }catch{bodyEl.className='inv-body';bodyEl.textContent='⚠️ 載入失敗，請點 ↻ 重整。';}
 }
 
 async function loadVCPStocks(){
