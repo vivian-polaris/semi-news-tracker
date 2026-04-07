@@ -313,7 +313,7 @@ footer a:hover{text-decoration:underline}
         <span class="clock-badge" id="clockBadge" style="background:var(--purple)">分析中...</span>
       </div>
       <div class="clock-asset" id="clockAsset"></div>
-      <div class="clock-sub" id="clockSub" style="white-space:pre-wrap"></div>
+      <div class="clock-sub" id="clockSub" style="display:flex;flex-direction:column;gap:5px;margin-top:6px"></div>
     </div>
     <div class="inv-time" id="clockTime"></div>
   </div>
@@ -646,7 +646,8 @@ async function callAI(prompt){
       if(r.ok){const j=await r.json();const t=j.choices?.[0]?.message?.content||'';if(t.trim().length>10)return t.trim();}
     }catch(_){}
   }
-  if(!gk&&!dk){try{return await callAIFree(prompt);}catch(_){}}
+  // Always fall back to Pollinations (free, no key needed)
+  try{return await callAIFree(prompt);}catch(_){}
   return '⚠️ AI 暫時無法回應，請點 ↻ 重整';
 }
 
@@ -773,22 +774,47 @@ async function loadClock(){
   const sub=document.getElementById('clockSub');
   const t=document.getElementById('clockTime');
   svgEl.innerHTML=drawClock(null);
-  badge.textContent='分析中...'; badge.style.background='var(--border)'; asset.textContent=''; sub.textContent='';
+  badge.textContent='分析中...'; badge.style.background='var(--border)';
+  asset.textContent=''; sub.innerHTML='';
   const today=new Date().toISOString().slice(0,10);
-  const prompt=`今天${today}。判斷目前美林投資時鐘所在象限：復甦/過熱/滯脹/再膨脹。回覆格式（嚴格）：\n象限：[復甦|過熱|滯脹|再膨脹]\n推薦資產：[股票|原物料|現金|債券]\n理由：[30字內，含Fed政策+通膨數字]\n投資建議：[台股操作策略，30字內]`;
+  const prompt=`今天${today}。你是投資老師，用最口語的繁體中文跟學生解釋美林投資時鐘。
+
+嚴格按以下格式輸出，每行一項，不要多餘說明：
+象限：復甦／過熱／滯脹／再膨脹（只填一個）
+一句話：用一句大白話說現在的經濟狀況（例：Fed 還在降息、通膨降溫、景氣慢慢好轉）
+錢放哪：最適合放的資產，說明為何（30字內）
+台股怎辦：現在台股該積極還是保守，一句話說清楚`;
   const res=await callAI(prompt);
-  const phaseM=res.match(/象限[：:]\s*([^\n]+)/); const phase=phaseM?phaseM[1].trim():'未知';
-  const assetM=res.match(/推薦資產[：:]\s*([^\n]+)/); const assetTxt=assetM?assetM[1].trim():'';
-  const hintM=res.match(/投資建議[：:]\s*([^\n]+)/); const hintTxt=hintM?hintM[1].trim():'';
-  const colors={'復甦':'#10b981','過熱':'#f59e0b','滯脹':'#ef4444','再膨脹':'#8b5cf6'};
-  const col=colors[phase]||'var(--purple)';
+
+  // Parse phase
   let activePhase=null;
-  for(const p of ['滯脹','再膨脹','過熱','復甦']) if(res.includes(p)){activePhase=p;break;}
-  if(phaseM) activePhase=phase;
+  const phaseM=res.match(/象限[：:]\s*(復甦|過熱|滯脹|再膨脹)/);
+  if(phaseM) activePhase=phaseM[1];
+  else for(const p of ['滯脹','再膨脹','過熱','復甦']) if(res.includes(p)){activePhase=p;break;}
+
+  const colors={'復甦':'#10b981','過熱':'#f59e0b','滯脹':'#ef4444','再膨脹':'#8b5cf6'};
+  const col=colors[activePhase]||'var(--border)';
+
   svgEl.innerHTML=drawClock(activePhase);
-  badge.textContent=phase; badge.style.background=col;
-  asset.textContent=assetTxt||res.slice(0,60);
-  sub.textContent=hintTxt;
+  badge.textContent=activePhase||'分析中';
+  badge.style.background=col;
+
+  // Parse each line for display
+  const lineMap={};
+  res.split('\n').forEach(line=>{
+    const m=line.match(/^(.+?)[：:]\s*(.+)/);
+    if(m) lineMap[m[1].trim()]=m[2].trim();
+  });
+  const oneLine=lineMap['一句話']||lineMap['一句']||'';
+  const money  =lineMap['錢放哪']||lineMap['推薦資產']||'';
+  const tw     =lineMap['台股怎辦']||lineMap['台股']||lineMap['投資建議']||'';
+
+  asset.textContent=oneLine;
+  sub.innerHTML=[
+    money ? `<span style="color:var(--text2);font-size:.7rem">💰 ${money}</span>` : '',
+    tw    ? `<span style="color:var(--text2);font-size:.7rem">🇹🇼 ${tw}</span>`    : '',
+  ].filter(Boolean).join('<br>');
+
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
