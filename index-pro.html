@@ -628,38 +628,22 @@ let liveTimer;
 let lastParsed={newsQ:'',arQ:'',wantPaper:false,tokens:[],queryParts:[],entityLabels:[]};
 
 // ================================================================
-// Proxy — 同時發出請求，最快成功的優先（Promise.any）
+// Proxy — 4個代理同時發起，Promise.any 取最快成功的
 // ================================================================
-const PROX=[
-  u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
-  u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-  u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`
-];
-// Important company YouTube channel IDs (public RSS, no API key needed)
-const YT_CHANNELS=[
-  {id:'UCHuiy8bXnmK5nisYHUd1J5g',name:'NVIDIA'},
-  {id:'UCj5QUTQMK3TRBRQkMVdZ5nA',name:'Intel'},
-  {id:'UCQRkOKKjOsOuFGqEa0SQJAA',name:'AMD'},
-  {id:'UCRb_e7mkVMyFVzrZWOTaALQ',name:'Qualcomm'},
-  {id:'UCKiLt0FjnZqWrjVbBcP0b8w',name:'ASML'},
-  {id:'UCgPBhzfECiSLbFN_mBpnHdA',name:'Arm'},
-  {id:'UCTjYhVEEUFzmCwS_8JmqAsg',name:'Applied Materials'},
-  {id:'UCVDTBjLnCMN9KWy4PxC-SQw',name:'TSMC'},
-];
-
-// Extra sources to always include
-const EXTRA_SOURCES=[
-  'tomshardware.com','techcrunch.com','theregister.com','semiwiki.com'
-];
-
-async function fetchProxy(url,timeout=8000){
+async function fetchProxy(url,timeout=12000){
+  const enc=encodeURIComponent(url);
+  const t={signal:AbortSignal.timeout(timeout)};
+  const ok=r=>{if(!r.ok) throw new Error(`HTTP ${r.status}`);return r;};
   try{
-    return await Promise.any(
-      PROX.map(p=>fetch(p(url),{signal:AbortSignal.timeout(timeout)}).then(r=>{
-        if(!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r;
-      }))
-    );
+    return await Promise.any([
+      fetch(`https://corsproxy.io/?${enc}`,t).then(ok),
+      fetch(`https://api.allorigins.win/get?url=${enc}`,t).then(ok).then(r=>r.json()).then(j=>{
+        if(!j.contents||j.contents.length<50) throw new Error('empty');
+        return new Response(j.contents,{status:200,headers:{'Content-Type':'text/xml;charset=utf-8'}});
+      }),
+      fetch(`https://api.codetabs.com/v1/proxy?quest=${enc}`,t).then(ok),
+      fetch(`https://api.allorigins.win/raw?url=${enc}`,t).then(ok),
+    ]);
   }catch{
     throw new Error('All proxies failed');
   }
