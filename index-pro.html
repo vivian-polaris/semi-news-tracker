@@ -1220,8 +1220,11 @@ async function batchZhSumm(){
     `例：「TSMC 2nm良率達80%」「Nvidia H200漲價15%」「Apple砍Samsung訂單」「Trump對China加徵34%關稅」。`+
     `絕對禁止：密切關注、緊張情勢、持續發展、值得注意、帶來影響、備受矚目。`+
     `只輸出數字清單：\n1. 摘要\n2. 摘要\n\n${numbered}`;
-  const raw=await callAI(zhPrompt).catch(()=>'');
-
+  // 摘要用三層 fallback：Groq → DeepSeek → Pollinations（摘要量小，匿名請求不會觸發 429）
+  let raw=await callAI(zhPrompt).catch(()=>'');
+  if((!raw || raw.startsWith('⚠️')) && !getKey() && !getDsKey()){
+    raw=await callAIFree(zhPrompt).catch(()=>'');
+  }
   if(!raw || raw.startsWith('⚠️') || raw.startsWith('🔑')) return;
 
   // 解析：跳過沒有數字開頭的行（preamble），取有 "數字." 開頭的行
@@ -1291,7 +1294,9 @@ function render(){
 
   if(videos.length){
     h+=`<div class="div-row">📺 YouTube 影片（${videos.length} 部）</div>`;
+    h+='<div class="ngrid" style="margin-bottom:8px">';
     videos.forEach(n=>{h+=cardHTML(n,'video');});
+    h+='</div>';
     if(abc.length+papers.length+live.length+base.length) h+=`<div class="div-row">📰 新聞 / 論文</div>`;
   }
   if(abc.length){
