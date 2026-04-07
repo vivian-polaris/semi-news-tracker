@@ -213,48 +213,6 @@ header{position:relative}
     <div class="key-status" id="keyStatus"></div>
   </div>
 
-  <div class="lbl">🌐 每日快訊 AI 摘要（自動更新）</div>
-  <div class="quicknews">
-    <div class="qn-card trump">
-      <div class="qn-head">
-        <span class="qn-title trump-t">🇺🇸 川普投顧開示</span>
-        <button class="qn-refresh" onclick="loadTrumpNews()">↻ 重整</button>
-      </div>
-      <div class="qn-body loading" id="trumpBody">載入中...</div>
-      <div class="qn-time" id="trumpTime"></div>
-    </div>
-    <div class="qn-card war">
-      <div class="qn-head">
-        <span class="qn-title war-t">⚔️ 戰爭打不完</span>
-        <button class="qn-refresh" onclick="loadWarNews()">↻ 重整</button>
-      </div>
-      <div class="qn-body loading" id="warBody">載入中...</div>
-      <div class="qn-time" id="warTime"></div>
-    </div>
-  </div>
-
-  <div class="lbl">💹 投資人專區（AI 自動分析）</div>
-  <div class="inv-section">
-    <div class="inv-clock-row">
-      <div class="inv-card clock">
-        <div class="inv-head">
-          <span class="inv-title clock-t">🕐 美林時鐘幾點？</span>
-          <button class="qn-refresh" onclick="loadInvClock()">↻ 重整</button>
-        </div>
-        <div id="clockSvg" style="margin:6px 0 10px"></div>
-        <div class="inv-body loading" id="clockBody">AI 分析中...</div>
-        <div class="inv-time" id="clockTime"></div>
-      </div>
-      <div class="inv-card vcp">
-        <div class="inv-head">
-          <span class="inv-title vcp-t">📈 VCP 潛力股（不構成投資建議）</span>
-          <button class="qn-refresh" onclick="loadVCPStocks()">↻ 重整</button>
-        </div>
-        <div class="inv-body loading" id="vcpBody">載入中...</div>
-        <div class="inv-time" id="vcpTime"></div>
-      </div>
-    </div>
-  </div>
 <div class="srch-wrap">
     <span class="srch-ico">🔍</span>
     <input type="text" id="si" placeholder="輸入任何句子... 例：TSMC 先進封裝、HBM4、CoWoS 良率">
@@ -317,6 +275,48 @@ header{position:relative}
     <div class="loading"><div class="spin"></div><br>正在載入新聞...</div>
   </div>
 
+  <div class="lbl">🌐 每日快訊 AI 摘要（自動更新）</div>
+  <div class="quicknews">
+    <div class="qn-card trump">
+      <div class="qn-head">
+        <span class="qn-title trump-t">🇺🇸 川普投顧開示</span>
+        <button class="qn-refresh" onclick="loadTrumpNews()">↻ 重整</button>
+      </div>
+      <div class="qn-body loading" id="trumpBody">載入中...</div>
+      <div class="qn-time" id="trumpTime"></div>
+    </div>
+    <div class="qn-card war">
+      <div class="qn-head">
+        <span class="qn-title war-t">⚔️ 戰爭打不完</span>
+        <button class="qn-refresh" onclick="loadWarNews()">↻ 重整</button>
+      </div>
+      <div class="qn-body loading" id="warBody">載入中...</div>
+      <div class="qn-time" id="warTime"></div>
+    </div>
+  </div>
+
+  <div class="lbl">💹 投資人專區（AI 自動分析）</div>
+  <div class="inv-section">
+    <div class="inv-clock-row">
+      <div class="inv-card clock">
+        <div class="inv-head">
+          <span class="inv-title clock-t">🕐 美林時鐘幾點？</span>
+          <button class="qn-refresh" onclick="loadInvClock()">↻ 重整</button>
+        </div>
+        <div id="clockSvg" style="margin:6px 0 10px"></div>
+        <div class="inv-body loading" id="clockBody">AI 分析中...</div>
+        <div class="inv-time" id="clockTime"></div>
+      </div>
+      <div class="inv-card vcp">
+        <div class="inv-head">
+          <span class="inv-title vcp-t">📈 VCP 潛力股（不構成投資建議）</span>
+          <button class="qn-refresh" onclick="loadVCPStocks()">↻ 重整</button>
+        </div>
+        <div class="inv-body loading" id="vcpBody">載入中...</div>
+        <div class="inv-time" id="vcpTime"></div>
+      </div>
+    </div>
+  </div>
   <footer>半導體新聞追蹤器 Pro © 2026 &nbsp;·&nbsp; Google News RSS + arXiv API + Always Be Curious &nbsp;·&nbsp; 雙層分類</footer>
 </div>
 <script>
@@ -616,7 +616,7 @@ const NL_L2 = {
 // ================================================================
 let allNews=[], liveNews=[], arxivNews=[], substackNews=[], youtubeNews=[];
 let activeL1='all', activeL2='all';
-let timePeriod='24h', customStart=null, customEnd=null;
+let timePeriod='7d', customStart=null, customEnd=null;
 let searchText='', activeSrc='all', sortBy='time';
 let isSearching=false, currentQ='';
 let viewMode='list'; // 'list' | 'grid'
@@ -800,8 +800,7 @@ function passL2(title){
 // Fetch Google News RSS
 // ================================================================
 async function fetchRSS(query){
-  const after=afterDate();
-  const q=`${query} after:${after}`;
+  const q=query;
   const url=`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
   const r=await fetchProxy(url);
   const xml=new DOMParser().parseFromString(await r.text(),'text/xml');
@@ -819,8 +818,7 @@ async function fetchRSS(query){
 // Fetch Google News RSS (English locale, for specific sources)
 // ================================================================
 async function fetchRSSEn(query){
-  const after=afterDate();
-  const q=`${query} after:${after}`;
+  const q=query;
   const url=`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en&gl=US&ceid=US:en`;
   const r=await fetchProxy(url);
   const xml=new DOMParser().parseFromString(await r.text(),'text/xml');
@@ -1402,7 +1400,7 @@ async function askAI(){
 // 申請：https://console.groq.com/keys
 // 免費額度：每天 14,400 次，每分鐘 30 次
 // ================================================================
-function getKey(){ return localStorage.getItem('groq_key')||''; }
+function getKey(){ return (localStorage.getItem('groq_key')||'').replace(/[^ -~]/g,'').trim(); }
 function toggleKeyPanel(){
   const p=document.getElementById('keyPanel');
   p.classList.toggle('show');
