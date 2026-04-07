@@ -298,25 +298,29 @@ footer a:hover{text-decoration:underline}
   <span style="font-size:1rem">🌟</span>
   <span class="inv-main-title">投資人專區</span>
 </div>
-<div class="inv-grid">
-  <!-- 1. 投資時鐘 -->
-  <div class="inv-card c-clock">
-    <div class="inv-head">
+<!-- 美林投資時鐘：獨立整行 -->
+<div class="inv-card c-clock" style="margin-bottom:12px;display:flex;flex-direction:row;gap:20px;align-items:flex-start">
+  <div style="flex-shrink:0">
+    <div class="inv-head" style="margin-bottom:8px">
       <div class="inv-label lbl-clock">⏰ 美林投資時鐘</div>
       <button class="inv-rf" onclick="loadClock()">↻</button>
     </div>
     <div id="clockSvg"></div>
+  </div>
+  <div style="flex:1;min-width:0">
     <div class="inv-body" id="clockBody" style="flex:1">
       <div class="clock-phase" id="clockPhase" style="margin-bottom:8px">
         <span class="clock-badge" id="clockBadge" style="background:var(--purple)">分析中...</span>
       </div>
       <div class="clock-asset" id="clockAsset"></div>
-      <div class="clock-sub" id="clockSub"></div>
+      <div class="clock-sub" id="clockSub" style="white-space:pre-wrap"></div>
     </div>
     <div class="inv-time" id="clockTime"></div>
   </div>
+</div>
 
-  <!-- 2. VCP 掃描統計 -->
+<div class="inv-grid">
+  <!-- VCP 掃描統計 -->
   <div class="inv-card c-vcp">
     <div class="inv-head">
       <div class="inv-label lbl-vcp">📊 VCP 掃描結果</div>
@@ -326,7 +330,7 @@ footer a:hover{text-decoration:underline}
     <div class="inv-time" id="vcpCardTime"></div>
   </div>
 
-  <!-- 3. 總經快報 -->
+  <!-- 總經快報 -->
   <div class="inv-card c-macro">
     <div class="inv-head">
       <div class="inv-label lbl-macro">🌐 總經環境快報</div>
@@ -731,7 +735,7 @@ function drawClock(activePhase){
     const[x1,y1]=pt(s,R),[x2,y2]=pt(e,R),[ix2,iy2]=pt(e,r),[ix1,iy1]=pt(s,r);
     return `<path d="M${x1} ${y1}A${R} ${R} 0 0 1 ${x2} ${y2}L${ix2} ${iy2}A${r} ${r} 0 0 0 ${ix1} ${iy1}Z" fill="${active?color:dim}" stroke="#e9d5ff" stroke-width="1.5"/>`;
   }
-  let s=`<svg viewBox="0 0 200 200" width="180" height="180" style="display:block;margin:0 auto">`;
+  let s=`<svg viewBox="0 0 200 200" width="220" height="220" style="display:block;margin:0 auto">`;
   phases.forEach(p=>{
     const on=(p.id===activePhase);
     s+=arc(p.start,p.end,on,p.color,p.dim);
