@@ -139,6 +139,9 @@ header p{color:var(--text2);font-size:.82rem;margin-top:5px}
 
 /* Refresh */
 .rfwrap{display:flex;justify-content:center;margin:8px 0}
+.latest-btn{width:100%;padding:13px;background:linear-gradient(135deg,#1d4ed8,#3b82f6);border:none;border-radius:12px;color:#fff;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.03em;transition:all .2s;margin:12px 0 4px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 12px rgba(59,130,246,.25)}
+.latest-btn:hover{opacity:.9;box-shadow:0 4px 20px rgba(59,130,246,.4);transform:translateY(-1px)}
+.latest-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
 .rfbtn{padding:7px 20px;background:var(--card);border:1px solid var(--border);border-radius:7px;color:var(--text2);cursor:pointer;font-size:.8rem;transition:all .2s}
 .rfbtn:hover{border-color:var(--accent);color:var(--accent)}
 .rfbtn:disabled{opacity:.5;cursor:not-allowed}
@@ -213,16 +216,7 @@ header{position:relative}
     <div class="key-status" id="keyStatus"></div>
   </div>
 
-<div class="srch-wrap">
-    <span class="srch-ico">🔍</span>
-    <input type="text" id="si" placeholder="輸入任何句子... 例：TSMC 先進封裝、HBM4、CoWoS 良率">
-    <button class="ai-in-btn" onclick="askAI()">🤖 問 AI</button>
-    <button class="srch-btn" onclick="triggerSearch()">搜尋</button>
-  </div>
-  <div class="qdisp" id="qdisp"></div>
-  <div class="ai-panel" id="aipanel"></div>
-
-  <div class="lbl">📂 來源</div>
+<div class="lbl">📂 來源</div>
   <div class="row" id="srcRow">
     <div class="pill p-src on" data-s="all"   onclick="setSrc('all')">🌐 全部</div>
     <div class="pill p-src"    data-s="news"  onclick="setSrc('news')">📰 新聞</div>
@@ -239,9 +233,9 @@ header{position:relative}
   <div class="row" id="timeRow">
     <div class="pill p-time"         data-t="1h"     onclick="setTime('1h')">1小時</div>
     <div class="pill p-time"         data-t="12h"    onclick="setTime('12h')">12小時</div>
-    <div class="pill p-time on"       data-t="24h"    onclick="setTime('24h')">24小時</div>
+    <div class="pill p-time"          data-t="24h"    onclick="setTime('24h')">24小時</div>
     <div class="pill p-time"          data-t="3d"     onclick="setTime('3d')">3天</div>
-    <div class="pill p-time"         data-t="7d"     onclick="setTime('7d')">7天</div>
+    <div class="pill p-time on"       data-t="7d"     onclick="setTime('7d')">7天</div>
     <div class="pill p-time"         data-t="1m"     onclick="setTime('1m')">1個月</div>
     <div class="pill p-time"          data-t="3m"     onclick="setTime('3m')">3個月</div>
     <div class="pill p-time"         data-t="1y"     onclick="setTime('1y')">1年</div>
@@ -258,9 +252,17 @@ header{position:relative}
 
   <div class="l2-panel" id="l2panel"></div>
 
-  <div class="rfwrap">
-    <button class="rfbtn" id="rfbtn" onclick="fetchAll()">🔄 重新載入</button>
+  <div class="srch-wrap">
+    <span class="srch-ico">🔍</span>
+    <input type="text" id="si" placeholder="輸入任何句子... 例：TSMC 先進封裝、HBM4、CoWoS 良率">
+    <button class="ai-in-btn" onclick="askAI()">🤖 問 AI</button>
+    <button class="srch-btn" onclick="triggerSearch()">搜尋</button>
   </div>
+  <div class="qdisp" id="qdisp"></div>
+  <div class="ai-panel" id="aipanel"></div>
+
+  <button class="latest-btn" id="rfbtn" onclick="fetchAll()">🗞 最新半導體新聞</button>
+
 
   <div class="stats">
     <span class="sl" id="stxt">載入中...</span>
@@ -803,7 +805,9 @@ async function fetchRSS(query){
   const q=query;
   const url=`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
   const r=await fetchProxy(url);
-  const xml=new DOMParser().parseFromString(await r.text(),'text/xml');
+  const txt=await r.text();
+  const xml=new DOMParser().parseFromString(txt,'text/xml');
+  if(xml.querySelector('parsererror')) throw new Error('non-XML response');
   const items=[];
   xml.querySelectorAll('item').forEach(el=>{
     const g=s=>(el.querySelector(s)||{textContent:''}).textContent;
@@ -821,7 +825,9 @@ async function fetchRSSEn(query){
   const q=query;
   const url=`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en&gl=US&ceid=US:en`;
   const r=await fetchProxy(url);
-  const xml=new DOMParser().parseFromString(await r.text(),'text/xml');
+  const txt=await r.text();
+  const xml=new DOMParser().parseFromString(txt,'text/xml');
+  if(xml.querySelector('parsererror')) throw new Error('non-XML response');
   const items=[];
   xml.querySelectorAll('item').forEach(el=>{
     const g=s=>(el.querySelector(s)||{textContent:''}).textContent;
@@ -1417,8 +1423,10 @@ function updateKeyStatus(){
   s.textContent=k?'✅ Groq Key 已設定，AI 功能啟用中':'⚠️ 尚未設定 Key — 請點上方連結申請（免費 30 秒完成）';
 }
 function saveKey(){
-  const k=document.getElementById('keyInput').value.trim();
-  if(!k){alert('請輸入 API Key');return;}
+  const raw=document.getElementById('keyInput').value.trim();
+  if(!raw){alert('請輸入 API Key');return;}
+  const k=raw.replace(/[^ -~]/g,'').trim();
+  if(!k){alert('Key含非法字元，請重新貼上正確的gsk_開頭Key');return;}
   localStorage.setItem('groq_key',k);
   updateKeyStatus();
   document.getElementById('keyPanel').classList.remove('show');
@@ -1433,6 +1441,7 @@ function clearKey(){
 async function callAI(prompt){
   const key=getKey();
   if(!key) return '🔑 請點右上角「⚙️ AI 設定」輸入免費 Groq Key（console.groq.com/keys）';
+  if(!/^[ -~]+$/.test(key)){localStorage.removeItem('groq_key');return '⚠️ Key含非法字元已自動清除，請重新在「⚙️ AI 設定」輸入';}
   try{
     const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
