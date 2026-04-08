@@ -341,25 +341,19 @@ body.dark .srt{background:var(--card);}
   <span style="font-size:1rem">🌟</span>
   <span class="inv-main-title">投資人專區</span>
 </div>
-<!-- 美林投資時鐘：獨立整行 -->
-<div class="inv-card c-clock" style="margin-bottom:12px;display:flex;flex-direction:row;gap:20px;align-items:flex-start">
-  <div style="flex-shrink:0">
-    <div class="inv-head" style="margin-bottom:8px">
-      <div class="inv-label lbl-clock">⏰ 美林投資時鐘</div>
-      <button class="inv-rf" onclick="loadClock()">↻</button>
-    </div>
-    <div id="clockSvg"></div>
+<!-- 美林投資時鐘 -->
+<div class="inv-card c-clock" style="margin-bottom:12px;text-align:center">
+  <div class="inv-head" style="justify-content:center;gap:8px;margin-bottom:10px">
+    <div class="inv-label lbl-clock" style="font-size:.85rem">⏰ 美林投資時鐘</div>
+    <button class="inv-rf" onclick="loadClock()">↻</button>
   </div>
-  <div style="flex:1;min-width:0">
-    <div class="inv-body" id="clockBody" style="flex:1">
-      <div class="clock-phase" id="clockPhase" style="margin-bottom:8px">
-        <span class="clock-badge" id="clockBadge" style="background:var(--purple)">分析中...</span>
-      </div>
-      <div class="clock-asset" id="clockAsset"></div>
-      <div class="clock-sub" id="clockSub" style="display:flex;flex-direction:column;gap:5px;margin-top:6px"></div>
-    </div>
-    <div class="inv-time" id="clockTime"></div>
+  <div id="clockSvg" style="margin:0 auto 12px"></div>
+  <div id="clockPhase" style="margin-bottom:8px">
+    <span class="clock-badge" id="clockBadge" style="background:var(--purple);font-size:.9rem;padding:5px 18px">分析中...</span>
   </div>
+  <div id="clockAsset" style="font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:6px"></div>
+  <div id="clockSub" style="display:flex;flex-direction:column;gap:4px;align-items:center;font-size:.78rem;color:var(--text2)"></div>
+  <div class="inv-time" id="clockTime" style="margin-top:10px"></div>
 </div>
 
 <div class="inv-grid">
@@ -636,7 +630,14 @@ let scanCancelled=false, scanSrc='preset';
 // ─── Key helpers ──────────────────────────────────────────────────────────
 const getKey=()=>localStorage.getItem('groq_key')||'';
 const getDsKey=()=>localStorage.getItem('deepseek_key')||'';
-function toggleKeyPanel(){document.getElementById('keyPanel').classList.toggle('show');updateKeyStatus();}
+function toggleKeyPanel(){
+  document.getElementById('keyPanel').classList.toggle('show');
+  // 開啟時自動填入已儲存的 key（讓使用者知道已存）
+  const g=getKey(),d=getDsKey();
+  if(g){const el=document.getElementById('groqInput');if(!el.value)el.value=g;}
+  if(d){const el=document.getElementById('dsInput');if(!el.value)el.value=d;}
+  updateKeyStatus();
+}
 function updateKeyStatus(){
   const s=document.getElementById('keyStatus');
   const g=getKey(), d=getDsKey();
@@ -692,15 +693,20 @@ async function callAIFree(prompt){
 async function callAI(prompt){
   const gk=getKey(), dk=getDsKey();
   if(gk){
-    try{
-      const r=await fetchTimed('https://api.groq.com/openai/v1/chat/completions',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk},
-        body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'llama-3.3-70b-versatile',max_tokens:500,temperature:0.7})
-      },20000);
-      if(r.status===429) return '⚠️ Groq 超過每分鐘限額，請稍候再點 ↻';
-      if(r.ok){const j=await r.json();const t=j.choices?.[0]?.message?.content||'';if(t.trim().length>10)return t.trim();}
-    }catch(_){}
+    // 依序嘗試多個 Groq 模型（防止某個被棄用）
+    const groqModels=['llama-3.3-70b-versatile','llama-3.1-70b-versatile','llama3-70b-8192','gemma2-9b-it','llama3-8b-8192'];
+    for(const model of groqModels){
+      try{
+        const r=await fetchTimed('https://api.groq.com/openai/v1/chat/completions',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk},
+          body:JSON.stringify({messages:[{role:'user',content:prompt}],model,max_tokens:500,temperature:0.7})
+        },20000);
+        if(r.status===429) return '⚠️ Groq 超過每分鐘限額，請稍候再點 ↻';
+        if(r.status===400||r.status===404) continue; // 模型不存在，試下一個
+        if(r.ok){const j=await r.json();const t=j.choices?.[0]?.message?.content||'';if(t.trim().length>10)return t.trim();}
+      }catch(_){}
+    }
   }
   if(dk){
     try{
@@ -802,7 +808,7 @@ function drawClock(activePhase){
     const[x1,y1]=pt(s,R),[x2,y2]=pt(e,R),[ix2,iy2]=pt(e,r),[ix1,iy1]=pt(s,r);
     return `<path d="M${x1} ${y1}A${R} ${R} 0 0 1 ${x2} ${y2}L${ix2} ${iy2}A${r} ${r} 0 0 0 ${ix1} ${iy1}Z" fill="${active?color:dim}" stroke="#e9d5ff" stroke-width="1.5"/>`;
   }
-  let s=`<svg viewBox="0 0 200 200" width="220" height="220" style="display:block;margin:0 auto">`;
+  let s=`<svg viewBox="0 0 200 200" width="200" height="200" style="display:block;margin:0 auto">`;
   phases.forEach(p=>{
     const on=(p.id===activePhase);
     s+=arc(p.start,p.end,on,p.color,p.dim);
