@@ -238,6 +238,48 @@ tbody td{padding:10px 13px;vertical-align:middle}
 footer{text-align:center;padding:22px 0;color:var(--text2);font-size:.7rem;border-top:1.5px solid var(--border);margin-top:24px;line-height:1.9}
 footer a{color:var(--purple);text-decoration:none}
 footer a:hover{text-decoration:underline}
+
+/* ── Dark Mode ── */
+body.dark{
+  --bg:#0f0b1a;--bg2:#1a1025;--card:#1e1535;--card2:#150f2a;
+  --border:#3d2d6e;--border2:#5a2d4a;--text:#e2d9f3;--text2:#9b8abf;
+  --tag:#2a1f4a;--shadow:rgba(168,85,247,.3);--shadow2:rgba(236,72,153,.25);
+  background:linear-gradient(135deg,#0f0b1a 0%,#1a1025 40%,#0d1f1a 80%,#1a150a 100%) fixed;
+}
+body.dark thead th{background:#150f2a;}
+body.dark tbody tr:hover{background:#2a1f4a;}
+body.dark .tbl-wrap{background:var(--card);}
+body.dark .filter-box,body.dark .scan-box,body.dark .sum-card,
+body.dark .news-card,body.dark .inv-card,body.dark .lcard,body.dark .key-panel{background:var(--card);}
+body.dark .note{background:#1e1535;}
+body.dark .pill{background:var(--tag);}
+body.dark .srt{background:var(--card);}
+.dark-btn{position:absolute;right:112px;top:28px;padding:6px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:20px;color:var(--text2);cursor:pointer;font-size:.8rem;transition:all .2s;box-shadow:0 2px 8px var(--shadow)}
+.dark-btn:hover{border-color:var(--purple);color:var(--purple)}
+@media(max-width:640px){.dark-btn{position:static;margin-bottom:8px;display:inline-block}}
+
+/* ── Watchlist Star ── */
+.star-btn{background:transparent;border:none;cursor:pointer;font-size:.95rem;padding:0 4px 0 0;transition:transform .15s;line-height:1;vertical-align:middle}
+.star-btn:hover{transform:scale(1.3)}
+.star-btn.on{color:#fbbf24}
+.star-btn:not(.on){color:#d1d5db}
+
+/* ── Export CSV ── */
+.export-btn{padding:4px 13px;background:var(--card);border:1.5px solid var(--mint);border-radius:12px;color:var(--mint);cursor:pointer;font-size:.72rem;font-weight:700;transition:all .16s}
+.export-btn:hover{background:var(--mint);color:#fff}
+
+/* ── RSI badge ── */
+.rsi-b{display:inline-block;padding:1px 6px;border-radius:7px;font-size:.62rem;font-weight:700;margin-top:2px}
+.rsi-hot{background:#fee2e2;color:#991b1b}
+.rsi-ok{background:#d1fae5;color:#065f46}
+.rsi-cold{background:#dbeafe;color:#1d4ed8}
+.rsi-mid{background:#f3f4f6;color:#6b7280}
+
+/* ── Contraction badge ── */
+.contr-b{display:inline-block;font-size:.62rem;font-weight:700;padding:1px 6px;border-radius:7px;background:#f5f3ff;color:#7c3aed;margin-top:2px}
+
+/* ── Sparkline ── */
+.spark-cell{white-space:nowrap;padding:6px 10px!important}
 </style>
 </head>
 <body>
@@ -247,6 +289,7 @@ footer a:hover{text-decoration:underline}
 <header>
   <a href="index-pro.html" class="back-btn">← 返回新聞</a>
   <button class="key-btn" onclick="toggleKeyPanel()">⚙️ API Key</button>
+  <button class="dark-btn" id="darkBtn" onclick="toggleDark()">🌙 深色</button>
   <span class="deco">🐰✨</span>
   <h1>VCP Finder</h1>
   <p>台股強勢股自動掃描 <span class="subtitle-badge">Mark Minervini VCP</span><br>
@@ -435,12 +478,14 @@ footer a:hover{text-decoration:underline}
     <span class="flabel">其他</span>
     <span class="pill" id="stg2Pill" onclick="toggleStage2(this)">僅 Stage 2</span>
     <span class="pill" id="hideErrPill" onclick="toggleHideErr(this)">隱藏無數據</span>
+    <span class="pill" id="watchPill" onclick="toggleWatchFilter(this)">★ 自選股</span>
   </div>
 </div>
 
 <!-- ── Stats + Sort ── -->
 <div class="stats-bar" id="statsBar" style="display:none">
   <div class="stats-l">顯示 <strong id="showN">0</strong> / <strong id="totalN">0</strong> 支</div>
+  <button class="export-btn" onclick="exportCSV()">⬇ 匯出 CSV</button>
   <div class="sort-row">
     <button class="srt on" onclick="setSort('score',this)">VCP分數↓</button>
     <button class="srt" onclick="setSort('pct',this)">距高點↑</button>
@@ -471,13 +516,14 @@ footer a:hover{text-decoration:underline}
       <th>MA 排列</th>
       <th>ATR 收縮</th>
       <th>量能</th>
+      <th>走勢</th>
       <th onclick="setSort('score')">VCP 分數 ⇅</th>
       <th>評級</th>
       <th>操作</th>
     </tr>
   </thead>
   <tbody id="tblBody">
-    <tr class="load-row"><td colspan="11">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>
+    <tr class="load-row"><td colspan="12">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>
   </tbody>
 </table>
 </div>
@@ -1001,6 +1047,10 @@ function calcVCP(data){
     else if(vRat<0.85){score+=10;volL='縮量';volS='o';}
     else{volL='量持平';volS='r';}
   }
+  // RSI & multi-contraction VCP bonus
+  const rsi=calcRSI(closes,14);
+  const contractions=countContractions(closes);
+  if(contractions>=3)score+=8;else if(contractions>=2)score+=4;
   return{
     score:Math.min(Math.round(score),100),price,
     ma50:ma50?+ma50.toFixed(2):null,
@@ -1009,7 +1059,8 @@ function calcVCP(data){
     h52:+h52.toFixed(2),pctH:+pctH.toFixed(1),
     abM50,abM150,abM200,perfOrd:perf,stage2:abM50&&abM150&&abM200,
     atrL,atrS,atrRat:atrRat?+atrRat.toFixed(3):null,
-    volL,volS,vRat:vRat?+vRat.toFixed(2):null
+    volL,volS,vRat:vRat?+vRat.toFixed(2):null,
+    rsi,contractions
   };
 }
 
@@ -1058,7 +1109,7 @@ async function startScan(){
   document.getElementById('filterBox').style.display='';
   document.getElementById('statsBar').style.display='';
   document.getElementById('legendDiv').style.display='';
-  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="11"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
+  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="12"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
 
   // Get stock list based on selected source
   let stocks;
@@ -1107,7 +1158,7 @@ async function startScan(){
       const vcp=data?calcVCP(data):null;
       if(!data)failed++;
       if(vcp&&vcp.score>=40) vcpFound++;
-      allResults.push({...s,sym,vcp,noData:!data});
+      allResults.push({...s,sym,vcp,noData:!data,closes:data?data.slice(0,60).map(d=>d.close):null});
       done++;
     }));
     // Update progress
@@ -1138,7 +1189,7 @@ async function startScan(){
   if(!scanCancelled&&failed>total*0.5){err.style.display='';err.textContent=`⚠️ 超過半數無法取得數據（${failed}/${total}），可能是 CORS 限制或網路問題。建議掛 VPN 或改用 TradingView/FinLab。`;}
   renderAll();
   updateVcpCard();
-  try{sessionStorage.setItem('vcpCache',JSON.stringify({results:allResults,ts:Date.now()}));}catch(_){}
+  try{localStorage.setItem('vcpCache',JSON.stringify({results:allResults,ts:Date.now()}));}catch(_){}
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────
@@ -1169,8 +1220,10 @@ function renderAll(){
 }
 
 function getFiltered(){
+  const wl=watchFilter?getWatchlist():null;
   return allResults.filter(r=>{
-    if(!r.vcp)return false; // default: hide stocks with no data or score=0
+    if(!r.vcp) return !hideErr; // respect the toggle
+    if(wl&&!wl.includes(r.code)) return false;
     if(r.vcp.score<scoreMin)return false;
     if(r.vcp.pctH>pctMax)return false;
     if(secFilter!=='ALL'&&r.sector!==secFilter)return false;
@@ -1195,18 +1248,20 @@ function renderTable(){
   document.getElementById('showN').textContent=sorted.length;
   document.getElementById('totalN').textContent=counted;
   const tbody=document.getElementById('tblBody');
-  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="11">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
-  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="11">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
+  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="12">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
+  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="12">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
   tbody.innerHTML=sorted.map(r=>{
     const v=r.vcp;
     const tv=`https://www.tradingview.com/chart/?symbol=TWSE%3A${r.code}`;
+    const watched=isWatched(r.code);
+    const starEl=`<button class="star-btn${watched?' on':''}" onclick="toggleWatch('${r.code}',this)">★</button>`;
     if(!v){
       return `<tr style="opacity:.45">
         <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
         <td class="tn">${r.name}</td>
         <td><span class="tsec">${r.sector}</span></td>
-        <td colspan="7" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
-        <td><a href="${tv}" target="_blank" class="tv-btn">TV圖</a></td>
+        <td colspan="8" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
+        <td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
       </tr>`;
     }
     const g=grade(v.score),s=sc(v.score);
@@ -1222,15 +1277,20 @@ function renderTable(){
     const volHTML=v.volL!=='—'
       ?`<span class="sig sig-${v.volS}">${v.volL}</span>${v.vRat!=null?`<br><span style="font-size:.6rem;color:#9ca3af">${v.vRat}</span>`:''}`
       :'<span style="color:#d1d5db">—</span>';
+    const rsiHTML=v.rsi!=null
+      ?`<br><span class="rsi-b ${v.rsi>=70?'rsi-hot':v.rsi>=50?'rsi-ok':v.rsi<=30?'rsi-cold':'rsi-mid'}">RSI ${v.rsi}</span>`:'';
+    const cHTML=v.contractions>0?`<br><span class="contr-b">${v.contractions}段收縮</span>`:'';
+    const spk=sparkline(r.closes||null);
     return `<tr>
       <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
       <td class="tn">${r.name}</td>
       <td><span class="tsec">${r.sector}</span></td>
-      <td class="tprice">NT$${fmtP(v.price)}</td>
-      <td><span class="pct-b ${pBadge}">-${v.pctH}%</span></td>
+      <td class="tprice">NT$${fmtP(v.price)}${rsiHTML}</td>
+      <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
       <td><div class="ma-row">${maHTML||'—'}</div></td>
       <td>${atrHTML}</td>
       <td>${volHTML}</td>
+      <td class="spark-cell">${spk}</td>
       <td>
         <div class="scr-wrap">
           <div class="scr-bg"><div class="scr-fill f${s}" style="width:${v.score}%"></div></div>
@@ -1238,7 +1298,7 @@ function renderTable(){
         </div>
       </td>
       <td><span class="grade g${g}">${g}</span></td>
-      <td><a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
+      <td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
     </tr>`;
   }).join('');
 }
@@ -1269,6 +1329,95 @@ function setSort(k,el){
   renderTable();
 }
 
+// ─── Dark Mode ────────────────────────────────────────────────────────────
+function toggleDark(){
+  const on=document.body.classList.toggle('dark');
+  document.getElementById('darkBtn').textContent=on?'☀️ 淺色':'🌙 深色';
+  localStorage.setItem('darkMode',on?'1':'0');
+}
+
+// ─── Watchlist ─────────────────────────────────────────────────────────────
+let watchFilter=false;
+function getWatchlist(){try{return JSON.parse(localStorage.getItem('wl')||'[]');}catch(_){return[];}}
+function isWatched(code){return getWatchlist().includes(code);}
+function toggleWatch(code,btn){
+  let w=getWatchlist();
+  if(w.includes(code)){w=w.filter(c=>c!==code);btn.classList.remove('on');}
+  else{w.push(code);btn.classList.add('on');}
+  localStorage.setItem('wl',JSON.stringify(w));
+}
+function toggleWatchFilter(el){watchFilter=!watchFilter;el.classList.toggle('g-on',watchFilter);renderTable();}
+
+// ─── Export CSV ─────────────────────────────────────────────────────────────
+function exportCSV(){
+  const filtered=getSorted(getFiltered());
+  if(!filtered.length){alert('沒有資料可匯出');return;}
+  const hdr=['代號','名稱','產業','現價','距52W高%','MA50','MA150','MA200','Stage2','ATR收縮','量能','RSI','收縮段數','VCP分數','評級'];
+  const rows=[hdr,...filtered.map(r=>{
+    const v=r.vcp;
+    if(!v)return[r.code,r.name,r.sector,'','','','','','','','','','','',''];
+    return[r.code,r.name,r.sector,v.price,v.pctH,v.ma50??'',v.ma150??'',v.ma200??'',
+      v.stage2?'Y':'N',v.atrL,v.volL,v.rsi??'',v.contractions??0,v.score,grade(v.score)];
+  })];
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`VCP_${new Date().toLocaleDateString('zh-TW').replace(/\//g,'-')}.csv`;
+  a.click();URL.revokeObjectURL(a.href);
+}
+
+// ─── RSI(14) ─────────────────────────────────────────────────────────────
+function calcRSI(closes,period=14){
+  if(!closes||closes.length<period+1)return null;
+  const arr=[...closes].reverse(); // oldest→newest
+  let g=0,l=0;
+  for(let i=1;i<=period;i++){const d=arr[i]-arr[i-1];d>0?g+=d:l-=d;}
+  let ag=g/period,al=l/period;
+  for(let i=period+1;i<arr.length;i++){
+    const d=arr[i]-arr[i-1];
+    ag=(ag*(period-1)+Math.max(0,d))/period;
+    al=(al*(period-1)+Math.max(0,-d))/period;
+  }
+  if(al===0)return 100;
+  return Math.round(100-(100/(1+ag/al)));
+}
+
+// ─── Contraction Count (VCP多段收縮偵測) ──────────────────────────────────
+function countContractions(closes){
+  if(!closes||closes.length<30)return 0;
+  const arr=[...closes].reverse().slice(0,120); // oldest→newest
+  const peaks=[];
+  for(let i=2;i<arr.length-2;i++){
+    if(arr[i]>arr[i-1]&&arr[i]>arr[i-2]&&arr[i]>arr[i+1]&&arr[i]>arr[i+2])
+      peaks.push({i,v:arr[i]});
+  }
+  if(peaks.length<2)return peaks.length;
+  let count=1,lastD=Infinity;
+  for(let i=0;i<peaks.length-1;i++){
+    const seg=arr.slice(peaks[i].i,peaks[i+1].i);
+    if(!seg.length)continue;
+    const lo=Math.min(...seg);
+    const d=(peaks[i].v-lo)/peaks[i].v*100;
+    if(d<lastD&&d>0.5){count++;lastD=d;}
+  }
+  return Math.min(count,5);
+}
+
+// ─── Sparkline SVG ────────────────────────────────────────────────────────
+function sparkline(closes,w=80,h=28){
+  if(!closes||closes.length<5)return '<span style="color:#d1d5db;font-size:.7rem">—</span>';
+  const arr=[...closes].reverse(); // oldest→newest
+  const mn=Math.min(...arr),mx=Math.max(...arr),rng=mx-mn||1;
+  const pts=arr.map((v,i)=>`${((i/(arr.length-1))*w).toFixed(1)},${(h-((v-mn)/rng)*(h-2)-1).toFixed(1)}`).join(' ');
+  const col=arr[arr.length-1]>=arr[0]?'#10b981':'#ef4444';
+  const bg=arr[arr.length-1]>=arr[0]?'rgba(16,185,129,0.1)':'rgba(239,68,68,0.1)';
+  const areaFirst=`0,${h}`;const areaLast=`${w},${h}`;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;overflow:visible">
+    <polyline points="${areaFirst} ${pts} ${areaLast}" fill="${bg}" stroke="none"/>
+    <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+  </svg>`;
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────
 (function init(){
 
@@ -1276,16 +1425,23 @@ function setSort(k,el){
 
   // Restore cache
   try{
-    const raw=sessionStorage.getItem('vcpCache');
+    const raw=localStorage.getItem('vcpCache');
     if(!raw)return;
     const{results,ts}=JSON.parse(raw);
     const age=(Date.now()-ts)/60000;
-    if(age>30)return;
+    if(age>360)return; // 6 小時內有效
     allResults=results;
     document.getElementById('scanBtn').textContent='🔄 重新掃描';
-    document.getElementById('scanInfo').innerHTML=`上次掃描：<strong>${new Date(ts).toLocaleTimeString('zh-TW')}</strong>（${Math.round(age)} 分鐘前）`;
+    const ageStr=age>=60?`${Math.round(age/60)} 小時`:`${Math.round(age)} 分鐘`;
+    document.getElementById('scanInfo').innerHTML=`上次掃描：<strong>${new Date(ts).toLocaleTimeString('zh-TW')}</strong>（${ageStr}前）`;
     renderAll();updateVcpCard();
   }catch(_){}
+
+  // Restore dark mode preference
+  if(localStorage.getItem('darkMode')==='1'){
+    document.body.classList.add('dark');
+    document.getElementById('darkBtn').textContent='☀️ 淺色';
+  }
 
   // Auto-load AI sections
   setTimeout(()=>{loadTrump();loadSemi();loadClock();loadMacro();},500);
