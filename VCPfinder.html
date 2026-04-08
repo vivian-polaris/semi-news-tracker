@@ -303,12 +303,14 @@ body.dark .srt{background:var(--card);}
   <div class="key-row">
     <input class="key-input" id="groqInput" type="password" placeholder="Groq API Key（gsk_...）">
     <button class="key-save" onclick="saveGroq()">儲存</button>
+    <button class="key-save" onclick="testGroq()" style="background:#e0f2fe;border-color:#7dd3fc;color:#0369a1">測試</button>
   </div>
   <div class="key-row">
     <input class="key-input" id="dsInput" type="password" placeholder="DeepSeek API Key（sk-...）">
     <button class="key-save" onclick="saveDs()">儲存</button>
   </div>
   <div class="key-status key-no" id="keyStatus">未設定 Key（使用免費 Pollinations 備援）</div>
+  <div id="testResult" style="display:none;margin-top:6px;font-size:.75rem;padding:6px 10px;border-radius:8px"></div>
   <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
     <button class="key-save" onclick="genBookmark()" style="width:100%;background:var(--purple);color:#fff;border-color:var(--purple)">📎 產生個人書籤網址（換瀏覽器不用重輸）</button>
     <div id="bookmarkOut" style="display:none;margin-top:8px;font-size:.72rem;color:var(--text2);word-break:break-all"></div>
@@ -654,6 +656,23 @@ function saveGroq(){
   const v=document.getElementById('groqInput').value.trim();
   if(v){localStorage.setItem('groq_key',v);updateKeyStatus();}
 }
+async function testGroq(){
+  const k=document.getElementById('groqInput').value.trim()||getKey();
+  const el=document.getElementById('testResult');
+  if(!k){el.style.display='block';el.style.background='#fef3c7';el.textContent='⚠️ 請先輸入 Groq Key';return;}
+  el.style.display='block';el.style.background='#f3f4f6';el.textContent='測試中...';
+  try{
+    const r=await fetchTimed('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+k},
+      body:JSON.stringify({messages:[{role:'user',content:'hello'}],model:'llama3-8b-8192',max_tokens:5})
+    },12000);
+    if(r.status===401||r.status===403){el.style.background='#fee2e2';el.textContent='❌ Key 無效或已過期，請重新申請';return;}
+    if(r.status===429){el.style.background='#fef3c7';el.textContent='⚠️ 已達速率限制，但 Key 有效！';return;}
+    if(r.ok){el.style.background='#dcfce7';el.textContent='✅ Groq Key 正常！AI 快訊應可運作';return;}
+    el.style.background='#fee2e2';el.textContent=`❌ 錯誤 ${r.status}，請確認 Key`;
+  }catch(e){el.style.background='#fee2e2';el.textContent='❌ 網路錯誤：'+e.message;}
+}
 // ── 書籤網址（把 key 加密藏在 hash，方便換瀏覽器）──
 function genBookmark(){
   const g=getKey(), d=getDsKey();
@@ -693,27 +712,30 @@ async function callAIFree(prompt){
   try{
     const short=prompt.length>1800?prompt.slice(0,1800):prompt;
     const r=await fetchTimed('https://text.pollinations.ai/'+encodeURIComponent(short)+'?model=openai-fast&seed='+Math.floor(Math.random()*9999),{},18000);
+    if(r.status===429) throw new Error('429');
     const t=await r.text();
     if(t&&t.trim().length>10&&!t.trim().startsWith('<!'))return t.trim();
-  }catch(_){}
+  }catch(e){if(e.message==='429')throw e;}
   // Try 2: Pollinations POST (OpenAI-compatible)
   try{
     const r=await fetchTimed('https://text.pollinations.ai/',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'openai-fast',seed:Math.floor(Math.random()*9999)})
     },18000);
+    if(r.status===429) throw new Error('429');
     const t=await r.text();
     if(t&&t.trim().length>10&&!t.trim().startsWith('<!'))return t.trim();
-  }catch(_){}
+  }catch(e){if(e.message==='429')throw e;}
   // Try 3: Pollinations fallback model
   try{
     const r=await fetchTimed('https://text.pollinations.ai/',{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'mistral'})
     },15000);
+    if(r.status===429) throw new Error('429');
     const t=await r.text();
     if(t&&t.trim().length>10&&!t.trim().startsWith('<!'))return t.trim();
-  }catch(_){}
+  }catch(e){if(e.message==='429')throw e;}
   throw new Error('bad response');
 }
 
@@ -729,11 +751,14 @@ async function callAI(prompt){
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk},
           body:JSON.stringify({messages:[{role:'user',content:prompt}],model,max_tokens:500,temperature:0.7})
         },20000);
-        if(r.status===429) return '⚠️ Groq 超過每分鐘限額，請稍候再點 ↻';
+        if(r.status===429) return '⚠️ Groq 超過每分鐘限額，請稍候再試 ↻';
+        if(r.status===401||r.status===403) return '❌ Groq Key 無效或已過期，請點 ⚙️ 重新設定';
         if(r.status===400||r.status===404) continue; // 模型不存在，試下一個
         if(r.ok){const j=await r.json();const t=j.choices?.[0]?.message?.content||'';if(t.trim().length>10)return t.trim();}
       }catch(_){}
     }
+    // 所有 Groq 模型都失敗但 key 存在 → 不要靜默跌到 Pollinations，顯示錯誤
+    return '⚠️ Groq 暫時無回應，請點 ↻ 重試';
   }
   if(dk){
     try{
@@ -746,8 +771,10 @@ async function callAI(prompt){
     }catch(_){}
   }
   // Free fallback: Pollinations (no key needed)
-  try{return await callAIFree(prompt);}catch(_){}
-  return '⚠️ AI 暫時無法回應（建議至 console.groq.com 申請免費 Key 設定後效果最穩），請點 ↻ 重整';
+  try{return await callAIFree(prompt);}catch(e){
+    if(e.message&&e.message.includes('429')) return '⚠️ 免費 AI 流量已滿（Pollinations 429），建議設定 Groq Key，請點 ⚙️';
+  }
+  return '⚠️ AI 暫時無法回應，請點 ↻ 重整，或至 console.groq.com 申請免費 Key';
 }
 
 // ─── RSS fetch (via allorigins) ────────────────────────────────────────────
@@ -1132,7 +1159,10 @@ async function fetchYahoo(sym){
         date:new Date(t*1000),open:q.open?.[i]??null,high:q.high?.[i]??null,
         low:q.low?.[i]??null,close:q.close?.[i]??null,volume:q.volume?.[i]??null
       })).filter(d=>d.close!==null&&d.close>0);
-      arr.reverse();return arr;
+      arr.reverse();
+      // 附帶公司中文名（Yahoo meta 欄位）
+      arr._yahooName=r.meta?.longName||r.meta?.shortName||null;
+      return arr;
     }catch(_){}
   }
   return null;
@@ -1210,6 +1240,10 @@ async function startScan(){
       const vcp=data?calcVCP(data):null;
       if(!data)failed++;
       if(vcp&&vcp.score>=40) vcpFound++;
+      // 用 Yahoo 回傳的中文名補全（全掃模式股票清單可能只有代號）
+      if(data?._yahooName&&(s.name===s.code||!s.name||s.name.length<2)){
+        s.name=data._yahooName;
+      }
       allResults.push({...s,sym,vcp,noData:!data,closes:data?data.slice(0,60).map(d=>d.close):null});
       done++;
     }));
