@@ -285,6 +285,12 @@ body.dark .srt{background:var(--card);}
 <body>
 <div class="wrap">
 
+<!-- ── No-Key Warning Banner ── -->
+<div id="noKeyBanner" style="display:none;background:#fef2f2;border-bottom:2px solid #fca5a5;padding:8px 16px;font-size:.78rem;color:#b91c1c;text-align:center">
+  ⚠️ 未設定 Groq API Key，AI 快訊功能受限。請點右上角 <strong>⚙️ API Key</strong>，貼上你的 Key（<a href="https://console.groq.com" target="_blank" style="color:#b91c1c;text-decoration:underline">免費申請</a>），輸入即自動儲存。
+  <button onclick="document.getElementById('noKeyBanner').style.display='none'" style="margin-left:12px;background:transparent;border:none;color:#b91c1c;cursor:pointer;font-size:.8rem">✕</button>
+</div>
+
 <!-- ── Header ── -->
 <header>
   <a href="index-pro.html" class="back-btn">← 返回新聞</a>
@@ -301,13 +307,13 @@ body.dark .srt{background:var(--card);}
   <p>設定 <a href="https://console.groq.com" target="_blank">Groq API Key</a>（免費，每日限額），享 AI 快訊摘要。
   也可設定 <a href="https://platform.deepseek.com" target="_blank">DeepSeek Key</a> 作備援。</p>
   <div class="key-row">
-    <input class="key-input" id="groqInput" type="password" placeholder="Groq API Key（gsk_...）">
-    <button class="key-save" onclick="saveGroq()">儲存</button>
+    <input class="key-input" id="groqInput" type="password" placeholder="Groq API Key（gsk_...）輸入後自動儲存"
+      oninput="autoSaveGroq(this.value)" onpaste="setTimeout(()=>autoSaveGroq(document.getElementById('groqInput').value),50)">
     <button class="key-save" onclick="testGroq()" style="background:#e0f2fe;border-color:#7dd3fc;color:#0369a1">測試</button>
   </div>
   <div class="key-row">
-    <input class="key-input" id="dsInput" type="password" placeholder="DeepSeek API Key（sk-...）">
-    <button class="key-save" onclick="saveDs()">儲存</button>
+    <input class="key-input" id="dsInput" type="password" placeholder="DeepSeek API Key（sk-...）輸入後自動儲存"
+      oninput="autoSaveDs(this.value)" onpaste="setTimeout(()=>autoSaveDs(document.getElementById('dsInput').value),50)">
   </div>
   <div class="key-status key-no" id="keyStatus">未設定 Key（使用免費 Pollinations 備援）</div>
   <div id="testResult" style="display:none;margin-top:6px;font-size:.75rem;padding:6px 10px;border-radius:8px"></div>
@@ -651,10 +657,21 @@ function updateKeyStatus(){
   else if(g){s.className='key-status key-ok';s.textContent='✅ Groq Key 已設定 · DeepSeek 未設定';}
   else if(d){s.className='key-status key-ok';s.textContent='✅ DeepSeek Key 已設定 · Groq 未設定';}
   else{s.className='key-status key-no';s.textContent='⚠️ 未設定 Key（使用免費 Pollinations 備援，速度較慢）';}
+  // 顯示/隱藏頂部警告條
+  const banner=document.getElementById('noKeyBanner');
+  if(banner) banner.style.display=(g||d)?'none':'block';
 }
 function saveGroq(){
   const v=document.getElementById('groqInput').value.trim();
   if(v){localStorage.setItem('groq_key',v);updateKeyStatus();}
+}
+function autoSaveGroq(v){
+  v=v.trim();
+  if(v.length>10){localStorage.setItem('groq_key',v);updateKeyStatus();}
+}
+function autoSaveDs(v){
+  v=v.trim();
+  if(v.length>10){localStorage.setItem('deepseek_key',v);updateKeyStatus();}
 }
 async function testGroq(){
   const k=document.getElementById('groqInput').value.trim()||getKey();
@@ -707,6 +724,14 @@ function fetchTimed(url, opts, ms=25000){
   return fetch(url,{...opts,signal:c.signal}).finally(()=>clearTimeout(t));
 }
 
+function checkPollinationsBody(t){
+  // Pollinations 有時回 HTTP 200 但 body 是錯誤 JSON
+  if(!t||t.length<5) return false;
+  const s=t.trim();
+  if(s.startsWith('<!')) return false;                    // HTML 錯誤頁
+  if(s.startsWith('{')&&s.includes('"error"')) throw new Error('429'); // 錯誤 JSON
+  return s.length>10;
+}
 async function callAIFree(prompt){
   // Try 1: Pollinations GET endpoint (simpler, faster)
   try{
@@ -714,9 +739,9 @@ async function callAIFree(prompt){
     const r=await fetchTimed('https://text.pollinations.ai/'+encodeURIComponent(short)+'?model=openai-fast&seed='+Math.floor(Math.random()*9999),{},18000);
     if(r.status===429) throw new Error('429');
     const t=await r.text();
-    if(t&&t.trim().length>10&&!t.trim().startsWith('<!'))return t.trim();
+    if(checkPollinationsBody(t)) return t.trim();
   }catch(e){if(e.message==='429')throw e;}
-  // Try 2: Pollinations POST (OpenAI-compatible)
+  // Try 2: Pollinations POST
   try{
     const r=await fetchTimed('https://text.pollinations.ai/',{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -724,9 +749,9 @@ async function callAIFree(prompt){
     },18000);
     if(r.status===429) throw new Error('429');
     const t=await r.text();
-    if(t&&t.trim().length>10&&!t.trim().startsWith('<!'))return t.trim();
+    if(checkPollinationsBody(t)) return t.trim();
   }catch(e){if(e.message==='429')throw e;}
-  // Try 3: Pollinations fallback model
+  // Try 3: mistral fallback
   try{
     const r=await fetchTimed('https://text.pollinations.ai/',{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -734,7 +759,7 @@ async function callAIFree(prompt){
     },15000);
     if(r.status===429) throw new Error('429');
     const t=await r.text();
-    if(t&&t.trim().length>10&&!t.trim().startsWith('<!'))return t.trim();
+    if(checkPollinationsBody(t)) return t.trim();
   }catch(e){if(e.message==='429')throw e;}
   throw new Error('bad response');
 }
