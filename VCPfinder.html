@@ -309,6 +309,10 @@ body.dark .srt{background:var(--card);}
     <button class="key-save" onclick="saveDs()">儲存</button>
   </div>
   <div class="key-status key-no" id="keyStatus">未設定 Key（使用免費 Pollinations 備援）</div>
+  <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+    <button class="key-save" onclick="genBookmark()" style="width:100%;background:var(--purple);color:#fff;border-color:var(--purple)">📎 產生個人書籤網址（換瀏覽器不用重輸）</button>
+    <div id="bookmarkOut" style="display:none;margin-top:8px;font-size:.72rem;color:var(--text2);word-break:break-all"></div>
+  </div>
 </div>
 
 <!-- ── 每日快訊 ── -->
@@ -649,6 +653,29 @@ function updateKeyStatus(){
 function saveGroq(){
   const v=document.getElementById('groqInput').value.trim();
   if(v){localStorage.setItem('groq_key',v);updateKeyStatus();}
+}
+// ── 書籤網址（把 key 加密藏在 hash，方便換瀏覽器）──
+function genBookmark(){
+  const g=getKey(), d=getDsKey();
+  if(!g&&!d){alert('請先儲存至少一個 API Key');return;}
+  const payload=btoa(JSON.stringify({g,d}));
+  const url=location.origin+location.pathname+'#keys='+payload;
+  const out=document.getElementById('bookmarkOut');
+  out.style.display='block';
+  out.innerHTML=`複製此網址加入書籤，換瀏覽器用這個連結開啟即可自動載入 Key：<br><a href="${url}" style="color:var(--purple)">${url.slice(0,60)}...</a><br><button onclick="navigator.clipboard.writeText('${url}').then(()=>alert('已複製！'))" style="margin-top:4px;padding:2px 8px;border-radius:8px;border:1px solid var(--purple);color:var(--purple);background:transparent;cursor:pointer;font-size:.72rem">📋 複製網址</button>`;
+}
+// ── 從 URL hash 還原 key ──
+function loadKeysFromHash(){
+  const h=location.hash;
+  if(!h.includes('keys=')) return;
+  try{
+    const raw=h.split('keys=')[1];
+    const {g,d}=JSON.parse(atob(raw));
+    if(g) localStorage.setItem('groq_key',g);
+    if(d) localStorage.setItem('deepseek_key',d);
+    history.replaceState(null,'',location.pathname); // hash 用完就清掉
+    updateKeyStatus();
+  }catch(_){}
 }
 function saveDs(){
   const v=document.getElementById('dsInput').value.trim();
@@ -1445,7 +1472,7 @@ function sparkline(closes,w=80,h=28){
 
 // ─── Init ─────────────────────────────────────────────────────────────────
 (function init(){
-
+  loadKeysFromHash();
   updateKeyStatus();
 
   // Restore cache
