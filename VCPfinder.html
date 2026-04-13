@@ -158,7 +158,21 @@ thead th.th-on{color:var(--purple)}
 tbody tr{border-bottom:1px solid #f3f4f6;transition:background .12s}
 tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:#faf5ff}
-tbody td{padding:10px 13px;vertical-align:middle}
+tbody td{padding:10px 13px;vertical-align:top}
+/* ── Column min-widths ── */
+thead th:nth-child(1),tbody td:nth-child(1){min-width:56px}
+thead th:nth-child(10),tbody td:nth-child(10){min-width:120px}
+thead th:nth-child(11),tbody td:nth-child(11){min-width:96px}
+/* ── Fundamental cell ── */
+.fund-cell{font-size:.64rem;line-height:1;min-width:120px}
+.fund-row{display:flex;justify-content:space-between;align-items:center;padding:2px 0;gap:6px;border-bottom:1px solid rgba(0,0,0,.04)}
+.fund-row:last-child{border-bottom:none}
+.fund-lbl{color:var(--text2);flex-shrink:0;width:32px}
+/* ── Chips cell ── */
+.chips-cell{font-size:.64rem;line-height:1;min-width:96px}
+.chips-row{display:flex;justify-content:space-between;align-items:center;padding:2px 0;gap:4px;border-bottom:1px solid rgba(0,0,0,.04)}
+.chips-row:last-child{border-bottom:none}
+.chips-lbl{color:var(--text2);flex-shrink:0;width:24px}
 
 /* ── Table cell styles ── */
 .tc{font-weight:800;color:var(--purple);font-size:.88rem;white-space:nowrap}
@@ -247,6 +261,7 @@ body.dark{
   background:linear-gradient(135deg,#0f0b1a 0%,#1a1025 40%,#0d1f1a 80%,#1a150a 100%) fixed;
 }
 body.dark thead th{background:#150f2a;}
+body.dark .fund-row,body.dark .chips-row{border-bottom-color:rgba(255,255,255,.06);}
 body.dark tbody tr:hover{background:#2a1f4a;}
 body.dark .tbl-wrap{background:var(--card);}
 body.dark .filter-box,body.dark .scan-box,body.dark .sum-card,
@@ -1194,24 +1209,33 @@ async function fetchYahoo(sym){
 
 // ─── Fetch Fundamentals (Yahoo quoteSummary) ──────────────────────────────
 async function fetchFundamentals(sym){
-  const base=`https://query2.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=financialData,defaultKeyStatistics`;
-  for(const px of['https://corsproxy.io/?','https://api.allorigins.win/raw?url=']){
-    try{
-      const r=await fetchTO(px+encodeURIComponent(base),12000);
-      if(!r.ok)continue;
-      const text=await r.text();
-      if(!text||text.trim().startsWith('<'))continue;
-      const json=JSON.parse(text);
-      const fd=json?.quoteSummary?.result?.[0]?.financialData;
-      if(!fd)continue;
-      return{
-        roe:fd.returnOnEquity?.raw??null,
-        grossMargin:fd.grossMargins?.raw??null,
-        operatingMargin:fd.operatingMargins?.raw??null,
-        revenueGrowth:fd.revenueGrowth?.raw??null,
-        earningsGrowth:fd.earningsGrowth?.raw??null,
-      };
-    }catch(_){}
+  const bases=[
+    `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=financialData`,
+    `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=financialData`,
+    `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${sym}?modules=financialData`,
+  ];
+  const proxies=['','https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest='];
+  for(const base of bases){
+    for(const px of proxies){
+      try{
+        const url=px?px+encodeURIComponent(base):base;
+        const r=await fetchTO(url,10000);
+        if(!r.ok)continue;
+        const text=await r.text();
+        if(!text||text.trim().startsWith('<')||text.includes('"code":"Not Found"'))continue;
+        const json=JSON.parse(text);
+        const fd=json?.quoteSummary?.result?.[0]?.financialData;
+        if(!fd)continue;
+        const out={
+          roe:fd.returnOnEquity?.raw??null,
+          grossMargin:fd.grossMargins?.raw??null,
+          operatingMargin:fd.operatingMargins?.raw??null,
+          revenueGrowth:fd.revenueGrowth?.raw??null,
+          earningsGrowth:fd.earningsGrowth?.raw??null,
+        };
+        if(Object.values(out).some(v=>v!=null))return out;
+      }catch(_){}
+    }
   }
   return null;
 }
@@ -1223,27 +1247,47 @@ async function fetchChips(){
     const dt=new Date();dt.setDate(dt.getDate()-back);
     if(dt.getDay()===0||dt.getDay()===6)continue; // skip weekends
     const yyyymmdd=dt.getFullYear()+String(dt.getMonth()+1).padStart(2,'0')+String(dt.getDate()).padStart(2,'0');
-    const base=`https://www.twse.com.tw/rwd/zh/fund/T86?date=${yyyymmdd}&response=json`;
-    for(const px of['https://corsproxy.io/?','https://api.allorigins.win/raw?url=']){
-      try{
-        const r=await fetchTO(px+encodeURIComponent(base),15000);
-        if(!r.ok)continue;
-        const text=await r.text();
-        if(!text||text.trim().startsWith('<'))continue;
-        const json=JSON.parse(text);
-        if(!json.data||!json.data.length)continue;
-        json.data.forEach(row=>{
-          if(!row||row.length<9)return;
-          const code=(row[0]||'').trim();
-          if(!code||!/^\d{4,6}$/.test(code))return;
-          chipsMap[code]={
-            foreignNet:parseChipNum(row[4]),
-            trustNet:parseChipNum(row[7]),
-            dealerNet:parseChipNum(row[8])
-          };
-        });
-        if(Object.keys(chipsMap).length>0)return; // success
-      }catch(_){}
+    // Try old stable endpoint first, then newer RWD endpoint
+    const endpoints=[
+      `https://www.twse.com.tw/fund/T86?response=json&date=${yyyymmdd}&selectType=ALL`,
+      `https://www.twse.com.tw/rwd/zh/fund/T86?date=${yyyymmdd}&response=json`,
+    ];
+    for(const base of endpoints){
+      const proxies=['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest=',''];
+      for(const px of proxies){
+        try{
+          const url=px?px+encodeURIComponent(base):base;
+          const r=await fetchTO(url,15000);
+          if(!r.ok)continue;
+          const text=await r.text();
+          if(!text||text.trim().startsWith('<'))continue;
+          const json=JSON.parse(text);
+          if(!json.data||!json.data.length)continue;
+          // Dynamically detect column positions from fields array
+          const fields=json.fields||[];
+          let fIdx=4,tIdx=7,dIdx=8; // defaults: old simple format
+          if(fields.length>10){
+            // New RWD format has 24+ columns — find by keyword
+            const fi=fields.findIndex(f=>f.includes('外資及陸資')&&f.includes('買賣超')&&!f.includes('自營'));
+            const ti=fields.findIndex(f=>f.includes('投信')&&f.includes('買賣超'));
+            const di=fields.findIndex(f=>f.includes('自營商')&&f.includes('買賣超')&&f.includes('合計'));
+            if(fi>0)fIdx=fi;
+            if(ti>0)tIdx=ti;
+            if(di>0)dIdx=di;
+          }
+          json.data.forEach(row=>{
+            if(!row||row.length<Math.max(fIdx,tIdx,dIdx)+1)return;
+            const code=(row[0]||'').trim();
+            if(!code||!/^\d{4,6}$/.test(code))return;
+            chipsMap[code]={
+              foreignNet:parseChipNum(row[fIdx]),
+              trustNet:parseChipNum(row[tIdx]),
+              dealerNet:parseChipNum(row[dIdx])
+            };
+          });
+          if(Object.keys(chipsMap).length>10)return; // success
+        }catch(_){}
+      }
     }
   }
 }
@@ -1457,17 +1501,20 @@ function renderTable(){
     const techHTML=`<div style="display:flex;flex-direction:column;gap:2px">${atrHTML}${volHTML}</div>`;
     // Fundamental cell
     const fund=r.fund||{};
-    const fundHTML=`<div style="font-size:.63rem;line-height:1.75;white-space:nowrap">
-      <span style="color:var(--text2)">ROE</span> ${fmtROE(fund.roe)}<br>
-      <span style="color:var(--text2)">毛利</span> ${fmtPct2(fund.grossMargin)}<br>
-      <span style="color:var(--text2)">營益</span> ${fmtPct2(fund.operatingMargin)}<br>
-      <span style="color:var(--text2)">EPS增</span> ${fmtPct2(fund.earningsGrowth)}<br>
-      <span style="color:var(--text2)">營收增</span> ${fmtPct2(fund.revenueGrowth)}
+    const fundHTML=`<div class="fund-cell">
+      <div class="fund-row"><span class="fund-lbl">ROE</span>${fmtROE(fund.roe)}</div>
+      <div class="fund-row"><span class="fund-lbl">毛利</span>${fmtPct2(fund.grossMargin)}</div>
+      <div class="fund-row"><span class="fund-lbl">營益</span>${fmtPct2(fund.operatingMargin)}</div>
+      <div class="fund-row"><span class="fund-lbl">EPS增</span>${fmtPct2(fund.earningsGrowth)}</div>
+      <div class="fund-row"><span class="fund-lbl">營收增</span>${fmtPct2(fund.revenueGrowth)}</div>
     </div>`;
     // Chips cell
     const chips=chipsMap[r.code];
     const chipsHTML=chips
-      ?`<div style="font-size:.63rem;line-height:1.9;white-space:nowrap">外資 ${fmtChipN(chips.foreignNet)}<br>投信 ${fmtChipN(chips.trustNet)}</div>`
+      ?`<div class="chips-cell">
+          <div class="chips-row"><span class="chips-lbl">外資</span>${fmtChipN(chips.foreignNet)}</div>
+          <div class="chips-row"><span class="chips-lbl">投信</span>${fmtChipN(chips.trustNet)}</div>
+        </div>`
       :`<span style="color:#d1d5db;font-size:.65rem">—</span>`;
     const spk=sparkline(r.closes||null);
     return `<tr>
