@@ -63,6 +63,7 @@ header p{color:var(--text2);font-size:.82rem;line-height:1.7}
 
 /* ── 每日快訊 ── */
 .news-card{background:var(--card);border-radius:20px;padding:16px 18px;min-height:120px;display:flex;flex-direction:column;box-shadow:0 4px 20px var(--shadow);margin:12px 0 16px}
+@media(max-width:640px){.two-col-row{grid-template-columns:1fr!important}}
 .news-card.trump{border-left:4px solid var(--red)}
 .news-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .news-title{font-size:.8rem;font-weight:800;letter-spacing:.03em;display:flex;align-items:center;gap:5px}
@@ -334,50 +335,56 @@ body.dark .srt{background:var(--card);}
   </div>
 </div>
 
-<!-- ── 每日快訊 ── -->
-<div class="inv-title-row" style="margin-top:6px">
-  <span style="font-size:1rem">🗞️</span>
-  <span class="inv-main-title">市場震撼彈</span>
-  <span style="font-size:.7rem;color:var(--text2)">跟錢有關的才算重要</span>
-</div>
-<div class="news-grid">
-  <div class="news-card trump">
-    <div class="news-head">
-      <div class="news-title t-trump">🌍 川普+戰爭→美股台股衝擊</div>
-      <div style="display:flex;gap:5px">
-        <button class="news-refresh" onclick="loadTrump()">↻ 刷新</button>
-        <button class="news-refresh" id="logicBtn" onclick="loadTrumpLogic()" style="border-color:var(--purple);color:var(--purple)">🧠 底層邏輯</button>
+<!-- ── 市場震撼彈 + 投資人專區 同一 row ── -->
+<div class="two-col-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-top:6px;margin-bottom:12px">
+
+  <!-- 左：市場震撼彈 -->
+  <div>
+    <div class="inv-title-row">
+      <span style="font-size:1rem">🗞️</span>
+      <span class="inv-main-title">市場震撼彈</span>
+      <span style="font-size:.7rem;color:var(--text2)">跟錢有關的才算重要</span>
+    </div>
+    <div class="news-card trump" style="margin:0">
+      <div class="news-head">
+        <div class="news-title t-trump">🌍 川普+戰爭→美股台股衝擊</div>
+        <div style="display:flex;gap:5px">
+          <button class="news-refresh" onclick="loadTrump()">↻ 刷新</button>
+          <button class="news-refresh" id="logicBtn" onclick="loadTrumpLogic()" style="border-color:var(--purple);color:var(--purple)">🧠 底層邏輯</button>
+        </div>
+      </div>
+      <div class="news-body loading" id="trumpBody">載入中...</div>
+      <div class="news-time" id="trumpTime"></div>
+      <!-- 底層邏輯分析區 -->
+      <div id="trumpLogicWrap" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;display:none">
+        <div style="font-size:.68rem;font-weight:800;color:var(--purple);letter-spacing:.05em;margin-bottom:6px">🧠 TRUMP 雙層解碼</div>
+        <div class="news-body loading" id="trumpLogicBody" style="font-size:.77rem"></div>
+        <div class="news-time" id="trumpLogicTime"></div>
       </div>
     </div>
-    <div class="news-body loading" id="trumpBody">載入中...</div>
-    <div class="news-time" id="trumpTime"></div>
-    <!-- 底層邏輯分析區 -->
-    <div id="trumpLogicWrap" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;display:none">
-      <div style="font-size:.68rem;font-weight:800;color:var(--purple);letter-spacing:.05em;margin-bottom:6px">🧠 TRUMP 雙層解碼</div>
-      <div class="news-body loading" id="trumpLogicBody" style="font-size:.77rem"></div>
-      <div class="news-time" id="trumpLogicTime"></div>
+  </div>
+
+  <!-- 右：投資人專區（美林時鐘） -->
+  <div>
+    <div class="inv-title-row">
+      <span style="font-size:1rem">🌟</span>
+      <span class="inv-main-title">投資人專區</span>
+    </div>
+    <div class="inv-card c-clock" style="text-align:center">
+      <div class="inv-head" style="justify-content:center;gap:8px;margin-bottom:10px">
+        <div class="inv-label lbl-clock" style="font-size:.85rem">⏰ 美林投資時鐘</div>
+        <button class="inv-rf" onclick="loadClock()">↻</button>
+      </div>
+      <div id="clockSvg" style="margin:0 auto 12px"></div>
+      <div id="clockPhase" style="margin-bottom:8px">
+        <span class="clock-badge" id="clockBadge" style="background:var(--purple);font-size:.9rem;padding:5px 18px">分析中...</span>
+      </div>
+      <div id="clockAsset" style="font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:6px"></div>
+      <div id="clockSub" style="display:flex;flex-direction:column;gap:4px;align-items:center;font-size:.78rem;color:var(--text2)"></div>
+      <div class="inv-time" id="clockTime" style="margin-top:10px"></div>
     </div>
   </div>
-</div>
 
-<!-- ── 投資人專區 ── -->
-<div class="inv-title-row">
-  <span style="font-size:1rem">🌟</span>
-  <span class="inv-main-title">投資人專區</span>
-</div>
-<!-- 美林投資時鐘 -->
-<div class="inv-card c-clock" style="margin-bottom:12px;text-align:center">
-  <div class="inv-head" style="justify-content:center;gap:8px;margin-bottom:10px">
-    <div class="inv-label lbl-clock" style="font-size:.85rem">⏰ 美林投資時鐘</div>
-    <button class="inv-rf" onclick="loadClock()">↻</button>
-  </div>
-  <div id="clockSvg" style="margin:0 auto 12px"></div>
-  <div id="clockPhase" style="margin-bottom:8px">
-    <span class="clock-badge" id="clockBadge" style="background:var(--purple);font-size:.9rem;padding:5px 18px">分析中...</span>
-  </div>
-  <div id="clockAsset" style="font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:6px"></div>
-  <div id="clockSub" style="display:flex;flex-direction:column;gap:4px;align-items:center;font-size:.78rem;color:var(--text2)"></div>
-  <div class="inv-time" id="clockTime" style="margin-top:10px"></div>
 </div>
 
 
@@ -699,9 +706,9 @@ function loadKeysFromHash(){
   try{
     const raw=h.split('keys=')[1];
     const {g,d,fm}=JSON.parse(atob(raw));
-    if(g) localStorage.setItem('groq_key',g);
-    if(d) localStorage.setItem('deepseek_key',d);
-    if(fm) localStorage.setItem('finmind_token',fm);
+    if(g && !g.startsWith('http') && g.length>10) localStorage.setItem('groq_key',g);
+    if(d && !d.startsWith('http') && d.length>10) localStorage.setItem('deepseek_key',d);
+    if(fm && fm.length>5) localStorage.setItem('finmind_token',fm);
     history.replaceState(null,'',location.pathname); // hash 用完就清掉
     updateKeyStatus();
   }catch(_){}
@@ -926,8 +933,8 @@ async function callAIFree(prompt){
 
 async function callAI(prompt){
   const gk=getKey(), dk=getDsKey();
-  // ── Groq（必須 gsk_ 開頭才是有效格式）──
-  if(gk && gk.startsWith('gsk_')){
+  // ── Groq ──
+  if(gk && gk.length>10 && !gk.startsWith('http')){
     const groqModels=['llama-3.3-70b-versatile','llama-3.1-70b-versatile','llama3-70b-8192','gemma2-9b-it','llama3-8b-8192'];
     for(const model of groqModels){
       try{
@@ -1340,7 +1347,13 @@ function calcVCP(data){
 }
 
 // ─── Fetch ────────────────────────────────────────────────────────────────
-const PROXIES=['','https://corsproxy.io/?'];
+const PROXIES=[
+  'https://corsproxy.io/?',
+  'https://api.allorigins.win/raw?url=',
+  'https://api.codetabs.com/v1/proxy?quest=',
+  'https://corsproxy.io/?',  // retry corsproxy last
+  '',                          // direct (browser CORS 可能擋)
+];
 function fetchTO(url,ms=9000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal}).finally(()=>clearTimeout(t));}
 async function fetchYahoo(sym){
   const base=`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1y&includePrePost=false`;
