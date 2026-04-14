@@ -325,9 +325,12 @@ body.dark .srt{background:var(--card);}
   <div class="key-row">
     <input class="key-input" id="fmInput" type="password" placeholder="FinMind Token（finmindtrade.com 免費申請）→ 籌碼/財報/月營收新高"
       oninput="autoSaveFinMind(this.value)" onpaste="setTimeout(()=>autoSaveFinMind(document.getElementById('fmInput').value),50)">
+    <button class="key-save" onclick="testFinMind()" style="background:#e0f2fe;border-color:#7dd3fc;color:#0369a1">測試</button>
+    <button class="key-save" onclick="localStorage.removeItem('finmind_token');document.getElementById('fmInput').value='';updateKeyStatus();alert('已清除 FinMind Token')" style="background:#fee2e2;border-color:#fca5a5;color:#b91c1c">清除</button>
   </div>
   <div class="key-status key-no" id="keyStatus">未設定 Key（使用免費 Pollinations 備援）</div>
   <div id="testResult" style="display:none;margin-top:6px;font-size:.75rem;padding:6px 10px;border-radius:8px"></div>
+  <div id="fmTestResult" style="display:none;margin-top:6px;font-size:.75rem;padding:6px 10px;border-radius:8px"></div>
   <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
     <button class="key-save" onclick="genBookmark()" style="width:100%;background:var(--purple);color:#fff;border-color:var(--purple)">📎 產生個人書籤網址（換瀏覽器不用重輸）</button>
     <div id="bookmarkOut" style="display:none;margin-top:8px;font-size:.72rem;color:var(--text2);word-break:break-all"></div>
@@ -479,8 +482,7 @@ body.dark .srt{background:var(--card);}
   </div>
   <div class="filter-row" id="secRow">
     <span class="flabel">產業</span>
-    <span class="pill s-on" data-sec="SEMI" onclick="setSec('SEMI',this)">🔴 半導體族群</span>
-    <span class="pill" data-sec="ALL" onclick="setSec('ALL',this)">全部</span>
+    <span class="pill s-on" data-sec="ALL" onclick="setSec('ALL',this)">全部</span>
   </div>
   <div class="filter-row">
     <span class="flabel">其他</span>
@@ -635,7 +637,7 @@ const STOCKS = [
 ];
 
 // ─── State ────────────────────────────────────────────────────────────────
-let allResults=[], scoreMin=80, pctMax=999, secFilter='SEMI', exFilter='ALL';
+let allResults=[], scoreMin=80, pctMax=999, secFilter='ALL', exFilter='ALL';
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
 let scanCancelled=false, scanSrc='all';
@@ -651,13 +653,14 @@ function toggleKeyPanel(){
   if(fm){const el=document.getElementById('fmInput');if(el&&!el.value)el.value=fm;}
   updateKeyStatus();
 }
+function keyHint(k){return k&&k.length>8?`${k.slice(0,6)}…${k.slice(-4)}`:'(太短)';}
 function updateKeyStatus(){
   const s=document.getElementById('keyStatus');
   const g=getKey(), fm=getFinMindToken();
   const parts=[];
-  if(g) parts.push('✅ Groq AI 已設定');
-  if(fm) parts.push('✅ FinMind（籌碼/財報加強）');
-  if(parts.length){s.className='key-status key-ok';s.textContent=parts.join(' · ');}
+  if(g) parts.push(`✅ Groq：${keyHint(g)}`);
+  if(fm) parts.push(`✅ FinMind：${keyHint(fm)}`);
+  if(parts.length){s.className='key-status key-ok';s.innerHTML=parts.join(' · ')+'<br><span style="font-size:.68rem;color:#6b7280">↑ 這是目前儲存的 Key，請確認尾碼對應最新申請</span>';}
   else{s.className='key-status key-no';s.textContent='⚠️ 未設定 Groq Key（使用免費 Pollinations 備援，速度較慢）';}
   const banner=document.getElementById('noKeyBanner');
   if(banner) banner.style.display=g?'none':'block';
@@ -729,6 +732,43 @@ function autoSaveFinMind(v){
   if(v.length>5){localStorage.setItem('finmind_token',v);updateKeyStatus();}
 }
 const getFinMindToken=()=>localStorage.getItem('finmind_token')||'';
+async function testFinMind(){
+  const token=document.getElementById('fmInput').value.trim()||getFinMindToken();
+  const el=document.getElementById('fmTestResult');
+  if(!token){el.style.display='block';el.style.background='#fef3c7';el.textContent='⚠️ 請先輸入 FinMind Token';return;}
+  const hint=token.length>8?`${token.slice(0,6)}…${token.slice(-4)}`:'(太短)';
+  el.style.display='block';el.style.background='#f3f4f6';el.innerHTML=`FinMind 測試中（${hint}）...`;
+  const pad=n=>String(n).padStart(2,'0');
+  // 找最近的交易日（最多往前查7天）
+  let dateStr='';
+  for(let back=1;back<=7;back++){
+    const dt=new Date();dt.setDate(dt.getDate()-back);
+    if(dt.getDay()===0||dt.getDay()===6) continue;
+    dateStr=`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+    break;
+  }
+  const lines=[];
+  // 1. 單支測試（確認 Token 有效）
+  try{
+    const r1=await fetchTO(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&date=${dateStr}&stock_id=2330&token=${token}`,15000);
+    const j1=await r1.json();
+    if(Number(j1.status)===200&&j1.data?.length) lines.push(`✅ 單支測試（2330 ${dateStr}）：${j1.data.length} 筆 — Token 有效`);
+    else if(Number(j1.status)===401||Number(j1.status)===403) {lines.push(`❌ Token 驗證失敗（status=${j1.status} msg=${j1.msg||''}）`);el.style.background='#fee2e2';el.innerHTML=lines.join('<br>');return;}
+    else lines.push(`⚠️ 單支 status=${j1.status} data=${j1.data?.length??0} msg=${j1.msg||''}`);
+  }catch(e){lines.push(`❌ 單支連線失敗：${e.message}`);}
+  // 2. Bulk 測試（全市場，這是實際掃描用的 API call）
+  try{
+    el.innerHTML=lines.join('<br>')+'<br>全市場 Bulk 測試中...';
+    const r2=await fetchTO(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&date=${dateStr}&token=${token}`,25000);
+    const j2=await r2.json();
+    if(Number(j2.status)===200&&j2.data?.length>10) lines.push(`✅ Bulk 全市場 ${dateStr}：${j2.data.length} 筆 — 籌碼可正常載入`);
+    else if(Number(j2.status)===200&&(j2.data?.length??0)<=10) lines.push(`⚠️ Bulk 回傳 ${j2.data?.length??0} 筆（太少）— 免費帳號可能無法 bulk 抓全市場`);
+    else lines.push(`⚠️ Bulk status=${j2.status} msg=${j2.msg||'無'} data=${j2.data?.length??0}`);
+  }catch(e){lines.push(`❌ Bulk 連線失敗：${e.message}`);}
+  const ok=lines.every(l=>l.startsWith('✅'));
+  el.style.background=ok?'#dcfce7':lines.some(l=>l.startsWith('❌'))?'#fee2e2':'#fef3c7';
+  el.innerHTML=lines.join('<br>');
+}
 
 // ─── FinMind: 籌碼（外資/投信）────────────────────────────────────────────────
 async function fetchChipsFinMind(dateStr){
@@ -1450,10 +1490,11 @@ async function fetchChips(){
   // ── FinMind 優先 ──
   if(getFinMindToken()){
     if(infoEl) infoEl.textContent='取得籌碼（FinMind）...';
-    for(let back=0;back<5;back++){
+    const pad=n=>String(n).padStart(2,'0');
+    for(let back=0;back<7;back++){
       const dt=new Date();dt.setDate(dt.getDate()-back);
-      if(dt.getDay()===0||dt.getDay()===6) continue;
-      const dateStr=dt.toISOString().slice(0,10);
+      if(dt.getDay()===0||dt.getDay()===6) continue; // 用本地時間判斷週末
+      const dateStr=`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`; // 本地日期，不用 UTC
       const result=await fetchChipsFinMind(dateStr);
       if(result&&Object.keys(result).length>10){
         chipsMap=result;
@@ -1590,7 +1631,7 @@ async function startScan(){
   // Rebuild sector filter pills
   const secs=[...new Set(stocks.map(s=>s.sector))].sort();
   const secRow=document.getElementById('secRow');
-  secRow.querySelectorAll('[data-sec]:not([data-sec="ALL"]):not([data-sec="SEMI"])').forEach(p=>p.remove());
+  secRow.querySelectorAll('[data-sec]:not([data-sec="ALL"])').forEach(p=>p.remove());
   secs.forEach(s=>{const p=document.createElement('span');p.className='pill';p.dataset.sec=s;p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);});
 
   const BATCH=scanSrc==='preset'?4:6;
@@ -1712,21 +1753,36 @@ function calcFundScore(fund, revHigh){
   if(tot===0) return null;
   return Math.round(pts/tot*100);
 }
-function calcChipsScore(chips){
+function calcFundGrade(fund, revHigh){
+  if(!fund||Object.keys(fund).length===0) return null;
+  let pts=0, tot=0;
+  if(fund.roe!=null){tot+=30; pts+=fund.roe>=0.15?30:fund.roe>=0.08?18:fund.roe>=0?8:0;}
+  if(fund.grossMargin!=null){tot+=15; pts+=fund.grossMargin>=0.3?15:fund.grossMargin>=0.15?8:fund.grossMargin>0?4:0;}
+  if(fund.operatingMargin!=null){tot+=15; pts+=fund.operatingMargin>=0.15?15:fund.operatingMargin>=0.08?8:fund.operatingMargin>0?4:0;}
+  if(fund.earningsGrowth!=null){tot+=20; pts+=fund.earningsGrowth>=0.15?20:fund.earningsGrowth>=0?10:0;}
+  if(fund.revenueGrowth!=null){tot+=15; pts+=fund.revenueGrowth>=0.1?15:fund.revenueGrowth>=0?7:0;}
+  if(revHigh!=null){tot+=5; pts+=revHigh?5:0;}
+  if(tot===0) return null;
+  const score=Math.round(pts/tot*100);
+  return score>=70?{label:'優',cls:'sA',score}:score>=45?{label:'中',cls:'sB',score}:{label:'弱',cls:'sC',score};
+}
+function chipsLabel(chips){
   if(!chips) return null;
   const f=parseChipNum(chips.foreignNet)||0;
   const tr=parseChipNum(chips.trustNet)||0;
-  // 正數買超加分，負數賣超扣分，以千張為單位
-  const fPts=Math.min(50,Math.max(0,25+f/200));   // 外資：±25 中性，每200千股 ±1分，上限50
-  const tPts=Math.min(50,Math.max(0,25+tr/50));    // 投信：±25 中性，每50千股 ±1分，上限50
-  return Math.round(fPts+tPts);
+  const fPos=f>0, trPos=tr>0;
+  let label,cls;
+  if(fPos&&trPos){label='雙買';cls='sA';}
+  else if(!fPos&&!trPos){label='雙賣';cls='sC';}
+  else if(fPos){label='外資↑';cls='sB';}
+  else{label='投信↑';cls='sB';}
+  return{label,cls,f,tr};
 }
 function scoreClass(s){if(s==null)return'sN';return s>=65?'sA':s>=40?'sB':'sC';}
-function scoreBadge(score, id, detailHTML){
-  if(score==null) return `<span style="color:#d1d5db;font-size:.65rem">—</span>`;
-  const cls=scoreClass(score);
+function scoreBadge(label, cls, detailHTML){
+  if(!label) return `<span style="color:#d1d5db;font-size:.65rem">—</span>`;
   return `<div>
-    <span class="score-badge ${cls}" onclick="var d=this.nextElementSibling;d.classList.toggle('open')">${score}<span style="font-size:.6rem;margin-left:2px">▾</span></span>
+    <span class="score-badge ${cls}" onclick="var d=this.nextElementSibling;d.classList.toggle('open')">${label}<span style="font-size:.6rem;margin-left:2px">▾</span></span>
     <div class="score-detail">${detailHTML}</div>
   </div>`;
 }
@@ -1771,7 +1827,7 @@ function renderTable(){
     // Fundamental score badge
     const fund=r.fund||{};
     const revHigh=revenueHighMap[r.code];
-    const fundScore=calcFundScore(fund,revHigh);
+    const fg=calcFundGrade(fund,revHigh);
     const fundDetail=[
       fund.roe!=null?`<div class="fund-row"><span class="fund-lbl">ROE</span>${fmtROE(fund.roe)}</div>`:'',
       fund.grossMargin!=null?`<div class="fund-row"><span class="fund-lbl">毛利</span>${fmtPct2(fund.grossMargin)}</div>`:'',
@@ -1780,20 +1836,21 @@ function renderTable(){
       fund.revenueGrowth!=null?`<div class="fund-row"><span class="fund-lbl">營收↑</span>${fmtPct2(fund.revenueGrowth)}</div>`:'',
       revHigh!=null?`<div class="fund-row"><span class="fund-lbl">月營</span><span class="sig ${revHigh?'sig-g':'sig-n'}">${revHigh?'🔥新高':'普通'}</span></div>`:'',
     ].filter(Boolean).join('');
-    const fundHTML=scoreBadge(fundScore,'fund_'+r.code,fundDetail||'<span style="color:#9ca3af">資料取得中</span>');
-    // Chips score badge
+    const fundLabel=fg?`${fg.label} ${fg.score}`:null;
+    const fundHTML=scoreBadge(fundLabel,fg?.cls||'sN',fundDetail||'<span style="color:#9ca3af">無財報資料</span>');
+    // Chips badge
     const chips=chipsMap[r.code];
-    const chipsScore=calcChipsScore(chips);
+    const cl=chipsLabel(chips);
     const chipsDetail=chips?[
       `<div class="chips-row"><span class="chips-lbl">外資</span>${fmtChipN(chips.foreignNet)}</div>`,
       `<div class="chips-row"><span class="chips-lbl">投信</span>${fmtChipN(chips.trustNet)}</div>`,
     ].join(''):'';
-    const chipsHTML=scoreBadge(chipsScore,'chips_'+r.code,chipsDetail||'<span style="color:#9ca3af">—</span>');
+    const chipsHTML=scoreBadge(cl?.label||null,cl?.cls||'sN',chipsDetail||'<span style="color:#9ca3af">—</span>');
     const spk=sparkline(r.closes||null);
     return `<tr>
       <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
       <td class="tn">${r.name}</td>
-      <td><span class="tsec">${r.sector}</span></td>
+      <td><span style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span><span class="tsec">${r.sector}</span></td>
       <td class="tprice">NT$${fmtP(v.price)}</td>
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
       <td><div class="ma-row">${maHTML||'—'}</div></td>
