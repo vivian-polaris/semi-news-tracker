@@ -820,14 +820,22 @@ async function fetchMonthRevenueHigh(stockId){
 async function prefetchAllFundamentals(){
   const token=getFinMindToken();
   if(!token) return;
+  const infoEl=document.getElementById('fetchApiStatus');
   const since=new Date();since.setFullYear(since.getFullYear()-2);
   const dateStr=since.toISOString().slice(0,10);
   const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockFinancialStatements&date=${dateStr}&token=${token}`;
   try{
-    const r=await fetchTO(url,90000); // 大資料需要較長 timeout
-    if(!r.ok) return;
+    if(infoEl) infoEl.textContent='📊 FinMind 財報下載中（可能需 30 秒）...';
+    const r=await fetchTO(url,60000);
+    if(!r.ok){
+      if(infoEl) infoEl.textContent=`⚠️ FinMind 財報失敗（HTTP ${r.status}），將用 Yahoo 備援`;
+      return;
+    }
     const json=await r.json();
-    if(json.status!==200||!json.data?.length) return;
+    if(Number(json.status)!==200||!json.data?.length){
+      if(infoEl) infoEl.textContent=`⚠️ FinMind 財報無資料（狀態:${json.status} msg:${json.msg||'?'}），將用 Yahoo 備援`;
+      return;
+    }
     // 按股票代號分組
     const byStock={};
     json.data.forEach(row=>{
@@ -838,7 +846,6 @@ async function prefetchAllFundamentals(){
       if(!byStock[code][t]) byStock[code][t]=[];
       byStock[code][t].push({date:row.date,value:Number(row.value)});
     });
-    // 每支股票計算財報指標
     Object.entries(byStock).forEach(([code,byType])=>{
       Object.values(byType).forEach(arr=>arr.sort((a,b)=>b.date.localeCompare(a.date)));
       const get=(keys,idx=0)=>{for(const k of keys){if(byType[k]?.[idx]?.value!=null)return byType[k][idx].value;}return null;};
@@ -856,22 +863,32 @@ async function prefetchAllFundamentals(){
         earningsGrowth:(eps!=null&&epsPrev!=null&&epsPrev!==0)?(eps-epsPrev)/Math.abs(epsPrev):null,
       };
     });
-  }catch(_){}
+    if(infoEl) infoEl.textContent=`✅ FinMind 財報完成（${Object.keys(fundamentalsMap).length} 支）`;
+  }catch(e){
+    if(infoEl) infoEl.textContent=`⚠️ FinMind 財報連線失敗：${e.message}`;
+  }
 }
 
 // ─── FinMind: 批次預取全市場月營收（一次 API call，不限支數）──────────────────────
 async function prefetchAllRevenue(){
   const token=getFinMindToken();
   if(!token) return;
+  const infoEl=document.getElementById('fetchApiStatus');
   const since=new Date();since.setMonth(since.getMonth()-25);
   const dateStr=since.toISOString().slice(0,10);
   const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMonthRevenue&date=${dateStr}&token=${token}`;
   try{
-    const r=await fetchTO(url,90000);
-    if(!r.ok) return;
+    if(infoEl) infoEl.textContent='📈 FinMind 月營收下載中...';
+    const r=await fetchTO(url,60000);
+    if(!r.ok){
+      if(infoEl) infoEl.textContent=`⚠️ FinMind 月營收失敗（HTTP ${r.status}）`;
+      return;
+    }
     const json=await r.json();
-    if(json.status!==200||!json.data?.length) return;
-    // 按股票代號分組
+    if(Number(json.status)!==200||!json.data?.length){
+      if(infoEl) infoEl.textContent=`⚠️ FinMind 月營收無資料（${json.msg||json.status}）`;
+      return;
+    }
     const byStock={};
     json.data.forEach(row=>{
       const code=String(row.stock_id||'').trim();
@@ -879,7 +896,6 @@ async function prefetchAllRevenue(){
       if(!byStock[code]) byStock[code]=[];
       byStock[code].push({date:row.date,revenue:Number(row.revenue)});
     });
-    // 判斷每支是否月營收 2 年新高
     Object.entries(byStock).forEach(([code,rows])=>{
       rows.sort((a,b)=>b.date.localeCompare(a.date));
       if(rows.length<2) return;
@@ -887,7 +903,10 @@ async function prefetchAllRevenue(){
       const max=Math.max(...rows.map(r=>r.revenue));
       revenueHighMap[code]=latest>=max*0.98;
     });
-  }catch(_){}
+    if(infoEl) infoEl.textContent=`✅ FinMind 月營收完成（${Object.keys(revenueHighMap).length} 支）`;
+  }catch(e){
+    if(infoEl) infoEl.textContent=`⚠️ FinMind 月營收連線失敗：${e.message}`;
+  }
 }
 
 // ─── AI Calls ─────────────────────────────────────────────────────────────
@@ -1196,20 +1215,20 @@ async function fetchJsonCORS(targetUrl, label){
   for(let i=0;i<urls.length;i++){
     const u=urls[i];
     const tag=i===0?'直連':`Proxy${i}`;
-    if(infoEl) infoEl.textContent=`取得 ${label} 中（嘗試 ${tag}）...`;
+    if(infoEl) infoEl.textContent=`取得 ${label} 中（${tag}）...`;
     try{
-      const r=await fetchTO(u,18000);
+      const r=await fetchTO(u,7000); // 7秒 timeout，4個proxy最多 28秒
       if(!r.ok) continue;
       const text=await r.text();
-      if(!text||text.trim().startsWith('<')) continue;  // got HTML error page
+      if(!text||text.trim().startsWith('<')) continue;
       const data=JSON.parse(text);
       if(Array.isArray(data)&&data.length>0){
-        if(infoEl) infoEl.textContent=`✅ ${label} 取得成功（${tag}，${data.length} 筆）`;
+        if(infoEl) infoEl.textContent=`✅ ${label} 取得成功（${data.length} 筆）`;
         return data;
       }
     }catch(_){}
   }
-  if(infoEl) infoEl.textContent=`⚠️ ${label} 所有方法均失敗，改用內建清單`;
+  if(infoEl) infoEl.textContent=`⚠️ ${label} API 失敗，改用內建清單`;
   return null;
 }
 
