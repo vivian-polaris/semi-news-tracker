@@ -311,17 +311,12 @@ body.dark .srt{background:var(--card);}
 
 <!-- ── Key Panel ── -->
 <div class="key-panel" id="keyPanel">
-  <p>設定 <a href="https://console.groq.com" target="_blank">Groq API Key</a>（免費，每日限額），享 AI 快訊摘要。
-  也可設定 <a href="https://platform.deepseek.com" target="_blank">DeepSeek Key</a> 作備援。<br>
+  <p>設定 <a href="https://console.groq.com" target="_blank">Groq API Key</a>（免費，每日額度充足），享 AI 快訊摘要。<br>
   <a href="https://finmindtrade.com" target="_blank">FinMind Token</a>（免費）可大幅提升籌碼 / 財報 / 月營收資料穩定性。</p>
   <div class="key-row">
     <input class="key-input" id="groqInput" type="password" placeholder="Groq API Key（gsk_...）輸入後自動儲存"
       oninput="autoSaveGroq(this.value)" onpaste="setTimeout(()=>autoSaveGroq(document.getElementById('groqInput').value),50)">
     <button class="key-save" onclick="testGroq()" style="background:#e0f2fe;border-color:#7dd3fc;color:#0369a1">測試</button>
-  </div>
-  <div class="key-row">
-    <input class="key-input" id="dsInput" type="password" placeholder="DeepSeek API Key（sk-...）輸入後自動儲存"
-      oninput="autoSaveDs(this.value)" onpaste="setTimeout(()=>autoSaveDs(document.getElementById('dsInput').value),50)">
   </div>
   <div class="key-row">
     <input class="key-input" id="fmInput" type="password" placeholder="FinMind Token（finmindtrade.com 免費申請）→ 籌碼/財報/月營收新高"
@@ -639,24 +634,21 @@ const getKey=()=>localStorage.getItem('groq_key')||'';
 const getDsKey=()=>localStorage.getItem('deepseek_key')||'';
 function toggleKeyPanel(){
   document.getElementById('keyPanel').classList.toggle('show');
-  const g=getKey(),d=getDsKey(),fm=getFinMindToken();
+  const g=getKey(),fm=getFinMindToken();
   if(g){const el=document.getElementById('groqInput');if(!el.value)el.value=g;}
-  if(d){const el=document.getElementById('dsInput');if(!el.value)el.value=d;}
   if(fm){const el=document.getElementById('fmInput');if(el&&!el.value)el.value=fm;}
   updateKeyStatus();
 }
 function updateKeyStatus(){
   const s=document.getElementById('keyStatus');
-  const g=getKey(), d=getDsKey(), fm=getFinMindToken();
-  const aiOk=g||d;
-  const aiText=g&&d?'Groq+DeepSeek':g?'Groq':d?'DeepSeek':'';
+  const g=getKey(), fm=getFinMindToken();
   const parts=[];
-  if(aiOk) parts.push('✅ AI:'+aiText);
+  if(g) parts.push('✅ Groq AI 已設定');
   if(fm) parts.push('✅ FinMind（籌碼/財報加強）');
   if(parts.length){s.className='key-status key-ok';s.textContent=parts.join(' · ');}
-  else{s.className='key-status key-no';s.textContent='⚠️ 未設定 Key（使用免費 Pollinations 備援，速度較慢）';}
+  else{s.className='key-status key-no';s.textContent='⚠️ 未設定 Groq Key（使用免費 Pollinations 備援，速度較慢）';}
   const banner=document.getElementById('noKeyBanner');
-  if(banner) banner.style.display=aiOk?'none':'block';
+  if(banner) banner.style.display=g?'none':'block';
 }
 function saveGroq(){
   const v=document.getElementById('groqInput').value.trim();
@@ -665,10 +657,6 @@ function saveGroq(){
 function autoSaveGroq(v){
   v=v.trim();
   if(v.length>10){localStorage.setItem('groq_key',v);updateKeyStatus();}
-}
-function autoSaveDs(v){
-  v=v.trim();
-  if(v.length>10){localStorage.setItem('deepseek_key',v);updateKeyStatus();}
 }
 async function testGroq(){
   const k=document.getElementById('groqInput').value.trim()||getKey();
@@ -689,10 +677,10 @@ async function testGroq(){
 }
 // ── 書籤網址（把 key 加密藏在 hash，方便換瀏覽器）──
 function genBookmark(){
-  const g=getKey(), d=getDsKey();
-  if(!g&&!d){alert('請先儲存至少一個 API Key');return;}
+  const g=getKey();
+  if(!g){alert('請先儲存 Groq API Key');return;}
   const fm=getFinMindToken();
-  const payload=btoa(JSON.stringify({g,d,fm}));
+  const payload=btoa(JSON.stringify({g,fm}));
   const url=location.origin+location.pathname+'#keys='+payload;
   const out=document.getElementById('bookmarkOut');
   out.style.display='block';
@@ -704,17 +692,13 @@ function loadKeysFromHash(){
   if(!h.includes('keys=')) return;
   try{
     const raw=h.split('keys=')[1];
-    const {g,d,fm}=JSON.parse(atob(raw));
+    const {g,fm}=JSON.parse(atob(raw));
     if(g && !g.startsWith('http') && g.length>10) localStorage.setItem('groq_key',g);
-    if(d && !d.startsWith('http') && d.length>10) localStorage.setItem('deepseek_key',d);
     if(fm && fm.length>5) localStorage.setItem('finmind_token',fm);
+    localStorage.removeItem('deepseek_key'); // 清除舊的 DeepSeek key
     history.replaceState(null,'',location.pathname); // hash 用完就清掉
     updateKeyStatus();
   }catch(_){}
-}
-function saveDs(){
-  const v=document.getElementById('dsInput').value.trim();
-  if(v){localStorage.setItem('deepseek_key',v);updateKeyStatus();}
 }
 function autoSaveFinMind(v){
   v=v.trim();
@@ -942,7 +926,7 @@ async function callAIFree(prompt){
 }
 
 async function callAI(prompt){
-  const gk=getKey(), dk=getDsKey();
+  const gk=getKey();
   // ── Groq ──
   if(gk && gk.length>10 && !gk.startsWith('http')){
     const groqModels=['llama-3.3-70b-versatile','llama-3.1-70b-versatile','llama3-70b-8192','gemma2-9b-it','llama3-8b-8192'];
@@ -953,29 +937,18 @@ async function callAI(prompt){
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk},
           body:JSON.stringify({messages:[{role:'user',content:prompt}],model,max_tokens:500,temperature:0.7})
         },20000);
-        if(r.status===429) break; // 超額，fall through 試 DeepSeek
-        if(r.status===401||r.status===403) break; // key 無效，fall through
+        if(r.status===429) return '⚠️ Groq 速率限制（每分鐘有上限），請稍等 30 秒後點 ↻ 重試';
+        if(r.status===401||r.status===403) return '❌ Groq Key 無效，請到 ⚙️ 重新貼上正確的 Key';
         if(r.status===400||r.status===404) continue;
         if(r.ok){const j=await r.json();const t=j.choices?.[0]?.message?.content||'';if(t.trim().length>10)return t.trim();}
       }catch(_){}
     }
   }
-  // ── DeepSeek ──
-  if(dk){
-    try{
-      const r=await fetchTimed('https://api.deepseek.com/v1/chat/completions',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+dk},
-        body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'deepseek-chat',max_tokens:500,temperature:0.7})
-      },20000);
-      if(r.ok){const j=await r.json();const t=j.choices?.[0]?.message?.content||'';if(t.trim().length>10)return t.trim();}
-    }catch(_){}
-  }
-  // ── Pollinations 免費備援 ──
+  // ── Pollinations 免費備援（無 Groq key 時） ──
   try{return await callAIFree(prompt);}catch(e){
-    if(e.message&&e.message.includes('429')) return '⚠️ 免費 AI 流量暫時達上限，請在 ⚙️ 確認 Groq Key 已正確設定，或稍後再試';
+    if(e.message&&e.message.includes('429')) return '⚠️ 免費 AI 已達上限，請到 ⚙️ 設定 Groq Key（console.groq.com 免費申請）';
   }
-  return '⚠️ AI 暫時無法回應，請點 ↻ 重整';
+  return '⚠️ AI 暫時無法回應，請點 ↻ 重試';
 }
 
 // ─── RSS fetch（多個 proxy 輪流試）─────────────────────────────────────────
@@ -1884,6 +1857,7 @@ function sparkline(closes,w=80,h=28){
 
 // ─── Init ─────────────────────────────────────────────────────────────────
 (function init(){
+  localStorage.removeItem('deepseek_key'); // 移除已停用的 DeepSeek key
   loadKeysFromHash();
   updateKeyStatus();
 
