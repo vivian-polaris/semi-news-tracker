@@ -294,7 +294,7 @@ body.dark .srt{background:var(--card);}
 
 <!-- ── No-Key Warning Banner ── -->
 <div id="noKeyBanner" style="display:none;background:#fef2f2;border-bottom:2px solid #fca5a5;padding:8px 16px;font-size:.78rem;color:#b91c1c;text-align:center">
-  ⚠️ 未設定 Groq API Key，AI 快訊功能受限。請點右上角 <strong>⚙️ API Key</strong>，貼上你的 Key（<a href="https://console.groq.com" target="_blank" style="color:#b91c1c;text-decoration:underline">免費申請</a>），輸入即自動儲存。
+  ⚠️ 未設定 Groq API Key，AI 快訊功能受限。請點右上角 <strong>⚙️ API Key</strong>，貼上你的 Key（到 <a href="https://console.groq.com" target="_blank" style="color:#b91c1c;text-decoration:underline">console.groq.com</a> 免費申請），輸入後自動儲存。
   <button onclick="document.getElementById('noKeyBanner').style.display='none'" style="margin-left:12px;background:transparent;border:none;color:#b91c1c;cursor:pointer;font-size:.8rem">✕</button>
 </div>
 
@@ -460,10 +460,10 @@ body.dark .srt{background:var(--card);}
   <div class="filter-row" id="scoreRow">
     <span class="flabel">VCP 分數</span>
     <span class="pill" onclick="setScore(0,this)">全部</span>
-    <span class="pill f-on" onclick="setScore(40,this)">≥ 40 VCP初步</span>
+    <span class="pill" onclick="setScore(40,this)">≥ 40 VCP初步</span>
     <span class="pill" onclick="setScore(60,this)">≥ 60 候選 🌸</span>
     <span class="pill" onclick="setScore(70,this)">≥ 70</span>
-    <span class="pill" onclick="setScore(80,this)">≥ 80 強力 ⭐</span>
+    <span class="pill f-on" onclick="setScore(80,this)">≥ 80 強力 ⭐</span>
   </div>
   <div class="filter-row" id="pctRow">
     <span class="flabel">距高點</span>
@@ -630,7 +630,7 @@ const STOCKS = [
 ];
 
 // ─── State ────────────────────────────────────────────────────────────────
-let allResults=[], scoreMin=40, pctMax=999, secFilter='ALL';
+let allResults=[], scoreMin=80, pctMax=999, secFilter='ALL';
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
@@ -886,6 +886,17 @@ async function prefetchAllRevenue(){
 }
 
 // ─── AI Calls ─────────────────────────────────────────────────────────────
+function stripMd(s){
+  return s
+    .replace(/```[\s\S]*?```/g,'')       // 去掉 code block
+    .replace(/`([^`]+)`/g,'$1')          // inline code → 純文字
+    .replace(/\*\*([^*]+)\*\*/g,'$1')    // **bold** → 純文字
+    .replace(/\*([^*]+)\*/g,'$1')        // *italic* → 純文字
+    .replace(/^#+\s*/gm,'')              // ## 標題 → 無符號
+    .replace(/^>\s*/gm,'')              // blockquote
+    .replace(/\n{3,}/g,'\n\n')           // 多餘空行
+    .trim();
+}
 function fetchTimed(url, opts, ms=25000){
   const c=new AbortController(); const t=setTimeout(()=>c.abort(),ms);
   return fetch(url,{...opts,signal:c.signal}).finally(()=>clearTimeout(t));
@@ -963,7 +974,7 @@ async function callAI(prompt){
   }
   // ── Pollinations 免費備援 ──
   try{return await callAIFree(prompt);}catch(e){
-    if(e.message&&e.message.includes('429')) return '⚠️ 免費 AI 流量已滿，建議在 ⚙️ 設定 Groq Key（gsk_...）';
+    if(e.message&&e.message.includes('429')) return '⚠️ 免費 AI 流量暫時達上限，請在 ⚙️ 確認 Groq Key 已正確設定，或稍後再試';
   }
   return '⚠️ AI 暫時無法回應，請點 ↻ 重整';
 }
@@ -1004,8 +1015,9 @@ async function loadTrump(){
   const items=[...a,...c,...d].slice(0,15);
   b.textContent='AI 分析中...';
   const today=new Date().toLocaleDateString('zh-TW');
+  const sysNote='【輸出規則】純文字，禁止使用 markdown、代碼塊、星號、#號。';
   const prompt=items.length
-    ? `今天${today}。你是股市分析師，定義「重要」＝跟錢有關、會讓股票漲跌。以下是最新新聞，繁體中文，人名機構用英文。分析格式（每條「・」開頭，共200字內）：
+    ? `今天${today}。${sysNote}你是股市分析師，定義「重要」＝跟錢有關、會讓股票漲跌。以下是最新新聞，繁體中文，人名機構用英文。分析格式（每條「・」開頭，共200字內）：
 
 【Trump動向→美股影響】
 ・具體政策或聲明+受影響sector（Nvidia/AMD/半導體/石油等）+估計漲跌%
@@ -1018,7 +1030,7 @@ async function loadTrump(){
 ・上述事件對TSMC/台灣半導體/台幣的直接影響+外資動向
 
 禁止：「局勢緊張」「持續關注」「值得觀察」。必須給數字。\n\n`+items.map((x,i)=>`${i+1}. ${x.title}`).join('\n')
-    : `今天${today}。你是股市分析師，定義「重要」＝跟錢有關、會讓股票漲跌。繁體中文，人名機構用英文。分析格式（每條「・」開頭，共200字內）：
+    : `今天${today}。${sysNote}你是股市分析師，定義「重要」＝跟錢有關、會讓股票漲跌。繁體中文，人名機構用英文。分析格式（每條「・」開頭，共200字內）：
 
 【Trump動向→美股影響】
 ・Trump最新關稅/政策+受影響sector（Nvidia/AMD/半導體/石油等）+估計漲跌%
@@ -1031,7 +1043,7 @@ async function loadTrump(){
 
 禁止：「局勢緊張」「持續關注」。必須給數字。`;
   const res=await callAI(prompt);
-  b.className='news-body'; b.textContent=res;
+  b.className='news-body'; b.textContent=stripMd(res);
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
@@ -1048,7 +1060,7 @@ async function loadTrumpLogic(){
   const items=await fetchRSS('Trump tariff policy trade war 2025').catch(()=>[]);
   const today=new Date().toLocaleDateString('zh-TW');
   const newsCtx=items.length?'\n\n最新事件背景：\n'+items.slice(0,8).map((x,i)=>`${i+1}. ${x.title}`).join('\n'):'';
-  const prompt=`今天${today}。你是政治經濟學家，專門拆解Trump的雙層策略。用繁體中文，精煉有力，禁止廢話。${newsCtx}
+  const prompt=`今天${today}。【輸出規則】純文字，禁止 markdown、代碼塊、星號、#號。你是政治經濟學家，專門拆解Trump的雙層策略。用繁體中文，精煉有力，禁止廢話。${newsCtx}
 
 嚴格按以下格式輸出，總字數控制在250字內：
 
@@ -1066,7 +1078,7 @@ async function loadTrumpLogic(){
 
 禁止：空泛描述、「可能」「或許」，必須有具體數字或名稱。`;
   const res=await callAI(prompt);
-  b.className='news-body'; b.textContent=res;
+  b.className='news-body'; b.textContent=stripMd(res);
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
   btn.disabled=false; btn.textContent='🧠 底層邏輯';
 }
@@ -1126,14 +1138,15 @@ async function loadClock(){
   badge.textContent='分析中...'; badge.style.background='var(--border)';
   asset.textContent=''; sub.innerHTML='';
   const today=new Date().toISOString().slice(0,10);
-  const prompt=`今天${today}。你是投資老師，用最口語的繁體中文跟學生解釋美林投資時鐘。
+  const prompt=`今天${today}。【輸出規則】純文字，禁止 markdown、代碼塊、星號、#號。你是投資老師，用最口語的繁體中文跟學生解釋美林投資時鐘。
 
 嚴格按以下格式輸出，每行一項，不要多餘說明：
 象限：復甦／過熱／滯脹／再膨脹（只填一個）
 一句話：用一句大白話說現在的經濟狀況（例：Fed 還在降息、通膨降溫、景氣慢慢好轉）
 錢放哪：最適合放的資產，說明為何（30字內）
 台股怎辦：現在台股該積極還是保守，一句話說清楚`;
-  const res=await callAI(prompt);
+  const raw=await callAI(prompt);
+  const res=stripMd(raw);
 
   // Parse phase
   let activePhase=null;
