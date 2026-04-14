@@ -375,13 +375,12 @@ body.dark .srt{background:var(--card);}
         <div class="inv-label lbl-clock" style="font-size:.85rem">⏰ 美林投資時鐘</div>
         <button class="inv-rf" onclick="loadClock()">↻</button>
       </div>
-      <div id="clockSvg" style="margin:0 auto 12px"></div>
-      <div id="clockPhase" style="margin-bottom:8px">
+      <div id="clockSvg" style="margin:0 auto 8px"></div>
+      <div id="clockPhase" style="margin-bottom:10px">
         <span class="clock-badge" id="clockBadge" style="background:var(--purple);font-size:.9rem;padding:5px 18px">分析中...</span>
       </div>
-      <div id="clockAsset" style="font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:6px"></div>
-      <div id="clockSub" style="display:flex;flex-direction:column;gap:4px;align-items:center;font-size:.78rem;color:var(--text2)"></div>
-      <div class="inv-time" id="clockTime" style="margin-top:10px"></div>
+      <div id="clockBody" style="text-align:left;font-size:.8rem;line-height:1.75;color:var(--text);white-space:pre-wrap;background:var(--tag);border-radius:12px;padding:12px 14px;margin-top:2px;min-height:60px"></div>
+      <div class="inv-time" id="clockTime" style="margin-top:8px"></div>
     </div>
   </div>
 
@@ -1131,51 +1130,46 @@ function drawClock(activePhase){
 async function loadClock(){
   const svgEl=document.getElementById('clockSvg');
   const badge=document.getElementById('clockBadge');
-  const asset=document.getElementById('clockAsset');
-  const sub=document.getElementById('clockSub');
+  const body=document.getElementById('clockBody');
   const t=document.getElementById('clockTime');
   svgEl.innerHTML=drawClock(null);
   badge.textContent='分析中...'; badge.style.background='var(--border)';
-  asset.textContent=''; sub.innerHTML='';
+  body.textContent='AI 分析中...';
   const today=new Date().toISOString().slice(0,10);
-  const prompt=`今天${today}。【輸出規則】純文字，禁止 markdown、代碼塊、星號、#號。你是投資老師，用最口語的繁體中文跟學生解釋美林投資時鐘。
+  const prompt=`今天${today}。純文字輸出，禁止任何 markdown 符號、星號、井號、代碼塊。
 
-嚴格按以下格式輸出，每行一項，不要多餘說明：
-象限：復甦／過熱／滯脹／再膨脹（只填一個）
-一句話：用一句大白話說現在的經濟狀況（例：Fed 還在降息、通膨降溫、景氣慢慢好轉）
-錢放哪：最適合放的資產，說明為何（30字內）
-台股怎辦：現在台股該積極還是保守，一句話說清楚`;
+你是投資老師，根據當前全球總體經濟（Fed 利率走向、通膨、景氣強弱），判斷美林投資時鐘現在走到哪個象限，用口語繁體中文給投資人建議。
+
+第一行必須是：
+象限：[復甦／過熱／滯脹／再膨脹 選一個]
+
+然後繼續寫（不要加標題符號，直接寫）：
+一句話說現在的經濟狀況。
+錢放哪：說明最適合現在的資產配置，20字內。
+台股怎辦：現在台股該積極還是保守，一句話說清楚。
+補充：用一兩句說明這個象限的特徵、歷史上常持續多久。`;
   const raw=await callAI(prompt);
   const res=stripMd(raw);
 
-  // Parse phase
+  // 抓象限（寬鬆匹配）
   let activePhase=null;
-  const phaseM=res.match(/象限[：:]\s*(復甦|過熱|滯脹|再膨脹)/);
+  const phaseM=res.match(/象限[：:\s]*(復甦|過熱|滯脹|再膨脹)/);
   if(phaseM) activePhase=phaseM[1];
-  else for(const p of ['滯脹','再膨脹','過熱','復甦']) if(res.includes(p)){activePhase=p;break;}
+  if(!activePhase){
+    for(const p of ['滯脹','再膨脹','過熱','復甦'])
+      if(res.includes(p)){activePhase=p;break;}
+  }
 
   const colors={'復甦':'#10b981','過熱':'#f59e0b','滯脹':'#ef4444','再膨脹':'#8b5cf6'};
-  const col=colors[activePhase]||'var(--border)';
+  const col=colors[activePhase]||'var(--purple)';
 
   svgEl.innerHTML=drawClock(activePhase);
-  badge.textContent=activePhase||'分析中';
+  badge.textContent=activePhase?`目前象限：${activePhase}`:'分析中';
   badge.style.background=col;
 
-  // Parse each line for display
-  const lineMap={};
-  res.split('\n').forEach(line=>{
-    const m=line.match(/^(.+?)[：:]\s*(.+)/);
-    if(m) lineMap[m[1].trim()]=m[2].trim();
-  });
-  const oneLine=lineMap['一句話']||lineMap['一句']||'';
-  const money  =lineMap['錢放哪']||lineMap['推薦資產']||'';
-  const tw     =lineMap['台股怎辦']||lineMap['台股']||lineMap['投資建議']||'';
-
-  asset.textContent=oneLine;
-  sub.innerHTML=[
-    money ? `<span style="color:var(--text2);font-size:.7rem">💰 ${money}</span>` : '',
-    tw    ? `<span style="color:var(--text2);font-size:.7rem">🇹🇼 ${tw}</span>`    : '',
-  ].filter(Boolean).join('<br>');
+  // 移除第一行「象限：XXX」避免重複，其餘全文顯示
+  const displayText=res.replace(/^象限[：:\s]*(復甦|過熱|滯脹|再膨脹)\s*/,'').trim();
+  body.textContent=displayText||res;
 
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
