@@ -1062,15 +1062,31 @@ async function fetchRSS(query){
 }
 
 // ─── 每日快訊 ─────────────────────────────────────────────────────────────
-async function loadTrump(){
+const AI_CACHE_TTL=4*60*60*1000; // 4 小時快取
+function getAICache(key){
+  try{const c=JSON.parse(localStorage.getItem('ai_'+key)||'{}');if(c.ts&&Date.now()-c.ts<AI_CACHE_TTL)return c;}catch(_){}return null;
+}
+function setAICache(key,text){
+  try{localStorage.setItem('ai_'+key,JSON.stringify({text,ts:Date.now()}));}catch(_){}
+}
+function cacheAgeStr(ts){
+  const m=Math.round((Date.now()-ts)/60000);
+  return m<60?`${m} 分鐘前`:`${Math.floor(m/60)} 小時前`;
+}
+
+async function loadTrump(useCache=false){
   const b=document.getElementById('trumpBody'), t=document.getElementById('trumpTime');
+  if(useCache){
+    const c=getAICache('trump');
+    if(c){b.className='news-body';b.textContent=c.text;t.textContent='快取（'+cacheAgeStr(c.ts)+'）・點 ↻ 強制更新';return;}
+  }
   b.className='news-body loading'; b.textContent='抓取最新新聞...'; t.textContent='';
-  const [a,c,d]=await Promise.all([
+  const [a,c2,d]=await Promise.all([
     fetchRSS('Trump tariff trade war stock market 2025').catch(()=>[]),
     fetchRSS('Iran Israel nuclear deadline sanction 2025').catch(()=>[]),
     fetchRSS('Ukraine Russia ceasefire oil price 2025').catch(()=>[])
   ]);
-  const items=[...a,...c,...d].slice(0,15);
+  const items=[...a,...c2,...d].slice(0,15);
   b.textContent='AI 分析中...';
   const today=new Date().toLocaleDateString('zh-TW');
   const sysNote='【輸出規則】純文字，禁止使用 markdown、代碼塊、星號、#號。';
@@ -1101,7 +1117,9 @@ async function loadTrump(){
 
 禁止：「局勢緊張」「持續關注」。必須給數字。`;
   const res=await callAI(prompt);
-  b.className='news-body'; b.textContent=stripMd(res);
+  const text=stripMd(res);
+  b.className='news-body'; b.textContent=text;
+  setAICache('trump',text);
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
@@ -1186,11 +1204,28 @@ function drawClock(activePhase){
   return s;
 }
 
-async function loadClock(){
+async function loadClock(useCache=false){
   const svgEl=document.getElementById('clockSvg');
   const badge=document.getElementById('clockBadge');
   const body=document.getElementById('clockBody');
   const t=document.getElementById('clockTime');
+  if(useCache){
+    const c=getAICache('clock');
+    if(c){
+      const res=c.text;
+      let activePhase=null;
+      const phaseM=res.match(/象限[：:\s]*(復甦|過熱|滯脹|再膨脹)/);
+      if(phaseM) activePhase=phaseM[1];
+      if(!activePhase){for(const p of ['滯脹','再膨脹','過熱','復甦'])if(res.includes(p)){activePhase=p;break;}}
+      const colors={'復甦':'#10b981','過熱':'#f59e0b','滯脹':'#ef4444','再膨脹':'#8b5cf6'};
+      svgEl.innerHTML=drawClock(activePhase);
+      badge.textContent=activePhase?`目前象限：${activePhase}`:'未知';
+      badge.style.background=colors[activePhase]||'var(--purple)';
+      body.textContent=res.replace(/^象限[：:\s]*(復甦|過熱|滯脹|再膨脹)\s*/,'').trim()||res;
+      t.textContent='快取（'+cacheAgeStr(c.ts)+'）・點 ↻ 強制更新';
+      return;
+    }
+  }
   svgEl.innerHTML=drawClock(null);
   badge.textContent='分析中...'; badge.style.background='var(--border)';
   body.textContent='AI 分析中...';
@@ -1229,6 +1264,7 @@ async function loadClock(){
   // 移除第一行「象限：XXX」避免重複，其餘全文顯示
   const displayText=res.replace(/^象限[：:\s]*(復甦|過熱|滯脹|再膨脹)\s*/,'').trim();
   body.textContent=displayText||res;
+  setAICache('clock',res);
 
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
@@ -2025,8 +2061,8 @@ function sparkline(closes,w=80,h=28){
     document.getElementById('darkBtn').textContent='☀️ 淺色';
   }
 
-  // Auto-load AI sections
-  setTimeout(()=>{loadTrump();loadClock();loadTrumpLogic();},500);
+  // Auto-load AI sections（只自動跑 Trump + Clock，底層邏輯等使用者點）
+  setTimeout(()=>{loadTrump(true);loadClock(true);},600);
 
   // Hotkey: Alt+R = 重新整理 AI 快訊（不清除 API key）
   document.addEventListener('keydown',e=>{
