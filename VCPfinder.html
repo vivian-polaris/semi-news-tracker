@@ -739,7 +739,7 @@ async function fetchChipsFinMind(dateStr){
     const r=await fetchTO(url,20000);
     if(!r.ok) return null;
     const json=await r.json();
-    if(json.status!==200||!json.data?.length) return null;
+    if(Number(json.status)!==200||!json.data?.length) return null;
     const map={};
     json.data.forEach(row=>{
       const code=String(row.stock_id||'').trim();
@@ -766,7 +766,7 @@ async function fetchFundamentalsFinMind(stockId){
     const r=await fetchTO(url,12000);
     if(!r.ok) return null;
     const json=await r.json();
-    if(json.status!==200||!json.data?.length) return null;
+    if(Number(json.status)!==200||!json.data?.length) return null;
     const rows=[...json.data].sort((a,b)=>b.date.localeCompare(a.date));
     // Build map: type -> array of values (newest first)
     const byType={};
@@ -809,7 +809,7 @@ async function fetchMonthRevenueHigh(stockId){
     const r=await fetchTO(url,10000);
     if(!r.ok) return null;
     const json=await r.json();
-    if(json.status!==200||!json.data?.length) return null;
+    if(Number(json.status)!==200||!json.data?.length) return null;
     const rows=[...json.data].sort((a,b)=>b.date.localeCompare(a.date));
     if(rows.length<2) return null;
     const latest=Number(rows[0].revenue);
