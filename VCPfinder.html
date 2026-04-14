@@ -999,7 +999,7 @@ async function callAIFree(prompt){
   throw new Error('bad response');
 }
 
-async function callAI(prompt){
+async function callAI(prompt,temperature=0.7){
   const gk=getKey();
   // ── Groq ──
   if(gk && gk.length>10 && !gk.startsWith('http')){
@@ -1009,7 +1009,7 @@ async function callAI(prompt){
         const r=await fetchTimed('https://api.groq.com/openai/v1/chat/completions',{
           method:'POST',
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk},
-          body:JSON.stringify({messages:[{role:'user',content:prompt}],model,max_tokens:500,temperature:0.7})
+          body:JSON.stringify({messages:[{role:'user',content:prompt}],model,max_tokens:600,temperature})
         },8000);
         if(r.status===429){break;} // rate limit → fall through to Pollinations
         if(r.status===401||r.status===403){break;} // invalid key → fall through to Pollinations
@@ -1041,7 +1041,10 @@ async function fetchRSS(query){
       if(!xml||xml.trim().startsWith('<html')) continue; // got error page
       const items=[...xml.matchAll(/<item>[\s\S]*?<\/item>/g)].slice(0,10).map(m=>{
         const title=(m[0].match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)||m[0].match(/<title>(.*?)<\/title>/))?.[1]||'';
-        return {title:title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')};
+        const pubRaw=(m[0].match(/<pubDate>(.*?)<\/pubDate>/))?.[1]||'';
+        let pubLabel='';
+        if(pubRaw){try{const d=new Date(pubRaw);const h=Math.round((Date.now()-d)/3600000);pubLabel=h<1?'剛剛':h<24?`${h}h前`:h<48?'昨天':`${Math.floor(h/24)}天前`;}catch(_){}}
+        return {title:title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'),pubLabel};
       }).filter(x=>x.title);
       if(items.length>0) return items;
     }catch(_){}
@@ -1050,9 +1053,11 @@ async function fetchRSS(query){
 }
 
 // ─── 每日快訊 ─────────────────────────────────────────────────────────────
-const AI_CACHE_TTL=4*60*60*1000; // 4 小時快取
-function getAICache(key){
-  try{const c=JSON.parse(localStorage.getItem('ai_'+key)||'{}');if(c.ts&&Date.now()-c.ts<AI_CACHE_TTL)return c;}catch(_){}return null;
+const AI_CACHE_TTL=4*60*60*1000; // 4 小時快取（新聞摘要）
+const AI_CACHE_CLOCK_TTL=7*24*60*60*1000; // 7 天快取（投資時鐘，每週人工重刷）
+function getAICache(key,ttl){
+  const useTTL=ttl||AI_CACHE_TTL;
+  try{const c=JSON.parse(localStorage.getItem('ai_'+key)||'{}');if(c.ts&&Date.now()-c.ts<useTTL)return c;}catch(_){}return null;
 }
 function setAICache(key,text){
   try{localStorage.setItem('ai_'+key,JSON.stringify({text,ts:Date.now()}));}catch(_){}
@@ -1069,12 +1074,14 @@ async function loadTrump(useCache=false){
     if(c){b.className='news-body';b.textContent=c.text;t.textContent='快取（'+cacheAgeStr(c.ts)+'）・點 ↻ 強制更新';return;}
   }
   b.className='news-body loading'; b.textContent='抓取最新新聞...'; t.textContent='';
+  // 用今天日期讓 Google News 優先排今日最新文章
+  const todayQ=new Date().toISOString().slice(0,10);
   const _rssDL=new Promise(r=>setTimeout(()=>r([[],[],[]]),12000));
   const [a,c2,d]=await Promise.race([
     Promise.all([
-      fetchRSS('Trump tariff trade war stock market 2025').catch(()=>[]),
-      fetchRSS('Iran Israel nuclear deadline sanction 2025').catch(()=>[]),
-      fetchRSS('Ukraine Russia ceasefire oil price 2025').catch(()=>[])
+      fetchRSS(`Trump tariff trade war stock market after:${todayQ}`).catch(()=>[]),
+      fetchRSS(`Iran Israel oil price after:${todayQ}`).catch(()=>[]),
+      fetchRSS(`Ukraine Russia ceasefire commodity after:${todayQ}`).catch(()=>[])
     ]),
     _rssDL
   ]);
@@ -1082,40 +1089,41 @@ async function loadTrump(useCache=false){
   b.textContent='AI 分析中...';
   const today=new Date().toLocaleDateString('zh-TW');
   const sysNote='【輸出規則】純文字，禁止使用 markdown、代碼塊、星號、#號。';
+  // 新聞條目格式化，加上時間標籤讓 AI 知道哪些是今天的
+  const fmtItems=items.map((x,i)=>x.pubLabel?`${i+1}. [${x.pubLabel}] ${x.title}`:`${i+1}. ${x.title}`).join('\n');
   const prompt=items.length
-    ? `今天${today}。${sysNote}你是股市分析師，定義「重要」＝跟錢有關、會讓股票漲跌。以下是最新新聞，繁體中文，人名機構用英文。分析格式（每條「・」開頭，共200字內）：
+    ? `今天${today}。${sysNote}你是股市分析師。以下是今天最新新聞（括號內是發布時間），請只分析【今天或昨天內的】最新事件，不要提及超過2天前的舊消息。繁體中文，人名機構用英文。分析格式（每條「・」開頭，共200字內）：
 
 【Trump動向→美股影響】
-・具體政策或聲明+受影響sector（Nvidia/AMD/半導體/石油等）+估計漲跌%
-・第二條
+・具體政策或聲明（日期）+受影響sector（Nvidia/AMD/半導體/石油等）+估計漲跌%
 
-【戰爭地緣→市場影響】
-・Iran/Ukraine/Israel最重要的1條（必須是影響石油/軍工/避險資產的）+影響哪類美股
-
-【台股衝擊】
-・上述事件對TSMC/台灣半導體/台幣的直接影響+外資動向
-
-禁止：「局勢緊張」「持續關注」「值得觀察」。必須給數字。\n\n`+items.map((x,i)=>`${i+1}. ${x.title}`).join('\n')
-    : `今天${today}。${sysNote}你是股市分析師，定義「重要」＝跟錢有關、會讓股票漲跌。繁體中文，人名機構用英文。分析格式（每條「・」開頭，共200字內）：
-
-【Trump動向→美股影響】
-・Trump最新關稅/政策+受影響sector（Nvidia/AMD/半導體/石油等）+估計漲跌%
-
-【戰爭地緣→市場影響】
-・Iran核談判現況或Ukraine停火最新+影響石油/軍工/避險資產的數字
+【地緣風險→商品市場】
+・石油/金/軍工最新動向+漲跌%（必須是今天的數字，不要猜）
 
 【台股衝擊】
-・上述事件對TSMC/台幣/外資動向的直接影響
+・TSMC/台幣/外資今天的直接影響+數字
 
-禁止：「局勢緊張」「持續關注」。必須給數字。`;
+禁止：引用超過2天的舊事件、「局勢緊張」、「值得觀察」。必須給今日數字。\n\n新聞清單：\n`+fmtItems
+    : `今天${today}。${sysNote}你是股市分析師。注意：RSS抓取失敗，以下是根據你截止知識（August 2025）的最後已知狀態，請用一句話說明每個section，並明確標示「資料截至：[你的知識截止日]，非即時」。格式（每條「・」開頭）：
+
+【Trump關稅→美股影響】
+・[最後已知政策]（資料截至：yyyy-mm）
+
+【地緣風險→商品市場】
+・[最後已知情況]（資料截至：yyyy-mm）
+
+【台股】
+・無即時資料，建議查看 cnyes.com 或 mops.twse.com.tw`;
   const res=await Promise.race([
     callAI(prompt),
     new Promise(r=>setTimeout(()=>r('⚠️ 等待 AI 回應超過 35 秒，請點 ↻ 重試（或明天 Groq 額度重置後自動恢復）'),35000))
   ]);
   const text=stripMd(res);
   b.className='news-body'; b.textContent=text;
-  if(!text.startsWith('⚠️')&&!text.startsWith('❌')) setAICache('trump',text);
-  t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  // 只有成功抓到新聞才快取；無新聞時不快取，下次進來會重新抓
+  if(!text.startsWith('⚠️')&&!text.startsWith('❌')&&items.length>0) setAICache('trump',text);
+  const srcNote=items.length>0?`（${items.length}條新聞）`:'（無即時新聞）';
+  t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+srcNote;
 }
 
 // ─── Trump 底層邏輯分析 ────────────────────────────────────────────────────
@@ -1207,67 +1215,70 @@ async function loadClock(useCache=false){
   const badge=document.getElementById('clockBadge');
   const body=document.getElementById('clockBody');
   const t=document.getElementById('clockTime');
+  const colors={'復甦':'#10b981','過熱':'#f59e0b','滯脹':'#ef4444','再膨脹':'#8b5cf6'};
+  function applyClockResult(res,fromCache,cacheTs){
+    let activePhase=null;
+    const phaseM=res.match(/象限[：:\s]*(復甦|過熱|滯脹|再膨脹)/);
+    if(phaseM) activePhase=phaseM[1];
+    if(!activePhase){for(const p of ['滯脹','再膨脹','過熱','復甦'])if(res.includes(p)){activePhase=p;break;}}
+    svgEl.innerHTML=drawClock(activePhase);
+    badge.textContent=activePhase?`目前象限：${activePhase}`:'未知';
+    badge.style.background=colors[activePhase]||'var(--purple)';
+    // strip "象限：XXX" first line, show rest
+    const displayText=res.replace(/^象限[：:\s]*(復甦|過熱|滯脹|再膨脹)\s*/,'').trim();
+    body.textContent=displayText||res;
+    if(fromCache) t.textContent='快取（'+cacheAgeStr(cacheTs)+'）・點 ↻ 強制更新（7天後自動）';
+    else t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+'・7天後自動更新';
+  }
   if(useCache){
-    const c=getAICache('clock');
-    if(c){
-      const res=c.text;
-      let activePhase=null;
-      const phaseM=res.match(/象限[：:\s]*(復甦|過熱|滯脹|再膨脹)/);
-      if(phaseM) activePhase=phaseM[1];
-      if(!activePhase){for(const p of ['滯脹','再膨脹','過熱','復甦'])if(res.includes(p)){activePhase=p;break;}}
-      const colors={'復甦':'#10b981','過熱':'#f59e0b','滯脹':'#ef4444','再膨脹':'#8b5cf6'};
-      svgEl.innerHTML=drawClock(activePhase);
-      badge.textContent=activePhase?`目前象限：${activePhase}`:'未知';
-      badge.style.background=colors[activePhase]||'var(--purple)';
-      body.textContent=res.replace(/^象限[：:\s]*(復甦|過熱|滯脹|再膨脹)\s*/,'').trim()||res;
-      t.textContent='快取（'+cacheAgeStr(c.ts)+'）・點 ↻ 強制更新';
-      return;
-    }
+    const c=getAICache('clock',AI_CACHE_CLOCK_TTL);
+    if(c){applyClockResult(c.text,true,c.ts);return;}
   }
   svgEl.innerHTML=drawClock(null);
   badge.textContent='分析中...'; badge.style.background='var(--border)';
-  body.textContent='AI 分析中...';
+  body.textContent='正在抓取最新經濟指標新聞...';
+
+  // ── 先抓最新總經指標新聞作為客觀基礎 ──────────────────────────────────
+  const todayQ=new Date().toISOString().slice(0,10);
+  const _clockDL=new Promise(r=>setTimeout(()=>r([[],[],[]]),10000));
+  const [econA,econB,econC]=await Promise.race([
+    Promise.all([
+      fetchRSS(`Federal Reserve interest rate inflation CPI after:${todayQ}`).catch(()=>[]),
+      fetchRSS(`ISM PMI manufacturing GDP growth after:${todayQ}`).catch(()=>[]),
+      fetchRSS(`oil price commodity recession tariff after:${todayQ}`).catch(()=>[])
+    ]),
+    _clockDL
+  ]);
+  const econItems=[...econA,...econB,...econC].slice(0,12);
+  const fmtEcon=econItems.length
+    ? econItems.map((x,i)=>x.pubLabel?`[${x.pubLabel}] ${x.title}`:`${x.title}`).join('\n')
+    : '（RSS抓取失敗，請根據你的知識截止日給出最後已知數據，並標明日期）';
+
+  body.textContent='AI 分析經濟指標中...';
   const today=new Date().toISOString().slice(0,10);
-  const prompt=`今天${today}。純文字輸出，禁止任何 markdown 符號、星號、井號、代碼塊。
 
-你是投資老師，根據當前全球總體經濟（Fed 利率走向、通膨、景氣強弱），判斷美林投資時鐘現在走到哪個象限，用口語繁體中文給投資人建議。
+  // ── 嚴謹提示：必須引用具體指標數字，不能亂猜 ──────────────────────────
+  const prompt=`今天${today}。純文字輸出，禁止任何 markdown、星號、井號、代碼塊。
 
-第一行必須是：
+你是總經分析師，根據以下今天的最新新聞判斷「美林投資時鐘」象限。必須引用新聞中的具體數字（如 CPI 2.4%、ISM PMI 49.0、Fed 維持利率不變等）作為判斷依據，不能憑空猜測。
+
+最新經濟新聞（括號是時間）：
+${fmtEcon}
+
+輸出格式（嚴格按照）：
 象限：[復甦／過熱／滯脹／再膨脹 選一個]
+判斷依據：列出3個具體指標和數字（例：Fed利率 4.5%不變 → 緊縮；ISM PMI 49.0 → 收縮；CPI 2.6% → 通膨仍高）
+現況：一句話說現在的經濟狀況，20字內。
+配置：最適合的資產配置，15字內。
+台股：現在台股該積極還是保守，一句話。`;
 
-然後繼續寫（不要加標題符號，直接寫）：
-一句話說現在的經濟狀況。
-錢放哪：說明最適合現在的資產配置，20字內。
-台股怎辦：現在台股該積極還是保守，一句話說清楚。
-補充：用一兩句說明這個象限的特徵、歷史上常持續多久。`;
   const raw=await Promise.race([
-    callAI(prompt),
-    new Promise(r=>setTimeout(()=>r('⚠️ 等待 AI 回應超過 35 秒，請點 ↻ 重試'),35000))
+    callAI(prompt,0),
+    new Promise(r=>setTimeout(()=>r('⚠️ 等待 AI 回應超過 40 秒，請點 ↻ 重試'),40000))
   ]);
   const res=stripMd(raw);
-
-  // 抓象限（寬鬆匹配）
-  let activePhase=null;
-  const phaseM=res.match(/象限[：:\s]*(復甦|過熱|滯脹|再膨脹)/);
-  if(phaseM) activePhase=phaseM[1];
-  if(!activePhase){
-    for(const p of ['滯脹','再膨脹','過熱','復甦'])
-      if(res.includes(p)){activePhase=p;break;}
-  }
-
-  const colors={'復甦':'#10b981','過熱':'#f59e0b','滯脹':'#ef4444','再膨脹':'#8b5cf6'};
-  const col=colors[activePhase]||'var(--purple)';
-
-  svgEl.innerHTML=drawClock(activePhase);
-  badge.textContent=activePhase?`目前象限：${activePhase}`:'分析中';
-  badge.style.background=col;
-
-  // 移除第一行「象限：XXX」避免重複，其餘全文顯示
-  const displayText=res.replace(/^象限[：:\s]*(復甦|過熱|滯脹|再膨脹)\s*/,'').trim();
-  body.textContent=displayText||res;
   if(!res.startsWith('⚠️')&&!res.startsWith('❌')) setAICache('clock',res);
-
-  t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  applyClockResult(res,false,Date.now());
 }
 
 // ─── Scan source management ────────────────────────────────────────────────
