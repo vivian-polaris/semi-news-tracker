@@ -297,7 +297,8 @@ footer a:hover{text-decoration:underline}
 <!-- ── Key Panel ── -->
 <div class="key-panel" id="keyPanel">
   <p>設定 <a href="https://console.groq.com" target="_blank">Groq API Key</a>（免費，每日額度充足），享 AI 快訊摘要。<br>
-  <a href="https://finmindtrade.com" target="_blank">FinMind Token</a>（免費）可大幅提升籌碼 / 財報 / 月營收資料穩定性。</p>
+  <a href="https://finmindtrade.com" target="_blank">FinMind Token</a>（免費）可大幅提升籌碼 / 財報 / 月營收資料穩定性。<br>
+  <span style="color:#f59e0b;font-size:.72rem">⚠️ Key 儲存在瀏覽器 localStorage。若每次重開都消失，設定完後請點「產生個人書籤網址」，<strong>用書籤連結開啟頁面</strong>，Key 就會自動載入。</span></p>
   <div class="key-row">
     <input class="key-input" id="groqInput" type="password" placeholder="Groq API Key（gsk_...）輸入後自動儲存"
       oninput="autoSaveGroq(this.value)" onpaste="setTimeout(()=>autoSaveGroq(document.getElementById('groqInput').value),50)">
@@ -449,8 +450,8 @@ footer a:hover{text-decoration:underline}
     <span class="pill" onclick="setScore(0,this)">全部</span>
     <span class="pill" onclick="setScore(40,this)">≥ 40 VCP初步</span>
     <span class="pill" onclick="setScore(60,this)">≥ 60 候選 🌸</span>
-    <span class="pill" onclick="setScore(70,this)">≥ 70</span>
-    <span class="pill f-on" onclick="setScore(80,this)">≥ 80 強力 ⭐</span>
+    <span class="pill f-on" onclick="setScore(70,this)">≥ 70</span>
+    <span class="pill" onclick="setScore(80,this)">≥ 80 強力 ⭐</span>
   </div>
   <div class="filter-row" id="pctRow">
     <span class="flabel">距高點</span>
@@ -617,7 +618,7 @@ const STOCKS = [
 ];
 
 // ─── State ────────────────────────────────────────────────────────────────
-let allResults=[], scoreMin=80, pctMax=999, secFilter='ALL', exFilter='ALL';
+let allResults=[], scoreMin=70, pctMax=999, secFilter='ALL', exFilter='ALL';
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
 let scanCancelled=false, scanSrc='all';
@@ -653,13 +654,14 @@ function autoSaveGroq(v){
   v=v.trim();
   if(v.length>10){localStorage.setItem('groq_key',v);updateKeyStatus();}
 }
+function _setTestEl(el,bg,text){el.style.display='block';el.style.background=bg;el.style.color='#111827';el.style.padding='8px 12px';el.style.borderRadius='8px';el.textContent=text;}
 async function testGroq(){
   const k=document.getElementById('groqInput').value.trim()||getKey();
   const el=document.getElementById('testResult');
-  if(!k){el.style.display='block';el.style.background='#fef3c7';el.textContent='⚠️ 請先輸入 Groq Key';return;}
+  if(!k){_setTestEl(el,'#fef3c7','⚠️ 請先輸入 Groq Key');return;}
   const keyHint=k.length>8?`${k.slice(0,6)}...${k.slice(-4)}`:'(太短)';
-  el.style.display='block';el.style.background='#f3f4f6';el.textContent=`測試中（${keyHint}）...`;
-  const models=['llama-3.1-8b-instant','llama3-8b-8192','gemma2-9b-it'];
+  _setTestEl(el,'#f3f4f6',`測試中（${keyHint}）...`);
+  const models=['llama-3.3-70b-versatile','llama-3.1-8b-instant','gemma2-9b-it'];
   for(const model of models){
     try{
       const r=await fetchTimed('https://api.groq.com/openai/v1/chat/completions',{
@@ -669,18 +671,16 @@ async function testGroq(){
       },12000);
       if(r.status===401||r.status===403){
         let body=''; try{const j=await r.json();body=j?.error?.message||'';}catch(_){}
-        el.style.background='#fee2e2';
-        el.textContent=`❌ 驗證失敗 (${r.status})：${body||'Key 無效或已過期'}。請到 console.groq.com 重新申請`;
+        _setTestEl(el,'#fee2e2',`❌ Key 無效 (${r.status})：${body||'請重新申請'}。到 console.groq.com 申請新 Key 後清除舊的再貼上`);
         return;
       }
-      if(r.status===429){el.style.background='#fef3c7';el.textContent=`⚠️ 速率限制（${model}），但 Key 本身有效！`;return;}
-      if(r.ok){el.style.background='#dcfce7';el.textContent=`✅ Key 正常！（model: ${model}）AI 快訊可用`;return;}
-      // 400/404 = model 不支援，試下一個
+      if(r.status===429){_setTestEl(el,'#fef3c7',`⚠️ 速率限制（${model}），但 Key 本身有效！`);return;}
+      if(r.ok){_setTestEl(el,'#dcfce7',`✅ Key 正常！（model: ${model}）AI 快訊可用`);return;}
     }catch(e){
-      el.style.background='#fee2e2';el.textContent=`❌ 網路錯誤：${e.message}（可能是 CORS 或防火牆）`;return;
+      _setTestEl(el,'#fee2e2',`❌ 網路錯誤：${e.message}（CORS 或防火牆，但 Key 可能仍有效）`);return;
     }
   }
-  el.style.background='#fef3c7';el.textContent='⚠️ 所有 model 都無法連線，請稍後再試';
+  _setTestEl(el,'#fef3c7','⚠️ 所有 model 測試超時，Key 可能仍有效但網路受限');
 }
 // ── 書籤網址（把 key 加密藏在 hash，方便換瀏覽器）──
 function genBookmark(){
@@ -715,9 +715,10 @@ const getFinMindToken=()=>localStorage.getItem('finmind_token')||'';
 async function testFinMind(){
   const token=document.getElementById('fmInput').value.trim()||getFinMindToken();
   const el=document.getElementById('fmTestResult');
-  if(!token){el.style.display='block';el.style.background='#fef3c7';el.textContent='⚠️ 請先輸入 FinMind Token';return;}
+  function _setFmEl(bg,html){el.style.display='block';el.style.background=bg;el.style.color='#111827';el.style.padding='8px 12px';el.style.borderRadius='8px';el.innerHTML=html;}
+  if(!token){_setFmEl('#fef3c7','⚠️ 請先輸入 FinMind Token');return;}
   const hint=token.length>8?`${token.slice(0,6)}…${token.slice(-4)}`:'(太短)';
-  el.style.display='block';el.style.background='#f3f4f6';el.innerHTML=`FinMind 測試中（${hint}）...`;
+  _setFmEl('#f3f4f6',`FinMind 測試中（${hint}）...`);
   const pad=n=>String(n).padStart(2,'0');
   // 找最近的交易日（最多往前查7天）
   let dateStr='';
@@ -732,18 +733,17 @@ async function testFinMind(){
   const j1=await fetchFinMind(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&date=${dateStr}&stock_id=2330&token=${token}`,15000);
   if(!j1) lines.push('❌ 單支連線失敗（所有 proxy 都無法連到 FinMind）');
   else if(Number(j1.status)===200&&j1.data?.length) lines.push(`✅ 單支測試（2330 ${dateStr}）：${j1.data.length} 筆 — Token 有效`);
-  else if(Number(j1.status)===401||Number(j1.status)===403){lines.push(`❌ Token 驗證失敗（${j1.msg||''}）`);el.style.background='#fee2e2';el.innerHTML=lines.join('<br>');return;}
+  else if(Number(j1.status)===401||Number(j1.status)===403){lines.push(`❌ Token 驗證失敗（${j1.msg||''}）`);_setFmEl('#fee2e2',lines.join('<br>'));return;}
   else lines.push(`⚠️ 單支 status=${j1?.status} data=${j1?.data?.length??0} msg=${j1?.msg||''}`);
   // 2. Bulk 測試（全市場，這是實際掃描用的 API call）
-  el.innerHTML=lines.join('<br>')+'<br>全市場 Bulk 測試中（走 CORS proxy）...';
+  _setFmEl('#f3f4f6',lines.join('<br>')+'<br>全市場 Bulk 測試中（走 CORS proxy）...');
   const j2=await fetchFinMind(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&date=${dateStr}&token=${token}`,30000);
   if(!j2) lines.push('❌ Bulk 連線失敗（所有 proxy 都無法連到 FinMind）');
   else if(Number(j2.status)===200&&(j2.data?.length??0)>10) lines.push(`✅ Bulk 全市場 ${dateStr}：${j2.data.length} 筆 — 籌碼可正常載入`);
   else if(Number(j2.status)===200&&(j2.data?.length??0)===0) lines.push(`⚠️ Bulk Token 有效但今日（${dateStr}）無資料（可能非交易日）`);
   else lines.push(`⚠️ Bulk status=${j2?.status} msg=${j2?.msg||'無'} data=${j2?.data?.length??0}`);
   const ok=lines.every(l=>l.startsWith('✅'));
-  el.style.background=ok?'#dcfce7':lines.some(l=>l.startsWith('❌'))?'#fee2e2':'#fef3c7';
-  el.innerHTML=lines.join('<br>');
+  _setFmEl(ok?'#dcfce7':lines.some(l=>l.startsWith('❌'))?'#fee2e2':'#fef3c7',lines.join('<br>'));
 }
 
 // ─── FinMind: 籌碼（外資/投信）────────────────────────────────────────────────
@@ -1007,7 +1007,7 @@ async function fetchRSS(query){
   ];
   for(const proxy of proxies){
     try{
-      const r=await fetchTimed(proxy,{},12000);
+      const r=await fetchTimed(proxy,{},5000);
       if(!r.ok) continue;
       const xml=await r.text();
       if(!xml||xml.trim().startsWith('<html')) continue; // got error page
@@ -1041,10 +1041,14 @@ async function loadTrump(useCache=false){
     if(c){b.className='news-body';b.textContent=c.text;t.textContent='快取（'+cacheAgeStr(c.ts)+'）・點 ↻ 強制更新';return;}
   }
   b.className='news-body loading'; b.textContent='抓取最新新聞...'; t.textContent='';
-  const [a,c2,d]=await Promise.all([
-    fetchRSS('Trump tariff trade war stock market 2025').catch(()=>[]),
-    fetchRSS('Iran Israel nuclear deadline sanction 2025').catch(()=>[]),
-    fetchRSS('Ukraine Russia ceasefire oil price 2025').catch(()=>[])
+  const _rssDL=new Promise(r=>setTimeout(()=>r([[],[],[]]),12000));
+  const [a,c2,d]=await Promise.race([
+    Promise.all([
+      fetchRSS('Trump tariff trade war stock market 2025').catch(()=>[]),
+      fetchRSS('Iran Israel nuclear deadline sanction 2025').catch(()=>[]),
+      fetchRSS('Ukraine Russia ceasefire oil price 2025').catch(()=>[])
+    ]),
+    _rssDL
   ]);
   const items=[...a,...c2,...d].slice(0,15);
   b.textContent='AI 分析中...';
@@ -1096,7 +1100,7 @@ async function loadTrumpLogic(){
   b.className='news-body loading'; b.textContent='AI 解碼中...'; t.textContent='';
   btn.disabled=true; btn.textContent='⏳ 分析中';
   // 抓最新新聞作為背景資料
-  const items=await fetchRSS('Trump tariff policy trade war 2025').catch(()=>[]);
+  const items=await Promise.race([fetchRSS('Trump tariff policy trade war 2025').catch(()=>[]),new Promise(r=>setTimeout(()=>r([]),8000))]);
   const today=new Date().toLocaleDateString('zh-TW');
   const newsCtx=items.length?'\n\n最新事件背景：\n'+items.slice(0,8).map((x,i)=>`${i+1}. ${x.title}`).join('\n'):'';
   const prompt=`今天${today}。【輸出規則】純文字，禁止 markdown、代碼塊、星號、#號。你是政治經濟學家，專門拆解Trump的雙層策略。用繁體中文，精煉有力，禁止廢話。${newsCtx}
@@ -1471,30 +1475,33 @@ async function fetchFundamentals(sym){
   // 2. 批次沒有時，嘗試 FinMind 單支
   const fmResult=await fetchFundamentalsFinMind(stockId);
   if(fmResult) return fmResult;
-  // Fallback: Yahoo Finance quoteSummary
-  const bases=[
+  // Fallback: Yahoo Finance quoteSummary（走 proxy，不試直連，加 defaultKeyStatistics 備用）
+  const yBases=[
+    `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=financialData,defaultKeyStatistics`,
+    `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=financialData,defaultKeyStatistics`,
     `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=financialData`,
-    `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=financialData`,
-    `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${sym}?modules=financialData`,
+    `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${sym}?modules=financialData,defaultKeyStatistics`,
   ];
-  const proxies=['','https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest='];
-  for(const base of bases){
-    for(const px of proxies){
+  const yProxies=['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest='];
+  for(const base of yBases){
+    for(const px of yProxies){
       try{
-        const url=px?px+encodeURIComponent(base):base;
-        const r=await fetchTO(url,10000);
+        const url=px+encodeURIComponent(base);
+        const r=await fetchTO(url,6000);
         if(!r.ok)continue;
         const text=await r.text();
         if(!text||text.trim().startsWith('<')||text.includes('"code":"Not Found"'))continue;
         const json=JSON.parse(text);
-        const fd=json?.quoteSummary?.result?.[0]?.financialData;
-        if(!fd)continue;
+        const res0=json?.quoteSummary?.result?.[0];
+        if(!res0)continue;
+        const fd=res0.financialData||{};
+        const ks=res0.defaultKeyStatistics||{};
         const out={
-          roe:fd.returnOnEquity?.raw??null,
+          roe:fd.returnOnEquity?.raw??ks.returnOnEquity?.raw??null,
           grossMargin:fd.grossMargins?.raw??null,
-          operatingMargin:fd.operatingMargins?.raw??null,
+          operatingMargin:fd.operatingMargins?.raw??ks.profitMargins?.raw??null,
           revenueGrowth:fd.revenueGrowth?.raw??null,
-          earningsGrowth:fd.earningsGrowth?.raw??null,
+          earningsGrowth:fd.earningsGrowth?.raw??ks.earningsGrowth?.raw??null,
         };
         if(Object.values(out).some(v=>v!=null))return out;
       }catch(_){}
@@ -1806,6 +1813,19 @@ function scoreBadge(label, cls, detailHTML){
     <div class="score-detail">${detailHTML}</div>
   </div>`;
 }
+// ─── Synthetic fundamental estimate from technical signals ─────────────────
+function syntheticFundScore(vcp){
+  if(!vcp)return null;
+  let pts=0;
+  if(vcp.stage2)pts+=35;else if(vcp.abM50)pts+=15;
+  if(vcp.pctH<10)pts+=20;else if(vcp.pctH<20)pts+=12;else if(vcp.pctH<30)pts+=6;
+  if(vcp.atrS==='g')pts+=18;else if(vcp.atrS==='o')pts+=10;
+  if(vcp.volS==='g')pts+=12;else if(vcp.volS==='o')pts+=6;
+  if(vcp.score>=80)pts+=10;else if(vcp.score>=60)pts+=5;
+  if(vcp.contractions>=3)pts+=5;
+  return Math.min(Math.round(pts),100);
+}
+
 function renderTable(){
   const filtered=getFiltered(),sorted=getSorted(filtered);
   const counted=allResults.filter(r=>r.vcp).length;
@@ -1856,8 +1876,19 @@ function renderTable(){
       fund.revenueGrowth!=null?`<div class="fund-row"><span class="fund-lbl">營收↑</span>${fmtPct2(fund.revenueGrowth)}</div>`:'',
       revHigh!=null?`<div class="fund-row"><span class="fund-lbl">月營</span><span class="sig ${revHigh?'sig-g':'sig-n'}">${revHigh?'🔥新高':'普通'}</span></div>`:'',
     ].filter(Boolean).join('');
-    const fundLabel=fg?`${fg.label} ${fg.score}`:null;
-    const fundHTML=scoreBadge(fundLabel,fg?.cls||'sN',fundDetail||'<span style="color:#9ca3af">無財報資料</span>');
+    let fundLabel,fundCls,fundDetailFinal;
+    if(fg){
+      fundLabel=`${fg.label} ${fg.score}`;fundCls=fg.cls;fundDetailFinal=fundDetail||'<span style="color:#9ca3af">暫無細項</span>';
+    }else{
+      const synS=syntheticFundScore(v);
+      if(synS!=null){
+        const synG=synS>=70?{label:'技估佳',cls:'sA'}:synS>=45?{label:'技估中',cls:'sB'}:{label:'技估弱',cls:'sC'};
+        fundLabel=`${synG.label} ${synS}`;fundCls=synG.cls;
+        const _s=v.stage2?'sig-g':'sig-o';const _a=v.atrS==='g'?'sig-g':'sig-o';
+        fundDetailFinal=`<div class="fund-row"><span class="fund-lbl" style="color:#9ca3af;font-size:.6rem">技術面估算（無財報資料）</span></div><div class="fund-row"><span class="fund-lbl">MA排列</span><span class="sig ${_s}">${v.stage2?'Stage2':'未達'}</span></div><div class="fund-row"><span class="fund-lbl">趨勢強</span><span class="sig ${_a}">${v.atrL}</span></div>`;
+      }else{fundLabel=null;fundCls='sN';fundDetailFinal='<span style="color:#9ca3af">無資料</span>';}
+    }
+    const fundHTML=scoreBadge(fundLabel,fundCls||'sN',fundDetailFinal||'<span style="color:#9ca3af">無財報資料</span>');
     // Chips badge
     const chips=chipsMap[r.code];
     const cl=chipsLabel(chips);
