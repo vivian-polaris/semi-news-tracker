@@ -479,7 +479,8 @@ body.dark .srt{background:var(--card);}
   </div>
   <div class="filter-row" id="secRow">
     <span class="flabel">產業</span>
-    <span class="pill s-on" data-sec="ALL" onclick="setSec('ALL',this)">全部</span>
+    <span class="pill s-on" data-sec="SEMI" onclick="setSec('SEMI',this)">🔴 半導體族群</span>
+    <span class="pill" data-sec="ALL" onclick="setSec('ALL',this)">全部</span>
   </div>
   <div class="filter-row">
     <span class="flabel">其他</span>
@@ -634,7 +635,8 @@ const STOCKS = [
 ];
 
 // ─── State ────────────────────────────────────────────────────────────────
-let allResults=[], scoreMin=80, pctMax=999, secFilter='ALL', exFilter='ALL';
+let allResults=[], scoreMin=80, pctMax=999, secFilter='SEMI', exFilter='ALL';
+const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
@@ -1588,7 +1590,7 @@ async function startScan(){
   // Rebuild sector filter pills
   const secs=[...new Set(stocks.map(s=>s.sector))].sort();
   const secRow=document.getElementById('secRow');
-  secRow.querySelectorAll('[data-sec]:not([data-sec="ALL"])').forEach(p=>p.remove());
+  secRow.querySelectorAll('[data-sec]:not([data-sec="ALL"]):not([data-sec="SEMI"])').forEach(p=>p.remove());
   secs.forEach(s=>{const p=document.createElement('span');p.className='pill';p.dataset.sec=s;p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);});
 
   const BATCH=scanSrc==='preset'?4:6;
@@ -1680,7 +1682,8 @@ function getFiltered(){
     if(wl&&!wl.includes(r.code)) return false;
     if(r.vcp.score<scoreMin)return false;
     if(r.vcp.pctH>pctMax)return false;
-    if(secFilter!=='ALL'&&r.sector!==secFilter)return false;
+    if(secFilter==='SEMI'){if(!SEMI_SECTORS.has(r.sector))return false;}
+    else if(secFilter!=='ALL'&&r.sector!==secFilter)return false;
     if(exFilter!=='ALL'&&r.ex!==exFilter)return false;
     if(onlyStage2&&!r.vcp.stage2)return false;
     return true;
@@ -1828,7 +1831,8 @@ function setEx(v,el){
 function setSec(v,el){
   secFilter=v;
   document.querySelectorAll('[data-sec]').forEach(p=>p.classList.remove('s-on'));
-  el.classList.add('s-on');renderTable();
+  el.classList.add('s-on');
+  renderTable();
 }
 function toggleStage2(el){onlyStage2=!onlyStage2;el.classList.toggle('g-on',onlyStage2);renderTable();}
 function toggleHideErr(el){hideErr=!hideErr;el.classList.toggle('g-on',hideErr);renderTable();}
