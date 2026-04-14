@@ -3,42 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>✨ VCP Finder — 台股強勢股</title>
+<title>VCP Finder — 台股強勢股</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#0b0b0f;
-  --bg2:#111116;
-  --card:#141419;
-  --card2:#18181f;
-  --border:#252530;
-  --border2:#2a2a38;
-  --purple:#3b82f6;
-  --pink:#06b6d4;
-  --mint:#10b981;
-  --orange:#f97316;
-  --red:#ef4444;
-  --sky:#38bdf8;
-  --yellow:#f59e0b;
-  --text:#dde3ee;
-  --text2:#6b7a99;
-  --tag:#1c1c26;
-  --shadow:rgba(0,0,0,.55);
-  --shadow2:rgba(0,0,0,.45);
+  --bg:#09090b;
+  --bg2:#0f0f12;
+  --card:#18181b;
+  --card2:#1f1f23;
+  --border:#27272a;
+  --border2:#3f3f46;
+  --purple:#2563eb;
+  --pink:#0891b2;
+  --mint:#059669;
+  --orange:#ea580c;
+  --red:#dc2626;
+  --sky:#0284c7;
+  --yellow:#ca8a04;
+  --text:#f4f4f5;
+  --text2:#71717a;
+  --tag:#27272a;
+  --shadow:rgba(0,0,0,.7);
+  --shadow2:rgba(0,0,0,.55);
 }
 body{
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-  background:#0b0b0f;
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:#09090b;
   color:var(--text);
   min-height:100vh;
 }
 .wrap{max-width:1200px;margin:0 auto;padding:16px 18px}
 
 /* ── Header ── */
-header{text-align:center;padding:32px 0 22px;position:relative;
-  background:url('https://images.pexels.com/photos/5202529/pexels-photo-5202529.jpeg?auto=compress&cs=tinysrgb&w=1400&h=360&fit=crop&crop=center') center center/cover no-repeat;
-  border-radius:16px;margin-bottom:6px;overflow:hidden;min-height:180px}
-header::before{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(11,11,15,0.38) 0%,rgba(11,11,15,0.55) 100%);pointer-events:none}
+header{text-align:center;padding:48px 0 32px;position:relative;
+  background:url('https://images.pexels.com/photos/6551133/pexels-photo-6551133.jpeg?auto=compress&cs=tinysrgb&w=1400&h=500&fit=crop&crop=bottom') center 60%/cover no-repeat;
+  border-radius:16px;margin-bottom:6px;overflow:hidden;min-height:240px}
+header::before{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(9,9,11,0.32) 0%,rgba(9,9,11,0.62) 100%);pointer-events:none}
 header>*{position:relative;z-index:1}
 .back-btn{position:absolute;left:0;top:28px;padding:6px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:20px;color:var(--text2);cursor:pointer;font-size:.75rem;text-decoration:none;display:inline-block;transition:all .2s;box-shadow:0 2px 8px var(--shadow)}
 .back-btn:hover{border-color:var(--purple);color:var(--purple);transform:translateY(-1px)}
@@ -160,10 +160,10 @@ thead th:nth-child(11),tbody td:nth-child(11){min-width:96px}
 /* ── Fundamental / Chips score badge ── */
 .score-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:10px;font-size:.78rem;font-weight:800;cursor:pointer;user-select:none;transition:opacity .15s}
 .score-badge:hover{opacity:.75}
-.score-badge.sA{background:#d1fae5;color:#065f46}
-.score-badge.sB{background:#fef3c7;color:#92400e}
-.score-badge.sC{background:#fee2e2;color:#991b1b}
-.score-badge.sN{background:#f3f4f6;color:#9ca3af}
+.score-badge.sA{background:rgba(5,150,105,.18);color:#34d399;border:1px solid rgba(5,150,105,.35)}
+.score-badge.sB{background:rgba(202,138,4,.16);color:#fbbf24;border:1px solid rgba(202,138,4,.3)}
+.score-badge.sC{background:rgba(220,38,38,.15);color:#f87171;border:1px solid rgba(220,38,38,.28)}
+.score-badge.sN{background:rgba(113,113,122,.15);color:#71717a;border:1px solid rgba(113,113,122,.25)}
 .score-detail{display:none;font-size:.63rem;line-height:1.6;color:var(--text2);margin-top:5px;padding-top:5px;border-top:1px dashed var(--border)}
 .score-detail.open{display:block}
 .fund-row{display:flex;justify-content:space-between;gap:6px}
@@ -186,41 +186,41 @@ thead th:nth-child(11),tbody td:nth-child(11){min-width:96px}
 
 /* ── Pct badge ── */
 .pct-b{display:inline-block;padding:3px 8px;border-radius:10px;font-size:.75rem;font-weight:700;white-space:nowrap}
-.pct-A{background:#d1fae5;color:#065f46}
-.pct-B{background:#fef3c7;color:#92400e}
-.pct-C{background:#fee2e2;color:#991b1b}
+.pct-A{background:rgba(5,150,105,.18);color:#34d399;border:1px solid rgba(5,150,105,.3)}
+.pct-B{background:rgba(202,138,4,.16);color:#fbbf24;border:1px solid rgba(202,138,4,.28)}
+.pct-C{background:rgba(220,38,38,.15);color:#f87171;border:1px solid rgba(220,38,38,.25)}
 
 /* ── Signal tags ── */
 .sig{font-size:.65rem;padding:2px 7px;border-radius:8px;white-space:nowrap;font-weight:600}
-.sig-g{background:#d1fae5;color:#065f46}
-.sig-o{background:#fef3c7;color:#92400e}
-.sig-r{background:#fee2e2;color:#991b1b}
-.sig-n{background:#f3f4f6;color:#6b7280}
+.sig-g{background:rgba(5,150,105,.18);color:#34d399}
+.sig-o{background:rgba(202,138,4,.16);color:#fbbf24}
+.sig-r{background:rgba(220,38,38,.15);color:#f87171}
+.sig-n{background:rgba(113,113,122,.15);color:#71717a}
 
 /* ── Score ── */
 .scr-wrap{display:flex;align-items:center;gap:7px}
-.scr-bg{width:50px;height:6px;border-radius:20px;background:#e9d5ff;overflow:hidden;flex-shrink:0}
+.scr-bg{width:50px;height:6px;border-radius:20px;background:rgba(63,63,70,.5);overflow:hidden;flex-shrink:0}
 .scr-fill{height:100%;border-radius:20px}
-.fA{background:linear-gradient(90deg,#10b981,#34d399)}
-.fB{background:linear-gradient(90deg,#f59e0b,#fcd34d)}
-.fC{background:linear-gradient(90deg,#6366f1,#818cf8)}
-.fD{background:#d1d5db}
+.fA{background:linear-gradient(90deg,#059669,#10b981)}
+.fB{background:linear-gradient(90deg,#d97706,#f59e0b)}
+.fC{background:linear-gradient(90deg,#2563eb,#3b82f6)}
+.fD{background:rgba(113,113,122,.4)}
 .scr-num{font-weight:800;font-size:.9rem}
-.sA{color:#059669} .sB{color:#d97706} .sC{color:#4f46e5} .sD{color:#9ca3af}
+.sA{color:#34d399} .sB{color:#fbbf24} .sC{color:#60a5fa} .sD{color:#71717a}
 
 /* ── Grade badge ── */
 .grade{display:inline-block;padding:3px 10px;border-radius:10px;font-size:.7rem;font-weight:800;letter-spacing:.05em}
-.gA{background:#d1fae5;color:#065f46}
-.gB{background:#fef3c7;color:#92400e}
-.gC{background:#e0e7ff;color:#3730a3}
-.gD{background:#f3f4f6;color:#6b7280}
+.gA{background:rgba(5,150,105,.18);color:#34d399;border:1px solid rgba(5,150,105,.3)}
+.gB{background:rgba(202,138,4,.16);color:#fbbf24;border:1px solid rgba(202,138,4,.28)}
+.gC{background:rgba(37,99,235,.18);color:#60a5fa;border:1px solid rgba(37,99,235,.3)}
+.gD{background:rgba(113,113,122,.15);color:#71717a;border:1px solid rgba(113,113,122,.22)}
 
 /* ── TV link ── */
 .tv-btn{padding:3px 9px;border:1.5px solid var(--border);border-radius:10px;background:var(--card);color:var(--text2);cursor:pointer;font-size:.68rem;transition:all .16s;text-decoration:none;display:inline-block;font-weight:600}
-.tv-btn:hover{border-color:#2962ff;color:#2962ff;background:#eff6ff}
+.tv-btn:hover{border-color:#2563eb;color:#60a5fa;background:rgba(37,99,235,.1)}
 
 /* ── Error ── */
-.err-box{background:#fef2f2;border:1.5px solid #fecaca;border-radius:12px;padding:12px 16px;color:#991b1b;font-size:.78rem;margin:8px 0;display:none}
+.err-box{background:rgba(220,38,38,.1);border:1.5px solid rgba(220,38,38,.35);border-radius:12px;padding:12px 16px;color:#f87171;font-size:.78rem;margin:8px 0;display:none}
 
 /* ── Info note ── */
 .note{background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:12px 16px;font-size:.77rem;color:var(--text2);margin:10px 0 14px;line-height:1.65}
@@ -256,7 +256,7 @@ footer a:hover{text-decoration:underline}
 .star-btn{background:transparent;border:none;cursor:pointer;font-size:.95rem;padding:0 4px 0 0;transition:transform .15s;line-height:1;vertical-align:middle}
 .star-btn:hover{transform:scale(1.3)}
 .star-btn.on{color:#fbbf24}
-.star-btn:not(.on){color:#d1d5db}
+.star-btn:not(.on){color:#3f3f46}
 
 /* ── Export CSV ── */
 .export-btn{padding:4px 13px;background:var(--card);border:1.5px solid var(--mint);border-radius:12px;color:var(--mint);cursor:pointer;font-size:.72rem;font-weight:700;transition:all .16s}
@@ -264,13 +264,13 @@ footer a:hover{text-decoration:underline}
 
 /* ── RSI badge ── */
 .rsi-b{display:inline-block;padding:1px 6px;border-radius:7px;font-size:.62rem;font-weight:700;margin-top:2px}
-.rsi-hot{background:#fee2e2;color:#991b1b}
-.rsi-ok{background:#d1fae5;color:#065f46}
-.rsi-cold{background:#dbeafe;color:#1d4ed8}
-.rsi-mid{background:#f3f4f6;color:#6b7280}
+.rsi-hot{background:rgba(220,38,38,.15);color:#f87171}
+.rsi-ok{background:rgba(5,150,105,.18);color:#34d399}
+.rsi-cold{background:rgba(2,132,199,.16);color:#38bdf8}
+.rsi-mid{background:rgba(113,113,122,.15);color:#71717a}
 
 /* ── Contraction badge ── */
-.contr-b{display:inline-block;font-size:.62rem;font-weight:700;padding:1px 6px;border-radius:7px;background:#f5f3ff;color:#7c3aed;margin-top:2px}
+.contr-b{display:inline-block;font-size:.62rem;font-weight:700;padding:1px 6px;border-radius:7px;background:rgba(37,99,235,.16);color:#60a5fa;margin-top:2px}
 
 /* ── Sparkline ── */
 .spark-cell{white-space:nowrap;padding:6px 10px!important}
@@ -280,9 +280,9 @@ footer a:hover{text-decoration:underline}
 <div class="wrap">
 
 <!-- ── No-Key Warning Banner ── -->
-<div id="noKeyBanner" style="display:none;background:#fef2f2;border-bottom:2px solid #fca5a5;padding:8px 16px;font-size:.78rem;color:#b91c1c;text-align:center">
-  ⚠️ 未設定 Groq API Key，AI 快訊功能受限。請點右上角 <strong>⚙️ API Key</strong>，貼上你的 Key（到 <a href="https://console.groq.com" target="_blank" style="color:#b91c1c;text-decoration:underline">console.groq.com</a> 免費申請），輸入後自動儲存。
-  <button onclick="document.getElementById('noKeyBanner').style.display='none'" style="margin-left:12px;background:transparent;border:none;color:#b91c1c;cursor:pointer;font-size:.8rem">✕</button>
+<div id="noKeyBanner" style="display:none;background:rgba(220,38,38,.1);border-bottom:1.5px solid rgba(220,38,38,.3);padding:8px 16px;font-size:.78rem;color:#f87171;text-align:center">
+  未設定 Groq API Key，AI 快訊功能受限。請點右上角 <strong>API Key</strong>，貼上你的 Key（到 <a href="https://console.groq.com" target="_blank" style="color:#f87171;text-decoration:underline">console.groq.com</a> 免費申請），輸入後自動儲存。
+  <button onclick="document.getElementById('noKeyBanner').style.display='none'" style="margin-left:12px;background:transparent;border:none;color:#f87171;cursor:pointer;font-size:.8rem">✕</button>
 </div>
 
 <!-- ── Header ── -->
@@ -314,7 +314,7 @@ footer a:hover{text-decoration:underline}
   <div id="testResult" style="display:none;margin-top:6px;font-size:.75rem;padding:6px 10px;border-radius:8px"></div>
   <div id="fmTestResult" style="display:none;margin-top:6px;font-size:.75rem;padding:6px 10px;border-radius:8px"></div>
   <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-    <button class="key-save" onclick="genBookmark()" style="width:100%;background:var(--purple);color:#fff;border-color:var(--purple)">📎 產生個人書籤網址（換瀏覽器不用重輸）</button>
+    <button class="key-save" onclick="genBookmark()" style="width:100%;background:var(--purple);color:#fff;border-color:var(--purple)">產生個人書籤網址（換瀏覽器不用重輸）</button>
     <div id="bookmarkOut" style="display:none;margin-top:8px;font-size:.72rem;color:var(--text2);word-break:break-all"></div>
   </div>
 </div>
@@ -325,23 +325,22 @@ footer a:hover{text-decoration:underline}
   <!-- 左：市場震撼彈 -->
   <div>
     <div class="inv-title-row">
-      <span style="font-size:1rem">🗞️</span>
       <span class="inv-main-title">市場震撼彈</span>
       <span style="font-size:.7rem;color:var(--text2)">跟錢有關的才算重要</span>
     </div>
     <div class="news-card trump" style="margin:0">
       <div class="news-head">
-        <div class="news-title t-trump">🌍 川普+戰爭→美股台股衝擊</div>
+        <div class="news-title t-trump">川普+戰爭→美股台股衝擊</div>
         <div style="display:flex;gap:5px">
           <button class="news-refresh" onclick="loadTrump()">↻ 刷新</button>
-          <button class="news-refresh" id="logicBtn" onclick="loadTrumpLogic()" style="border-color:var(--purple);color:var(--purple)">🧠 底層邏輯</button>
+          <button class="news-refresh" id="logicBtn" onclick="loadTrumpLogic()" style="border-color:var(--purple);color:var(--purple)">底層邏輯</button>
         </div>
       </div>
       <div class="news-body loading" id="trumpBody">載入中...</div>
       <div class="news-time" id="trumpTime"></div>
       <!-- 底層邏輯分析區 -->
       <div id="trumpLogicWrap" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;display:none">
-        <div style="font-size:.68rem;font-weight:800;color:var(--purple);letter-spacing:.05em;margin-bottom:6px">🧠 TRUMP 雙層解碼</div>
+        <div style="font-size:.68rem;font-weight:800;color:var(--purple);letter-spacing:.05em;margin-bottom:6px">TRUMP 雙層解碼</div>
         <div class="news-body loading" id="trumpLogicBody" style="font-size:.77rem"></div>
         <div class="news-time" id="trumpLogicTime"></div>
       </div>
@@ -351,12 +350,11 @@ footer a:hover{text-decoration:underline}
   <!-- 右：投資人專區（美林時鐘） -->
   <div>
     <div class="inv-title-row">
-      <span style="font-size:1rem">🌟</span>
       <span class="inv-main-title">投資人專區</span>
     </div>
     <div class="inv-card c-clock" style="text-align:center">
       <div class="inv-head" style="justify-content:center;gap:8px;margin-bottom:10px">
-        <div class="inv-label lbl-clock" style="font-size:.85rem">⏰ 美林投資時鐘</div>
+        <div class="inv-label lbl-clock" style="font-size:.85rem">美林投資時鐘</div>
         <button class="inv-rf" onclick="loadClock()">↻</button>
       </div>
       <div id="clockSvg" style="margin:0 auto 8px"></div>
@@ -375,7 +373,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- ── VCP 掃描 ── -->
 <div class="scan-section-title">
-  <span>🔍</span> VCP 自動掃描
+  VCP 自動掃描
   <span id="scanSrcLabel" style="font-size:.68rem;color:var(--text2);font-weight:400;letter-spacing:0">全台灣 TSE+OTC ~1700支 · Yahoo Finance</span>
 </div>
 
@@ -384,8 +382,8 @@ footer a:hover{text-decoration:underline}
   <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;align-items:center">
     <span style="font-size:.68rem;font-weight:800;color:var(--text2);letter-spacing:.05em;text-transform:uppercase">掃描範圍</span>
     <span class="pill" id="src-preset" onclick="setScanSrc('preset',this)">預設清單 57支</span>
-    <span class="pill" id="src-tse" onclick="setScanSrc('tse',this)">🇹🇼 全上市 TSE ~900支</span>
-    <span class="pill s-on" id="src-all" onclick="setScanSrc('all',this)">🇹🇼 全台灣 TSE+OTC ~1700支</span>
+    <span class="pill" id="src-tse" onclick="setScanSrc('tse',this)">全上市 TSE ~900支</span>
+    <span class="pill s-on" id="src-all" onclick="setScanSrc('all',this)">全台灣 TSE+OTC ~1700支</span>
     <span class="pill" id="src-custom" onclick="setScanSrc('custom',this)">自訂匯入</span>
   </div>
 
@@ -401,8 +399,8 @@ footer a:hover{text-decoration:underline}
 
   <!-- 掃描按鈕 -->
   <div class="scan-row">
-    <button class="scan-btn" id="scanBtn" onclick="startScan()">✨ 開始掃描 VCP</button>
-    <button id="cancelBtn" onclick="cancelScan()" style="display:none;padding:11px 20px;background:var(--card);border:1.5px solid var(--red);border-radius:16px;color:var(--red);font-size:.85rem;font-weight:700;cursor:pointer">⏹ 停止</button>
+    <button class="scan-btn" id="scanBtn" onclick="startScan()">開始掃描 VCP</button>
+    <button id="cancelBtn" onclick="cancelScan()" style="display:none;padding:11px 20px;background:var(--card);border:1.5px solid var(--red);border-radius:16px;color:var(--red);font-size:.85rem;font-weight:700;cursor:pointer">停止</button>
     <div class="scan-info" id="scanInfo">只顯示 VCP 候選股，掃描中即時更新。全台灣掃描約 <strong>8–15 分鐘</strong>。</div>
   </div>
   <div id="fetchApiStatus" style="font-size:.72rem;color:var(--text2);margin-top:6px;display:none"></div>
@@ -417,22 +415,22 @@ footer a:hover{text-decoration:underline}
 <!-- ── Summary ── -->
 <div class="sum-grid" id="sumGrid" style="display:none">
   <div class="sum-card">
-    <div class="sum-label">✅ 已掃描</div>
+    <div class="sum-label">已掃描</div>
     <div class="sum-val" id="sumScanned" style="color:var(--purple)">—</div>
     <div class="sum-sub">支成功取得數據</div>
   </div>
   <div class="sum-card">
-    <div class="sum-label">🌸 VCP 候選 ≥60</div>
+    <div class="sum-label">VCP 候選 ≥60</div>
     <div class="sum-val" id="sumVcp" style="color:var(--yellow)">—</div>
     <div class="sum-sub">支符合條件</div>
   </div>
   <div class="sum-card">
-    <div class="sum-label">⭐ 強力 VCP ≥80</div>
+    <div class="sum-label">強力 VCP ≥80</div>
     <div class="sum-val" id="sumStrong" style="color:var(--mint)">—</div>
     <div class="sum-sub">支高分候選</div>
   </div>
   <div class="sum-card">
-    <div class="sum-label">🕐 更新時間</div>
+    <div class="sum-label">更新時間</div>
     <div class="sum-val" id="sumTime" style="font-size:.85rem;color:var(--text)">—</div>
     <div class="sum-sub">30 分鐘內免重新掃描</div>
   </div>
@@ -443,8 +441,8 @@ footer a:hover{text-decoration:underline}
   <div class="filter-row" id="exRow">
     <span class="flabel">交易所</span>
     <span class="pill s-on" onclick="setEx('ALL',this)">全部</span>
-    <span class="pill" onclick="setEx('TW',this)">🏛 上市 TSE</span>
-    <span class="pill" onclick="setEx('TWO',this)">🏪 上櫃 OTC</span>
+    <span class="pill" onclick="setEx('TW',this)">上市 TSE</span>
+    <span class="pill" onclick="setEx('TWO',this)">上櫃 OTC</span>
   </div>
   <div class="filter-row" id="scoreRow">
     <span class="flabel">VCP 分數</span>
@@ -488,9 +486,9 @@ footer a:hover{text-decoration:underline}
 
 <!-- ── Note ── -->
 <div class="note">
-  💡 <strong>VCP 四大條件：</strong>Stage 2（股價 &gt; MA50 &gt; MA150 &gt; MA200）· 距 52 週高點 &lt;25% · ATR 波動率收縮 · 成交量萎縮。分數 ≥ 80 為強力候選。<br>
-  📊 <strong>基本面：</strong>ROE ≥ 15% 佳 · 毛利率 / 營益率越高越好 · EPS 年增 / 營收年增為正成長。資料來源：Yahoo Finance。<br>
-  🏦 <strong>籌碼：</strong>外資 / 投信買賣超，來源：FinMind（設定 Token 時優先）或 TWSE T86 備援。設定 <a href="https://finmindtrade.com" target="_blank">FinMind Token</a> 可同時解鎖財報（FinMind 優先）與月營收 2 年新高偵測。數值為正 = 買超，負 = 賣超。
+  <strong>VCP 四大條件：</strong>Stage 2（股價 &gt; MA50 &gt; MA150 &gt; MA200）· 距 52 週高點 &lt;25% · ATR 波動率收縮 · 成交量萎縮。分數 ≥ 80 為強力候選。<br>
+  <strong>基本面：</strong>ROE ≥ 15% 佳 · 毛利率 / 營益率越高越好 · EPS 年增 / 營收年增為正成長。資料來源：Yahoo Finance。<br>
+  <strong>籌碼：</strong>外資 / 投信買賣超，來源：FinMind（設定 Token 時優先）或 TWSE T86 備援。設定 <a href="https://finmindtrade.com" target="_blank">FinMind Token</a> 可同時解鎖財報（FinMind 優先）與月營收 2 年新高偵測。數值為正 = 買超，負 = 賣超。
 </div>
 
 <!-- ── Table ── -->
@@ -513,7 +511,7 @@ footer a:hover{text-decoration:underline}
     </tr>
   </thead>
   <tbody id="tblBody">
-    <tr class="load-row"><td colspan="12">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>
+    <tr class="load-row"><td colspan="12">開啟自動掃描中...</td></tr>
   </tbody>
 </table>
 </div>
@@ -529,7 +527,7 @@ footer a:hover{text-decoration:underline}
 </div>
 
 <footer>
-  🐰✨ VCP Finder · 台股 Volatility Contraction Pattern 掃描<br>
+  VCP Finder · 台股 Volatility Contraction Pattern 掃描<br>
   VCP 理論出自 Mark Minervini《超級績效》· 僅供研究參考，不構成投資建議<br>
   延伸資源：
   <a href="https://www.tradingview.com/" target="_blank">TradingView VCP腳本</a> ·
@@ -1586,7 +1584,7 @@ async function startScan(){
   const pF=document.getElementById('progFill');
   const pT=document.getElementById('progText');
   const err=document.getElementById('errBox');
-  btn.disabled=true; btn.textContent='⏳ 掃描中...';
+  btn.disabled=true; btn.textContent='掃描中...';
   cancelBtn.style.display='';
   pW.classList.add('show'); err.style.display='none';
   document.getElementById('fetchApiStatus').style.display='';
@@ -1613,7 +1611,7 @@ async function startScan(){
     const codes=[...new Set(raw.split(/[\s,，、\n]+/).map(s=>s.trim()).filter(s=>/^\d{4,6}$/.test(s)))];
     if(!codes.length){
       document.getElementById('importStatus').textContent='⚠️ 請先貼上股票代號';
-      scanning=false; btn.disabled=false; btn.textContent='✨ 開始掃描 VCP';
+      scanning=false; btn.disabled=false; btn.textContent='開始掃描 VCP';
       cancelBtn.style.display='none'; return;
     }
     const existingMap=new Map(DEFAULT_STOCKS.map(s=>[s.code,s]));
@@ -1697,7 +1695,7 @@ async function startScan(){
   }
 
   scanning=false; btn.disabled=false;
-  btn.textContent=scanCancelled?'✨ 重新掃描':'🔄 重新掃描';
+  btn.textContent='重新掃描';
   cancelBtn.style.display='none';
   pT.textContent=scanCancelled
     ?`⏹ 已停止 · 已掃 ${done}/${total} 支，VCP候選 ${vcpFound} 支`
@@ -2021,19 +2019,29 @@ function sparkline(closes,w=80,h=28){
   loadKeysFromHash();
   updateKeyStatus();
 
-  // Restore cache
+  // Restore cache or auto-scan
+  let cacheLoaded=false;
   try{
     const raw=localStorage.getItem('vcpCache');
-    if(!raw)return;
-    const{results,ts}=JSON.parse(raw);
-    const age=(Date.now()-ts)/60000;
-    if(age>360)return; // 6 小時內有效
-    allResults=results;
-    document.getElementById('scanBtn').textContent='🔄 重新掃描';
-    const ageStr=age>=60?`${Math.round(age/60)} 小時`:`${Math.round(age)} 分鐘`;
-    document.getElementById('scanInfo').innerHTML=`上次掃描：<strong>${new Date(ts).toLocaleTimeString('zh-TW')}</strong>（${ageStr}前）`;
-    renderAll();
+    if(raw){
+      const{results,ts}=JSON.parse(raw);
+      const age=(Date.now()-ts)/60000;
+      if(age<=360){ // 6 小時內有效
+        allResults=results;
+        document.getElementById('scanBtn').textContent='重新掃描';
+        const ageStr=age>=60?`${Math.round(age/60)} 小時`:`${Math.round(age)} 分鐘`;
+        document.getElementById('scanInfo').innerHTML=`上次掃描：<strong>${new Date(ts).toLocaleTimeString('zh-TW')}</strong>（${ageStr}前）`;
+        renderAll();
+        cacheLoaded=true;
+      }
+    }
   }catch(_){}
+
+  // 無快取時自動啟動掃描
+  if(!cacheLoaded){
+    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="12"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
+    setTimeout(()=>startScan(),1200);
+  }
 
   // Auto-load AI sections（只自動跑 Trump + Clock，底層邏輯等使用者點）
   setTimeout(()=>{loadTrump(true);loadClock(true);},600);
