@@ -753,23 +753,19 @@ async function testFinMind(){
     break;
   }
   const lines=[];
-  // 1. 單支測試（確認 Token 有效）
-  try{
-    const r1=await fetchTO(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&date=${dateStr}&stock_id=2330&token=${token}`,15000);
-    const j1=await r1.json();
-    if(Number(j1.status)===200&&j1.data?.length) lines.push(`✅ 單支測試（2330 ${dateStr}）：${j1.data.length} 筆 — Token 有效`);
-    else if(Number(j1.status)===401||Number(j1.status)===403) {lines.push(`❌ Token 驗證失敗（status=${j1.status} msg=${j1.msg||''}）`);el.style.background='#fee2e2';el.innerHTML=lines.join('<br>');return;}
-    else lines.push(`⚠️ 單支 status=${j1.status} data=${j1.data?.length??0} msg=${j1.msg||''}`);
-  }catch(e){lines.push(`❌ 單支連線失敗：${e.message}`);}
+  // 1. 單支測試（確認 Token 有效，走 CORS proxy）
+  const j1=await fetchFinMind(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&date=${dateStr}&stock_id=2330&token=${token}`,15000);
+  if(!j1) lines.push('❌ 單支連線失敗（所有 proxy 都無法連到 FinMind）');
+  else if(Number(j1.status)===200&&j1.data?.length) lines.push(`✅ 單支測試（2330 ${dateStr}）：${j1.data.length} 筆 — Token 有效`);
+  else if(Number(j1.status)===401||Number(j1.status)===403){lines.push(`❌ Token 驗證失敗（${j1.msg||''}）`);el.style.background='#fee2e2';el.innerHTML=lines.join('<br>');return;}
+  else lines.push(`⚠️ 單支 status=${j1?.status} data=${j1?.data?.length??0} msg=${j1?.msg||''}`);
   // 2. Bulk 測試（全市場，這是實際掃描用的 API call）
-  try{
-    el.innerHTML=lines.join('<br>')+'<br>全市場 Bulk 測試中...';
-    const r2=await fetchTO(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&date=${dateStr}&token=${token}`,25000);
-    const j2=await r2.json();
-    if(Number(j2.status)===200&&j2.data?.length>10) lines.push(`✅ Bulk 全市場 ${dateStr}：${j2.data.length} 筆 — 籌碼可正常載入`);
-    else if(Number(j2.status)===200&&(j2.data?.length??0)<=10) lines.push(`⚠️ Bulk 回傳 ${j2.data?.length??0} 筆（太少）— 免費帳號可能無法 bulk 抓全市場`);
-    else lines.push(`⚠️ Bulk status=${j2.status} msg=${j2.msg||'無'} data=${j2.data?.length??0}`);
-  }catch(e){lines.push(`❌ Bulk 連線失敗：${e.message}`);}
+  el.innerHTML=lines.join('<br>')+'<br>全市場 Bulk 測試中（走 CORS proxy）...';
+  const j2=await fetchFinMind(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&date=${dateStr}&token=${token}`,30000);
+  if(!j2) lines.push('❌ Bulk 連線失敗（所有 proxy 都無法連到 FinMind）');
+  else if(Number(j2.status)===200&&(j2.data?.length??0)>10) lines.push(`✅ Bulk 全市場 ${dateStr}：${j2.data.length} 筆 — 籌碼可正常載入`);
+  else if(Number(j2.status)===200&&(j2.data?.length??0)===0) lines.push(`⚠️ Bulk Token 有效但今日（${dateStr}）無資料（可能非交易日）`);
+  else lines.push(`⚠️ Bulk status=${j2?.status} msg=${j2?.msg||'無'} data=${j2?.data?.length??0}`);
   const ok=lines.every(l=>l.startsWith('✅'));
   el.style.background=ok?'#dcfce7':lines.some(l=>l.startsWith('❌'))?'#fee2e2':'#fef3c7';
   el.innerHTML=lines.join('<br>');
@@ -781,10 +777,8 @@ async function fetchChipsFinMind(dateStr){
   if(!token) return null;
   const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&date=${dateStr}&token=${token}`;
   try{
-    const r=await fetchTO(url,20000);
-    if(!r.ok) return null;
-    const json=await r.json();
-    if(Number(json.status)!==200||!json.data?.length) return null;
+    const json=await fetchFinMind(url,25000);
+    if(!json||Number(json.status)!==200||!json.data?.length) return null;
     const map={};
     json.data.forEach(row=>{
       const code=String(row.stock_id||'').trim();
@@ -808,10 +802,8 @@ async function fetchFundamentalsFinMind(stockId){
   const dateStr=since.toISOString().slice(0,10);
   const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockFinancialStatements&stock_id=${stockId}&date=${dateStr}&token=${token}`;
   try{
-    const r=await fetchTO(url,12000);
-    if(!r.ok) return null;
-    const json=await r.json();
-    if(Number(json.status)!==200||!json.data?.length) return null;
+    const json=await fetchFinMind(url,15000);
+    if(!json||Number(json.status)!==200||!json.data?.length) return null;
     const rows=[...json.data].sort((a,b)=>b.date.localeCompare(a.date));
     // Build map: type -> array of values (newest first)
     const byType={};
@@ -851,10 +843,8 @@ async function fetchMonthRevenueHigh(stockId){
   const dateStr=since.toISOString().slice(0,10);
   const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMonthRevenue&stock_id=${stockId}&date=${dateStr}&token=${token}`;
   try{
-    const r=await fetchTO(url,10000);
-    if(!r.ok) return null;
-    const json=await r.json();
-    if(Number(json.status)!==200||!json.data?.length) return null;
+    const json=await fetchFinMind(url,12000);
+    if(!json||Number(json.status)!==200||!json.data?.length) return null;
     const rows=[...json.data].sort((a,b)=>b.date.localeCompare(a.date));
     if(rows.length<2) return null;
     const latest=Number(rows[0].revenue);
@@ -872,15 +862,10 @@ async function prefetchAllFundamentals(){
   const dateStr=since.toISOString().slice(0,10);
   const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockFinancialStatements&date=${dateStr}&token=${token}`;
   try{
-    if(infoEl) infoEl.textContent='📊 FinMind 財報下載中（可能需 30 秒）...';
-    const r=await fetchTO(url,60000);
-    if(!r.ok){
-      if(infoEl) infoEl.textContent=`⚠️ FinMind 財報失敗（HTTP ${r.status}），將用 Yahoo 備援`;
-      return;
-    }
-    const json=await r.json();
-    if(Number(json.status)!==200||!json.data?.length){
-      if(infoEl) infoEl.textContent=`⚠️ FinMind 財報無資料（狀態:${json.status} msg:${json.msg||'?'}），將用 Yahoo 備援`;
+    if(infoEl) infoEl.textContent='📊 FinMind 財報下載中（走 CORS proxy）...';
+    const json=await fetchFinMind(url,60000);
+    if(!json||Number(json.status)!==200||!json.data?.length){
+      if(infoEl) infoEl.textContent=`⚠️ FinMind 財報無資料（狀態:${json?.status||'無回應'} msg:${json?.msg||'?'}），將用 Yahoo 備援`;
       return;
     }
     // 按股票代號分組
@@ -925,15 +910,10 @@ async function prefetchAllRevenue(){
   const dateStr=since.toISOString().slice(0,10);
   const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMonthRevenue&date=${dateStr}&token=${token}`;
   try{
-    if(infoEl) infoEl.textContent='📈 FinMind 月營收下載中...';
-    const r=await fetchTO(url,60000);
-    if(!r.ok){
-      if(infoEl) infoEl.textContent=`⚠️ FinMind 月營收失敗（HTTP ${r.status}）`;
-      return;
-    }
-    const json=await r.json();
-    if(Number(json.status)!==200||!json.data?.length){
-      if(infoEl) infoEl.textContent=`⚠️ FinMind 月營收無資料（${json.msg||json.status}）`;
+    if(infoEl) infoEl.textContent='📈 FinMind 月營收下載中（走 CORS proxy）...';
+    const json=await fetchFinMind(url,60000);
+    if(!json||Number(json.status)!==200||!json.data?.length){
+      if(infoEl) infoEl.textContent=`⚠️ FinMind 月營收無資料（${json?.status||'無回應'} ${json?.msg||''}）`;
       return;
     }
     const byStock={};
@@ -1468,6 +1448,21 @@ const PROXIES=[
   '',                          // direct (browser CORS 可能擋)
 ];
 function fetchTO(url,ms=9000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal}).finally(()=>clearTimeout(t));}
+// FinMind 需要走 CORS proxy（直連被瀏覽器 CORS 攔截）
+const FM_PROXIES=['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest=',''];
+async function fetchFinMind(url,ms=18000){
+  for(const px of FM_PROXIES){
+    try{
+      const purl=px?px+encodeURIComponent(url):url;
+      const r=await fetchTO(purl,ms);
+      if(!r.ok) continue;
+      const text=await r.text();
+      if(!text||text.trim().startsWith('<')||text.trim().startsWith('<!')) continue;
+      return JSON.parse(text);
+    }catch(_){}
+  }
+  return null;
+}
 async function fetchYahoo(sym){
   const base=`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1y&includePrePost=false`;
   for(const px of PROXIES){
