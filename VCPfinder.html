@@ -672,18 +672,30 @@ async function testGroq(){
   const k=document.getElementById('groqInput').value.trim()||getKey();
   const el=document.getElementById('testResult');
   if(!k){el.style.display='block';el.style.background='#fef3c7';el.textContent='⚠️ 請先輸入 Groq Key';return;}
-  el.style.display='block';el.style.background='#f3f4f6';el.textContent='測試中...';
-  try{
-    const r=await fetchTimed('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+k},
-      body:JSON.stringify({messages:[{role:'user',content:'hello'}],model:'llama3-8b-8192',max_tokens:5})
-    },12000);
-    if(r.status===401||r.status===403){el.style.background='#fee2e2';el.textContent='❌ Key 無效或已過期，請重新申請';return;}
-    if(r.status===429){el.style.background='#fef3c7';el.textContent='⚠️ 已達速率限制，但 Key 有效！';return;}
-    if(r.ok){el.style.background='#dcfce7';el.textContent='✅ Groq Key 正常！AI 快訊應可運作';return;}
-    el.style.background='#fee2e2';el.textContent=`❌ 錯誤 ${r.status}，請確認 Key`;
-  }catch(e){el.style.background='#fee2e2';el.textContent='❌ 網路錯誤：'+e.message;}
+  const keyHint=k.length>8?`${k.slice(0,6)}...${k.slice(-4)}`:'(太短)';
+  el.style.display='block';el.style.background='#f3f4f6';el.textContent=`測試中（${keyHint}）...`;
+  const models=['llama-3.1-8b-instant','llama3-8b-8192','gemma2-9b-it'];
+  for(const model of models){
+    try{
+      const r=await fetchTimed('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+k},
+        body:JSON.stringify({messages:[{role:'user',content:'hi'}],model,max_tokens:3})
+      },12000);
+      if(r.status===401||r.status===403){
+        let body=''; try{const j=await r.json();body=j?.error?.message||'';}catch(_){}
+        el.style.background='#fee2e2';
+        el.textContent=`❌ 驗證失敗 (${r.status})：${body||'Key 無效或已過期'}。請到 console.groq.com 重新申請`;
+        return;
+      }
+      if(r.status===429){el.style.background='#fef3c7';el.textContent=`⚠️ 速率限制（${model}），但 Key 本身有效！`;return;}
+      if(r.ok){el.style.background='#dcfce7';el.textContent=`✅ Key 正常！（model: ${model}）AI 快訊可用`;return;}
+      // 400/404 = model 不支援，試下一個
+    }catch(e){
+      el.style.background='#fee2e2';el.textContent=`❌ 網路錯誤：${e.message}（可能是 CORS 或防火牆）`;return;
+    }
+  }
+  el.style.background='#fef3c7';el.textContent='⚠️ 所有 model 都無法連線，請稍後再試';
 }
 // ── 書籤網址（把 key 加密藏在 hash，方便換瀏覽器）──
 function genBookmark(){
