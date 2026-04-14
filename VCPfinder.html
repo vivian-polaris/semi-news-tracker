@@ -1320,7 +1320,7 @@ async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
         const code=(s.Code||s.code||'').trim();
         const name=(s.Name||s.name||code).trim();
         if(/^\d{4}$/.test(code))
-          results.push({code,name,sector:sectorMap.get(code)||'上市',ex:'TW'});
+          results.push({code,name,sector:sectorMap.get(code)||'',ex:'TW'});
       });
       if(infoEl) infoEl.textContent=`✅ 上市：${results.length} 支`;
     } else {
@@ -1350,7 +1350,7 @@ async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
         const code=String(codeKey?s[codeKey]:'').trim();
         const name=String(nameKey?s[nameKey]:code).trim();
         if(/^\d{4}$/.test(code)&&!results.find(r=>r.code===code))
-          results.push({code,name,sector:sectorMap.get(code)||'上櫃',ex:'TWO'});
+          results.push({code,name,sector:sectorMap.get(code)||'',ex:'TWO'});
       });
       if(infoEl) infoEl.textContent=`✅ 上市 ${otcStart} 支 ＋ 上櫃 ${results.length-otcStart} 支`;
     } else {
@@ -1845,7 +1845,7 @@ function renderTable(){
       return `<tr style="opacity:.45">
         <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
         <td class="tn">${r.name}</td>
-        <td><span style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span><span class="tsec">${r.sector}</span></td>
+        <td><span style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span>${r.sector?`<span class="tsec">${r.sector}</span>`:''}</td>
         <td colspan="8" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
         <td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
       </tr>`;
