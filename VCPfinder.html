@@ -241,6 +241,15 @@ thead th:nth-child(11),tbody td:nth-child(11){min-width:96px}
 /* ── Section divider ── */
 .sec-div{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:16px 0}
 
+/* ── View Tabs ── */
+.view-tabs{display:flex;gap:0;margin-bottom:0;border-bottom:2px solid var(--border)}
+.view-tab{padding:9px 22px;font-size:.82rem;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap}
+.view-tab:hover{color:var(--text)}
+.view-tab.active{color:var(--purple);border-bottom-color:var(--purple)}
+.view-tab .tab-badge{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;font-size:.65rem;font-weight:800;background:rgba(59,130,246,.15);color:#93c5fd}
+.view-tab.active .tab-badge{background:rgba(59,130,246,.25);color:#60a5fa}
+.tab-loading{font-size:.68rem;color:var(--text2);animation:pulse 1.5s ease-in-out infinite;margin-left:6px}
+
 @media(max-width:640px){
   .back-btn,.key-btn{position:static;margin-bottom:8px;display:inline-block}
   thead th,tbody td{padding:8px 9px;font-size:.73rem}
@@ -485,6 +494,19 @@ footer a:hover{text-decoration:underline}
   </div>
 </div>
 
+<!-- ── View Tabs ── -->
+<div class="view-tabs" id="viewTabs" style="display:none">
+  <button class="view-tab active" id="tabVcp" onclick="switchTab('vcp')">
+    VCP 技術面
+    <span class="tab-badge" id="tabVcpCount">—</span>
+  </button>
+  <button class="view-tab" id="tabFund" onclick="switchTab('fund')">
+    基本面 + 籌碼
+    <span class="tab-badge" id="tabFundCount">—</span>
+    <span class="tab-loading" id="tabFundLoading" style="display:none">掃描中...</span>
+  </button>
+</div>
+
 <!-- ── Note ── -->
 <div class="note">
   <strong>VCP 四大條件：</strong>Stage 2（股價 &gt; MA50 &gt; MA150 &gt; MA200）· 距 52 週高點 &lt;25% · ATR 波動率收縮 · 成交量萎縮。分數 ≥ 80 為強力候選。<br>
@@ -495,8 +517,8 @@ footer a:hover{text-decoration:underline}
 <!-- ── Table ── -->
 <div class="tbl-wrap" id="tblWrap">
 <table>
-  <thead>
-    <tr>
+  <thead id="tblHead">
+    <tr id="tblHeadVcp">
       <th onclick="setSort('code')">代號 ⇅</th>
       <th onclick="setSort('name')">名稱</th>
       <th>交易所／產業</th>
@@ -506,13 +528,21 @@ footer a:hover{text-decoration:underline}
       <th>技術信號</th>
       <th>走勢</th>
       <th onclick="setSort('score')">VCP分數 ⇅</th>
+      <th>操作</th>
+    </tr>
+    <tr id="tblHeadFund" style="display:none">
+      <th onclick="setSort('code')">代號 ⇅</th>
+      <th onclick="setSort('name')">名稱</th>
+      <th>交易所／產業</th>
+      <th onclick="setSort('price')">現價 ⇅</th>
+      <th onclick="setSort('score')">VCP分數 ⇅</th>
       <th>基本面</th>
       <th>籌碼(外資/投信)</th>
       <th>操作</th>
     </tr>
   </thead>
   <tbody id="tblBody">
-    <tr class="load-row"><td colspan="12">開啟自動掃描中...</td></tr>
+    <tr class="load-row"><td colspan="10">開啟自動掃描中...</td></tr>
   </tbody>
 </table>
 </div>
@@ -621,7 +651,8 @@ const STOCKS = [
 let allResults=[], scoreMin=70, pctMax=999, secFilter='ALL', exFilter='ALL';
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
-let scanCancelled=false, scanSrc='all';
+let scanCancelled=false, scanSrc='all', viewTab='vcp';
+let phase2Done=false;
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
 
 // ─── Key helpers ──────────────────────────────────────────────────────────
@@ -1595,6 +1626,9 @@ async function startScan(){
   allResults=[];
   chipsMap={};
   fundamentalsMap={};
+  phase2Done=false;
+  viewTab='vcp';
+  switchTab('vcp');
   revenueHighMap={};
 
   // Fetch institutional chips data once before scan
@@ -1691,25 +1725,37 @@ async function startScan(){
     if(i+BATCH<total)await delay(DELAY);
   }
 
+  // ── Phase 1 done: show VCP tab, reveal viewTabs ──────────────────────────
+  renderAll();
+  // keep on VCP tab while phase 2 runs
+
   // ── Phase 2: 只對 VCP 候選補抓基本面（大幅縮小範圍）────────────────────
+  phase2Done=false;
   if(!scanCancelled){
     const candidates=allResults.filter(r=>r.vcp&&r.vcp.score>=40);
     const FBATCH=4;
     let fdone=0;
-    pT.textContent=`【Phase 2】補抓基本面：${candidates.length} 支 VCP 候選中...`;
+    // show loading indicator on fund tab
+    const fl=document.getElementById('tabFundLoading');
+    if(fl)fl.style.display='';
+    pT.textContent=`✅ VCP完成！Phase 2 補抓基本面：${candidates.length} 支候選中...`;
     pF.style.width='100%';
     for(let i=0;i<candidates.length;i+=FBATCH){
       if(scanCancelled)break;
       const fbatch=candidates.slice(i,i+FBATCH);
       await Promise.all(fbatch.map(async r=>{
-        // 優先用 FinMind 批次快取（已在 prefetch 階段填好）
         r.fund=await fetchFundamentals(r.sym);
         fdone++;
       }));
-      pT.textContent=`【Phase 2】基本面 ${fdone}/${candidates.length}（${Math.round(fdone/candidates.length*100)}%）`;
-      renderTable();
+      pT.textContent=`Phase 2 基本面 ${fdone}/${candidates.length}（${Math.round(fdone/candidates.length*100)}%）`;
+      if(viewTab==='fund') renderTable();
+      else updateTabCounts();
       if(i+FBATCH<candidates.length)await delay(100);
     }
+    phase2Done=true;
+    if(fl)fl.style.display='none';
+    updateTabCounts();
+    if(viewTab==='fund') renderTable();
   }
 
   scanning=false; btn.disabled=false;
@@ -1721,6 +1767,29 @@ async function startScan(){
   if(!scanCancelled&&failed>total*0.5){err.style.display='';err.textContent=`⚠️ 超過半數無法取得數據（${failed}/${total}），可能是 CORS 限制或網路問題。`;}
   renderAll();
   try{localStorage.setItem('vcpCache',JSON.stringify({results:allResults,ts:Date.now()}));}catch(_){}
+}
+
+// ─── Tab Switch ───────────────────────────────────────────────────────────
+function switchTab(tab){
+  viewTab=tab;
+  document.getElementById('tabVcp').classList.toggle('active',tab==='vcp');
+  document.getElementById('tabFund').classList.toggle('active',tab==='fund');
+  document.getElementById('tblHeadVcp').style.display=tab==='vcp'?'':'none';
+  document.getElementById('tblHeadFund').style.display=tab==='fund'?'':'none';
+  renderTable();
+}
+function updateTabCounts(){
+  const cands=allResults.filter(r=>r.vcp&&r.vcp.score>=scoreMin);
+  document.getElementById('tabVcpCount').textContent=cands.length;
+  const withFund=cands.filter(r=>r.fund&&Object.values(r.fund).some(v=>v!=null));
+  const fl=document.getElementById('tabFundLoading');
+  if(phase2Done){
+    document.getElementById('tabFundCount').textContent=withFund.length+'/'+cands.length;
+    if(fl)fl.style.display='none';
+  }else{
+    document.getElementById('tabFundCount').textContent=withFund.length+'/'+cands.length;
+    if(fl)fl.style.display='';
+  }
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────
@@ -1737,6 +1806,8 @@ function renderAll(){
   document.getElementById('filterBox').style.display='';
   document.getElementById('statsBar').style.display='';
   document.getElementById('legendDiv').style.display='';
+  document.getElementById('viewTabs').style.display='';
+  updateTabCounts();
   const wd=allResults.filter(r=>r.vcp);
   document.getElementById('sumScanned').textContent=wd.length;
   document.getElementById('sumVcp').textContent=wd.filter(r=>r.vcp.score>=60).length;
@@ -1842,40 +1913,60 @@ function renderTable(){
   const counted=allResults.filter(r=>r.vcp).length;
   document.getElementById('showN').textContent=sorted.length;
   document.getElementById('totalN').textContent=counted;
+  updateTabCounts();
   const tbody=document.getElementById('tblBody');
-  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="12">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
-  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="12">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
+  const cols=viewTab==='vcp'?10:8;
+  if(!allResults.length){tbody.innerHTML=`<tr class="load-row"><td colspan="${cols}">🐰 尚未掃描，請點擊「開始掃描 VCP」</td></tr>`;return;}
+  if(!sorted.length){tbody.innerHTML=`<tr class="empty-row"><td colspan="${cols}">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>`;return;}
   tbody.innerHTML=sorted.map(r=>{
     const v=r.vcp;
     const tv=`https://www.tradingview.com/chart/?symbol=TWSE%3A${r.code}`;
     const watched=isWatched(r.code);
     const starEl=`<button class="star-btn${watched?' on':''}" onclick="toggleWatch('${r.code}',this)">★</button>`;
+    const exchSec=`<span class="tsec">${r.ex==='TWO'?'上櫃':'上市'}${r.sector?' '+r.sector:''}</span>`;
     if(!v){
       return `<tr style="opacity:.45">
         <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
         <td class="tn">${r.name}</td>
-        <td><span class="tsec">${r.ex==='TWO'?'上櫃':'上市'}${r.sector?' '+r.sector:''}</span></td>
-        <td colspan="8" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
+        <td>${exchSec}</td>
+        <td colspan="${cols-4}" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據</td>
         <td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
       </tr>`;
     }
     const g=grade(v.score),s=sc(v.score);
     const pBadge=v.pctH<15?'pct-A':v.pctH<25?'pct-B':'pct-C';
-    const maHTML=[
-      v.ma50!=null?`<div class="leg" title="MA50: ${v.ma50}"><div class="legdot" style="background:${v.abM50?'#059669':'#dc2626'}"></div><span class="ma-mini">50</span></div>`:'',
-      v.ma150!=null?`<div class="leg" title="MA150: ${v.ma150}"><div class="legdot" style="background:${v.abM150?'#059669':'#dc2626'}"></div><span class="ma-mini">150</span></div>`:'',
-      v.ma200!=null?`<div class="leg" title="MA200: ${v.ma200}"><div class="legdot" style="background:${v.abM200?'#059669':'#dc2626'}"></div><span class="ma-mini">200</span></div>`:'',
-    ].join('');
-    const atrHTML=v.atrL!=='—'
-      ?`<span class="sig sig-${v.atrS}">${v.atrL}</span>${v.atrRat!=null?`<br><span style="font-size:.6rem;color:#9ca3af">${v.atrRat}</span>`:''}`
-      :'<span style="color:#d1d5db">—</span>';
-    const volHTML=v.volL!=='—'
-      ?`<span class="sig sig-${v.volS}">${v.volL}</span>${v.vRat!=null?`<br><span style="font-size:.6rem;color:#9ca3af">${v.vRat}</span>`:''}`
-      :'<span style="color:#d1d5db">—</span>';
     const cHTML=v.contractions>0?`<br><span class="contr-b">${v.contractions}段收縮</span>`:'';
-    // Merged tech signal cell (ATR + volume)
-    const techHTML=`<div style="display:flex;flex-direction:column;gap:2px">${atrHTML}${volHTML}</div>`;
-    // Fundamental score badge
+    const vcpScoreCell=`<div class="scr-wrap">
+      <div class="scr-bg"><div class="scr-fill f${s}" style="width:${v.score}%"></div></div>
+      <span class="scr-num s${s}">${v.score}</span>
+    </div>`;
+    const opCell=`<td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>`;
+
+    // ── VCP tab ──
+    if(viewTab==='vcp'){
+      const maHTML=[
+        v.ma50!=null?`<div class="leg" title="MA50: ${v.ma50}"><div class="legdot" style="background:${v.abM50?'#059669':'#dc2626'}"></div><span class="ma-mini">50</span></div>`:'',
+        v.ma150!=null?`<div class="leg" title="MA150: ${v.ma150}"><div class="legdot" style="background:${v.abM150?'#059669':'#dc2626'}"></div><span class="ma-mini">150</span></div>`:'',
+        v.ma200!=null?`<div class="leg" title="MA200: ${v.ma200}"><div class="legdot" style="background:${v.abM200?'#059669':'#dc2626'}"></div><span class="ma-mini">200</span></div>`:'',
+      ].join('');
+      const atrHTML=v.atrL!=='—'?`<span class="sig sig-${v.atrS}">${v.atrL}</span>${v.atrRat!=null?`<br><span style="font-size:.6rem;color:#9ca3af">${v.atrRat}</span>`:''}` :'<span style="color:#d1d5db">—</span>';
+      const volHTML=v.volL!=='—'?`<span class="sig sig-${v.volS}">${v.volL}</span>${v.vRat!=null?`<br><span style="font-size:.6rem;color:#9ca3af">${v.vRat}</span>`:''}` :'<span style="color:#d1d5db">—</span>';
+      const spk=sparkline(r.closes||null);
+      return `<tr>
+        <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
+        <td class="tn">${r.name}</td>
+        <td>${exchSec}</td>
+        <td class="tprice">NT$${fmtP(v.price)}</td>
+        <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
+        <td><div class="ma-row">${maHTML||'—'}</div></td>
+        <td><div style="display:flex;flex-direction:column;gap:2px">${atrHTML}${volHTML}</div></td>
+        <td class="spark-cell">${spk}</td>
+        <td>${vcpScoreCell}</td>
+        ${opCell}
+      </tr>`;
+    }
+
+    // ── Fund+Chips tab ──
     const fund=r.fund||{};
     const revHigh=revenueHighMap[r.code];
     const fg=calcFundGrade(fund,revHigh);
@@ -1890,17 +1981,19 @@ function renderTable(){
     let fundLabel,fundCls,fundDetailFinal;
     if(fg){
       fundLabel=`${fg.label} ${fg.score}`;fundCls=fg.cls;fundDetailFinal=fundDetail||'<span style="color:#9ca3af">暫無細項</span>';
-    }else{
+    } else if(!phase2Done && !r.fund){
+      // Phase 2 still running
+      fundLabel='掃描中';fundCls='sN';fundDetailFinal='<span style="color:#9ca3af;font-size:.65rem">基本面載入中...</span>';
+    } else {
       const synS=syntheticFundScore(v);
       if(synS!=null){
         const synG=synS>=70?{label:'技估佳',cls:'sA'}:synS>=45?{label:'技估中',cls:'sB'}:{label:'技估弱',cls:'sC'};
         fundLabel=`${synG.label} ${synS}`;fundCls=synG.cls;
         const _s=v.stage2?'sig-g':'sig-o';const _a=v.atrS==='g'?'sig-g':'sig-o';
-        fundDetailFinal=`<div class="fund-row"><span class="fund-lbl" style="color:#9ca3af;font-size:.6rem">技術面估算（無財報資料）</span></div><div class="fund-row"><span class="fund-lbl">MA排列</span><span class="sig ${_s}">${v.stage2?'Stage2':'未達'}</span></div><div class="fund-row"><span class="fund-lbl">趨勢強</span><span class="sig ${_a}">${v.atrL}</span></div>`;
+        fundDetailFinal=`<div class="fund-row"><span class="fund-lbl" style="color:#9ca3af;font-size:.6rem">技術面估算（無財報）</span></div><div class="fund-row"><span class="fund-lbl">MA排列</span><span class="sig ${_s}">${v.stage2?'Stage2':'未達'}</span></div><div class="fund-row"><span class="fund-lbl">趨勢強</span><span class="sig ${_a}">${v.atrL}</span></div>`;
       }else{fundLabel=null;fundCls='sN';fundDetailFinal='<span style="color:#9ca3af">無資料</span>';}
     }
     const fundHTML=scoreBadge(fundLabel,fundCls||'sN',fundDetailFinal||'<span style="color:#9ca3af">無財報資料</span>');
-    // Chips badge
     const chips=chipsMap[r.code];
     const cl=chipsLabel(chips);
     const chipsDetail=chips?[
@@ -1908,25 +2001,15 @@ function renderTable(){
       `<div class="chips-row"><span class="chips-lbl">投信</span>${fmtChipN(chips.trustNet)}</div>`,
     ].join(''):'';
     const chipsHTML=scoreBadge(cl?.label||null,cl?.cls||'sN',chipsDetail||'<span style="color:#9ca3af">—</span>');
-    const spk=sparkline(r.closes||null);
     return `<tr>
       <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
       <td class="tn">${r.name}</td>
-      <td><span class="tsec">${r.ex==='TWO'?'上櫃':'上市'}${r.sector?' '+r.sector:''}</span></td>
+      <td>${exchSec}</td>
       <td class="tprice">NT$${fmtP(v.price)}</td>
-      <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
-      <td><div class="ma-row">${maHTML||'—'}</div></td>
-      <td>${techHTML}</td>
-      <td class="spark-cell">${spk}</td>
-      <td>
-        <div class="scr-wrap">
-          <div class="scr-bg"><div class="scr-fill f${s}" style="width:${v.score}%"></div></div>
-          <span class="scr-num s${s}">${v.score}</span>
-        </div>
-      </td>
+      <td>${vcpScoreCell}</td>
       <td>${fundHTML}</td>
       <td>${chipsHTML}</td>
-      <td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
+      ${opCell}
     </tr>`;
   }).join('');
 }
@@ -2070,6 +2153,7 @@ function sparkline(closes,w=80,h=28){
       const age=(Date.now()-ts)/60000;
       if(age<=360){ // 6 小時內有效
         allResults=results;
+        phase2Done=true; // cached results already have fund data
         document.getElementById('scanBtn').textContent='重新掃描';
         const ageStr=age>=60?`${Math.round(age/60)} 小時`:`${Math.round(age)} 分鐘`;
         document.getElementById('scanInfo').innerHTML=`上次掃描：<strong>${new Date(ts).toLocaleTimeString('zh-TW')}</strong>（${ageStr}前）`;
