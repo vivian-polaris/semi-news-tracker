@@ -320,6 +320,7 @@ body.dark .srt{background:var(--card);}
     <input class="key-input" id="groqInput" type="password" placeholder="Groq API Key（gsk_...）輸入後自動儲存"
       oninput="autoSaveGroq(this.value)" onpaste="setTimeout(()=>autoSaveGroq(document.getElementById('groqInput').value),50)">
     <button class="key-save" onclick="testGroq()" style="background:#e0f2fe;border-color:#7dd3fc;color:#0369a1">測試</button>
+    <button class="key-save" onclick="localStorage.removeItem('groq_key');document.getElementById('groqInput').value='';updateKeyStatus();alert('已清除，請重新貼上新的 Groq Key')" style="background:#fee2e2;border-color:#fca5a5;color:#b91c1c">清除</button>
   </div>
   <div class="key-row">
     <input class="key-input" id="fmInput" type="password" placeholder="FinMind Token（finmindtrade.com 免費申請）→ 籌碼/財報/月營收新高"
@@ -454,6 +455,12 @@ body.dark .srt{background:var(--card);}
 
 <!-- ── Filters ── -->
 <div class="filter-box" id="filterBox" style="display:none">
+  <div class="filter-row" id="exRow">
+    <span class="flabel">交易所</span>
+    <span class="pill s-on" onclick="setEx('ALL',this)">全部</span>
+    <span class="pill" onclick="setEx('TW',this)">🏛 上市 TSE</span>
+    <span class="pill" onclick="setEx('TWO',this)">🏪 上櫃 OTC</span>
+  </div>
   <div class="filter-row" id="scoreRow">
     <span class="flabel">VCP 分數</span>
     <span class="pill" onclick="setScore(0,this)">全部</span>
@@ -508,7 +515,7 @@ body.dark .srt{background:var(--card);}
     <tr>
       <th onclick="setSort('code')">代號 ⇅</th>
       <th onclick="setSort('name')">名稱</th>
-      <th>產業</th>
+      <th>交易所／產業</th>
       <th onclick="setSort('price')">現價 ⇅</th>
       <th onclick="setSort('pct')" class="th-on">距高點 ⇅</th>
       <th>MA排列</th>
@@ -627,7 +634,7 @@ const STOCKS = [
 ];
 
 // ─── State ────────────────────────────────────────────────────────────────
-let allResults=[], scoreMin=80, pctMax=999, secFilter='ALL';
+let allResults=[], scoreMin=80, pctMax=999, secFilter='ALL', exFilter='ALL';
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
@@ -941,7 +948,10 @@ async function callAI(prompt){
           body:JSON.stringify({messages:[{role:'user',content:prompt}],model,max_tokens:500,temperature:0.7})
         },20000);
         if(r.status===429) return '⚠️ Groq 速率限制（每分鐘有上限），請稍等 30 秒後點 ↻ 重試';
-        if(r.status===401||r.status===403) return '❌ Groq Key 無效，請到 ⚙️ 重新貼上正確的 Key';
+        if(r.status===401||r.status===403){
+          const hint=gk.length>8?`（目前儲存：${gk.slice(0,4)}...${gk.slice(-4)}）`:'';
+          return `❌ Groq 驗證失敗${hint}，請到 ⚙️ 清除舊 Key 再重新貼上新申請的 Key`;
+        }
         if(r.status===400||r.status===404) continue;
         if(r.ok){const j=await r.json();const t=j.choices?.[0]?.message?.content||'';if(t.trim().length>10)return t.trim();}
       }catch(_){}
@@ -1640,6 +1650,7 @@ function getFiltered(){
     if(r.vcp.score<scoreMin)return false;
     if(r.vcp.pctH>pctMax)return false;
     if(secFilter!=='ALL'&&r.sector!==secFilter)return false;
+    if(exFilter!=='ALL'&&r.ex!==exFilter)return false;
     if(onlyStage2&&!r.vcp.stage2)return false;
     return true;
   });
@@ -1702,7 +1713,7 @@ function renderTable(){
       return `<tr style="opacity:.45">
         <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
         <td class="tn">${r.name}</td>
-        <td><span class="tsec">${r.sector}</span></td>
+        <td><span style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span><span class="tsec">${r.sector}</span></td>
         <td colspan="8" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
         <td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
       </tr>`;
@@ -1777,6 +1788,11 @@ function setPct(v,el){
   pctMax=v;
   document.getElementById('pctRow').querySelectorAll('.pill').forEach(p=>p.classList.remove('f-on'));
   el.classList.add('f-on');renderTable();
+}
+function setEx(v,el){
+  exFilter=v;
+  document.getElementById('exRow').querySelectorAll('.pill').forEach(p=>p.classList.remove('s-on'));
+  el.classList.add('s-on');renderTable();
 }
 function setSec(v,el){
   secFilter=v;
@@ -1890,6 +1906,10 @@ function sparkline(closes,w=80,h=28){
 // ─── Init ─────────────────────────────────────────────────────────────────
 (function init(){
   localStorage.removeItem('deepseek_key'); // 移除已停用的 DeepSeek key
+  // 清除格式錯誤的 Groq key（可能是舊版 hash bug 把 URL 存成 key）
+  const storedGk=localStorage.getItem('groq_key');
+  if(storedGk&&(storedGk.startsWith('http')||storedGk.length<20))
+    localStorage.removeItem('groq_key');
   loadKeysFromHash();
   updateKeyStatus();
 
