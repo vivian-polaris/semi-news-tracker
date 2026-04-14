@@ -155,16 +155,19 @@ tbody td{padding:10px 13px;vertical-align:top}
 thead th:nth-child(1),tbody td:nth-child(1){min-width:56px}
 thead th:nth-child(10),tbody td:nth-child(10){min-width:120px}
 thead th:nth-child(11),tbody td:nth-child(11){min-width:96px}
-/* ── Fundamental cell ── */
-.fund-cell{font-size:.64rem;line-height:1;min-width:120px}
-.fund-row{display:flex;justify-content:space-between;align-items:center;padding:2px 0;gap:6px;border-bottom:1px solid rgba(0,0,0,.04)}
-.fund-row:last-child{border-bottom:none}
-.fund-lbl{color:var(--text2);flex-shrink:0;width:32px}
-/* ── Chips cell ── */
-.chips-cell{font-size:.64rem;line-height:1;min-width:96px}
-.chips-row{display:flex;justify-content:space-between;align-items:center;padding:2px 0;gap:4px;border-bottom:1px solid rgba(0,0,0,.04)}
-.chips-row:last-child{border-bottom:none}
-.chips-lbl{color:var(--text2);flex-shrink:0;width:24px}
+/* ── Fundamental / Chips score badge ── */
+.score-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:10px;font-size:.78rem;font-weight:800;cursor:pointer;user-select:none;transition:opacity .15s}
+.score-badge:hover{opacity:.75}
+.score-badge.sA{background:#d1fae5;color:#065f46}
+.score-badge.sB{background:#fef3c7;color:#92400e}
+.score-badge.sC{background:#fee2e2;color:#991b1b}
+.score-badge.sN{background:#f3f4f6;color:#9ca3af}
+.score-detail{display:none;font-size:.63rem;line-height:1.6;color:var(--text2);margin-top:5px;padding-top:5px;border-top:1px dashed var(--border)}
+.score-detail.open{display:block}
+.fund-row{display:flex;justify-content:space-between;gap:6px}
+.fund-lbl{color:var(--text2);flex-shrink:0}
+.chips-row{display:flex;justify-content:space-between;gap:4px}
+.chips-lbl{color:var(--text2);flex-shrink:0}
 
 /* ── Table cell styles ── */
 .tc{font-weight:800;color:var(--purple);font-size:.88rem;white-space:nowrap}
@@ -1652,6 +1655,36 @@ function getSorted(list){
   });
 }
 
+function calcFundScore(fund, revHigh){
+  if(!fund||Object.keys(fund).length===0) return null;
+  let pts=0, tot=0;
+  if(fund.roe!=null){tot+=30; pts+=fund.roe>=0.15?30:fund.roe>=0.08?18:fund.roe>=0?8:0;}
+  if(fund.grossMargin!=null){tot+=15; pts+=fund.grossMargin>=0.3?15:fund.grossMargin>=0.15?8:fund.grossMargin>0?4:0;}
+  if(fund.operatingMargin!=null){tot+=15; pts+=fund.operatingMargin>=0.15?15:fund.operatingMargin>=0.08?8:fund.operatingMargin>0?4:0;}
+  if(fund.earningsGrowth!=null){tot+=20; pts+=fund.earningsGrowth>=0.15?20:fund.earningsGrowth>=0?10:0;}
+  if(fund.revenueGrowth!=null){tot+=15; pts+=fund.revenueGrowth>=0.1?15:fund.revenueGrowth>=0?7:0;}
+  if(revHigh!=null){tot+=5; pts+=revHigh?5:0;}
+  if(tot===0) return null;
+  return Math.round(pts/tot*100);
+}
+function calcChipsScore(chips){
+  if(!chips) return null;
+  const f=parseChipNum(chips.foreignNet)||0;
+  const tr=parseChipNum(chips.trustNet)||0;
+  // 正數買超加分，負數賣超扣分，以千張為單位
+  const fPts=Math.min(50,Math.max(0,25+f/200));   // 外資：±25 中性，每200千股 ±1分，上限50
+  const tPts=Math.min(50,Math.max(0,25+tr/50));    // 投信：±25 中性，每50千股 ±1分，上限50
+  return Math.round(fPts+tPts);
+}
+function scoreClass(s){if(s==null)return'sN';return s>=65?'sA':s>=40?'sB':'sC';}
+function scoreBadge(score, id, detailHTML){
+  if(score==null) return `<span style="color:#d1d5db;font-size:.65rem">—</span>`;
+  const cls=scoreClass(score);
+  return `<div>
+    <span class="score-badge ${cls}" onclick="var d=this.nextElementSibling;d.classList.toggle('open')">${score}<span style="font-size:.6rem;margin-left:2px">▾</span></span>
+    <div class="score-detail">${detailHTML}</div>
+  </div>`;
+}
 function renderTable(){
   const filtered=getFiltered(),sorted=getSorted(filtered);
   const counted=allResults.filter(r=>r.vcp).length;
@@ -1690,28 +1723,27 @@ function renderTable(){
     const cHTML=v.contractions>0?`<br><span class="contr-b">${v.contractions}段收縮</span>`:'';
     // Merged tech signal cell (ATR + volume)
     const techHTML=`<div style="display:flex;flex-direction:column;gap:2px">${atrHTML}${volHTML}</div>`;
-    // Fundamental cell
+    // Fundamental score badge
     const fund=r.fund||{};
     const revHigh=revenueHighMap[r.code];
-    const revHighHTML=revHigh!=null
-      ?`<div class="fund-row"><span class="fund-lbl">月營</span><span class="sig ${revHigh?'sig-g':'sig-n'}">${revHigh?'🔥新高':'—'}</span></div>`
-      :'';
-    const fundHTML=`<div class="fund-cell">
-      <div class="fund-row"><span class="fund-lbl">ROE</span>${fmtROE(fund.roe)}</div>
-      <div class="fund-row"><span class="fund-lbl">毛利</span>${fmtPct2(fund.grossMargin)}</div>
-      <div class="fund-row"><span class="fund-lbl">營益</span>${fmtPct2(fund.operatingMargin)}</div>
-      <div class="fund-row"><span class="fund-lbl">EPS增</span>${fmtPct2(fund.earningsGrowth)}</div>
-      <div class="fund-row"><span class="fund-lbl">營收增</span>${fmtPct2(fund.revenueGrowth)}</div>
-      ${revHighHTML}
-    </div>`;
-    // Chips cell
+    const fundScore=calcFundScore(fund,revHigh);
+    const fundDetail=[
+      fund.roe!=null?`<div class="fund-row"><span class="fund-lbl">ROE</span>${fmtROE(fund.roe)}</div>`:'',
+      fund.grossMargin!=null?`<div class="fund-row"><span class="fund-lbl">毛利</span>${fmtPct2(fund.grossMargin)}</div>`:'',
+      fund.operatingMargin!=null?`<div class="fund-row"><span class="fund-lbl">營益</span>${fmtPct2(fund.operatingMargin)}</div>`:'',
+      fund.earningsGrowth!=null?`<div class="fund-row"><span class="fund-lbl">EPS↑</span>${fmtPct2(fund.earningsGrowth)}</div>`:'',
+      fund.revenueGrowth!=null?`<div class="fund-row"><span class="fund-lbl">營收↑</span>${fmtPct2(fund.revenueGrowth)}</div>`:'',
+      revHigh!=null?`<div class="fund-row"><span class="fund-lbl">月營</span><span class="sig ${revHigh?'sig-g':'sig-n'}">${revHigh?'🔥新高':'普通'}</span></div>`:'',
+    ].filter(Boolean).join('');
+    const fundHTML=scoreBadge(fundScore,'fund_'+r.code,fundDetail||'<span style="color:#9ca3af">資料取得中</span>');
+    // Chips score badge
     const chips=chipsMap[r.code];
-    const chipsHTML=chips
-      ?`<div class="chips-cell">
-          <div class="chips-row"><span class="chips-lbl">外資</span>${fmtChipN(chips.foreignNet)}</div>
-          <div class="chips-row"><span class="chips-lbl">投信</span>${fmtChipN(chips.trustNet)}</div>
-        </div>`
-      :`<span style="color:#d1d5db;font-size:.65rem">—</span>`;
+    const chipsScore=calcChipsScore(chips);
+    const chipsDetail=chips?[
+      `<div class="chips-row"><span class="chips-lbl">外資</span>${fmtChipN(chips.foreignNet)}</div>`,
+      `<div class="chips-row"><span class="chips-lbl">投信</span>${fmtChipN(chips.trustNet)}</div>`,
+    ].join(''):'';
+    const chipsHTML=scoreBadge(chipsScore,'chips_'+r.code,chipsDetail||'<span style="color:#9ca3af">—</span>');
     const spk=sparkline(r.closes||null);
     return `<tr>
       <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
