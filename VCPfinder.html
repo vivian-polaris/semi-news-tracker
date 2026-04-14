@@ -1658,8 +1658,9 @@ async function startScan(){
   secRow.querySelectorAll('[data-sec]:not([data-sec="ALL"])').forEach(p=>p.remove());
   secs.forEach(s=>{const p=document.createElement('span');p.className='pill';p.dataset.sec=s;p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);});
 
-  const BATCH=scanSrc==='preset'?4:6;
-  const DELAY=scanSrc==='preset'?350:250;
+  // ── Phase 1: VCP scan（只抓 Yahoo chart，不抓基本面）────────────────────
+  const BATCH=scanSrc==='preset'?6:10;
+  const DELAY=scanSrc==='preset'?200:150;
   const startTime=Date.now();
 
   for(let i=0;i<total;i+=BATCH){
@@ -1668,34 +1669,47 @@ async function startScan(){
     await Promise.all(batch.map(async s=>{
       if(scanCancelled)return;
       const sym=`${s.code}.${s.ex}`;
-      const [data,fund]=await Promise.all([fetchYahoo(sym),fetchFundamentals(sym)]);
+      const data=await fetchYahoo(sym);
       const vcp=data?calcVCP(data):null;
       if(!data)failed++;
       if(vcp&&vcp.score>=40) vcpFound++;
-      // 用 Yahoo 回傳的中文名補全（全掃模式股票清單可能只有代號）
-      if(data?._yahooName&&(s.name===s.code||!s.name||s.name.length<2)){
-        s.name=data._yahooName;
-      }
-      allResults.push({...s,sym,vcp,fund,noData:!data,closes:data?data.slice(0,60).map(d=>d.close):null});
+      if(data?._yahooName&&(s.name===s.code||!s.name||s.name.length<2)) s.name=data._yahooName;
+      allResults.push({...s,sym,vcp,fund:null,noData:!data,closes:data?data.slice(0,60).map(d=>d.close):null});
       done++;
     }));
-    // Update progress
     const pct=Math.round(done/total*100);
     pF.style.width=pct+'%';
     const elapsed=(Date.now()-startTime)/1000;
     const eta=done>0?Math.round((total-done)*(elapsed/done)):0;
     const etaStr=eta>60?`${Math.round(eta/60)}分${eta%60}秒`:eta>0?`${eta}秒`:'';
-    pT.textContent=`${done}/${total}（${pct}%）· VCP候選：${vcpFound}支 · 無數據：${failed}支${etaStr?' · 剩餘約'+etaStr:''}`;
-
-    // Live table update every batch
+    pT.textContent=`【Phase 1】${done}/${total}（${pct}%）· VCP候選：${vcpFound}支 · 無數據：${failed}支${etaStr?' · 剩餘約'+etaStr:''}`;
     if(done%BATCH===0||i+BATCH>=total) renderTable();
-    // Update summary counts
     document.getElementById('sumScanned').textContent=allResults.filter(r=>r.vcp).length;
     document.getElementById('sumVcp').textContent=allResults.filter(r=>r.vcp&&r.vcp.score>=60).length;
     document.getElementById('sumStrong').textContent=allResults.filter(r=>r.vcp&&r.vcp.score>=80).length;
     document.getElementById('sumTime').textContent=new Date().toLocaleTimeString('zh-TW');
-
     if(i+BATCH<total)await delay(DELAY);
+  }
+
+  // ── Phase 2: 只對 VCP 候選補抓基本面（大幅縮小範圍）────────────────────
+  if(!scanCancelled){
+    const candidates=allResults.filter(r=>r.vcp&&r.vcp.score>=40);
+    const FBATCH=4;
+    let fdone=0;
+    pT.textContent=`【Phase 2】補抓基本面：${candidates.length} 支 VCP 候選中...`;
+    pF.style.width='100%';
+    for(let i=0;i<candidates.length;i+=FBATCH){
+      if(scanCancelled)break;
+      const fbatch=candidates.slice(i,i+FBATCH);
+      await Promise.all(fbatch.map(async r=>{
+        // 優先用 FinMind 批次快取（已在 prefetch 階段填好）
+        r.fund=await fetchFundamentals(r.sym);
+        fdone++;
+      }));
+      pT.textContent=`【Phase 2】基本面 ${fdone}/${candidates.length}（${Math.round(fdone/candidates.length*100)}%）`;
+      renderTable();
+      if(i+FBATCH<candidates.length)await delay(100);
+    }
   }
 
   scanning=false; btn.disabled=false;
@@ -1703,8 +1717,8 @@ async function startScan(){
   cancelBtn.style.display='none';
   pT.textContent=scanCancelled
     ?`⏹ 已停止 · 已掃 ${done}/${total} 支，VCP候選 ${vcpFound} 支`
-    :`✅ 完成！共 ${done-failed} 支成功，VCP候選 ${vcpFound} 支，無數據 ${failed} 支`;
-  if(!scanCancelled&&failed>total*0.5){err.style.display='';err.textContent=`⚠️ 超過半數無法取得數據（${failed}/${total}），可能是 CORS 限制或網路問題。建議掛 VPN 或改用 TradingView/FinLab。`;}
+    :`✅ 完成！共 ${done-failed} 支取得數據，VCP候選 ${vcpFound} 支`;
+  if(!scanCancelled&&failed>total*0.5){err.style.display='';err.textContent=`⚠️ 超過半數無法取得數據（${failed}/${total}），可能是 CORS 限制或網路問題。`;}
   renderAll();
   try{localStorage.setItem('vcpCache',JSON.stringify({results:allResults,ts:Date.now()}));}catch(_){}
 }
