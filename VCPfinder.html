@@ -980,11 +980,8 @@ async function callAI(prompt){
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk},
           body:JSON.stringify({messages:[{role:'user',content:prompt}],model,max_tokens:500,temperature:0.7})
         },8000);
-        if(r.status===429) return '⚠️ Groq 速率限制（每分鐘有上限），請稍等 30 秒後點 ↻ 重試';
-        if(r.status===401||r.status===403){
-          const hint=gk.length>8?`（目前儲存：${gk.slice(0,4)}...${gk.slice(-4)}）`:'';
-          return `❌ Groq 驗證失敗${hint}，請到 ⚙️ 清除舊 Key 再重新貼上新申請的 Key`;
-        }
+        if(r.status===429){break;} // rate limit → fall through to Pollinations
+        if(r.status===401||r.status===403){break;} // invalid key → fall through to Pollinations
         if(r.status===400||r.status===404) continue;
         if(r.ok){const j=await r.json();const t=j.choices?.[0]?.message?.content||'';if(t.trim().length>10)return t.trim();}
       }catch(_){}
@@ -1529,7 +1526,7 @@ async function fetchChips(){
         return;
       }
     }
-    if(infoEl) infoEl.textContent='⚠️ FinMind 籌碼失敗，改用 TWSE T86...';
+    if(infoEl) infoEl.textContent='FinMind 籌碼無資料（IP 限制或非交易日），改用 TWSE T86...';
   }
   // ── TWSE T86 備援 ──
   for(let back=0;back<7;back++){
@@ -1843,7 +1840,7 @@ function renderTable(){
       return `<tr style="opacity:.45">
         <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
         <td class="tn">${r.name}</td>
-        <td><span style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span>${r.sector?`<span class="tsec">${r.sector}</span>`:''}</td>
+        <td><span class="tsec">${r.ex==='TWO'?'上櫃':'上市'}${r.sector?' '+r.sector:''}</span></td>
         <td colspan="8" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
         <td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
       </tr>`;
@@ -1901,7 +1898,7 @@ function renderTable(){
     return `<tr>
       <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
       <td class="tn">${r.name}</td>
-      <td><span style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span><span class="tsec">${r.sector}</span></td>
+      <td><span class="tsec">${r.ex==='TWO'?'上櫃':'上市'}${r.sector?' '+r.sector:''}</span></td>
       <td class="tprice">NT$${fmtP(v.price)}</td>
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
       <td><div class="ma-row">${maHTML||'—'}</div></td>
