@@ -62,15 +62,11 @@ header p{color:var(--text2);font-size:.82rem;line-height:1.7}
 .lcard{background:var(--card);border-radius:20px;padding:18px 20px;box-shadow:0 4px 20px var(--shadow)}
 
 /* ── 每日快訊 ── */
-.news-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 16px}
-@media(max-width:640px){.news-grid{grid-template-columns:1fr}}
-.news-card{background:var(--card);border-radius:20px;padding:16px 18px;min-height:120px;display:flex;flex-direction:column;box-shadow:0 4px 20px var(--shadow)}
+.news-card{background:var(--card);border-radius:20px;padding:16px 18px;min-height:120px;display:flex;flex-direction:column;box-shadow:0 4px 20px var(--shadow);margin:12px 0 16px}
 .news-card.trump{border-left:4px solid var(--red)}
-.news-card.semi{border-left:4px solid var(--purple)}
 .news-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .news-title{font-size:.8rem;font-weight:800;letter-spacing:.03em;display:flex;align-items:center;gap:5px}
 .news-title.t-trump{color:var(--red)}
-.news-title.t-semi{color:var(--purple)}
 .news-refresh{background:transparent;border:1.5px solid var(--border);border-radius:12px;color:var(--text2);cursor:pointer;font-size:.68rem;padding:3px 9px;transition:all .18s}
 .news-refresh:hover{border-color:var(--purple);color:var(--purple)}
 .news-body{font-size:.8rem;line-height:1.75;color:var(--text);flex:1;white-space:pre-wrap}
@@ -81,16 +77,11 @@ header p{color:var(--text2);font-size:.82rem;line-height:1.7}
 /* ── 投資人專區 ── */
 .inv-title-row{display:flex;align-items:center;gap:8px;margin:4px 0 10px}
 .inv-main-title{font-size:.75rem;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:.06em}
-.inv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
-@media(max-width:640px){.inv-grid{grid-template-columns:1fr}}
 .inv-card{background:var(--card);border-radius:20px;padding:16px 18px;display:flex;flex-direction:column;box-shadow:0 4px 20px var(--shadow);min-height:150px}
 .inv-card.c-clock{border-top:3px solid var(--mint)}
-.inv-card.c-vcp{border-top:3px solid var(--yellow)}
-.inv-card.c-macro{border-top:3px solid var(--sky)}
-.inv-card.c-stars{border-top:3px solid var(--pink)}
 .inv-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .inv-label{font-size:.75rem;font-weight:800;letter-spacing:.04em;display:flex;align-items:center;gap:5px}
-.lbl-clock{color:var(--mint)} .lbl-vcp{color:var(--yellow)} .lbl-macro{color:var(--sky)} .lbl-stars{color:var(--pink)}
+.lbl-clock{color:var(--mint)}
 .inv-rf{background:transparent;border:1.5px solid var(--border);border-radius:12px;color:var(--text2);cursor:pointer;font-size:.65rem;padding:2px 8px;transition:all .16s}
 .inv-rf:hover{border-color:var(--purple);color:var(--purple)}
 .inv-body{font-size:.78rem;line-height:1.7;color:var(--text);flex:1;white-space:pre-wrap}
@@ -320,7 +311,8 @@ body.dark .srt{background:var(--card);}
 <!-- ── Key Panel ── -->
 <div class="key-panel" id="keyPanel">
   <p>設定 <a href="https://console.groq.com" target="_blank">Groq API Key</a>（免費，每日限額），享 AI 快訊摘要。
-  也可設定 <a href="https://platform.deepseek.com" target="_blank">DeepSeek Key</a> 作備援。</p>
+  也可設定 <a href="https://platform.deepseek.com" target="_blank">DeepSeek Key</a> 作備援。<br>
+  <a href="https://finmindtrade.com" target="_blank">FinMind Token</a>（免費）可大幅提升籌碼 / 財報 / 月營收資料穩定性。</p>
   <div class="key-row">
     <input class="key-input" id="groqInput" type="password" placeholder="Groq API Key（gsk_...）輸入後自動儲存"
       oninput="autoSaveGroq(this.value)" onpaste="setTimeout(()=>autoSaveGroq(document.getElementById('groqInput').value),50)">
@@ -329,6 +321,10 @@ body.dark .srt{background:var(--card);}
   <div class="key-row">
     <input class="key-input" id="dsInput" type="password" placeholder="DeepSeek API Key（sk-...）輸入後自動儲存"
       oninput="autoSaveDs(this.value)" onpaste="setTimeout(()=>autoSaveDs(document.getElementById('dsInput').value),50)">
+  </div>
+  <div class="key-row">
+    <input class="key-input" id="fmInput" type="password" placeholder="FinMind Token（finmindtrade.com 免費申請）→ 籌碼/財報/月營收新高"
+      oninput="autoSaveFinMind(this.value)" onpaste="setTimeout(()=>autoSaveFinMind(document.getElementById('fmInput').value),50)">
   </div>
   <div class="key-status key-no" id="keyStatus">未設定 Key（使用免費 Pollinations 備援）</div>
   <div id="testResult" style="display:none;margin-top:6px;font-size:.75rem;padding:6px 10px;border-radius:8px"></div>
@@ -348,18 +344,19 @@ body.dark .srt{background:var(--card);}
   <div class="news-card trump">
     <div class="news-head">
       <div class="news-title t-trump">🌍 川普+戰爭→美股台股衝擊</div>
-      <button class="news-refresh" onclick="loadTrump()">↻ 刷新</button>
+      <div style="display:flex;gap:5px">
+        <button class="news-refresh" onclick="loadTrump()">↻ 刷新</button>
+        <button class="news-refresh" id="logicBtn" onclick="loadTrumpLogic()" style="border-color:var(--purple);color:var(--purple)">🧠 底層邏輯</button>
+      </div>
     </div>
     <div class="news-body loading" id="trumpBody">載入中...</div>
     <div class="news-time" id="trumpTime"></div>
-  </div>
-  <div class="news-card semi">
-    <div class="news-head">
-      <div class="news-title t-semi">💜 台股半導體快訊</div>
-      <button class="news-refresh" onclick="loadSemi()">↻ 刷新</button>
+    <!-- 底層邏輯分析區 -->
+    <div id="trumpLogicWrap" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;display:none">
+      <div style="font-size:.68rem;font-weight:800;color:var(--purple);letter-spacing:.05em;margin-bottom:6px">🧠 TRUMP 雙層解碼</div>
+      <div class="news-body loading" id="trumpLogicBody" style="font-size:.77rem"></div>
+      <div class="news-time" id="trumpLogicTime"></div>
     </div>
-    <div class="news-body loading" id="semiBody">載入中...</div>
-    <div class="news-time" id="semiTime"></div>
   </div>
 </div>
 
@@ -383,44 +380,22 @@ body.dark .srt{background:var(--card);}
   <div class="inv-time" id="clockTime" style="margin-top:10px"></div>
 </div>
 
-<div class="inv-grid">
-  <!-- VCP 掃描統計 -->
-  <div class="inv-card c-vcp">
-    <div class="inv-head">
-      <div class="inv-label lbl-vcp">📊 VCP 掃描結果</div>
-      <button class="inv-rf" onclick="updateVcpCard()">↻</button>
-    </div>
-    <div class="inv-body" id="vcpCardBody">尚未掃描，請點擊下方「開始掃描」</div>
-    <div class="inv-time" id="vcpCardTime"></div>
-  </div>
-
-  <!-- 總經快報 -->
-  <div class="inv-card c-macro">
-    <div class="inv-head">
-      <div class="inv-label lbl-macro">🌐 總經環境快報</div>
-      <button class="inv-rf" onclick="loadMacro()">↻</button>
-    </div>
-    <div class="inv-body loading" id="macroBody">載入中...</div>
-    <div class="inv-time" id="macroTime"></div>
-  </div>
-
-</div>
 
 <div class="sec-div"></div>
 
 <!-- ── VCP 掃描 ── -->
 <div class="scan-section-title">
   <span>🔍</span> VCP 自動掃描
-  <span id="scanSrcLabel" style="font-size:.68rem;color:var(--text2);font-weight:400;letter-spacing:0">預設 57 支 · Yahoo Finance</span>
+  <span id="scanSrcLabel" style="font-size:.68rem;color:var(--text2);font-weight:400;letter-spacing:0">全台灣 TSE+OTC ~1700支 · Yahoo Finance</span>
 </div>
 
 <div class="scan-box">
   <!-- 掃描來源選擇 -->
   <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;align-items:center">
     <span style="font-size:.68rem;font-weight:800;color:var(--text2);letter-spacing:.05em;text-transform:uppercase">掃描範圍</span>
-    <span class="pill s-on" id="src-preset" onclick="setScanSrc('preset',this)">預設清單 57支</span>
+    <span class="pill" id="src-preset" onclick="setScanSrc('preset',this)">預設清單 57支</span>
     <span class="pill" id="src-tse" onclick="setScanSrc('tse',this)">🇹🇼 全上市 TSE ~900支</span>
-    <span class="pill" id="src-all" onclick="setScanSrc('all',this)">🇹🇼 全台灣 TSE+OTC ~1700支</span>
+    <span class="pill s-on" id="src-all" onclick="setScanSrc('all',this)">🇹🇼 全台灣 TSE+OTC ~1700支</span>
     <span class="pill" id="src-custom" onclick="setScanSrc('custom',this)">自訂匯入</span>
   </div>
 
@@ -519,7 +494,7 @@ body.dark .srt{background:var(--card);}
 <div class="note">
   💡 <strong>VCP 四大條件：</strong>Stage 2（股價 &gt; MA50 &gt; MA150 &gt; MA200）· 距 52 週高點 &lt;25% · ATR 波動率收縮 · 成交量萎縮。分數 ≥ 80 為強力候選。<br>
   📊 <strong>基本面：</strong>ROE ≥ 15% 佳 · 毛利率 / 營益率越高越好 · EPS 年增 / 營收年增為正成長。資料來源：Yahoo Finance。<br>
-  🏦 <strong>籌碼：</strong>外資 / 投信買賣超（千股），來源：TWSE T86，取最近一個交易日。數值為正 = 買超，負 = 賣超。
+  🏦 <strong>籌碼：</strong>外資 / 投信買賣超，來源：FinMind（設定 Token 時優先）或 TWSE T86 備援。設定 <a href="https://finmindtrade.com" target="_blank">FinMind Token</a> 可同時解鎖財報（FinMind 優先）與月營收 2 年新高偵測。數值為正 = 買超，負 = 賣超。
 </div>
 
 <!-- ── Table ── -->
@@ -650,7 +625,7 @@ const STOCKS = [
 // ─── State ────────────────────────────────────────────────────────────────
 let allResults=[], scoreMin=40, pctMax=999, secFilter='ALL';
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
-let scanCancelled=false, scanSrc='preset';
+let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
 
 // ─── Key helpers ──────────────────────────────────────────────────────────
@@ -658,22 +633,24 @@ const getKey=()=>localStorage.getItem('groq_key')||'';
 const getDsKey=()=>localStorage.getItem('deepseek_key')||'';
 function toggleKeyPanel(){
   document.getElementById('keyPanel').classList.toggle('show');
-  // 開啟時自動填入已儲存的 key（讓使用者知道已存）
-  const g=getKey(),d=getDsKey();
+  const g=getKey(),d=getDsKey(),fm=getFinMindToken();
   if(g){const el=document.getElementById('groqInput');if(!el.value)el.value=g;}
   if(d){const el=document.getElementById('dsInput');if(!el.value)el.value=d;}
+  if(fm){const el=document.getElementById('fmInput');if(el&&!el.value)el.value=fm;}
   updateKeyStatus();
 }
 function updateKeyStatus(){
   const s=document.getElementById('keyStatus');
-  const g=getKey(), d=getDsKey();
-  if(g&&d){s.className='key-status key-ok';s.textContent='✅ Groq + DeepSeek 已設定';}
-  else if(g){s.className='key-status key-ok';s.textContent='✅ Groq Key 已設定 · DeepSeek 未設定';}
-  else if(d){s.className='key-status key-ok';s.textContent='✅ DeepSeek Key 已設定 · Groq 未設定';}
+  const g=getKey(), d=getDsKey(), fm=getFinMindToken();
+  const aiOk=g||d;
+  const aiText=g&&d?'Groq+DeepSeek':g?'Groq':d?'DeepSeek':'';
+  const parts=[];
+  if(aiOk) parts.push('✅ AI:'+aiText);
+  if(fm) parts.push('✅ FinMind（籌碼/財報加強）');
+  if(parts.length){s.className='key-status key-ok';s.textContent=parts.join(' · ');}
   else{s.className='key-status key-no';s.textContent='⚠️ 未設定 Key（使用免費 Pollinations 備援，速度較慢）';}
-  // 顯示/隱藏頂部警告條
   const banner=document.getElementById('noKeyBanner');
-  if(banner) banner.style.display=(g||d)?'none':'block';
+  if(banner) banner.style.display=aiOk?'none':'block';
 }
 function saveGroq(){
   const v=document.getElementById('groqInput').value.trim();
@@ -708,7 +685,8 @@ async function testGroq(){
 function genBookmark(){
   const g=getKey(), d=getDsKey();
   if(!g&&!d){alert('請先儲存至少一個 API Key');return;}
-  const payload=btoa(JSON.stringify({g,d}));
+  const fm=getFinMindToken();
+  const payload=btoa(JSON.stringify({g,d,fm}));
   const url=location.origin+location.pathname+'#keys='+payload;
   const out=document.getElementById('bookmarkOut');
   out.style.display='block';
@@ -720,9 +698,10 @@ function loadKeysFromHash(){
   if(!h.includes('keys=')) return;
   try{
     const raw=h.split('keys=')[1];
-    const {g,d}=JSON.parse(atob(raw));
+    const {g,d,fm}=JSON.parse(atob(raw));
     if(g) localStorage.setItem('groq_key',g);
     if(d) localStorage.setItem('deepseek_key',d);
+    if(fm) localStorage.setItem('finmind_token',fm);
     history.replaceState(null,'',location.pathname); // hash 用完就清掉
     updateKeyStatus();
   }catch(_){}
@@ -730,6 +709,173 @@ function loadKeysFromHash(){
 function saveDs(){
   const v=document.getElementById('dsInput').value.trim();
   if(v){localStorage.setItem('deepseek_key',v);updateKeyStatus();}
+}
+function autoSaveFinMind(v){
+  v=v.trim();
+  if(v.length>5){localStorage.setItem('finmind_token',v);updateKeyStatus();}
+}
+const getFinMindToken=()=>localStorage.getItem('finmind_token')||'';
+
+// ─── FinMind: 籌碼（外資/投信）────────────────────────────────────────────────
+async function fetchChipsFinMind(dateStr){
+  const token=getFinMindToken();
+  if(!token) return null;
+  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&date=${dateStr}&token=${token}`;
+  try{
+    const r=await fetchTO(url,20000);
+    if(!r.ok) return null;
+    const json=await r.json();
+    if(json.status!==200||!json.data?.length) return null;
+    const map={};
+    json.data.forEach(row=>{
+      const code=String(row.stock_id||'').trim();
+      if(!code||!/^\d{4,6}$/.test(code)) return;
+      if(!map[code]) map[code]={foreignNet:0,trustNet:0,dealerNet:0};
+      const net=(Number(row.buy)||0)-(Number(row.sell)||0);
+      const n=String(row.name||'');
+      if(n.includes('外資')&&!n.includes('自營')) map[code].foreignNet=net;
+      else if(n.includes('投信')) map[code].trustNet=net;
+      else if(n.includes('自營')) map[code].dealerNet=net;
+    });
+    return Object.keys(map).length>10?map:null;
+  }catch(_){return null;}
+}
+
+// ─── FinMind: 財報（TaiwanStockFinancialStatements）────────────────────────────
+async function fetchFundamentalsFinMind(stockId){
+  const token=getFinMindToken();
+  if(!token) return null;
+  const since=new Date();since.setFullYear(since.getFullYear()-2);
+  const dateStr=since.toISOString().slice(0,10);
+  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockFinancialStatements&stock_id=${stockId}&date=${dateStr}&token=${token}`;
+  try{
+    const r=await fetchTO(url,12000);
+    if(!r.ok) return null;
+    const json=await r.json();
+    if(json.status!==200||!json.data?.length) return null;
+    const rows=[...json.data].sort((a,b)=>b.date.localeCompare(a.date));
+    // Build map: type -> array of values (newest first)
+    const byType={};
+    rows.forEach(row=>{
+      const t=row.type;
+      if(!byType[t]) byType[t]=[];
+      byType[t].push(Number(row.value));
+    });
+    const get=(keys,idx=0)=>{for(const k of keys){if(byType[k]?.[idx]!=null)return byType[k][idx];}return null;};
+    const rev    =get(['Revenue','營業收入合計'],0);
+    const revPrev=get(['Revenue','營業收入合計'],4); // ~1 yr ago (quarterly)
+    const gross  =get(['GrossProfit','毛利'],0);
+    const opInc  =get(['OperatingIncome','營業利益'],0);
+    const eps    =get(['EPS','每股盈餘'],0);
+    const epsPrev=get(['EPS','每股盈餘'],4);
+    const out={
+      roe:null,
+      grossMargin:(rev&&gross&&rev!==0)?gross/rev:null,
+      operatingMargin:(rev&&opInc&&rev!==0)?opInc/rev:null,
+      revenueGrowth:(rev&&revPrev&&revPrev!==0)?(rev-revPrev)/Math.abs(revPrev):null,
+      earningsGrowth:(eps!=null&&epsPrev!=null&&epsPrev!==0)?(eps-epsPrev)/Math.abs(epsPrev):null,
+    };
+    if(Object.values(out).some(v=>v!=null)) return out;
+    return null;
+  }catch(_){return null;}
+}
+
+// ─── FinMind: 月營收新高（TaiwanStockMonthRevenue）────────────────────────────
+let revenueHighMap={};
+let fundamentalsMap={};
+
+// 單支備援（bulk 失敗時使用）
+async function fetchMonthRevenueHigh(stockId){
+  const token=getFinMindToken();
+  if(!token) return null;
+  const since=new Date();since.setMonth(since.getMonth()-25);
+  const dateStr=since.toISOString().slice(0,10);
+  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMonthRevenue&stock_id=${stockId}&date=${dateStr}&token=${token}`;
+  try{
+    const r=await fetchTO(url,10000);
+    if(!r.ok) return null;
+    const json=await r.json();
+    if(json.status!==200||!json.data?.length) return null;
+    const rows=[...json.data].sort((a,b)=>b.date.localeCompare(a.date));
+    if(rows.length<2) return null;
+    const latest=Number(rows[0].revenue);
+    const max=Math.max(...rows.map(r=>Number(r.revenue)));
+    return latest>=max*0.98;
+  }catch(_){return null;}
+}
+
+// ─── FinMind: 批次預取全市場財報（一次 API call，不限支數）──────────────────────
+async function prefetchAllFundamentals(){
+  const token=getFinMindToken();
+  if(!token) return;
+  const since=new Date();since.setFullYear(since.getFullYear()-2);
+  const dateStr=since.toISOString().slice(0,10);
+  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockFinancialStatements&date=${dateStr}&token=${token}`;
+  try{
+    const r=await fetchTO(url,90000); // 大資料需要較長 timeout
+    if(!r.ok) return;
+    const json=await r.json();
+    if(json.status!==200||!json.data?.length) return;
+    // 按股票代號分組
+    const byStock={};
+    json.data.forEach(row=>{
+      const code=String(row.stock_id||'').trim();
+      if(!code) return;
+      if(!byStock[code]) byStock[code]={};
+      const t=row.type;
+      if(!byStock[code][t]) byStock[code][t]=[];
+      byStock[code][t].push({date:row.date,value:Number(row.value)});
+    });
+    // 每支股票計算財報指標
+    Object.entries(byStock).forEach(([code,byType])=>{
+      Object.values(byType).forEach(arr=>arr.sort((a,b)=>b.date.localeCompare(a.date)));
+      const get=(keys,idx=0)=>{for(const k of keys){if(byType[k]?.[idx]?.value!=null)return byType[k][idx].value;}return null;};
+      const rev    =get(['Revenue','營業收入合計'],0);
+      const revPrev=get(['Revenue','營業收入合計'],4);
+      const gross  =get(['GrossProfit','毛利'],0);
+      const opInc  =get(['OperatingIncome','營業利益'],0);
+      const eps    =get(['EPS','每股盈餘'],0);
+      const epsPrev=get(['EPS','每股盈餘'],4);
+      fundamentalsMap[code]={
+        roe:null,
+        grossMargin:(rev&&gross&&rev!==0)?gross/rev:null,
+        operatingMargin:(rev&&opInc&&rev!==0)?opInc/rev:null,
+        revenueGrowth:(rev&&revPrev&&revPrev!==0)?(rev-revPrev)/Math.abs(revPrev):null,
+        earningsGrowth:(eps!=null&&epsPrev!=null&&epsPrev!==0)?(eps-epsPrev)/Math.abs(epsPrev):null,
+      };
+    });
+  }catch(_){}
+}
+
+// ─── FinMind: 批次預取全市場月營收（一次 API call，不限支數）──────────────────────
+async function prefetchAllRevenue(){
+  const token=getFinMindToken();
+  if(!token) return;
+  const since=new Date();since.setMonth(since.getMonth()-25);
+  const dateStr=since.toISOString().slice(0,10);
+  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMonthRevenue&date=${dateStr}&token=${token}`;
+  try{
+    const r=await fetchTO(url,90000);
+    if(!r.ok) return;
+    const json=await r.json();
+    if(json.status!==200||!json.data?.length) return;
+    // 按股票代號分組
+    const byStock={};
+    json.data.forEach(row=>{
+      const code=String(row.stock_id||'').trim();
+      if(!code) return;
+      if(!byStock[code]) byStock[code]=[];
+      byStock[code].push({date:row.date,revenue:Number(row.revenue)});
+    });
+    // 判斷每支是否月營收 2 年新高
+    Object.entries(byStock).forEach(([code,rows])=>{
+      rows.sort((a,b)=>b.date.localeCompare(a.date));
+      if(rows.length<2) return;
+      const latest=rows[0].revenue;
+      const max=Math.max(...rows.map(r=>r.revenue));
+      revenueHighMap[code]=latest>=max*0.98;
+    });
+  }catch(_){}
 }
 
 // ─── AI Calls ─────────────────────────────────────────────────────────────
@@ -780,8 +926,8 @@ async function callAIFree(prompt){
 
 async function callAI(prompt){
   const gk=getKey(), dk=getDsKey();
-  if(gk){
-    // 依序嘗試多個 Groq 模型（防止某個被棄用）
+  // ── Groq（必須 gsk_ 開頭才是有效格式）──
+  if(gk && gk.startsWith('gsk_')){
     const groqModels=['llama-3.3-70b-versatile','llama-3.1-70b-versatile','llama3-70b-8192','gemma2-9b-it','llama3-8b-8192'];
     for(const model of groqModels){
       try{
@@ -790,15 +936,14 @@ async function callAI(prompt){
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk},
           body:JSON.stringify({messages:[{role:'user',content:prompt}],model,max_tokens:500,temperature:0.7})
         },20000);
-        if(r.status===429) return '⚠️ Groq 超過每分鐘限額，請稍候再試 ↻';
-        if(r.status===401||r.status===403) return '❌ Groq Key 無效或已過期，請點 ⚙️ 重新設定';
-        if(r.status===400||r.status===404) continue; // 模型不存在，試下一個
+        if(r.status===429) break; // 超額，fall through 試 DeepSeek
+        if(r.status===401||r.status===403) break; // key 無效，fall through
+        if(r.status===400||r.status===404) continue;
         if(r.ok){const j=await r.json();const t=j.choices?.[0]?.message?.content||'';if(t.trim().length>10)return t.trim();}
       }catch(_){}
     }
-    // 所有 Groq 模型都失敗但 key 存在 → 不要靜默跌到 Pollinations，顯示錯誤
-    return '⚠️ Groq 暫時無回應，請點 ↻ 重試';
   }
+  // ── DeepSeek ──
   if(dk){
     try{
       const r=await fetchTimed('https://api.deepseek.com/v1/chat/completions',{
@@ -809,26 +954,35 @@ async function callAI(prompt){
       if(r.ok){const j=await r.json();const t=j.choices?.[0]?.message?.content||'';if(t.trim().length>10)return t.trim();}
     }catch(_){}
   }
-  // Free fallback: Pollinations (no key needed)
+  // ── Pollinations 免費備援 ──
   try{return await callAIFree(prompt);}catch(e){
-    if(e.message&&e.message.includes('429')) return '⚠️ 免費 AI 流量已滿（Pollinations 429），建議設定 Groq Key，請點 ⚙️';
+    if(e.message&&e.message.includes('429')) return '⚠️ 免費 AI 流量已滿，建議在 ⚙️ 設定 Groq Key（gsk_...）';
   }
-  return '⚠️ AI 暫時無法回應，請點 ↻ 重整，或至 console.groq.com 申請免費 Key';
+  return '⚠️ AI 暫時無法回應，請點 ↻ 重整';
 }
 
-// ─── RSS fetch (via allorigins) ────────────────────────────────────────────
+// ─── RSS fetch（多個 proxy 輪流試）─────────────────────────────────────────
 async function fetchRSS(query){
   const url=`https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
-  const proxy=`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-  try{
-    const r=await fetchTimed(proxy,{},12000);
-    const xml=await r.text();
-    const items=[...xml.matchAll(/<item>[\s\S]*?<\/item>/g)].slice(0,10).map(m=>{
-      const title=(m[0].match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)||m[0].match(/<title>(.*?)<\/title>/))?.[1]||'';
-      return {title:title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')};
-    }).filter(x=>x.title);
-    return items;
-  }catch(_){return [];}
+  const proxies=[
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  ];
+  for(const proxy of proxies){
+    try{
+      const r=await fetchTimed(proxy,{},12000);
+      if(!r.ok) continue;
+      const xml=await r.text();
+      if(!xml||xml.trim().startsWith('<html')) continue; // got error page
+      const items=[...xml.matchAll(/<item>[\s\S]*?<\/item>/g)].slice(0,10).map(m=>{
+        const title=(m[0].match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)||m[0].match(/<title>(.*?)<\/title>/))?.[1]||'';
+        return {title:title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')};
+      }).filter(x=>x.title);
+      if(items.length>0) return items;
+    }catch(_){}
+  }
+  return [];
 }
 
 // ─── 每日快訊 ─────────────────────────────────────────────────────────────
@@ -874,17 +1028,40 @@ async function loadTrump(){
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
-async function loadSemi(){
-  const b=document.getElementById('semiBody'), t=document.getElementById('semiTime');
-  b.className='news-body loading'; b.textContent='抓取最新新聞...'; t.textContent='';
-  const items=await fetchRSS('Taiwan semiconductor TSMC chip stock 2025').catch(()=>[]);
-  b.textContent='AI 分析中...';
-  const prompt=items.length
-    ? '你是台灣半導體股票分析師。以下是最新新聞標題。繁體中文，公司代號用英文或台灣股號。轉換為投資情報 3 條「・」開頭，160字內：(1)台積電/半導體最新動態 (2)外資動向/法人買賣超 (3)今日關注個股。\n\n'+items.map((x,i)=>`${i+1}. ${x.title}`).join('\n')
-    : '今天'+new Date().toLocaleDateString('zh-TW')+'。你是台灣半導體股票分析師。繁體中文，公司代號用英文或台灣股號。分析台股半導體現況 3 條「・」開頭，160字內：(1)台積電最新進展 (2)外資動向 (3)值得關注個股理由。';
+// ─── Trump 底層邏輯分析 ────────────────────────────────────────────────────
+async function loadTrumpLogic(){
+  const wrap=document.getElementById('trumpLogicWrap');
+  const b=document.getElementById('trumpLogicBody');
+  const t=document.getElementById('trumpLogicTime');
+  const btn=document.getElementById('logicBtn');
+  wrap.style.display='block';
+  b.className='news-body loading'; b.textContent='AI 解碼中...'; t.textContent='';
+  btn.disabled=true; btn.textContent='⏳ 分析中';
+  // 抓最新新聞作為背景資料
+  const items=await fetchRSS('Trump tariff policy trade war 2025').catch(()=>[]);
+  const today=new Date().toLocaleDateString('zh-TW');
+  const newsCtx=items.length?'\n\n最新事件背景：\n'+items.slice(0,8).map((x,i)=>`${i+1}. ${x.title}`).join('\n'):'';
+  const prompt=`今天${today}。你是政治經濟學家，專門拆解Trump的雙層策略。用繁體中文，精煉有力，禁止廢話。${newsCtx}
+
+嚴格按以下格式輸出，總字數控制在250字內：
+
+━━ 表面手段 ━━
+・[具體動作1]→表面目的（對選民/盟友/對手的宣傳效果）
+・[具體動作2]→表面目的
+
+━━ 底層邏輯 ━━
+・[真實戰略1]→實際利益（美元/選票/地緣/產業）+受益方
+・[真實戰略2]→實際利益
+
+━━ 台股/投資人怎麼看 ━━
+・表面衝擊：XXX sector短期漲跌%
+・底層機會：哪個方向反而是佈局點
+
+禁止：空泛描述、「可能」「或許」，必須有具體數字或名稱。`;
   const res=await callAI(prompt);
   b.className='news-body'; b.textContent=res;
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  btn.disabled=false; btn.textContent='🧠 底層邏輯';
 }
 
 // ─── 投資時鐘 ─────────────────────────────────────────────────────────────
@@ -983,27 +1160,6 @@ async function loadClock(){
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
-async function loadMacro(){
-  const b=document.getElementById('macroBody'), t=document.getElementById('macroTime');
-  b.className='inv-body loading'; b.textContent='AI 分析中...'; t.textContent='';
-  const items=await fetchRSS('Fed interest rate inflation GDP global economy 2025').catch(()=>[]);
-  const prompt=items.length
-    ? '你是總經分析師。以下是最新總經新聞。繁體中文，數字保留英文。3 條「・」開頭，160字內：(1)Fed 利率政策最新(2)通膨/GDP數字(3)對台股/新興市場影響。\n\n'+items.slice(0,8).map((x,i)=>`${i+1}. ${x.title}`).join('\n')
-    : '今天'+new Date().toLocaleDateString('zh-TW')+'。你是總經分析師。繁體中文，數字保留英文。分析全球總經環境 3 條「・」開頭，160字內：(1)Fed 利率預期 (2)全球景氣 (3)台股資金面影響。';
-  const res=await callAI(prompt);
-  b.className='inv-body'; b.textContent=res;
-  t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-}
-
-function updateVcpCard(){
-  const b=document.getElementById('vcpCardBody'), t=document.getElementById('vcpCardTime');
-  if(!allResults.length){b.textContent='尚未掃描，請點擊下方「開始掃描」';return;}
-  const withVcp=allResults.filter(r=>r.vcp);
-  const top=withVcp.filter(r=>r.vcp.score>=60).sort((a,b)=>b.vcp.score-a.vcp.score);
-  b.textContent=`掃描 ${withVcp.length} 支 · VCP候選 ${withVcp.filter(r=>r.vcp.score>=60).length} 支\n強力VCP≥80：${withVcp.filter(r=>r.vcp.score>=80).length} 支\n\nStage 2 股票：${withVcp.filter(r=>r.vcp.stage2).length} 支\n距高點≤15%：${withVcp.filter(r=>r.vcp.pctH<=15).length} 支\nATR收縮：${withVcp.filter(r=>r.vcp.atrSig==='g').length} 支`;
-  t.textContent='掃描於 '+new Date().toLocaleTimeString('zh-TW');
-}
-
 // ─── Scan source management ────────────────────────────────────────────────
 const DEFAULT_STOCKS=[...STOCKS];
 
@@ -1050,6 +1206,8 @@ async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
   const pT=document.getElementById('progText');
   const infoEl=document.getElementById('fetchApiStatus');
   const results=[];
+  // 預設清單的詳細產業對照表（保留精細分類）
+  const sectorMap=new Map(STOCKS.map(s=>[s.code,s.sector]));
 
   if(includeTSE){
     if(pT) pT.textContent='第 1 步：取得上市股票清單...';
@@ -1062,7 +1220,7 @@ async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
         const code=(s.Code||s.code||'').trim();
         const name=(s.Name||s.name||code).trim();
         if(/^\d{4}$/.test(code))
-          results.push({code,name,sector:'上市',ex:'TW'});
+          results.push({code,name,sector:sectorMap.get(code)||'上市',ex:'TW'});
       });
       if(infoEl) infoEl.textContent=`✅ 上市：${results.length} 支`;
     } else {
@@ -1076,7 +1234,6 @@ async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
   if(includeOTC){
     const otcStart=results.length;
     if(pT) pT.textContent=`第 2 步：取得上櫃股票清單（已有上市 ${otcStart} 支）...`;
-    // TPEX tries multiple known endpoints
     let otcData=null;
     for(const ep of [
       'https://www.tpex.org.tw/openapi/v1/tpex_mainboard_perday_quotation',
@@ -1093,7 +1250,7 @@ async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
         const code=String(codeKey?s[codeKey]:'').trim();
         const name=String(nameKey?s[nameKey]:code).trim();
         if(/^\d{4}$/.test(code)&&!results.find(r=>r.code===code))
-          results.push({code,name,sector:'上櫃',ex:'TWO'});
+          results.push({code,name,sector:sectorMap.get(code)||'上櫃',ex:'TWO'});
       });
       if(infoEl) infoEl.textContent=`✅ 上市 ${otcStart} 支 ＋ 上櫃 ${results.length-otcStart} 支`;
     } else {
@@ -1207,8 +1364,15 @@ async function fetchYahoo(sym){
   return null;
 }
 
-// ─── Fetch Fundamentals (Yahoo quoteSummary) ──────────────────────────────
+// ─── Fetch Fundamentals (bulk cache → FinMind 單支 → Yahoo 備援) ─────────────
 async function fetchFundamentals(sym){
+  const stockId=sym.split('.')[0];
+  // 1. 優先使用批次預取的 FinMind 快取
+  if(fundamentalsMap[stockId]) return fundamentalsMap[stockId];
+  // 2. 批次沒有時，嘗試 FinMind 單支
+  const fmResult=await fetchFundamentalsFinMind(stockId);
+  if(fmResult) return fmResult;
+  // Fallback: Yahoo Finance quoteSummary
   const bases=[
     `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=financialData`,
     `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=financialData`,
@@ -1240,14 +1404,31 @@ async function fetchFundamentals(sym){
   return null;
 }
 
-// ─── Fetch Institutional (TWSE T86) once per scan ─────────────────────────
+// ─── Fetch Institutional（FinMind 優先，TWSE T86 備援）────────────────────────
 async function fetchChips(){
   chipsMap={};
+  const infoEl=document.getElementById('fetchApiStatus');
+  // ── FinMind 優先 ──
+  if(getFinMindToken()){
+    if(infoEl) infoEl.textContent='取得籌碼（FinMind）...';
+    for(let back=0;back<5;back++){
+      const dt=new Date();dt.setDate(dt.getDate()-back);
+      if(dt.getDay()===0||dt.getDay()===6) continue;
+      const dateStr=dt.toISOString().slice(0,10);
+      const result=await fetchChipsFinMind(dateStr);
+      if(result&&Object.keys(result).length>10){
+        chipsMap=result;
+        if(infoEl) infoEl.textContent=`✅ 籌碼取得成功（FinMind ${dateStr}，${Object.keys(result).length} 支）`;
+        return;
+      }
+    }
+    if(infoEl) infoEl.textContent='⚠️ FinMind 籌碼失敗，改用 TWSE T86...';
+  }
+  // ── TWSE T86 備援 ──
   for(let back=0;back<7;back++){
     const dt=new Date();dt.setDate(dt.getDate()-back);
-    if(dt.getDay()===0||dt.getDay()===6)continue; // skip weekends
+    if(dt.getDay()===0||dt.getDay()===6) continue;
     const yyyymmdd=dt.getFullYear()+String(dt.getMonth()+1).padStart(2,'0')+String(dt.getDate()).padStart(2,'0');
-    // Try old stable endpoint first, then newer RWD endpoint
     const endpoints=[
       `https://www.twse.com.tw/fund/T86?response=json&date=${yyyymmdd}&selectType=ALL`,
       `https://www.twse.com.tw/rwd/zh/fund/T86?date=${yyyymmdd}&response=json`,
@@ -1263,17 +1444,13 @@ async function fetchChips(){
           if(!text||text.trim().startsWith('<'))continue;
           const json=JSON.parse(text);
           if(!json.data||!json.data.length)continue;
-          // Dynamically detect column positions from fields array
           const fields=json.fields||[];
-          let fIdx=4,tIdx=7,dIdx=8; // defaults: old simple format
+          let fIdx=4,tIdx=7,dIdx=8;
           if(fields.length>10){
-            // New RWD format has 24+ columns — find by keyword
             const fi=fields.findIndex(f=>f.includes('外資及陸資')&&f.includes('買賣超')&&!f.includes('自營'));
             const ti=fields.findIndex(f=>f.includes('投信')&&f.includes('買賣超'));
             const di=fields.findIndex(f=>f.includes('自營商')&&f.includes('買賣超')&&f.includes('合計'));
-            if(fi>0)fIdx=fi;
-            if(ti>0)tIdx=ti;
-            if(di>0)dIdx=di;
+            if(fi>0)fIdx=fi;if(ti>0)tIdx=ti;if(di>0)dIdx=di;
           }
           json.data.forEach(row=>{
             if(!row||row.length<Math.max(fIdx,tIdx,dIdx)+1)return;
@@ -1285,7 +1462,10 @@ async function fetchChips(){
               dealerNet:parseChipNum(row[dIdx])
             };
           });
-          if(Object.keys(chipsMap).length>10)return; // success
+          if(Object.keys(chipsMap).length>10){
+            if(infoEl) infoEl.textContent=`✅ 籌碼取得成功（TWSE T86 ${yyyymmdd}，${Object.keys(chipsMap).length} 支）`;
+            return;
+          }
         }catch(_){}
       }
     }
@@ -1310,6 +1490,8 @@ async function startScan(){
   document.getElementById('fetchApiStatus').style.display='';
   allResults=[];
   chipsMap={};
+  fundamentalsMap={};
+  revenueHighMap={};
 
   // Fetch institutional chips data once before scan
   document.getElementById('progText').textContent='取得籌碼資料（TWSE）...';
@@ -1344,6 +1526,23 @@ async function startScan(){
   }
 
   if(scanCancelled){scanning=false;btn.disabled=false;btn.textContent='✨ 開始掃描 VCP';cancelBtn.style.display='none';return;}
+
+  // FinMind 批次預取：財報 + 月營收（一次 API call 抓全市場，不限支數）
+  fundamentalsMap={};
+  revenueHighMap={};
+  if(getFinMindToken()){
+    const infoEl=document.getElementById('fetchApiStatus');
+    pT.textContent='📊 批次預取財報（FinMind，全市場一次抓）...';
+    if(infoEl) infoEl.style.display='';
+    if(infoEl) infoEl.textContent='財報預取中（FinMind TaiwanStockFinancialStatements）...';
+    await prefetchAllFundamentals();
+    const fCount=Object.keys(fundamentalsMap).length;
+    if(infoEl) infoEl.textContent=`✅ 財報預取完成（${fCount} 支）`;
+    pT.textContent='📈 批次預取月營收（FinMind，全市場一次抓）...';
+    await prefetchAllRevenue();
+    const rCount=Object.keys(revenueHighMap).length;
+    if(infoEl) infoEl.textContent=`✅ 財報 ${fCount} 支 ＋ 月營收 ${rCount} 支 預取完成`;
+  }
 
   const total=stocks.length;
   let done=0, failed=0, vcpFound=0;
@@ -1403,7 +1602,6 @@ async function startScan(){
     :`✅ 完成！共 ${done-failed} 支成功，VCP候選 ${vcpFound} 支，無數據 ${failed} 支`;
   if(!scanCancelled&&failed>total*0.5){err.style.display='';err.textContent=`⚠️ 超過半數無法取得數據（${failed}/${total}），可能是 CORS 限制或網路問題。建議掛 VPN 或改用 TradingView/FinLab。`;}
   renderAll();
-  updateVcpCard();
   try{localStorage.setItem('vcpCache',JSON.stringify({results:allResults,ts:Date.now()}));}catch(_){}
 }
 
@@ -1501,12 +1699,17 @@ function renderTable(){
     const techHTML=`<div style="display:flex;flex-direction:column;gap:2px">${atrHTML}${volHTML}</div>`;
     // Fundamental cell
     const fund=r.fund||{};
+    const revHigh=revenueHighMap[r.code];
+    const revHighHTML=revHigh!=null
+      ?`<div class="fund-row"><span class="fund-lbl">月營</span><span class="sig ${revHigh?'sig-g':'sig-n'}">${revHigh?'🔥新高':'—'}</span></div>`
+      :'';
     const fundHTML=`<div class="fund-cell">
       <div class="fund-row"><span class="fund-lbl">ROE</span>${fmtROE(fund.roe)}</div>
       <div class="fund-row"><span class="fund-lbl">毛利</span>${fmtPct2(fund.grossMargin)}</div>
       <div class="fund-row"><span class="fund-lbl">營益</span>${fmtPct2(fund.operatingMargin)}</div>
       <div class="fund-row"><span class="fund-lbl">EPS增</span>${fmtPct2(fund.earningsGrowth)}</div>
       <div class="fund-row"><span class="fund-lbl">營收增</span>${fmtPct2(fund.revenueGrowth)}</div>
+      ${revHighHTML}
     </div>`;
     // Chips cell
     const chips=chipsMap[r.code];
@@ -1675,7 +1878,7 @@ function sparkline(closes,w=80,h=28){
     document.getElementById('scanBtn').textContent='🔄 重新掃描';
     const ageStr=age>=60?`${Math.round(age/60)} 小時`:`${Math.round(age)} 分鐘`;
     document.getElementById('scanInfo').innerHTML=`上次掃描：<strong>${new Date(ts).toLocaleTimeString('zh-TW')}</strong>（${ageStr}前）`;
-    renderAll();updateVcpCard();
+    renderAll();
   }catch(_){}
 
   // Restore dark mode preference
@@ -1685,13 +1888,13 @@ function sparkline(closes,w=80,h=28){
   }
 
   // Auto-load AI sections
-  setTimeout(()=>{loadTrump();loadSemi();loadClock();loadMacro();},500);
+  setTimeout(()=>{loadTrump();loadClock();loadTrumpLogic();},500);
 
   // Hotkey: Alt+R = 重新整理 AI 快訊（不清除 API key）
   document.addEventListener('keydown',e=>{
     if(e.altKey&&e.key.toLowerCase()==='r'){
       e.preventDefault();
-      loadTrump();loadSemi();loadClock();loadMacro();
+      loadTrump();loadClock();
       const tip=document.createElement('div');
       tip.textContent='↻ Alt+R：重整 AI 快訊中...';
       tip.style.cssText='position:fixed;bottom:20px;right:20px;background:var(--purple);color:#fff;padding:8px 16px;border-radius:12px;font-size:.78rem;font-weight:700;z-index:9999;animation:fadeOut 2.5s ease forwards';
