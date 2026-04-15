@@ -812,6 +812,7 @@ async function fetchFundamentalsFinMind(stockId){
 // ─── FinMind: 月營收新高（TaiwanStockMonthRevenue）────────────────────────────
 let revenueHighMap={};
 let fundamentalsMap={};
+let twseFundMap={}; // code -> {pe, pb, divYield} from TWSE/TPEX BWIBBU bulk
 
 // 單支備援（bulk 失敗時使用）
 async function fetchMonthRevenueHigh(stockId){
@@ -1354,6 +1355,11 @@ async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
           const c=String(r['股票代號']||r.Code||r.stockCode||r['證券代號']||'').trim();
           const i=String(r['產業別']||r['Industry']||r['IndustryType']||r.industryType||r.industry||r['產業類別']||r['類別']||'').replace(/業$/,'').trim();
           if(c&&i) twseInfoMap.set(c,i);
+          // 同時存 P/E、P/B、殖利率（BWIBBU_d 有這些欄位）
+          const pe=parseFloat(r['PEratio']||r['本益比']||0)||null;
+          const pb=parseFloat(r['PBratio']||r['股價淨值比']||0)||null;
+          const dy=parseFloat(r['DividendYield']||r['殖利率']||0)||null;
+          if(c&&(pe||pb||dy)) twseFundMap[c]={pe,pb,divYield:dy};
         });
         if(twseInfoMap.size>10) break; // success
       }catch(_){}
@@ -1371,6 +1377,10 @@ async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
           const c=String(r['SecuritiesCompanyCode']||r['股票代號']||r['代號']||'').trim();
           const i=String(r['IndustryType']||r['產業別']||r['類別']||'').replace(/業$/,'').trim();
           if(c&&i&&!twseInfoMap.has(c)) twseInfoMap.set(c,i);
+          const pe=parseFloat(r['PEratio']||r['本益比']||0)||null;
+          const pb=parseFloat(r['PBratio']||r['股價淨值比']||0)||null;
+          const dy=parseFloat(r['DividendYield']||r['殖利率']||0)||null;
+          if(c&&(pe||pb||dy)&&!twseFundMap[c]) twseFundMap[c]={pe,pb,divYield:dy};
         });
         if(twseInfoMap.size>0) break;
       }catch(_){}
@@ -1554,51 +1564,53 @@ async function fetchYahoo(sym){
   return null;
 }
 
-// ─── Fetch Fundamentals (FinMind 快取 → FinMind 單支) ─────────────────────────
-// ─── Yahoo Finance quoteSummary（主要來源，不需 token）──────────────────────
+// ─── Fetch Fundamentals ────────────────────────────────────────────────────
+// ─── Yahoo Finance v7 quote（不需 crumb，v10 quoteSummary 已封）──────────────
 async function fetchFundamentalsYahoo(sym){
-  // 台股代號格式：2330.TW (上市) 或 6770.TWO (上櫃)
-  const endpoints=[
-    `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(sym)}?modules=financialData%2CdefaultKeyStatistics&lang=en-US&region=TW`,
-    `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(sym)}?modules=financialData%2CdefaultKeyStatistics&lang=en-US`,
-  ];
+  const url=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(sym)}&fields=returnOnEquity,grossMargins,operatingMargins,earningsGrowth,revenueGrowth,profitMargins&_t=${Date.now()}`;
   const proxies=['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest='];
-  for(const base of endpoints){
-    for(const px of proxies){
-      try{
-        const purl=px+encodeURIComponent(base+'&_t='+Date.now());
-        const r=await fetchTO(purl,10000);
-        if(!r.ok) continue;
-        const text=await r.text();
-        if(!text||text.trim().startsWith('<')) continue;
-        const json=JSON.parse(text);
-        const res=json?.quoteSummary?.result?.[0];
-        if(!res) continue;
-        const fd=res.financialData||{};
-        const ks=res.defaultKeyStatistics||{};
-        const out={
-          roe:fd.returnOnEquity?.raw??null,
-          grossMargin:fd.grossMargins?.raw??null,
-          operatingMargin:fd.operatingMargins?.raw??null,
-          revenueGrowth:fd.revenueGrowth?.raw??null,
-          earningsGrowth:fd.earningsGrowth?.raw??ks.earningsQuarterlyGrowth?.raw??null,
-        };
-        if(Object.values(out).some(v=>v!=null)) return out;
-      }catch(_){}
-    }
+  for(const px of proxies){
+    try{
+      const r=await fetchTO(px+encodeURIComponent(url),10000);
+      if(!r.ok) continue;
+      const text=await r.text();
+      if(!text||text.trim().startsWith('<')||text.includes('Rate limit')) continue;
+      const json=JSON.parse(text);
+      const q=json?.quoteResponse?.result?.[0];
+      if(!q) continue;
+      const out={
+        roe:q.returnOnEquity??null,
+        grossMargin:q.grossMargins??null,
+        operatingMargin:q.operatingMargins??q.profitMargins??null,
+        revenueGrowth:q.revenueGrowth??null,
+        earningsGrowth:q.earningsGrowth??null,
+      };
+      if(Object.values(out).some(v=>v!=null)) return out;
+    }catch(_){}
   }
   return null;
 }
 
 async function fetchFundamentals(sym){
   const stockId=sym.split('.')[0];
-  // 1. 批次預取快取（prefetchAllFundamentals）
+  // 1. FinMind 批次快取（需付費帳號才有資料）
   if(fundamentalsMap[stockId]) return fundamentalsMap[stockId];
-  // 2. Yahoo Finance（不需 token，ROE/毛利/營益/EPS增/營收增 — 主要來源）
+  // 2. Yahoo Finance v7 quote（主要來源，不需 crumb/token）
   const yf=await fetchFundamentalsYahoo(sym);
-  if(yf&&Object.values(yf).some(v=>v!=null)) return yf;
-  // 3. FinMind 備援（需要 token）
-  return await fetchFundamentalsFinMind(stockId);
+  // 3. TWSE/TPEX BWIBBU 批次資料（P/E、P/B、殖利率 — 免費官方）
+  const bwi=twseFundMap[stockId]||null;
+  const merged={
+    roe:yf?.roe??null,
+    grossMargin:yf?.grossMargin??null,
+    operatingMargin:yf?.operatingMargin??null,
+    revenueGrowth:yf?.revenueGrowth??null,
+    earningsGrowth:yf?.earningsGrowth??null,
+    pe:bwi?.pe??null,
+    pb:bwi?.pb??null,
+    divYield:bwi?.divYield??null,
+  };
+  if(Object.values(merged).some(v=>v!=null)) return merged;
+  return null;
 }
 
 // ─── Fetch Institutional（FinMind 優先，TWSE T86 備援）────────────────────────
@@ -1690,6 +1702,7 @@ async function startScan(){
   chipsMap={};
   fundamentalsMap={};
   revenueHighMap={};
+  twseFundMap={};
 
   // Fetch institutional chips data once before scan
   document.getElementById('progText').textContent='取得籌碼資料（TWSE）...';
@@ -1966,6 +1979,9 @@ function renderTable(){
       fund.operatingMargin!=null?`<div class="fund-row"><span class="fund-lbl">營益</span>${fmtPct2(fund.operatingMargin)}</div>`:'',
       fund.earningsGrowth!=null?`<div class="fund-row"><span class="fund-lbl">EPS↑</span>${fmtPct2(fund.earningsGrowth)}</div>`:'',
       fund.revenueGrowth!=null?`<div class="fund-row"><span class="fund-lbl">營收↑</span>${fmtPct2(fund.revenueGrowth)}</div>`:'',
+      fund.pe!=null?`<div class="fund-row"><span class="fund-lbl">P/E</span><span>${fund.pe.toFixed(1)}x</span></div>`:'',
+      fund.pb!=null?`<div class="fund-row"><span class="fund-lbl">P/B</span><span>${fund.pb.toFixed(2)}x</span></div>`:'',
+      fund.divYield!=null?`<div class="fund-row"><span class="fund-lbl">殖利率</span><span>${fund.divYield.toFixed(2)}%</span></div>`:'',
       revHigh!=null?`<div class="fund-row"><span class="fund-lbl">月營</span><span class="sig ${revHigh?'sig-g':'sig-n'}">${revHigh?'🔥新高':'普通'}</span></div>`:'',
     ].filter(Boolean).join('');
     const fundLabel=fg?`${fg.label} ${fg.score}`:null;
