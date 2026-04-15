@@ -144,7 +144,8 @@ header p{color:rgba(255,255,255,.75);font-size:.82rem;line-height:1.7;text-shado
 .srt:hover{color:var(--purple);border-color:var(--purple)}
 
 /* ── Table ── */
-.tbl-wrap{overflow-x:auto;border-radius:16px;border:1.5px solid var(--border);background:var(--card);box-shadow:0 4px 20px var(--shadow)}
+.tbl-wrap{overflow-x:auto;border-radius:16px;border:1.5px solid var(--border);background:var(--card);box-shadow:0 4px 20px var(--shadow);-webkit-overflow-scrolling:touch}
+@media(max-width:768px){.tbl-wrap::after{content:'← 左右滑動查看更多 →';display:block;text-align:center;font-size:.65rem;color:var(--text2);padding:4px 0;border-top:1px solid var(--border)}}
 table{width:100%;border-collapse:collapse;font-size:.82rem}
 thead th{background:var(--card2);color:var(--text2);font-size:.67rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:11px 13px;text-align:left;border-bottom:1.5px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;transition:color .15s}
 thead th:hover{color:var(--purple)}
@@ -773,7 +774,7 @@ async function fetchChipsFinMind(dateStr){
 async function fetchFundamentalsFinMind(stockId){
   const token=getFinMindToken();
   if(!token) return null;
-  const since=new Date();since.setFullYear(since.getFullYear()-2);
+  const since=new Date();since.setMonth(since.getMonth()-16); // 16個月 = 5季，足夠比較年增
   const dateStr=since.toISOString().slice(0,10);
   const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockFinancialStatements&stock_id=${stockId}&start_date=${dateStr}&token=${token}`;
   try{
@@ -1472,44 +1473,14 @@ async function fetchYahoo(sym){
   return null;
 }
 
-// ─── Fetch Fundamentals (bulk cache → FinMind 單支 → Yahoo 備援) ─────────────
+// ─── Fetch Fundamentals (FinMind 快取 → FinMind 單支) ─────────────────────────
+// Yahoo Finance quoteSummary 已移除：台股 CORS proxy 成功率極低且速度慢
 async function fetchFundamentals(sym){
   const stockId=sym.split('.')[0];
   // 1. 優先使用批次預取的 FinMind 快取
   if(fundamentalsMap[stockId]) return fundamentalsMap[stockId];
-  // 2. 批次沒有時，嘗試 FinMind 單支
-  const fmResult=await fetchFundamentalsFinMind(stockId);
-  if(fmResult) return fmResult;
-  // Fallback: Yahoo Finance quoteSummary
-  const bases=[
-    `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=financialData`,
-    `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=financialData`,
-    `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${sym}?modules=financialData`,
-  ];
-  const proxies=['','https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest='];
-  for(const base of bases){
-    for(const px of proxies){
-      try{
-        const url=px?px+encodeURIComponent(base):base;
-        const r=await fetchTO(url,10000);
-        if(!r.ok)continue;
-        const text=await r.text();
-        if(!text||text.trim().startsWith('<')||text.includes('"code":"Not Found"'))continue;
-        const json=JSON.parse(text);
-        const fd=json?.quoteSummary?.result?.[0]?.financialData;
-        if(!fd)continue;
-        const out={
-          roe:fd.returnOnEquity?.raw??null,
-          grossMargin:fd.grossMargins?.raw??null,
-          operatingMargin:fd.operatingMargins?.raw??null,
-          revenueGrowth:fd.revenueGrowth?.raw??null,
-          earningsGrowth:fd.earningsGrowth?.raw??null,
-        };
-        if(Object.values(out).some(v=>v!=null))return out;
-      }catch(_){}
-    }
-  }
-  return null;
+  // 2. 單支 FinMind 抓取（需要 token）
+  return await fetchFundamentalsFinMind(stockId);
 }
 
 // ─── Fetch Institutional（FinMind 優先，TWSE T86 備援）────────────────────────
@@ -1636,21 +1607,18 @@ async function startScan(){
 
   if(scanCancelled){scanning=false;btn.disabled=false;btn.textContent='✨ 開始掃描 VCP';cancelBtn.style.display='none';return;}
 
-  // FinMind 批次預取：財報 + 月營收（一次 API call 抓全市場，不限支數）
+  // FinMind 月營收批次預取（資料量小，CORS proxy 可承受）
   fundamentalsMap={};
   revenueHighMap={};
   if(getFinMindToken()){
     const infoEl=document.getElementById('fetchApiStatus');
-    pT.textContent='📊 批次預取財報（FinMind，全市場一次抓）...';
     if(infoEl) infoEl.style.display='';
-    if(infoEl) infoEl.textContent='財報預取中（FinMind TaiwanStockFinancialStatements）...';
-    await prefetchAllFundamentals();
-    const fCount=Object.keys(fundamentalsMap).length;
-    if(infoEl) infoEl.textContent=`✅ 財報預取完成（${fCount} 支）`;
-    pT.textContent='📈 批次預取月營收（FinMind，全市場一次抓）...';
+    pT.textContent='📈 批次預取月營收（FinMind）...';
+    if(infoEl) infoEl.textContent='月營收預取中（FinMind TaiwanStockMonthRevenue）...';
     await prefetchAllRevenue();
     const rCount=Object.keys(revenueHighMap).length;
-    if(infoEl) infoEl.textContent=`✅ 財報 ${fCount} 支 ＋ 月營收 ${rCount} 支 預取完成`;
+    if(infoEl) infoEl.textContent=rCount>0?`✅ 月營收 ${rCount} 支預取完成`:'⚠️ 月營收預取失敗，將逐支抓取';
+    // 財報改為掃描後逐支抓（bulk 回應過大，CORS proxy 無法承受）
   }
 
   const total=stocks.length;
@@ -1673,8 +1641,10 @@ async function startScan(){
     await Promise.all(batch.map(async s=>{
       if(scanCancelled)return;
       const sym=`${s.code}.${s.ex}`;
-      const [data,fund]=await Promise.all([fetchYahoo(sym),fetchFundamentals(sym)]);
+      const data=await fetchYahoo(sym);
       const vcp=data?calcVCP(data):null;
+      // 只為 VCP 候選股（≥40分）抓財報，避免對所有股票都呼叫 API
+      const fund=(vcp&&vcp.score>=40)?await fetchFundamentals(sym):null;
       if(!data)failed++;
       if(vcp&&vcp.score>=40) vcpFound++;
       // 用 Yahoo 回傳的中文名補全（全掃模式股票清單可能只有代號）
