@@ -1336,7 +1336,7 @@ async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
         if(!Array.isArray(ti)||!ti.length) continue;
         ti.forEach(r=>{
           const c=String(r['股票代號']||r.Code||r.stockCode||r['證券代號']||'').trim();
-          const i=String(r['產業別']||r.industryType||r.industry||r['產業類別']||r['類別']||'').replace(/業$/,'').trim();
+          const i=String(r['產業別']||r['Industry']||r['IndustryType']||r.industryType||r.industry||r['產業類別']||r['類別']||'').replace(/業$/,'').trim();
           if(c&&i) twseInfoMap.set(c,i);
         });
         if(twseInfoMap.size>10) break; // success
@@ -1502,28 +1502,16 @@ const PROXIES=[
 function fetchTO(url,ms=9000,opts={}){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal,...opts}).finally(()=>clearTimeout(t));}
 // FinMind 需要走 CORS proxy（直連被瀏覽器 CORS 攔截）
 const FM_PROXIES=['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest='];
-// POST 模式：把 URL 參數放進 body，避免部分 CORS proxy 截斷 query string（修正 start_date missing 400 錯誤）
+// GET 模式：將完整 URL（含所有 query params）傳給 CORS proxy，不拆 body
 async function fetchFinMind(url,ms=18000){
-  let baseUrl=url,body='';
-  try{const u=new URL(url);baseUrl=u.origin+u.pathname;body=u.searchParams.toString();}catch(_){}
-  const postOpts=body?{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body}:{};
   for(const px of FM_PROXIES){
     try{
-      const purl=px+encodeURIComponent(baseUrl);
-      const r=await fetchTO(purl,ms,postOpts);
+      const purl=px+encodeURIComponent(url);
+      const r=await fetchTO(purl,ms);
       if(!r.ok) continue;
       const text=await r.text();
       if(!text||text.trim().startsWith('<')||text.trim().startsWith('<!')) continue;
-      const json=JSON.parse(text);
-      if(json&&(json.status===405||json.msg==='Method Not Allowed')){
-        // proxy 不支援 POST → 降回 GET
-        const rg=await fetchTO(px+encodeURIComponent(url),ms);
-        if(!rg.ok) continue;
-        const tg=await rg.text();
-        if(!tg||tg.trim().startsWith('<')) continue;
-        return JSON.parse(tg);
-      }
-      return json;
+      return JSON.parse(text);
     }catch(_){}
   }
   return null;
