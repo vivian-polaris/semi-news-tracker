@@ -73,6 +73,7 @@ header p{color:rgba(255,255,255,.75);font-size:.82rem;line-height:1.7;text-shado
 .news-refresh{background:transparent;border:1.5px solid var(--border);border-radius:12px;color:var(--text2);cursor:pointer;font-size:.68rem;padding:3px 9px;transition:all .18s}
 .news-refresh:hover{border-color:var(--purple);color:var(--purple)}
 .news-body{font-size:.8rem;line-height:1.75;color:var(--text);flex:1;white-space:pre-wrap}
+.src-link{display:block;font-size:.74rem;color:var(--purple);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:1px 0;line-height:1.65}.src-link:hover{text-decoration:underline}
 .news-body.loading{color:var(--text2);font-style:italic;animation:pulse 1.5s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 .news-time{font-size:.62rem;color:var(--text2);margin-top:8px;text-align:right}
@@ -449,9 +450,9 @@ footer a:hover{text-decoration:underline}
     <span class="flabel">VCP 分數</span>
     <span class="pill" onclick="setScore(0,this)">全部</span>
     <span class="pill" onclick="setScore(40,this)">≥ 40 VCP初步</span>
-    <span class="pill" onclick="setScore(60,this)">≥ 60 候選 🌸</span>
+    <span class="pill f-on" onclick="setScore(60,this)">≥ 60 候選 🌸</span>
     <span class="pill" onclick="setScore(70,this)">≥ 70</span>
-    <span class="pill f-on" onclick="setScore(80,this)">≥ 80 強力 ⭐</span>
+    <span class="pill" onclick="setScore(80,this)">≥ 80 強力 ⭐</span>
   </div>
   <div class="filter-row" id="pctRow">
     <span class="flabel">距高點</span>
@@ -618,7 +619,7 @@ const STOCKS = [
 ];
 
 // ─── State ────────────────────────────────────────────────────────────────
-let allResults=[], scoreMin=80, pctMax=999, secFilter='ALL', exFilter='ALL';
+let allResults=[], scoreMin=60, pctMax=999, secFilter='ALL', exFilter='ALL';
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
 let scanCancelled=false, scanSrc='all';
@@ -1004,14 +1005,17 @@ function parseRSSXml(xml){
     const title=(m[0].match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)||m[0].match(/<title>(.*?)<\/title>/))?.[1]||'';
     const pubRaw=(m[0].match(/<pubDate>(.*?)<\/pubDate>/))?.[1]||'';
     const dateStr=pubRaw?new Date(pubRaw).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
-    return {title:title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'),dateStr};
+    const link=(m[0].match(/<link><!\[CDATA\[(.*?)\]\]><\/link>/)||m[0].match(/<link>(https?:\/\/[^<]+)<\/link>/)||m[0].match(/<guid[^>]*>(https?:\/\/[^<]+)<\/guid>/))?.[1]||'';
+    return {title:title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'),dateStr,link};
   }).filter(x=>x.title);
 }
 async function fetchRSSUrl(directUrl){
+  // 加時間戳防止 CORS proxy 返回快取舊資料
+  const bustUrl=directUrl+(directUrl.includes('?')?'&':'?')+'_t='+Date.now();
   const proxies=[
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`,
-    `https://corsproxy.io/?${encodeURIComponent(directUrl)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(directUrl)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(bustUrl)}`,
+    `https://corsproxy.io/?${encodeURIComponent(bustUrl)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(bustUrl)}`,
   ];
   for(const proxy of proxies){
     try{
@@ -1026,11 +1030,26 @@ async function fetchRSSUrl(directUrl){
   return [];
 }
 async function fetchRSS(query){
-  const url=`https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
+  // en-US 確保抓到國際財經媒體（WSJ/Reuters/CNBC），zh-TW 結果較少且較舊
+  const url=`https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
   return fetchRSSUrl(url);
 }
 
 // ─── 每日快訊 ─────────────────────────────────────────────────────────────
+function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function safeUrl(u){try{const p=new URL(String(u||'')).protocol;return['http:','https:'].includes(p)?u:'#';}catch(_){return'#';}}
+function buildSrcHtml(items){
+  if(!items||!items.length)return'';
+  const links=items.slice(0,15).map((x,i)=>
+    x.link?'<a class="src-link" href="'+safeUrl(x.link)+'" target="_blank" rel="noopener">'+
+      (i+1)+'. ['+escH(x.dateStr||'近期')+'] '+escH(x.title)+'</a>'
+    :'<span class="src-link" style="color:var(--text2)">'+
+      (i+1)+'. ['+escH(x.dateStr||'近期')+'] '+escH(x.title)+'</span>'
+  ).join('');
+  return '<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">'+
+    '<div style="font-size:.65rem;font-weight:800;color:var(--text2);letter-spacing:.05em;margin-bottom:5px">📰 新聞來源 ('+items.length+' 條)</div>'+
+    '<div>'+links+'</div></div>';
+}
 const AI_CACHE_TTL=4*60*60*1000; // 4 小時快取
 function getAICache(key){
   try{const c=JSON.parse(localStorage.getItem('ai_'+key)||'{}');if(c.ts&&Date.now()-c.ts<AI_CACHE_TTL)return c;}catch(_){}return null;
@@ -1047,7 +1066,7 @@ async function loadTrump(useCache=false){
   const b=document.getElementById('trumpBody'), t=document.getElementById('trumpTime');
   if(useCache){
     const c=getAICache('trump');
-    if(c){b.className='news-body';b.textContent=c.text;t.textContent='快取（'+cacheAgeStr(c.ts)+'）・點 ↻ 強制更新';return;}
+    if(c){b.className='news-body';if(c.text.trim().startsWith('<'))b.innerHTML=c.text;else b.textContent=c.text;t.textContent='快取（'+cacheAgeStr(c.ts)+'）・點 ↻ 強制更新';return;}
   }
   b.className='news-body loading'; b.textContent='抓取最新新聞...'; t.textContent='';
   // 使用 5 天前日期，避免今日新聞未被 Google News 索引而回傳空集合（會讓 AI 用舊訓練資料）
@@ -1071,7 +1090,9 @@ async function loadTrump(useCache=false){
     t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
     return;
   }
-  b.textContent='AI 分析中...';
+  // 立即顯示新聞來源（不等 AI），讓用戶先看到出處
+  b.className='news-body';
+  b.innerHTML='<div id="tAI" style="white-space:pre-wrap;color:var(--text2);font-style:italic">AI 分析中，請稍候...</div>'+buildSrcHtml(items);
   const today=new Date().toLocaleDateString('zh-TW');
   const sysNote='【輸出規則】純文字，禁止使用 markdown、代碼塊、星號、#號。';
   const newsList=items.map((x,i)=>`${i+1}. [${x.dateStr||'近期'}] ${x.title}`).join('\n');
@@ -1092,9 +1113,12 @@ ${newsList}`;
     callAI(prompt),
     new Promise(r=>setTimeout(()=>r('⚠️ 等待 AI 回應超過 35 秒，請點 ↻ 重試（或明天 Groq 額度重置後自動恢復）'),35000))
   ]);
-  const text=stripMd(res);
-  b.className='news-body'; b.textContent=text;
-  if(!text.startsWith('⚠️')&&!text.startsWith('❌')) setAICache('trump',text);
+  const aiText=stripMd(res);
+  const aiDiv=document.getElementById('tAI');
+  if(aiDiv){aiDiv.style.color='';aiDiv.style.fontStyle='';aiDiv.textContent=aiText;}
+  else{b.className='news-body';b.innerHTML='<div id="tAI" style="white-space:pre-wrap">'+escH(aiText)+'</div>'+buildSrcHtml(items);}
+  const finalHtml=b.innerHTML;
+  if(!aiText.startsWith('⚠️')&&!aiText.startsWith('❌')) setAICache('trump',finalHtml);
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
@@ -1681,15 +1705,13 @@ async function startScan(){
       const sym=`${s.code}.${s.ex}`;
       const data=await fetchYahoo(sym);
       const vcp=data?calcVCP(data):null;
-      // 只為 VCP 候選股（≥40分）抓財報，避免對所有股票都呼叫 API
-      const fund=(vcp&&vcp.score>=40)?await fetchFundamentals(sym):null;
       if(!data)failed++;
       if(vcp&&vcp.score>=40) vcpFound++;
       // 用 Yahoo 回傳的中文名補全（全掃模式股票清單可能只有代號）
       if(data?._yahooName&&(s.name===s.code||!s.name||s.name.length<2)){
         s.name=data._yahooName;
       }
-      allResults.push({...s,sym,vcp,fund,noData:!data,closes:data?data.slice(0,60).map(d=>d.close):null});
+      allResults.push({...s,sym,vcp,fund:null,noData:!data,closes:data?data.slice(0,60).map(d=>d.close):null});
       done++;
     }));
     // Update progress
@@ -1714,6 +1736,22 @@ async function startScan(){
   scanning=false; btn.disabled=false;
   btn.textContent='重新掃描';
   cancelBtn.style.display='none';
+  // 第二階段：背景補抓財報（不阻塞 VCP 結果顯示）
+  const fundCandidates=allResults.filter(r=>r.vcp&&r.vcp.score>=40&&!r.noData);
+  if(fundCandidates.length>0&&!scanCancelled){
+    (async()=>{
+      pT.textContent=`第二階段：補抓財報（${fundCandidates.length} 支 VCP 候選）...`;
+      for(let i=0;i<fundCandidates.length;i+=3){
+        if(scanCancelled)break;
+        await Promise.all(fundCandidates.slice(i,i+3).map(async r=>{
+          const fund=await fetchFundamentals(r.sym).catch(()=>null);
+          if(fund!=null){r.fund=fund;renderTable();}
+        }));
+        await new Promise(res=>setTimeout(res,200));
+      }
+      pT.textContent=`✅ 財報補抓完成 · ${fundCandidates.length} 支 VCP 候選`;
+    })();
+  }
   pT.textContent=scanCancelled
     ?`⏹ 已停止 · 已掃 ${done}/${total} 支，VCP候選 ${vcpFound} 支`
     :`✅ 完成！共 ${done-failed} 支成功，VCP候選 ${vcpFound} 支，無數據 ${failed} 支`;
