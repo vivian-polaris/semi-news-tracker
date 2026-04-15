@@ -74,6 +74,7 @@ header p{color:rgba(255,255,255,.75);font-size:.82rem;line-height:1.7;text-shado
 .news-refresh:hover{border-color:var(--purple);color:var(--purple)}
 .news-body{font-size:.8rem;line-height:1.75;color:var(--text);flex:1;white-space:pre-wrap}
 .src-link{display:block;font-size:.74rem;color:var(--purple);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:1px 0;line-height:1.65}.src-link:hover{text-decoration:underline}
+details>summary::-webkit-details-marker,details>summary::marker{display:none;content:''}
 .news-body.loading{color:var(--text2);font-style:italic;animation:pulse 1.5s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 .news-time{font-size:.62rem;color:var(--text2);margin-top:8px;text-align:right}
@@ -1040,15 +1041,30 @@ function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 function safeUrl(u){try{const p=new URL(String(u||'')).protocol;return['http:','https:'].includes(p)?u:'#';}catch(_){return'#';}}
 function buildSrcHtml(items){
   if(!items||!items.length)return'';
+  const ABBR={'wsj.com':'WSJ','reuters.com':'Reuters','bloomberg.com':'BBG','ft.com':'FT',
+    'cnbc.com':'CNBC','forexfactory.com':'FF','nikkei.com':'Nikkei','marketwatch.com':'MW',
+    'barrons.com':'Barron\'s','apnews.com':'AP','bbc.com':'BBC','seeking alpha.com':'SA',
+    'finance.yahoo.com':'Yahoo Fin','economist.com':'Economist','wsj':'WSJ'};
+  function srcAbbr(url){
+    try{const h=new URL(url).hostname.replace(/^www\./,'');
+      for(const[k,v]of Object.entries(ABBR)){if(h===k||h.endsWith('.'+k))return v;}
+      return h.split('.')[0].toUpperCase();
+    }catch(_){return'';}
+  }
+  const seen=new Set(),names=[];
+  items.forEach(x=>{if(x.link){const a=srcAbbr(x.link);if(a&&!seen.has(a)){seen.add(a);names.push(a);}}});
+  const label=names.slice(0,4).join(' · ')+(names.length>4?' …':'');
   const links=items.slice(0,15).map((x,i)=>
     x.link?'<a class="src-link" href="'+safeUrl(x.link)+'" target="_blank" rel="noopener">'+
       (i+1)+'. ['+escH(x.dateStr||'近期')+'] '+escH(x.title)+'</a>'
     :'<span class="src-link" style="color:var(--text2)">'+
       (i+1)+'. ['+escH(x.dateStr||'近期')+'] '+escH(x.title)+'</span>'
   ).join('');
-  return '<div style="margin-top:10px;border-top:1px solid var(--border);padding-top:8px">'+
-    '<div style="font-size:.65rem;font-weight:800;color:var(--text2);letter-spacing:.05em;margin-bottom:5px">📰 新聞來源 ('+items.length+' 條)</div>'+
-    '<div>'+links+'</div></div>';
+  return '<details style="margin-top:8px;border-top:1px solid var(--border);padding-top:6px">'+
+    '<summary style="cursor:pointer;list-style:none;outline:none">'+
+    '<span style="font-size:.68rem;color:var(--purple);text-decoration:underline dotted;letter-spacing:.02em">'+
+    '📰 '+escH(label)+' ('+items.length+')</span></summary>'+
+    '<div style="margin-top:5px">'+links+'</div></details>';
 }
 const AI_CACHE_TTL=4*60*60*1000; // 4 小時快取
 function getAICache(key){
