@@ -299,23 +299,15 @@ footer a:hover{text-decoration:underline}
 
 <!-- ── Key Panel ── -->
 <div class="key-panel" id="keyPanel">
-  <p>設定 <a href="https://console.groq.com" target="_blank">Groq API Key</a>（免費，每日額度充足），享 AI 快訊摘要。<br>
-  <a href="https://finmindtrade.com" target="_blank">FinMind Token</a>（免費）可大幅提升籌碼 / 財報 / 月營收資料穩定性。</p>
+  <p>設定 <a href="https://console.groq.com" target="_blank">Groq API Key</a>（免費，每日額度充足），享 AI 快訊摘要。</p>
   <div class="key-row">
     <input class="key-input" id="groqInput" type="password" placeholder="Groq API Key（gsk_...）輸入後自動儲存"
       oninput="autoSaveGroq(this.value)" onpaste="setTimeout(()=>autoSaveGroq(document.getElementById('groqInput').value),50)">
     <button class="key-save" onclick="testGroq()" style="background:#e0f2fe;border-color:#7dd3fc;color:#0369a1">測試</button>
     <button class="key-save" onclick="localStorage.removeItem('groq_key');document.getElementById('groqInput').value='';updateKeyStatus();alert('已清除，請重新貼上新的 Groq Key')" style="background:#fee2e2;border-color:#fca5a5;color:#b91c1c">清除</button>
   </div>
-  <div class="key-row">
-    <input class="key-input" id="fmInput" type="password" placeholder="FinMind Token（finmindtrade.com 免費申請）→ 籌碼/財報/月營收新高"
-      oninput="autoSaveFinMind(this.value)" onpaste="setTimeout(()=>autoSaveFinMind(document.getElementById('fmInput').value),50)">
-    <button class="key-save" onclick="testFinMind()" style="background:#e0f2fe;border-color:#7dd3fc;color:#0369a1">測試</button>
-    <button class="key-save" onclick="localStorage.removeItem('finmind_token');document.getElementById('fmInput').value='';updateKeyStatus();alert('已清除 FinMind Token')" style="background:#fee2e2;border-color:#fca5a5;color:#b91c1c">清除</button>
-  </div>
   <div class="key-status key-no" id="keyStatus">未設定 Key（使用免費 Pollinations 備援）</div>
   <div id="testResult" style="display:none;margin-top:6px;font-size:.75rem;padding:6px 10px;border-radius:8px"></div>
-  <div id="fmTestResult" style="display:none;margin-top:6px;font-size:.75rem;padding:6px 10px;border-radius:8px"></div>
   <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
     <button class="key-save" onclick="genBookmark()" style="width:100%;background:var(--purple);color:#fff;border-color:var(--purple)">產生個人書籤網址（換瀏覽器不用重輸）</button>
     <div id="bookmarkOut" style="display:none;margin-top:8px;font-size:.72rem;color:var(--text2);word-break:break-all"></div>
@@ -491,7 +483,7 @@ footer a:hover{text-decoration:underline}
 <div class="note">
   <strong>VCP 四大條件：</strong>Stage 2（股價 &gt; MA50 &gt; MA150 &gt; MA200）· 距 52 週高點 &lt;25% · ATR 波動率收縮 · 成交量萎縮。分數 ≥ 80 為強力候選。<br>
   <strong>基本面：</strong>ROE ≥ 15% 佳 · 毛利率 / 營益率越高越好 · EPS 年增 / 營收年增為正成長。資料來源：Yahoo Finance。<br>
-  <strong>籌碼：</strong>外資 / 投信買賣超，來源：FinMind（設定 Token 時優先）或 TWSE T86 備援。設定 <a href="https://finmindtrade.com" target="_blank">FinMind Token</a> 可同時解鎖財報（FinMind 優先）與月營收 2 年新高偵測。數值為正 = 買超，負 = 賣超。
+  <strong>籌碼：</strong>外資 / 投信買賣超，來源：TWSE T86。數值為正 = 買超，負 = 賣超。
 </div>
 
 <!-- ── Table ── -->
@@ -631,19 +623,15 @@ const getKey=()=>localStorage.getItem('groq_key')||'';
 const getDsKey=()=>localStorage.getItem('deepseek_key')||'';
 function toggleKeyPanel(){
   document.getElementById('keyPanel').classList.toggle('show');
-  const g=getKey(),fm=getFinMindToken();
+  const g=getKey();
   if(g){const el=document.getElementById('groqInput');if(!el.value)el.value=g;}
-  if(fm){const el=document.getElementById('fmInput');if(el&&!el.value)el.value=fm;}
   updateKeyStatus();
 }
 function keyHint(k){return k&&k.length>8?`${k.slice(0,6)}…${k.slice(-4)}`:'(太短)';}
 function updateKeyStatus(){
   const s=document.getElementById('keyStatus');
-  const g=getKey(), fm=getFinMindToken();
-  const parts=[];
-  if(g) parts.push(`✅ Groq：${keyHint(g)}`);
-  if(fm) parts.push(`✅ FinMind：${keyHint(fm)}`);
-  if(parts.length){s.className='key-status key-ok';s.innerHTML=parts.join(' · ')+'<br><span style="font-size:.68rem;color:#6b7280">↑ 這是目前儲存的 Key，請確認尾碼對應最新申請</span>';}
+  const g=getKey();
+  if(g){s.className='key-status key-ok';s.innerHTML=`✅ Groq：${keyHint(g)}<br><span style="font-size:.68rem;color:#6b7280">↑ 這是目前儲存的 Key，請確認尾碼對應最新申請</span>`;}
   else{s.className='key-status key-no';s.textContent='⚠️ 未設定 Groq Key（使用免費 Pollinations 備援，速度較慢）';}
   const banner=document.getElementById('noKeyBanner');
   if(banner) banner.style.display=g?'none':'block';
@@ -689,8 +677,7 @@ async function testGroq(){
 function genBookmark(){
   const g=getKey();
   if(!g){alert('請先儲存 Groq API Key');return;}
-  const fm=getFinMindToken();
-  const payload=btoa(JSON.stringify({g,fm}));
+  const payload=btoa(JSON.stringify({g}));
   const url=location.origin+location.pathname+'#keys='+payload;
   const out=document.getElementById('bookmarkOut');
   out.style.display='block';
@@ -702,218 +689,15 @@ function loadKeysFromHash(){
   if(!h.includes('keys=')) return;
   try{
     const raw=h.split('keys=')[1];
-    const {g,fm}=JSON.parse(atob(raw));
-    if(g && !g.startsWith('http') && g.length>10) localStorage.setItem('groq_key',g);
-    if(fm && fm.length>5) localStorage.setItem('finmind_token',fm);
-    localStorage.removeItem('deepseek_key'); // 清除舊的 DeepSeek key
-    history.replaceState(null,'',location.pathname); // hash 用完就清掉
+    const obj=JSON.parse(atob(raw));
+    if(obj.g && !obj.g.startsWith('http') && obj.g.length>10) localStorage.setItem('groq_key',obj.g);
+    localStorage.removeItem('deepseek_key');
+    localStorage.removeItem('finmind_token');
+    history.replaceState(null,'',location.pathname);
     updateKeyStatus();
   }catch(_){}
 }
-function autoSaveFinMind(v){
-  v=v.trim();
-  if(v.length>5){localStorage.setItem('finmind_token',v);updateKeyStatus();}
-}
-const getFinMindToken=()=>localStorage.getItem('finmind_token')||'';
-async function testFinMind(){
-  const token=document.getElementById('fmInput').value.trim()||getFinMindToken();
-  const el=document.getElementById('fmTestResult');
-  if(!token){el.style.display='block';el.style.background='#fef3c7';el.textContent='⚠️ 請先輸入 FinMind Token';return;}
-  const hint=token.length>8?`${token.slice(0,6)}…${token.slice(-4)}`:'(太短)';
-  el.style.display='block';el.style.background='#f3f4f6';el.innerHTML=`FinMind 測試中（${hint}）...`;
-  const pad=n=>String(n).padStart(2,'0');
-  // 找最近的交易日（最多往前查7天）
-  let dateStr='';
-  for(let back=1;back<=7;back++){
-    const dt=new Date();dt.setDate(dt.getDate()-back);
-    if(dt.getDay()===0||dt.getDay()===6) continue;
-    dateStr=`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
-    break;
-  }
-  const lines=[];
-  // 1. 單支測試（確認 Token 有效，走 CORS proxy）
-  const j1=await fetchFinMind(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&start_date=${dateStr}&stock_id=2330&token=${token}`,15000);
-  if(!j1) lines.push('❌ 單支連線失敗（所有 proxy 都無法連到 FinMind）');
-  else if(Number(j1.status)===200&&j1.data?.length) lines.push(`✅ 單支測試（2330 ${dateStr}）：${j1.data.length} 筆 — Token 有效`);
-  else if(Number(j1.status)===401||Number(j1.status)===403){lines.push(`❌ Token 驗證失敗（${j1.msg||''}）`);el.style.background='#fee2e2';el.innerHTML=lines.join('<br>');return;}
-  else lines.push(`⚠️ 單支 status=${j1?.status} data=${j1?.data?.length??0} msg=${j1?.msg||''}`);
-  // 2. Bulk 測試（全市場，這是實際掃描用的 API call）
-  el.innerHTML=lines.join('<br>')+'<br>全市場 Bulk 測試中（走 CORS proxy）...';
-  const j2=await fetchFinMind(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&start_date=${dateStr}&token=${token}`,30000);
-  if(!j2) lines.push('❌ Bulk 連線失敗（所有 proxy 都無法連到 FinMind）');
-  else if(Number(j2.status)===200&&(j2.data?.length??0)>10) lines.push(`✅ Bulk 全市場 ${dateStr}：${j2.data.length} 筆 — 籌碼可正常載入`);
-  else if(Number(j2.status)===200&&(j2.data?.length??0)===0) lines.push(`⚠️ Bulk Token 有效但今日（${dateStr}）無資料（可能非交易日）`);
-  else lines.push(`⚠️ Bulk status=${j2?.status} msg=${j2?.msg||'無'} data=${j2?.data?.length??0}`);
-  const ok=lines.every(l=>l.startsWith('✅'));
-  el.style.background=ok?'#dcfce7':lines.some(l=>l.startsWith('❌'))?'#fee2e2':'#fef3c7';
-  el.innerHTML=lines.join('<br>');
-}
-
-// ─── FinMind: 籌碼（外資/投信）────────────────────────────────────────────────
-async function fetchChipsFinMind(dateStr){
-  const token=getFinMindToken();
-  if(!token) return null;
-  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&start_date=${dateStr}&token=${token}`;
-  try{
-    const json=await fetchFinMind(url,25000);
-    if(!json||Number(json.status)!==200||!json.data?.length) return null;
-    const map={};
-    json.data.forEach(row=>{
-      const code=String(row.stock_id||'').trim();
-      if(!code||!/^\d{4,6}$/.test(code)) return;
-      if(!map[code]) map[code]={foreignNet:0,trustNet:0,dealerNet:0};
-      const net=(Number(row.buy)||0)-(Number(row.sell)||0);
-      const n=String(row.name||'');
-      if(n.includes('外資')&&!n.includes('自營')) map[code].foreignNet=net;
-      else if(n.includes('投信')) map[code].trustNet=net;
-      else if(n.includes('自營')) map[code].dealerNet=net;
-    });
-    return Object.keys(map).length>10?map:null;
-  }catch(_){return null;}
-}
-
-// ─── FinMind: 財報（TaiwanStockFinancialStatements）────────────────────────────
-async function fetchFundamentalsFinMind(stockId){
-  const token=getFinMindToken();
-  if(!token) return null;
-  const since=new Date();since.setMonth(since.getMonth()-16); // 16個月 = 5季，足夠比較年增
-  const dateStr=since.toISOString().slice(0,10);
-  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockFinancialStatements&stock_id=${stockId}&start_date=${dateStr}&token=${token}`;
-  try{
-    const json=await fetchFinMind(url,15000);
-    if(!json||Number(json.status)!==200||!json.data?.length) return null;
-    const rows=[...json.data].sort((a,b)=>b.date.localeCompare(a.date));
-    // Build map: type -> array of values (newest first)
-    const byType={};
-    rows.forEach(row=>{
-      const t=row.type;
-      if(!byType[t]) byType[t]=[];
-      byType[t].push(Number(row.value));
-    });
-    const get=(keys,idx=0)=>{for(const k of keys){if(byType[k]?.[idx]!=null)return byType[k][idx];}return null;};
-    const rev    =get(['Revenue','營業收入合計'],0);
-    const revPrev=get(['Revenue','營業收入合計'],4); // ~1 yr ago (quarterly)
-    const gross  =get(['GrossProfit','毛利'],0);
-    const opInc  =get(['OperatingIncome','營業利益'],0);
-    const eps    =get(['EPS','每股盈餘'],0);
-    const epsPrev=get(['EPS','每股盈餘'],4);
-    const out={
-      roe:null,
-      grossMargin:(rev&&gross&&rev!==0)?gross/rev:null,
-      operatingMargin:(rev&&opInc&&rev!==0)?opInc/rev:null,
-      revenueGrowth:(rev&&revPrev&&revPrev!==0)?(rev-revPrev)/Math.abs(revPrev):null,
-      earningsGrowth:(eps!=null&&epsPrev!=null&&epsPrev!==0)?(eps-epsPrev)/Math.abs(epsPrev):null,
-    };
-    if(Object.values(out).some(v=>v!=null)) return out;
-    return null;
-  }catch(_){return null;}
-}
-
-// ─── FinMind: 月營收新高（TaiwanStockMonthRevenue）────────────────────────────
-let revenueHighMap={};
-let fundamentalsMap={};
 let twseFundMap={}; // code -> {pe, pb, divYield} from TWSE/TPEX BWIBBU bulk
-
-// 單支備援（bulk 失敗時使用）
-async function fetchMonthRevenueHigh(stockId){
-  const token=getFinMindToken();
-  if(!token) return null;
-  const since=new Date();since.setMonth(since.getMonth()-25);
-  const dateStr=since.toISOString().slice(0,10);
-  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMonthRevenue&stock_id=${stockId}&start_date=${dateStr}&token=${token}`;
-  try{
-    const json=await fetchFinMind(url,12000);
-    if(!json||Number(json.status)!==200||!json.data?.length) return null;
-    const rows=[...json.data].sort((a,b)=>b.date.localeCompare(a.date));
-    if(rows.length<2) return null;
-    const latest=Number(rows[0].revenue);
-    const max=Math.max(...rows.map(r=>Number(r.revenue)));
-    return latest>=max*0.98;
-  }catch(_){return null;}
-}
-
-// ─── FinMind: 批次預取全市場財報（一次 API call，不限支數）──────────────────────
-async function prefetchAllFundamentals(){
-  const token=getFinMindToken();
-  if(!token) return;
-  const infoEl=document.getElementById('fetchApiStatus');
-  const since=new Date();since.setFullYear(since.getFullYear()-2);
-  const dateStr=since.toISOString().slice(0,10);
-  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockFinancialStatements&start_date=${dateStr}&token=${token}`;
-  try{
-    if(infoEl) infoEl.textContent='📊 FinMind 財報下載中（走 CORS proxy）...';
-    const json=await fetchFinMind(url,60000);
-    if(!json||Number(json.status)!==200||!json.data?.length){
-      if(infoEl) infoEl.textContent=`⚠️ FinMind 財報無資料（狀態:${json?.status||'無回應'} msg:${json?.msg||'?'}），將用 Yahoo 備援`;
-      return;
-    }
-    // 按股票代號分組
-    const byStock={};
-    json.data.forEach(row=>{
-      const code=String(row.stock_id||'').trim();
-      if(!code) return;
-      if(!byStock[code]) byStock[code]={};
-      const t=row.type;
-      if(!byStock[code][t]) byStock[code][t]=[];
-      byStock[code][t].push({date:row.date,value:Number(row.value)});
-    });
-    Object.entries(byStock).forEach(([code,byType])=>{
-      Object.values(byType).forEach(arr=>arr.sort((a,b)=>b.date.localeCompare(a.date)));
-      const get=(keys,idx=0)=>{for(const k of keys){if(byType[k]?.[idx]?.value!=null)return byType[k][idx].value;}return null;};
-      const rev    =get(['Revenue','營業收入合計'],0);
-      const revPrev=get(['Revenue','營業收入合計'],4);
-      const gross  =get(['GrossProfit','毛利'],0);
-      const opInc  =get(['OperatingIncome','營業利益'],0);
-      const eps    =get(['EPS','每股盈餘'],0);
-      const epsPrev=get(['EPS','每股盈餘'],4);
-      fundamentalsMap[code]={
-        roe:null,
-        grossMargin:(rev&&gross&&rev!==0)?gross/rev:null,
-        operatingMargin:(rev&&opInc&&rev!==0)?opInc/rev:null,
-        revenueGrowth:(rev&&revPrev&&revPrev!==0)?(rev-revPrev)/Math.abs(revPrev):null,
-        earningsGrowth:(eps!=null&&epsPrev!=null&&epsPrev!==0)?(eps-epsPrev)/Math.abs(epsPrev):null,
-      };
-    });
-    if(infoEl) infoEl.textContent=`✅ FinMind 財報完成（${Object.keys(fundamentalsMap).length} 支）`;
-  }catch(e){
-    if(infoEl) infoEl.textContent=`⚠️ FinMind 財報連線失敗：${e.message}`;
-  }
-}
-
-// ─── FinMind: 批次預取全市場月營收（一次 API call，不限支數）──────────────────────
-async function prefetchAllRevenue(){
-  const token=getFinMindToken();
-  if(!token) return;
-  const infoEl=document.getElementById('fetchApiStatus');
-  const since=new Date();since.setMonth(since.getMonth()-25);
-  const dateStr=since.toISOString().slice(0,10);
-  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMonthRevenue&start_date=${dateStr}&token=${token}`;
-  try{
-    if(infoEl) infoEl.textContent='📈 FinMind 月營收下載中（走 CORS proxy）...';
-    const json=await fetchFinMind(url,60000);
-    if(!json||Number(json.status)!==200||!json.data?.length){
-      if(infoEl) infoEl.textContent=`⚠️ FinMind 月營收無資料（${json?.status||'無回應'} ${json?.msg||''}）`;
-      return;
-    }
-    const byStock={};
-    json.data.forEach(row=>{
-      const code=String(row.stock_id||'').trim();
-      if(!code) return;
-      if(!byStock[code]) byStock[code]=[];
-      byStock[code].push({date:row.date,revenue:Number(row.revenue)});
-    });
-    Object.entries(byStock).forEach(([code,rows])=>{
-      rows.sort((a,b)=>b.date.localeCompare(a.date));
-      if(rows.length<2) return;
-      const latest=rows[0].revenue;
-      const max=Math.max(...rows.map(r=>r.revenue));
-      revenueHighMap[code]=latest>=max*0.98;
-    });
-    if(infoEl) infoEl.textContent=`✅ FinMind 月營收完成（${Object.keys(revenueHighMap).length} 支）`;
-  }catch(e){
-    if(infoEl) infoEl.textContent=`⚠️ FinMind 月營收連線失敗：${e.message}`;
-  }
-}
 
 // ─── AI Calls ─────────────────────────────────────────────────────────────
 function stripMd(s){
@@ -1526,22 +1310,6 @@ const PROXIES=[
   '',                          // direct (browser CORS 可能擋)
 ];
 function fetchTO(url,ms=9000,opts={}){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal,...opts}).finally(()=>clearTimeout(t));}
-// FinMind 需要走 CORS proxy（直連被瀏覽器 CORS 攔截）
-const FM_PROXIES=['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest='];
-// GET 模式：將完整 URL（含所有 query params）傳給 CORS proxy，不拆 body
-async function fetchFinMind(url,ms=18000){
-  for(const px of FM_PROXIES){
-    try{
-      const purl=px+encodeURIComponent(url);
-      const r=await fetchTO(purl,ms);
-      if(!r.ok) continue;
-      const text=await r.text();
-      if(!text||text.trim().startsWith('<')||text.trim().startsWith('<!')) continue;
-      return JSON.parse(text);
-    }catch(_){}
-  }
-  return null;
-}
 async function fetchYahoo(sym){
   const base=`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1y&includePrePost=false`;
   for(const px of PROXIES){
@@ -1593,9 +1361,7 @@ async function fetchFundamentalsYahoo(sym){
 
 async function fetchFundamentals(sym){
   const stockId=sym.split('.')[0];
-  // 1. FinMind 批次快取（需付費帳號才有資料）
-  if(fundamentalsMap[stockId]) return fundamentalsMap[stockId];
-  // 2. Yahoo Finance v7 quote（主要來源，不需 crumb/token）
+  // 1. Yahoo Finance v7 quote（主要來源，不需 crumb/token）
   const yf=await fetchFundamentalsYahoo(sym);
   // 3. TWSE/TPEX BWIBBU 批次資料（P/E、P/B、殖利率 — 免費官方）
   const bwi=twseFundMap[stockId]||null;
@@ -1613,28 +1379,11 @@ async function fetchFundamentals(sym){
   return null;
 }
 
-// ─── Fetch Institutional（FinMind 優先，TWSE T86 備援）────────────────────────
+// ─── Fetch Institutional（TWSE T86）─────────────────────────────────────────
 async function fetchChips(){
   chipsMap={};
   const infoEl=document.getElementById('fetchApiStatus');
-  // ── FinMind 優先 ──
-  if(getFinMindToken()){
-    if(infoEl) infoEl.textContent='取得籌碼（FinMind）...';
-    const pad=n=>String(n).padStart(2,'0');
-    for(let back=0;back<7;back++){
-      const dt=new Date();dt.setDate(dt.getDate()-back);
-      if(dt.getDay()===0||dt.getDay()===6) continue; // 用本地時間判斷週末
-      const dateStr=`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`; // 本地日期，不用 UTC
-      const result=await fetchChipsFinMind(dateStr);
-      if(result&&Object.keys(result).length>10){
-        chipsMap=result;
-        if(infoEl) infoEl.textContent=`✅ 籌碼取得成功（FinMind ${dateStr}，${Object.keys(result).length} 支）`;
-        return;
-      }
-    }
-    if(infoEl) infoEl.textContent='⚠️ FinMind 籌碼失敗，改用 TWSE T86...';
-  }
-  // ── TWSE T86 備援 ──
+  // ── TWSE T86 ──
   for(let back=0;back<7;back++){
     const dt=new Date();dt.setDate(dt.getDate()-back);
     if(dt.getDay()===0||dt.getDay()===6) continue;
@@ -1700,8 +1449,6 @@ async function startScan(){
   document.getElementById('fetchApiStatus').style.display='';
   allResults=[];
   chipsMap={};
-  fundamentalsMap={};
-  revenueHighMap={};
   twseFundMap={};
 
   // Fetch institutional chips data once before scan
@@ -1737,20 +1484,6 @@ async function startScan(){
   }
 
   if(scanCancelled){scanning=false;btn.disabled=false;btn.textContent='✨ 開始掃描 VCP';cancelBtn.style.display='none';return;}
-
-  // FinMind 月營收批次預取（資料量小，CORS proxy 可承受）
-  fundamentalsMap={};
-  revenueHighMap={};
-  if(getFinMindToken()){
-    const infoEl=document.getElementById('fetchApiStatus');
-    if(infoEl) infoEl.style.display='';
-    pT.textContent='📈 批次預取月營收（FinMind）...';
-    if(infoEl) infoEl.textContent='月營收預取中（FinMind TaiwanStockMonthRevenue）...';
-    await prefetchAllRevenue();
-    const rCount=Object.keys(revenueHighMap).length;
-    if(infoEl) infoEl.textContent=rCount>0?`✅ 月營收 ${rCount} 支預取完成`:'⚠️ 月營收預取失敗，將逐支抓取';
-    // 財報改為掃描後逐支抓（bulk 回應過大，CORS proxy 無法承受）
-  }
 
   const total=stocks.length;
   let done=0, failed=0, vcpFound=0;
@@ -1886,7 +1619,7 @@ function getSorted(list){
   });
 }
 
-function calcFundScore(fund, revHigh){
+function calcFundScore(fund){
   if(!fund||Object.keys(fund).length===0) return null;
   let pts=0, tot=0;
   if(fund.roe!=null){tot+=30; pts+=fund.roe>=0.15?30:fund.roe>=0.08?18:fund.roe>=0?8:0;}
@@ -1894,11 +1627,10 @@ function calcFundScore(fund, revHigh){
   if(fund.operatingMargin!=null){tot+=15; pts+=fund.operatingMargin>=0.15?15:fund.operatingMargin>=0.08?8:fund.operatingMargin>0?4:0;}
   if(fund.earningsGrowth!=null){tot+=20; pts+=fund.earningsGrowth>=0.15?20:fund.earningsGrowth>=0?10:0;}
   if(fund.revenueGrowth!=null){tot+=15; pts+=fund.revenueGrowth>=0.1?15:fund.revenueGrowth>=0?7:0;}
-  if(revHigh!=null){tot+=5; pts+=revHigh?5:0;}
   if(tot===0) return null;
   return Math.round(pts/tot*100);
 }
-function calcFundGrade(fund, revHigh){
+function calcFundGrade(fund){
   if(!fund||Object.keys(fund).length===0) return null;
   let pts=0, tot=0;
   if(fund.roe!=null){tot+=30; pts+=fund.roe>=0.15?30:fund.roe>=0.08?18:fund.roe>=0?8:0;}
@@ -1906,7 +1638,6 @@ function calcFundGrade(fund, revHigh){
   if(fund.operatingMargin!=null){tot+=15; pts+=fund.operatingMargin>=0.15?15:fund.operatingMargin>=0.08?8:fund.operatingMargin>0?4:0;}
   if(fund.earningsGrowth!=null){tot+=20; pts+=fund.earningsGrowth>=0.15?20:fund.earningsGrowth>=0?10:0;}
   if(fund.revenueGrowth!=null){tot+=15; pts+=fund.revenueGrowth>=0.1?15:fund.revenueGrowth>=0?7:0;}
-  if(revHigh!=null){tot+=5; pts+=revHigh?5:0;}
   if(tot===0) return null;
   const score=Math.round(pts/tot*100);
   return score>=70?{label:'優',cls:'sA',score}:score>=45?{label:'中',cls:'sB',score}:{label:'弱',cls:'sC',score};
@@ -1971,8 +1702,7 @@ function renderTable(){
     const techHTML=`<div style="display:flex;flex-direction:column;gap:2px">${atrHTML}${volHTML}</div>`;
     // Fundamental score badge
     const fund=r.fund||{};
-    const revHigh=revenueHighMap[r.code];
-    const fg=calcFundGrade(fund,revHigh);
+    const fg=calcFundGrade(fund);
     const fundDetail=[
       fund.roe!=null?`<div class="fund-row"><span class="fund-lbl">ROE</span>${fmtROE(fund.roe)}</div>`:'',
       fund.grossMargin!=null?`<div class="fund-row"><span class="fund-lbl">毛利</span>${fmtPct2(fund.grossMargin)}</div>`:'',
@@ -1982,7 +1712,6 @@ function renderTable(){
       fund.pe!=null?`<div class="fund-row"><span class="fund-lbl">P/E</span><span>${fund.pe.toFixed(1)}x</span></div>`:'',
       fund.pb!=null?`<div class="fund-row"><span class="fund-lbl">P/B</span><span>${fund.pb.toFixed(2)}x</span></div>`:'',
       fund.divYield!=null?`<div class="fund-row"><span class="fund-lbl">殖利率</span><span>${fund.divYield.toFixed(2)}%</span></div>`:'',
-      revHigh!=null?`<div class="fund-row"><span class="fund-lbl">月營</span><span class="sig ${revHigh?'sig-g':'sig-n'}">${revHigh?'🔥新高':'普通'}</span></div>`:'',
     ].filter(Boolean).join('');
     const fundLabel=fg?`${fg.label} ${fg.score}`:null;
     const fundHTML=scoreBadge(fundLabel,fg?.cls||'sN',fundDetail||'<span style="color:#9ca3af">無財報資料</span>');
