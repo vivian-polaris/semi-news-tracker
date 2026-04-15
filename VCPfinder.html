@@ -1326,23 +1326,38 @@ async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
   // 從 TWSE / TPEX openapi 取得完整產業別（補全全掃模式下的非預設股票）
   const twseInfoMap=new Map();
   try{
-    const ti=await fetchJsonCORS('https://openapi.twse.com.tw/v1/company/public_information','TWSE公司資訊');
-    if(Array.isArray(ti)){
-      ti.forEach(r=>{
-        const c=String(r['股票代號']||r.stockCode||r.Code||'').trim();
-        const i=String(r['產業別']||r.industryType||r.industry||'').replace(/業$/,'').trim();
-        if(c&&i) twseInfoMap.set(c,i);
-      });
+    // 嘗試多個 TWSE 端點取得產業別
+    for(const ep of [
+      'https://openapi.twse.com.tw/v1/company/public_information',
+      'https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_d',
+    ]){
+      try{
+        const ti=await fetchJsonCORS(ep,'TWSE公司資訊');
+        if(!Array.isArray(ti)||!ti.length) continue;
+        ti.forEach(r=>{
+          const c=String(r['股票代號']||r.Code||r.stockCode||r['證券代號']||'').trim();
+          const i=String(r['產業別']||r.industryType||r.industry||r['產業類別']||r['類別']||'').replace(/業$/,'').trim();
+          if(c&&i) twseInfoMap.set(c,i);
+        });
+        if(twseInfoMap.size>10) break; // success
+      }catch(_){}
     }
   }catch(_){}
   try{
-    const tp=await fetchJsonCORS('https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_L','TPEX公司資訊');
-    if(Array.isArray(tp)){
-      tp.forEach(r=>{
-        const c=String(r['SecuritiesCompanyCode']||r['股票代號']||'').trim();
-        const i=String(r['IndustryType']||r['產業別']||'').replace(/業$/,'').trim();
-        if(c&&i&&!twseInfoMap.has(c)) twseInfoMap.set(c,i);
-      });
+    for(const ep of [
+      'https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_L',
+      'https://www.tpex.org.tw/openapi/v1/tpex_mainboard_perday_quotation',
+    ]){
+      try{
+        const tp=await fetchJsonCORS(ep,'TPEX公司資訊');
+        if(!Array.isArray(tp)||!tp.length) continue;
+        tp.forEach(r=>{
+          const c=String(r['SecuritiesCompanyCode']||r['股票代號']||r['代號']||'').trim();
+          const i=String(r['IndustryType']||r['產業別']||r['類別']||'').replace(/業$/,'').trim();
+          if(c&&i&&!twseInfoMap.has(c)) twseInfoMap.set(c,i);
+        });
+        if(twseInfoMap.size>0) break;
+      }catch(_){}
     }
   }catch(_){}
 
@@ -1536,12 +1551,49 @@ async function fetchYahoo(sym){
 }
 
 // ─── Fetch Fundamentals (FinMind 快取 → FinMind 單支) ─────────────────────────
-// Yahoo Finance quoteSummary 已移除：台股 CORS proxy 成功率極低且速度慢
+// ─── Yahoo Finance quoteSummary（主要來源，不需 token）──────────────────────
+async function fetchFundamentalsYahoo(sym){
+  // 台股代號格式：2330.TW (上市) 或 6770.TWO (上櫃)
+  const endpoints=[
+    `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(sym)}?modules=financialData%2CdefaultKeyStatistics&lang=en-US&region=TW`,
+    `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(sym)}?modules=financialData%2CdefaultKeyStatistics&lang=en-US`,
+  ];
+  const proxies=['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest='];
+  for(const base of endpoints){
+    for(const px of proxies){
+      try{
+        const purl=px+encodeURIComponent(base+'&_t='+Date.now());
+        const r=await fetchTO(purl,10000);
+        if(!r.ok) continue;
+        const text=await r.text();
+        if(!text||text.trim().startsWith('<')) continue;
+        const json=JSON.parse(text);
+        const res=json?.quoteSummary?.result?.[0];
+        if(!res) continue;
+        const fd=res.financialData||{};
+        const ks=res.defaultKeyStatistics||{};
+        const out={
+          roe:fd.returnOnEquity?.raw??null,
+          grossMargin:fd.grossMargins?.raw??null,
+          operatingMargin:fd.operatingMargins?.raw??null,
+          revenueGrowth:fd.revenueGrowth?.raw??null,
+          earningsGrowth:fd.earningsGrowth?.raw??ks.earningsQuarterlyGrowth?.raw??null,
+        };
+        if(Object.values(out).some(v=>v!=null)) return out;
+      }catch(_){}
+    }
+  }
+  return null;
+}
+
 async function fetchFundamentals(sym){
   const stockId=sym.split('.')[0];
-  // 1. 優先使用批次預取的 FinMind 快取
+  // 1. 批次預取快取（prefetchAllFundamentals）
   if(fundamentalsMap[stockId]) return fundamentalsMap[stockId];
-  // 2. 單支 FinMind 抓取（需要 token）
+  // 2. Yahoo Finance（不需 token，ROE/毛利/營益/EPS增/營收增 — 主要來源）
+  const yf=await fetchFundamentalsYahoo(sym);
+  if(yf&&Object.values(yf).some(v=>v!=null)) return yf;
+  // 3. FinMind 備援（需要 token）
   return await fetchFundamentalsFinMind(stockId);
 }
 
@@ -1740,7 +1792,7 @@ async function startScan(){
   const fundCandidates=allResults.filter(r=>r.vcp&&r.vcp.score>=40&&!r.noData);
   if(fundCandidates.length>0&&!scanCancelled){
     (async()=>{
-      pT.textContent=`第二階段：補抓財報（${fundCandidates.length} 支 VCP 候選）...`;
+      pT.textContent=`第二階段：補抓基本面（${fundCandidates.length} 支候選，Yahoo Finance）...`;
       for(let i=0;i<fundCandidates.length;i+=3){
         if(scanCancelled)break;
         await Promise.all(fundCandidates.slice(i,i+3).map(async r=>{
@@ -1749,7 +1801,8 @@ async function startScan(){
         }));
         await new Promise(res=>setTimeout(res,200));
       }
-      pT.textContent=`✅ 財報補抓完成 · ${fundCandidates.length} 支 VCP 候選`;
+      let fundGot=allResults.filter(r=>r.fund&&Object.values(r.fund).some(v=>v!=null)).length;
+      pT.textContent=`✅ 基本面完成 · ${fundGot}/${fundCandidates.length} 支取得資料`;
     })();
   }
   pT.textContent=scanCancelled
