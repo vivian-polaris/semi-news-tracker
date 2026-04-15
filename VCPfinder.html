@@ -241,15 +241,6 @@ thead th:nth-child(11),tbody td:nth-child(11){min-width:96px}
 /* ── Section divider ── */
 .sec-div{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:16px 0}
 
-/* ── View Tabs ── */
-.view-tabs{display:flex;gap:0;margin-bottom:0;border-bottom:2px solid var(--border)}
-.view-tab{padding:9px 22px;font-size:.82rem;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap}
-.view-tab:hover{color:var(--text)}
-.view-tab.active{color:var(--purple);border-bottom-color:var(--purple)}
-.view-tab .tab-badge{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;font-size:.65rem;font-weight:800;background:rgba(59,130,246,.15);color:#93c5fd}
-.view-tab.active .tab-badge{background:rgba(59,130,246,.25);color:#60a5fa}
-.tab-loading{font-size:.68rem;color:var(--text2);animation:pulse 1.5s ease-in-out infinite;margin-left:6px}
-
 @media(max-width:640px){
   .back-btn,.key-btn{position:static;margin-bottom:8px;display:inline-block}
   thead th,tbody td{padding:8px 9px;font-size:.73rem}
@@ -306,8 +297,7 @@ footer a:hover{text-decoration:underline}
 <!-- ── Key Panel ── -->
 <div class="key-panel" id="keyPanel">
   <p>設定 <a href="https://console.groq.com" target="_blank">Groq API Key</a>（免費，每日額度充足），享 AI 快訊摘要。<br>
-  <a href="https://finmindtrade.com" target="_blank">FinMind Token</a>（免費）可大幅提升籌碼 / 財報 / 月營收資料穩定性。<br>
-  <span style="color:#f59e0b;font-size:.72rem">⚠️ Key 儲存在瀏覽器 localStorage。若每次重開都消失，設定完後請點「產生個人書籤網址」，<strong>用書籤連結開啟頁面</strong>，Key 就會自動載入。</span></p>
+  <a href="https://finmindtrade.com" target="_blank">FinMind Token</a>（免費）可大幅提升籌碼 / 財報 / 月營收資料穩定性。</p>
   <div class="key-row">
     <input class="key-input" id="groqInput" type="password" placeholder="Groq API Key（gsk_...）輸入後自動儲存"
       oninput="autoSaveGroq(this.value)" onpaste="setTimeout(()=>autoSaveGroq(document.getElementById('groqInput').value),50)">
@@ -459,8 +449,8 @@ footer a:hover{text-decoration:underline}
     <span class="pill" onclick="setScore(0,this)">全部</span>
     <span class="pill" onclick="setScore(40,this)">≥ 40 VCP初步</span>
     <span class="pill" onclick="setScore(60,this)">≥ 60 候選 🌸</span>
-    <span class="pill f-on" onclick="setScore(70,this)">≥ 70</span>
-    <span class="pill" onclick="setScore(80,this)">≥ 80 強力 ⭐</span>
+    <span class="pill" onclick="setScore(70,this)">≥ 70</span>
+    <span class="pill f-on" onclick="setScore(80,this)">≥ 80 強力 ⭐</span>
   </div>
   <div class="filter-row" id="pctRow">
     <span class="flabel">距高點</span>
@@ -494,19 +484,6 @@ footer a:hover{text-decoration:underline}
   </div>
 </div>
 
-<!-- ── View Tabs ── -->
-<div class="view-tabs" id="viewTabs" style="display:none">
-  <button class="view-tab active" id="tabVcp" onclick="switchTab('vcp')">
-    VCP 技術面
-    <span class="tab-badge" id="tabVcpCount">—</span>
-  </button>
-  <button class="view-tab" id="tabFund" onclick="switchTab('fund')">
-    基本面 + 籌碼
-    <span class="tab-badge" id="tabFundCount">—</span>
-    <span class="tab-loading" id="tabFundLoading" style="display:none">掃描中...</span>
-  </button>
-</div>
-
 <!-- ── Note ── -->
 <div class="note">
   <strong>VCP 四大條件：</strong>Stage 2（股價 &gt; MA50 &gt; MA150 &gt; MA200）· 距 52 週高點 &lt;25% · ATR 波動率收縮 · 成交量萎縮。分數 ≥ 80 為強力候選。<br>
@@ -517,8 +494,8 @@ footer a:hover{text-decoration:underline}
 <!-- ── Table ── -->
 <div class="tbl-wrap" id="tblWrap">
 <table>
-  <thead id="tblHead">
-    <tr id="tblHeadVcp">
+  <thead>
+    <tr>
       <th onclick="setSort('code')">代號 ⇅</th>
       <th onclick="setSort('name')">名稱</th>
       <th>交易所／產業</th>
@@ -528,21 +505,13 @@ footer a:hover{text-decoration:underline}
       <th>技術信號</th>
       <th>走勢</th>
       <th onclick="setSort('score')">VCP分數 ⇅</th>
-      <th>操作</th>
-    </tr>
-    <tr id="tblHeadFund" style="display:none">
-      <th onclick="setSort('code')">代號 ⇅</th>
-      <th onclick="setSort('name')">名稱</th>
-      <th>交易所／產業</th>
-      <th onclick="setSort('price')">現價 ⇅</th>
-      <th onclick="setSort('score')">VCP分數 ⇅</th>
       <th>基本面</th>
       <th>籌碼(外資/投信)</th>
       <th>操作</th>
     </tr>
   </thead>
   <tbody id="tblBody">
-    <tr class="load-row"><td colspan="10">開啟自動掃描中...</td></tr>
+    <tr class="load-row"><td colspan="12">開啟自動掃描中...</td></tr>
   </tbody>
 </table>
 </div>
@@ -648,11 +617,10 @@ const STOCKS = [
 ];
 
 // ─── State ────────────────────────────────────────────────────────────────
-let allResults=[], scoreMin=70, pctMax=999, secFilter='ALL', exFilter='ALL';
+let allResults=[], scoreMin=80, pctMax=999, secFilter='ALL', exFilter='ALL';
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
-let scanCancelled=false, scanSrc='all', viewTab='vcp';
-let phase2Done=false;
+let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
 
 // ─── Key helpers ──────────────────────────────────────────────────────────
@@ -685,14 +653,13 @@ function autoSaveGroq(v){
   v=v.trim();
   if(v.length>10){localStorage.setItem('groq_key',v);updateKeyStatus();}
 }
-function _setTestEl(el,bg,text){el.style.display='block';el.style.background=bg;el.style.color='#111827';el.style.padding='8px 12px';el.style.borderRadius='8px';el.textContent=text;}
 async function testGroq(){
   const k=document.getElementById('groqInput').value.trim()||getKey();
   const el=document.getElementById('testResult');
-  if(!k){_setTestEl(el,'#fef3c7','⚠️ 請先輸入 Groq Key');return;}
+  if(!k){el.style.display='block';el.style.background='#fef3c7';el.textContent='⚠️ 請先輸入 Groq Key';return;}
   const keyHint=k.length>8?`${k.slice(0,6)}...${k.slice(-4)}`:'(太短)';
-  _setTestEl(el,'#f3f4f6',`測試中（${keyHint}）...`);
-  const models=['llama-3.3-70b-versatile','llama-3.1-8b-instant','gemma2-9b-it'];
+  el.style.display='block';el.style.background='#f3f4f6';el.textContent=`測試中（${keyHint}）...`;
+  const models=['llama-3.1-8b-instant','llama3-8b-8192','gemma2-9b-it'];
   for(const model of models){
     try{
       const r=await fetchTimed('https://api.groq.com/openai/v1/chat/completions',{
@@ -702,16 +669,18 @@ async function testGroq(){
       },12000);
       if(r.status===401||r.status===403){
         let body=''; try{const j=await r.json();body=j?.error?.message||'';}catch(_){}
-        _setTestEl(el,'#fee2e2',`❌ Key 無效 (${r.status})：${body||'請重新申請'}。到 console.groq.com 申請新 Key 後清除舊的再貼上`);
+        el.style.background='#fee2e2';
+        el.textContent=`❌ 驗證失敗 (${r.status})：${body||'Key 無效或已過期'}。請到 console.groq.com 重新申請`;
         return;
       }
-      if(r.status===429){_setTestEl(el,'#fef3c7',`⚠️ 速率限制（${model}），但 Key 本身有效！`);return;}
-      if(r.ok){_setTestEl(el,'#dcfce7',`✅ Key 正常！（model: ${model}）AI 快訊可用`);return;}
+      if(r.status===429){el.style.background='#fef3c7';el.textContent=`⚠️ 速率限制（${model}），但 Key 本身有效！`;return;}
+      if(r.ok){el.style.background='#dcfce7';el.textContent=`✅ Key 正常！（model: ${model}）AI 快訊可用`;return;}
+      // 400/404 = model 不支援，試下一個
     }catch(e){
-      _setTestEl(el,'#fee2e2',`❌ 網路錯誤：${e.message}（CORS 或防火牆，但 Key 可能仍有效）`);return;
+      el.style.background='#fee2e2';el.textContent=`❌ 網路錯誤：${e.message}（可能是 CORS 或防火牆）`;return;
     }
   }
-  _setTestEl(el,'#fef3c7','⚠️ 所有 model 測試超時，Key 可能仍有效但網路受限');
+  el.style.background='#fef3c7';el.textContent='⚠️ 所有 model 都無法連線，請稍後再試';
 }
 // ── 書籤網址（把 key 加密藏在 hash，方便換瀏覽器）──
 function genBookmark(){
@@ -746,10 +715,9 @@ const getFinMindToken=()=>localStorage.getItem('finmind_token')||'';
 async function testFinMind(){
   const token=document.getElementById('fmInput').value.trim()||getFinMindToken();
   const el=document.getElementById('fmTestResult');
-  function _setFmEl(bg,html){el.style.display='block';el.style.background=bg;el.style.color='#111827';el.style.padding='8px 12px';el.style.borderRadius='8px';el.innerHTML=html;}
-  if(!token){_setFmEl('#fef3c7','⚠️ 請先輸入 FinMind Token');return;}
+  if(!token){el.style.display='block';el.style.background='#fef3c7';el.textContent='⚠️ 請先輸入 FinMind Token';return;}
   const hint=token.length>8?`${token.slice(0,6)}…${token.slice(-4)}`:'(太短)';
-  _setFmEl('#f3f4f6',`FinMind 測試中（${hint}）...`);
+  el.style.display='block';el.style.background='#f3f4f6';el.innerHTML=`FinMind 測試中（${hint}）...`;
   const pad=n=>String(n).padStart(2,'0');
   // 找最近的交易日（最多往前查7天）
   let dateStr='';
@@ -761,27 +729,28 @@ async function testFinMind(){
   }
   const lines=[];
   // 1. 單支測試（確認 Token 有效，走 CORS proxy）
-  const j1=await fetchFinMind(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&date=${dateStr}&stock_id=2330&token=${token}`,15000);
+  const j1=await fetchFinMind(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&start_date=${dateStr}&stock_id=2330&token=${token}`,15000);
   if(!j1) lines.push('❌ 單支連線失敗（所有 proxy 都無法連到 FinMind）');
   else if(Number(j1.status)===200&&j1.data?.length) lines.push(`✅ 單支測試（2330 ${dateStr}）：${j1.data.length} 筆 — Token 有效`);
-  else if(Number(j1.status)===401||Number(j1.status)===403){lines.push(`❌ Token 驗證失敗（${j1.msg||''}）`);_setFmEl('#fee2e2',lines.join('<br>'));return;}
+  else if(Number(j1.status)===401||Number(j1.status)===403){lines.push(`❌ Token 驗證失敗（${j1.msg||''}）`);el.style.background='#fee2e2';el.innerHTML=lines.join('<br>');return;}
   else lines.push(`⚠️ 單支 status=${j1?.status} data=${j1?.data?.length??0} msg=${j1?.msg||''}`);
   // 2. Bulk 測試（全市場，這是實際掃描用的 API call）
-  _setFmEl('#f3f4f6',lines.join('<br>')+'<br>全市場 Bulk 測試中（走 CORS proxy）...');
-  const j2=await fetchFinMind(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&date=${dateStr}&token=${token}`,30000);
+  el.innerHTML=lines.join('<br>')+'<br>全市場 Bulk 測試中（走 CORS proxy）...';
+  const j2=await fetchFinMind(`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&start_date=${dateStr}&token=${token}`,30000);
   if(!j2) lines.push('❌ Bulk 連線失敗（所有 proxy 都無法連到 FinMind）');
   else if(Number(j2.status)===200&&(j2.data?.length??0)>10) lines.push(`✅ Bulk 全市場 ${dateStr}：${j2.data.length} 筆 — 籌碼可正常載入`);
   else if(Number(j2.status)===200&&(j2.data?.length??0)===0) lines.push(`⚠️ Bulk Token 有效但今日（${dateStr}）無資料（可能非交易日）`);
   else lines.push(`⚠️ Bulk status=${j2?.status} msg=${j2?.msg||'無'} data=${j2?.data?.length??0}`);
   const ok=lines.every(l=>l.startsWith('✅'));
-  _setFmEl(ok?'#dcfce7':lines.some(l=>l.startsWith('❌'))?'#fee2e2':'#fef3c7',lines.join('<br>'));
+  el.style.background=ok?'#dcfce7':lines.some(l=>l.startsWith('❌'))?'#fee2e2':'#fef3c7';
+  el.innerHTML=lines.join('<br>');
 }
 
 // ─── FinMind: 籌碼（外資/投信）────────────────────────────────────────────────
 async function fetchChipsFinMind(dateStr){
   const token=getFinMindToken();
   if(!token) return null;
-  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&date=${dateStr}&token=${token}`;
+  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockInstitutionalInvestorsBuySell&start_date=${dateStr}&token=${token}`;
   try{
     const json=await fetchFinMind(url,25000);
     if(!json||Number(json.status)!==200||!json.data?.length) return null;
@@ -806,7 +775,7 @@ async function fetchFundamentalsFinMind(stockId){
   if(!token) return null;
   const since=new Date();since.setFullYear(since.getFullYear()-2);
   const dateStr=since.toISOString().slice(0,10);
-  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockFinancialStatements&stock_id=${stockId}&date=${dateStr}&token=${token}`;
+  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockFinancialStatements&stock_id=${stockId}&start_date=${dateStr}&token=${token}`;
   try{
     const json=await fetchFinMind(url,15000);
     if(!json||Number(json.status)!==200||!json.data?.length) return null;
@@ -847,7 +816,7 @@ async function fetchMonthRevenueHigh(stockId){
   if(!token) return null;
   const since=new Date();since.setMonth(since.getMonth()-25);
   const dateStr=since.toISOString().slice(0,10);
-  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMonthRevenue&stock_id=${stockId}&date=${dateStr}&token=${token}`;
+  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMonthRevenue&stock_id=${stockId}&start_date=${dateStr}&token=${token}`;
   try{
     const json=await fetchFinMind(url,12000);
     if(!json||Number(json.status)!==200||!json.data?.length) return null;
@@ -866,7 +835,7 @@ async function prefetchAllFundamentals(){
   const infoEl=document.getElementById('fetchApiStatus');
   const since=new Date();since.setFullYear(since.getFullYear()-2);
   const dateStr=since.toISOString().slice(0,10);
-  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockFinancialStatements&date=${dateStr}&token=${token}`;
+  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockFinancialStatements&start_date=${dateStr}&token=${token}`;
   try{
     if(infoEl) infoEl.textContent='📊 FinMind 財報下載中（走 CORS proxy）...';
     const json=await fetchFinMind(url,60000);
@@ -914,7 +883,7 @@ async function prefetchAllRevenue(){
   const infoEl=document.getElementById('fetchApiStatus');
   const since=new Date();since.setMonth(since.getMonth()-25);
   const dateStr=since.toISOString().slice(0,10);
-  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMonthRevenue&date=${dateStr}&token=${token}`;
+  const url=`https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMonthRevenue&start_date=${dateStr}&token=${token}`;
   try{
     if(infoEl) infoEl.textContent='📈 FinMind 月營收下載中（走 CORS proxy）...';
     const json=await fetchFinMind(url,60000);
@@ -999,7 +968,7 @@ async function callAIFree(prompt){
   throw new Error('bad response');
 }
 
-async function callAI(prompt,temperature=0.7){
+async function callAI(prompt){
   const gk=getKey();
   // ── Groq ──
   if(gk && gk.length>10 && !gk.startsWith('http')){
@@ -1009,10 +978,13 @@ async function callAI(prompt,temperature=0.7){
         const r=await fetchTimed('https://api.groq.com/openai/v1/chat/completions',{
           method:'POST',
           headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk},
-          body:JSON.stringify({messages:[{role:'user',content:prompt}],model,max_tokens:600,temperature})
+          body:JSON.stringify({messages:[{role:'user',content:prompt}],model,max_tokens:500,temperature:0.7})
         },8000);
-        if(r.status===429){break;} // rate limit → fall through to Pollinations
-        if(r.status===401||r.status===403){break;} // invalid key → fall through to Pollinations
+        if(r.status===429) return '⚠️ Groq 速率限制（每分鐘有上限），請稍等 30 秒後點 ↻ 重試';
+        if(r.status===401||r.status===403){
+          const hint=gk.length>8?`（目前儲存：${gk.slice(0,4)}...${gk.slice(-4)}）`:'';
+          return `❌ Groq 驗證失敗${hint}，請到 ⚙️ 清除舊 Key 再重新貼上新申請的 Key`;
+        }
         if(r.status===400||r.status===404) continue;
         if(r.ok){const j=await r.json();const t=j.choices?.[0]?.message?.content||'';if(t.trim().length>10)return t.trim();}
       }catch(_){}
@@ -1026,38 +998,39 @@ async function callAI(prompt,temperature=0.7){
 }
 
 // ─── RSS fetch（多個 proxy 輪流試）─────────────────────────────────────────
-async function fetchRSS(query){
-  const url=`https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
+function parseRSSXml(xml){
+  return [...xml.matchAll(/<item>[\s\S]*?<\/item>/g)].slice(0,10).map(m=>{
+    const title=(m[0].match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)||m[0].match(/<title>(.*?)<\/title>/))?.[1]||'';
+    return {title:title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')};
+  }).filter(x=>x.title);
+}
+async function fetchRSSUrl(directUrl){
   const proxies=[
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    `https://corsproxy.io/?${encodeURIComponent(url)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`,
+    `https://corsproxy.io/?${encodeURIComponent(directUrl)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(directUrl)}`,
   ];
   for(const proxy of proxies){
     try{
-      const r=await fetchTimed(proxy,{},5000);
+      const r=await fetchTimed(proxy,{},12000);
       if(!r.ok) continue;
       const xml=await r.text();
-      if(!xml||xml.trim().startsWith('<html')) continue; // got error page
-      const items=[...xml.matchAll(/<item>[\s\S]*?<\/item>/g)].slice(0,10).map(m=>{
-        const title=(m[0].match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)||m[0].match(/<title>(.*?)<\/title>/))?.[1]||'';
-        const pubRaw=(m[0].match(/<pubDate>(.*?)<\/pubDate>/))?.[1]||'';
-        let pubLabel='';
-        if(pubRaw){try{const d=new Date(pubRaw);const h=Math.round((Date.now()-d)/3600000);pubLabel=h<1?'剛剛':h<24?`${h}h前`:h<48?'昨天':`${Math.floor(h/24)}天前`;}catch(_){}}
-        return {title:title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'),pubLabel};
-      }).filter(x=>x.title);
+      if(!xml||xml.trim().startsWith('<html')) continue;
+      const items=parseRSSXml(xml);
       if(items.length>0) return items;
     }catch(_){}
   }
   return [];
 }
+async function fetchRSS(query){
+  const url=`https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
+  return fetchRSSUrl(url);
+}
 
 // ─── 每日快訊 ─────────────────────────────────────────────────────────────
-const AI_CACHE_TTL=4*60*60*1000; // 4 小時快取（新聞摘要）
-const AI_CACHE_CLOCK_TTL=7*24*60*60*1000; // 7 天快取（投資時鐘，每週人工重刷）
-function getAICache(key,ttl){
-  const useTTL=ttl||AI_CACHE_TTL;
-  try{const c=JSON.parse(localStorage.getItem('ai_'+key)||'{}');if(c.ts&&Date.now()-c.ts<useTTL)return c;}catch(_){}return null;
+const AI_CACHE_TTL=4*60*60*1000; // 4 小時快取
+function getAICache(key){
+  try{const c=JSON.parse(localStorage.getItem('ai_'+key)||'{}');if(c.ts&&Date.now()-c.ts<AI_CACHE_TTL)return c;}catch(_){}return null;
 }
 function setAICache(key,text){
   try{localStorage.setItem('ai_'+key,JSON.stringify({text,ts:Date.now()}));}catch(_){}
@@ -1074,56 +1047,51 @@ async function loadTrump(useCache=false){
     if(c){b.className='news-body';b.textContent=c.text;t.textContent='快取（'+cacheAgeStr(c.ts)+'）・點 ↻ 強制更新';return;}
   }
   b.className='news-body loading'; b.textContent='抓取最新新聞...'; t.textContent='';
-  // 用今天日期讓 Google News 優先排今日最新文章
   const todayQ=new Date().toISOString().slice(0,10);
-  const _rssDL=new Promise(r=>setTimeout(()=>r([[],[],[]]),12000));
-  const [a,c2,d]=await Promise.race([
-    Promise.all([
-      fetchRSS(`Trump tariff trade war stock market after:${todayQ}`).catch(()=>[]),
-      fetchRSS(`Iran Israel oil price after:${todayQ}`).catch(()=>[]),
-      fetchRSS(`Ukraine Russia ceasefire commodity after:${todayQ}`).catch(()=>[])
-    ]),
-    _rssDL
+  const [a,c2,d,ff]=await Promise.all([
+    fetchRSS(`Trump tariff trade war stock market after:${todayQ}`).catch(()=>[]),
+    fetchRSS(`Iran Israel nuclear deadline sanction after:${todayQ}`).catch(()=>[]),
+    fetchRSS(`Ukraine Russia ceasefire oil price after:${todayQ}`).catch(()=>[]),
+    fetchRSSUrl('https://www.forexfactory.com/rss.php?category=market_news').catch(()=>[])
   ]);
-  const items=[...a,...c2,...d].slice(0,15);
+  const items=[...a,...c2,...d,...ff].slice(0,20);
   b.textContent='AI 分析中...';
   const today=new Date().toLocaleDateString('zh-TW');
   const sysNote='【輸出規則】純文字，禁止使用 markdown、代碼塊、星號、#號。';
-  // 新聞條目格式化，加上時間標籤讓 AI 知道哪些是今天的
-  const fmtItems=items.map((x,i)=>x.pubLabel?`${i+1}. [${x.pubLabel}] ${x.title}`:`${i+1}. ${x.title}`).join('\n');
   const prompt=items.length
-    ? `今天${today}。${sysNote}你是股市分析師。以下是今天最新新聞（括號內是發布時間），請只分析【今天或昨天內的】最新事件，不要提及超過2天前的舊消息。繁體中文，人名機構用英文。分析格式（每條「・」開頭，共200字內）：
+    ? `今天${today}。${sysNote}你是股市分析師，定義「重要」＝跟錢有關、會讓股票漲跌。以下是最新新聞，繁體中文，人名機構用英文。分析格式（每條「・」開頭，共200字內）：
 
 【Trump動向→美股影響】
-・具體政策或聲明（日期）+受影響sector（Nvidia/AMD/半導體/石油等）+估計漲跌%
+・具體政策或聲明+受影響sector（Nvidia/AMD/半導體/石油等）+估計漲跌%
+・第二條
 
-【地緣風險→商品市場】
-・石油/金/軍工最新動向+漲跌%（必須是今天的數字，不要猜）
+【戰爭地緣→市場影響】
+・Iran/Ukraine/Israel最重要的1條（必須是影響石油/軍工/避險資產的）+影響哪類美股
 
 【台股衝擊】
-・TSMC/台幣/外資今天的直接影響+數字
+・上述事件對TSMC/台灣半導體/台幣的直接影響+外資動向
 
-禁止：引用超過2天的舊事件、「局勢緊張」、「值得觀察」。必須給今日數字。\n\n新聞清單：\n`+fmtItems
-    : `今天${today}。${sysNote}你是股市分析師。注意：RSS抓取失敗，以下是根據你截止知識（August 2025）的最後已知狀態，請用一句話說明每個section，並明確標示「資料截至：[你的知識截止日]，非即時」。格式（每條「・」開頭）：
+禁止：「局勢緊張」「持續關注」「值得觀察」。必須給數字。\n\n`+items.map((x,i)=>`${i+1}. ${x.title}`).join('\n')
+    : `今天${today}。${sysNote}你是股市分析師，定義「重要」＝跟錢有關、會讓股票漲跌。繁體中文，人名機構用英文。分析格式（每條「・」開頭，共200字內）：
 
-【Trump關稅→美股影響】
-・[最後已知政策]（資料截至：yyyy-mm）
+【Trump動向→美股影響】
+・Trump最新關稅/政策+受影響sector（Nvidia/AMD/半導體/石油等）+估計漲跌%
 
-【地緣風險→商品市場】
-・[最後已知情況]（資料截至：yyyy-mm）
+【戰爭地緣→市場影響】
+・Iran核談判現況或Ukraine停火最新+影響石油/軍工/避險資產的數字
 
-【台股】
-・無即時資料，建議查看 cnyes.com 或 mops.twse.com.tw`;
+【台股衝擊】
+・上述事件對TSMC/台幣/外資動向的直接影響
+
+禁止：「局勢緊張」「持續關注」。必須給數字。`;
   const res=await Promise.race([
     callAI(prompt),
     new Promise(r=>setTimeout(()=>r('⚠️ 等待 AI 回應超過 35 秒，請點 ↻ 重試（或明天 Groq 額度重置後自動恢復）'),35000))
   ]);
   const text=stripMd(res);
   b.className='news-body'; b.textContent=text;
-  // 只有成功抓到新聞才快取；無新聞時不快取，下次進來會重新抓
-  if(!text.startsWith('⚠️')&&!text.startsWith('❌')&&items.length>0) setAICache('trump',text);
-  const srcNote=items.length>0?`（${items.length}條新聞）`:'（無即時新聞）';
-  t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+srcNote;
+  if(!text.startsWith('⚠️')&&!text.startsWith('❌')) setAICache('trump',text);
+  t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
 // ─── Trump 底層邏輯分析 ────────────────────────────────────────────────────
@@ -1136,7 +1104,8 @@ async function loadTrumpLogic(){
   b.className='news-body loading'; b.textContent='AI 解碼中...'; t.textContent='';
   btn.disabled=true; btn.textContent='⏳ 分析中';
   // 抓最新新聞作為背景資料
-  const items=await Promise.race([fetchRSS('Trump tariff policy trade war 2025').catch(()=>[]),new Promise(r=>setTimeout(()=>r([]),8000))]);
+  const todayQ=new Date().toISOString().slice(0,10);
+  const items=await fetchRSS(`Trump tariff policy trade war after:${todayQ}`).catch(()=>[]);
   const today=new Date().toLocaleDateString('zh-TW');
   const newsCtx=items.length?'\n\n最新事件背景：\n'+items.slice(0,8).map((x,i)=>`${i+1}. ${x.title}`).join('\n'):'';
   const prompt=`今天${today}。【輸出規則】純文字，禁止 markdown、代碼塊、星號、#號。你是政治經濟學家，專門拆解Trump的雙層策略。用繁體中文，精煉有力，禁止廢話。${newsCtx}
@@ -1215,70 +1184,67 @@ async function loadClock(useCache=false){
   const badge=document.getElementById('clockBadge');
   const body=document.getElementById('clockBody');
   const t=document.getElementById('clockTime');
-  const colors={'復甦':'#10b981','過熱':'#f59e0b','滯脹':'#ef4444','再膨脹':'#8b5cf6'};
-  function applyClockResult(res,fromCache,cacheTs){
-    let activePhase=null;
-    const phaseM=res.match(/象限[：:\s]*(復甦|過熱|滯脹|再膨脹)/);
-    if(phaseM) activePhase=phaseM[1];
-    if(!activePhase){for(const p of ['滯脹','再膨脹','過熱','復甦'])if(res.includes(p)){activePhase=p;break;}}
-    svgEl.innerHTML=drawClock(activePhase);
-    badge.textContent=activePhase?`目前象限：${activePhase}`:'未知';
-    badge.style.background=colors[activePhase]||'var(--purple)';
-    // strip "象限：XXX" first line, show rest
-    const displayText=res.replace(/^象限[：:\s]*(復甦|過熱|滯脹|再膨脹)\s*/,'').trim();
-    body.textContent=displayText||res;
-    if(fromCache) t.textContent='快取（'+cacheAgeStr(cacheTs)+'）・點 ↻ 強制更新（7天後自動）';
-    else t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+'・7天後自動更新';
-  }
   if(useCache){
-    const c=getAICache('clock',AI_CACHE_CLOCK_TTL);
-    if(c){applyClockResult(c.text,true,c.ts);return;}
+    const c=getAICache('clock');
+    if(c){
+      const res=c.text;
+      let activePhase=null;
+      const phaseM=res.match(/象限[：:\s]*(復甦|過熱|滯脹|再膨脹)/);
+      if(phaseM) activePhase=phaseM[1];
+      if(!activePhase){for(const p of ['滯脹','再膨脹','過熱','復甦'])if(res.includes(p)){activePhase=p;break;}}
+      const colors={'復甦':'#10b981','過熱':'#f59e0b','滯脹':'#ef4444','再膨脹':'#8b5cf6'};
+      svgEl.innerHTML=drawClock(activePhase);
+      badge.textContent=activePhase?`目前象限：${activePhase}`:'未知';
+      badge.style.background=colors[activePhase]||'var(--purple)';
+      body.textContent=res.replace(/^象限[：:\s]*(復甦|過熱|滯脹|再膨脹)\s*/,'').trim()||res;
+      t.textContent='快取（'+cacheAgeStr(c.ts)+'）・點 ↻ 強制更新';
+      return;
+    }
   }
   svgEl.innerHTML=drawClock(null);
   badge.textContent='分析中...'; badge.style.background='var(--border)';
-  body.textContent='正在抓取最新經濟指標新聞...';
-
-  // ── 先抓最新總經指標新聞作為客觀基礎 ──────────────────────────────────
-  const todayQ=new Date().toISOString().slice(0,10);
-  const _clockDL=new Promise(r=>setTimeout(()=>r([[],[],[]]),10000));
-  const [econA,econB,econC]=await Promise.race([
-    Promise.all([
-      fetchRSS(`Federal Reserve interest rate inflation CPI after:${todayQ}`).catch(()=>[]),
-      fetchRSS(`ISM PMI manufacturing GDP growth after:${todayQ}`).catch(()=>[]),
-      fetchRSS(`oil price commodity recession tariff after:${todayQ}`).catch(()=>[])
-    ]),
-    _clockDL
-  ]);
-  const econItems=[...econA,...econB,...econC].slice(0,12);
-  const fmtEcon=econItems.length
-    ? econItems.map((x,i)=>x.pubLabel?`[${x.pubLabel}] ${x.title}`:`${x.title}`).join('\n')
-    : '（RSS抓取失敗，請根據你的知識截止日給出最後已知數據，並標明日期）';
-
-  body.textContent='AI 分析經濟指標中...';
+  body.textContent='AI 分析中...';
   const today=new Date().toISOString().slice(0,10);
+  const prompt=`今天${today}。純文字輸出，禁止任何 markdown 符號、星號、井號、代碼塊。
 
-  // ── 嚴謹提示：必須引用具體指標數字，不能亂猜 ──────────────────────────
-  const prompt=`今天${today}。純文字輸出，禁止任何 markdown、星號、井號、代碼塊。
+你是投資老師，根據當前全球總體經濟（Fed 利率走向、通膨、景氣強弱），判斷美林投資時鐘現在走到哪個象限，用口語繁體中文給投資人建議。
 
-你是總經分析師，根據以下今天的最新新聞判斷「美林投資時鐘」象限。必須引用新聞中的具體數字（如 CPI 2.4%、ISM PMI 49.0、Fed 維持利率不變等）作為判斷依據，不能憑空猜測。
-
-最新經濟新聞（括號是時間）：
-${fmtEcon}
-
-輸出格式（嚴格按照）：
+第一行必須是：
 象限：[復甦／過熱／滯脹／再膨脹 選一個]
-判斷依據：列出3個具體指標和數字（例：Fed利率 4.5%不變 → 緊縮；ISM PMI 49.0 → 收縮；CPI 2.6% → 通膨仍高）
-現況：一句話說現在的經濟狀況，20字內。
-配置：最適合的資產配置，15字內。
-台股：現在台股該積極還是保守，一句話。`;
 
+然後繼續寫（不要加標題符號，直接寫）：
+一句話說現在的經濟狀況。
+錢放哪：說明最適合現在的資產配置，20字內。
+台股怎辦：現在台股該積極還是保守，一句話說清楚。
+補充：用一兩句說明這個象限的特徵、歷史上常持續多久。`;
   const raw=await Promise.race([
-    callAI(prompt,0),
-    new Promise(r=>setTimeout(()=>r('⚠️ 等待 AI 回應超過 40 秒，請點 ↻ 重試'),40000))
+    callAI(prompt),
+    new Promise(r=>setTimeout(()=>r('⚠️ 等待 AI 回應超過 35 秒，請點 ↻ 重試'),35000))
   ]);
   const res=stripMd(raw);
+
+  // 抓象限（寬鬆匹配）
+  let activePhase=null;
+  const phaseM=res.match(/象限[：:\s]*(復甦|過熱|滯脹|再膨脹)/);
+  if(phaseM) activePhase=phaseM[1];
+  if(!activePhase){
+    for(const p of ['滯脹','再膨脹','過熱','復甦'])
+      if(res.includes(p)){activePhase=p;break;}
+  }
+
+  const colors={'復甦':'#10b981','過熱':'#f59e0b','滯脹':'#ef4444','再膨脹':'#8b5cf6'};
+  const col=colors[activePhase]||'var(--purple)';
+
+  svgEl.innerHTML=drawClock(activePhase);
+  badge.textContent=activePhase?`目前象限：${activePhase}`:'分析中';
+  badge.style.background=col;
+
+  // 移除第一行「象限：XXX」避免重複，其餘全文顯示
+  const displayText=res.replace(/^象限[：:\s]*(復甦|過熱|滯脹|再膨脹)\s*/,'').trim();
+  body.textContent=displayText||res;
   if(!res.startsWith('⚠️')&&!res.startsWith('❌')) setAICache('clock',res);
-  applyClockResult(res,false,Date.now());
+
+  t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
 // ─── Scan source management ────────────────────────────────────────────────
@@ -1514,33 +1480,30 @@ async function fetchFundamentals(sym){
   // 2. 批次沒有時，嘗試 FinMind 單支
   const fmResult=await fetchFundamentalsFinMind(stockId);
   if(fmResult) return fmResult;
-  // Fallback: Yahoo Finance quoteSummary（走 proxy，不試直連，加 defaultKeyStatistics 備用）
-  const yBases=[
-    `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=financialData,defaultKeyStatistics`,
-    `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=financialData,defaultKeyStatistics`,
+  // Fallback: Yahoo Finance quoteSummary
+  const bases=[
     `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=financialData`,
-    `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${sym}?modules=financialData,defaultKeyStatistics`,
+    `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=financialData`,
+    `https://query1.finance.yahoo.com/v11/finance/quoteSummary/${sym}?modules=financialData`,
   ];
-  const yProxies=['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest='];
-  for(const base of yBases){
-    for(const px of yProxies){
+  const proxies=['','https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest='];
+  for(const base of bases){
+    for(const px of proxies){
       try{
-        const url=px+encodeURIComponent(base);
-        const r=await fetchTO(url,6000);
+        const url=px?px+encodeURIComponent(base):base;
+        const r=await fetchTO(url,10000);
         if(!r.ok)continue;
         const text=await r.text();
         if(!text||text.trim().startsWith('<')||text.includes('"code":"Not Found"'))continue;
         const json=JSON.parse(text);
-        const res0=json?.quoteSummary?.result?.[0];
-        if(!res0)continue;
-        const fd=res0.financialData||{};
-        const ks=res0.defaultKeyStatistics||{};
+        const fd=json?.quoteSummary?.result?.[0]?.financialData;
+        if(!fd)continue;
         const out={
-          roe:fd.returnOnEquity?.raw??ks.returnOnEquity?.raw??null,
+          roe:fd.returnOnEquity?.raw??null,
           grossMargin:fd.grossMargins?.raw??null,
-          operatingMargin:fd.operatingMargins?.raw??ks.profitMargins?.raw??null,
+          operatingMargin:fd.operatingMargins?.raw??null,
           revenueGrowth:fd.revenueGrowth?.raw??null,
-          earningsGrowth:fd.earningsGrowth?.raw??ks.earningsGrowth?.raw??null,
+          earningsGrowth:fd.earningsGrowth?.raw??null,
         };
         if(Object.values(out).some(v=>v!=null))return out;
       }catch(_){}
@@ -1568,7 +1531,7 @@ async function fetchChips(){
         return;
       }
     }
-    if(infoEl) infoEl.textContent='FinMind 籌碼無資料（IP 限制或非交易日），改用 TWSE T86...';
+    if(infoEl) infoEl.textContent='⚠️ FinMind 籌碼失敗，改用 TWSE T86...';
   }
   // ── TWSE T86 備援 ──
   for(let back=0;back<7;back++){
@@ -1637,9 +1600,6 @@ async function startScan(){
   allResults=[];
   chipsMap={};
   fundamentalsMap={};
-  phase2Done=false;
-  viewTab='vcp';
-  switchTab('vcp');
   revenueHighMap={};
 
   // Fetch institutional chips data once before scan
@@ -1698,14 +1658,13 @@ async function startScan(){
   document.getElementById('scanSrcLabel').textContent=`${total} 支 · Yahoo Finance`;
 
   // Rebuild sector filter pills
-  const secs=[...new Set(stocks.map(s=>s.sector))].sort();
+  const secs=[...new Set(stocks.map(s=>s.sector))].filter(s=>s).sort();
   const secRow=document.getElementById('secRow');
   secRow.querySelectorAll('[data-sec]:not([data-sec="ALL"])').forEach(p=>p.remove());
   secs.forEach(s=>{const p=document.createElement('span');p.className='pill';p.dataset.sec=s;p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);});
 
-  // ── Phase 1: VCP scan（只抓 Yahoo chart，不抓基本面）────────────────────
-  const BATCH=scanSrc==='preset'?6:10;
-  const DELAY=scanSrc==='preset'?200:150;
+  const BATCH=scanSrc==='preset'?4:6;
+  const DELAY=scanSrc==='preset'?350:250;
   const startTime=Date.now();
 
   for(let i=0;i<total;i+=BATCH){
@@ -1714,59 +1673,34 @@ async function startScan(){
     await Promise.all(batch.map(async s=>{
       if(scanCancelled)return;
       const sym=`${s.code}.${s.ex}`;
-      const data=await fetchYahoo(sym);
+      const [data,fund]=await Promise.all([fetchYahoo(sym),fetchFundamentals(sym)]);
       const vcp=data?calcVCP(data):null;
       if(!data)failed++;
       if(vcp&&vcp.score>=40) vcpFound++;
-      if(data?._yahooName&&(s.name===s.code||!s.name||s.name.length<2)) s.name=data._yahooName;
-      allResults.push({...s,sym,vcp,fund:null,noData:!data,closes:data?data.slice(0,60).map(d=>d.close):null});
+      // 用 Yahoo 回傳的中文名補全（全掃模式股票清單可能只有代號）
+      if(data?._yahooName&&(s.name===s.code||!s.name||s.name.length<2)){
+        s.name=data._yahooName;
+      }
+      allResults.push({...s,sym,vcp,fund,noData:!data,closes:data?data.slice(0,60).map(d=>d.close):null});
       done++;
     }));
+    // Update progress
     const pct=Math.round(done/total*100);
     pF.style.width=pct+'%';
     const elapsed=(Date.now()-startTime)/1000;
     const eta=done>0?Math.round((total-done)*(elapsed/done)):0;
     const etaStr=eta>60?`${Math.round(eta/60)}分${eta%60}秒`:eta>0?`${eta}秒`:'';
-    pT.textContent=`【Phase 1】${done}/${total}（${pct}%）· VCP候選：${vcpFound}支 · 無數據：${failed}支${etaStr?' · 剩餘約'+etaStr:''}`;
+    pT.textContent=`${done}/${total}（${pct}%）· VCP候選：${vcpFound}支 · 無數據：${failed}支${etaStr?' · 剩餘約'+etaStr:''}`;
+
+    // Live table update every batch
     if(done%BATCH===0||i+BATCH>=total) renderTable();
+    // Update summary counts
     document.getElementById('sumScanned').textContent=allResults.filter(r=>r.vcp).length;
     document.getElementById('sumVcp').textContent=allResults.filter(r=>r.vcp&&r.vcp.score>=60).length;
     document.getElementById('sumStrong').textContent=allResults.filter(r=>r.vcp&&r.vcp.score>=80).length;
     document.getElementById('sumTime').textContent=new Date().toLocaleTimeString('zh-TW');
+
     if(i+BATCH<total)await delay(DELAY);
-  }
-
-  // ── Phase 1 done: show VCP tab, reveal viewTabs ──────────────────────────
-  renderAll();
-  // keep on VCP tab while phase 2 runs
-
-  // ── Phase 2: 只對 VCP 候選補抓基本面（大幅縮小範圍）────────────────────
-  phase2Done=false;
-  if(!scanCancelled){
-    const candidates=allResults.filter(r=>r.vcp&&r.vcp.score>=40);
-    const FBATCH=4;
-    let fdone=0;
-    // show loading indicator on fund tab
-    const fl=document.getElementById('tabFundLoading');
-    if(fl)fl.style.display='';
-    pT.textContent=`✅ VCP完成！Phase 2 補抓基本面：${candidates.length} 支候選中...`;
-    pF.style.width='100%';
-    for(let i=0;i<candidates.length;i+=FBATCH){
-      if(scanCancelled)break;
-      const fbatch=candidates.slice(i,i+FBATCH);
-      await Promise.all(fbatch.map(async r=>{
-        r.fund=await fetchFundamentals(r.sym);
-        fdone++;
-      }));
-      pT.textContent=`Phase 2 基本面 ${fdone}/${candidates.length}（${Math.round(fdone/candidates.length*100)}%）`;
-      if(viewTab==='fund') renderTable();
-      else updateTabCounts();
-      if(i+FBATCH<candidates.length)await delay(100);
-    }
-    phase2Done=true;
-    if(fl)fl.style.display='none';
-    updateTabCounts();
-    if(viewTab==='fund') renderTable();
   }
 
   scanning=false; btn.disabled=false;
@@ -1774,33 +1708,10 @@ async function startScan(){
   cancelBtn.style.display='none';
   pT.textContent=scanCancelled
     ?`⏹ 已停止 · 已掃 ${done}/${total} 支，VCP候選 ${vcpFound} 支`
-    :`✅ 完成！共 ${done-failed} 支取得數據，VCP候選 ${vcpFound} 支`;
-  if(!scanCancelled&&failed>total*0.5){err.style.display='';err.textContent=`⚠️ 超過半數無法取得數據（${failed}/${total}），可能是 CORS 限制或網路問題。`;}
+    :`✅ 完成！共 ${done-failed} 支成功，VCP候選 ${vcpFound} 支，無數據 ${failed} 支`;
+  if(!scanCancelled&&failed>total*0.5){err.style.display='';err.textContent=`⚠️ 超過半數無法取得數據（${failed}/${total}），可能是 CORS 限制或網路問題。建議掛 VPN 或改用 TradingView/FinLab。`;}
   renderAll();
   try{localStorage.setItem('vcpCache',JSON.stringify({results:allResults,ts:Date.now()}));}catch(_){}
-}
-
-// ─── Tab Switch ───────────────────────────────────────────────────────────
-function switchTab(tab){
-  viewTab=tab;
-  document.getElementById('tabVcp').classList.toggle('active',tab==='vcp');
-  document.getElementById('tabFund').classList.toggle('active',tab==='fund');
-  document.getElementById('tblHeadVcp').style.display=tab==='vcp'?'':'none';
-  document.getElementById('tblHeadFund').style.display=tab==='fund'?'':'none';
-  renderTable();
-}
-function updateTabCounts(){
-  const cands=allResults.filter(r=>r.vcp&&r.vcp.score>=scoreMin);
-  document.getElementById('tabVcpCount').textContent=cands.length;
-  const withFund=cands.filter(r=>r.fund&&Object.values(r.fund).some(v=>v!=null));
-  const fl=document.getElementById('tabFundLoading');
-  if(phase2Done){
-    document.getElementById('tabFundCount').textContent=withFund.length+'/'+cands.length;
-    if(fl)fl.style.display='none';
-  }else{
-    document.getElementById('tabFundCount').textContent=withFund.length+'/'+cands.length;
-    if(fl)fl.style.display='';
-  }
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────
@@ -1817,8 +1728,6 @@ function renderAll(){
   document.getElementById('filterBox').style.display='';
   document.getElementById('statsBar').style.display='';
   document.getElementById('legendDiv').style.display='';
-  document.getElementById('viewTabs').style.display='';
-  updateTabCounts();
   const wd=allResults.filter(r=>r.vcp);
   document.getElementById('sumScanned').textContent=wd.length;
   document.getElementById('sumVcp').textContent=wd.filter(r=>r.vcp.score>=60).length;
@@ -1826,7 +1735,7 @@ function renderAll(){
   document.getElementById('sumTime').textContent=new Date().toLocaleTimeString('zh-TW');
   // Sector pills (only rebuild if not already done by startScan)
   if(!document.querySelector('[data-sec]:not([data-sec="ALL"])')){
-    const secs=[...new Set(allResults.map(s=>s.sector))].sort();
+    const secs=[...new Set(allResults.map(s=>s.sector))].filter(s=>s).sort();
     const secRow=document.getElementById('secRow');
     secs.forEach(s=>{
       const p=document.createElement('span');p.className='pill';p.dataset.sec=s;
@@ -1906,78 +1815,45 @@ function scoreBadge(label, cls, detailHTML){
     <div class="score-detail">${detailHTML}</div>
   </div>`;
 }
-// ─── Synthetic fundamental estimate from technical signals ─────────────────
-function syntheticFundScore(vcp){
-  if(!vcp)return null;
-  let pts=0;
-  if(vcp.stage2)pts+=35;else if(vcp.abM50)pts+=15;
-  if(vcp.pctH<10)pts+=20;else if(vcp.pctH<20)pts+=12;else if(vcp.pctH<30)pts+=6;
-  if(vcp.atrS==='g')pts+=18;else if(vcp.atrS==='o')pts+=10;
-  if(vcp.volS==='g')pts+=12;else if(vcp.volS==='o')pts+=6;
-  if(vcp.score>=80)pts+=10;else if(vcp.score>=60)pts+=5;
-  if(vcp.contractions>=3)pts+=5;
-  return Math.min(Math.round(pts),100);
-}
-
 function renderTable(){
   const filtered=getFiltered(),sorted=getSorted(filtered);
   const counted=allResults.filter(r=>r.vcp).length;
   document.getElementById('showN').textContent=sorted.length;
   document.getElementById('totalN').textContent=counted;
-  updateTabCounts();
   const tbody=document.getElementById('tblBody');
-  const cols=viewTab==='vcp'?10:8;
-  if(!allResults.length){tbody.innerHTML=`<tr class="load-row"><td colspan="${cols}">🐰 尚未掃描，請點擊「開始掃描 VCP」</td></tr>`;return;}
-  if(!sorted.length){tbody.innerHTML=`<tr class="empty-row"><td colspan="${cols}">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>`;return;}
+  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="12">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
+  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="12">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
   tbody.innerHTML=sorted.map(r=>{
     const v=r.vcp;
     const tv=`https://www.tradingview.com/chart/?symbol=TWSE%3A${r.code}`;
     const watched=isWatched(r.code);
     const starEl=`<button class="star-btn${watched?' on':''}" onclick="toggleWatch('${r.code}',this)">★</button>`;
-    const exchSec=`<span class="tsec">${r.ex==='TWO'?'上櫃':'上市'}${r.sector?' '+r.sector:''}</span>`;
     if(!v){
       return `<tr style="opacity:.45">
         <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
         <td class="tn">${r.name}</td>
-        <td>${exchSec}</td>
-        <td colspan="${cols-4}" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據</td>
+        <td><span style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span>${r.sector?`<span class="tsec">${r.sector}</span>`:''}</td>
+        <td colspan="8" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
         <td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
       </tr>`;
     }
     const g=grade(v.score),s=sc(v.score);
     const pBadge=v.pctH<15?'pct-A':v.pctH<25?'pct-B':'pct-C';
+    const maHTML=[
+      v.ma50!=null?`<div class="leg" title="MA50: ${v.ma50}"><div class="legdot" style="background:${v.abM50?'#059669':'#dc2626'}"></div><span class="ma-mini">50</span></div>`:'',
+      v.ma150!=null?`<div class="leg" title="MA150: ${v.ma150}"><div class="legdot" style="background:${v.abM150?'#059669':'#dc2626'}"></div><span class="ma-mini">150</span></div>`:'',
+      v.ma200!=null?`<div class="leg" title="MA200: ${v.ma200}"><div class="legdot" style="background:${v.abM200?'#059669':'#dc2626'}"></div><span class="ma-mini">200</span></div>`:'',
+    ].join('');
+    const atrHTML=v.atrL!=='—'
+      ?`<span class="sig sig-${v.atrS}">${v.atrL}</span>${v.atrRat!=null?`<br><span style="font-size:.6rem;color:#9ca3af">${v.atrRat}</span>`:''}`
+      :'<span style="color:#d1d5db">—</span>';
+    const volHTML=v.volL!=='—'
+      ?`<span class="sig sig-${v.volS}">${v.volL}</span>${v.vRat!=null?`<br><span style="font-size:.6rem;color:#9ca3af">${v.vRat}</span>`:''}`
+      :'<span style="color:#d1d5db">—</span>';
     const cHTML=v.contractions>0?`<br><span class="contr-b">${v.contractions}段收縮</span>`:'';
-    const vcpScoreCell=`<div class="scr-wrap">
-      <div class="scr-bg"><div class="scr-fill f${s}" style="width:${v.score}%"></div></div>
-      <span class="scr-num s${s}">${v.score}</span>
-    </div>`;
-    const opCell=`<td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>`;
-
-    // ── VCP tab ──
-    if(viewTab==='vcp'){
-      const maHTML=[
-        v.ma50!=null?`<div class="leg" title="MA50: ${v.ma50}"><div class="legdot" style="background:${v.abM50?'#059669':'#dc2626'}"></div><span class="ma-mini">50</span></div>`:'',
-        v.ma150!=null?`<div class="leg" title="MA150: ${v.ma150}"><div class="legdot" style="background:${v.abM150?'#059669':'#dc2626'}"></div><span class="ma-mini">150</span></div>`:'',
-        v.ma200!=null?`<div class="leg" title="MA200: ${v.ma200}"><div class="legdot" style="background:${v.abM200?'#059669':'#dc2626'}"></div><span class="ma-mini">200</span></div>`:'',
-      ].join('');
-      const atrHTML=v.atrL!=='—'?`<span class="sig sig-${v.atrS}">${v.atrL}</span>${v.atrRat!=null?`<br><span style="font-size:.6rem;color:#9ca3af">${v.atrRat}</span>`:''}` :'<span style="color:#d1d5db">—</span>';
-      const volHTML=v.volL!=='—'?`<span class="sig sig-${v.volS}">${v.volL}</span>${v.vRat!=null?`<br><span style="font-size:.6rem;color:#9ca3af">${v.vRat}</span>`:''}` :'<span style="color:#d1d5db">—</span>';
-      const spk=sparkline(r.closes||null);
-      return `<tr>
-        <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
-        <td class="tn">${r.name}</td>
-        <td>${exchSec}</td>
-        <td class="tprice">NT$${fmtP(v.price)}</td>
-        <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
-        <td><div class="ma-row">${maHTML||'—'}</div></td>
-        <td><div style="display:flex;flex-direction:column;gap:2px">${atrHTML}${volHTML}</div></td>
-        <td class="spark-cell">${spk}</td>
-        <td>${vcpScoreCell}</td>
-        ${opCell}
-      </tr>`;
-    }
-
-    // ── Fund+Chips tab ──
+    // Merged tech signal cell (ATR + volume)
+    const techHTML=`<div style="display:flex;flex-direction:column;gap:2px">${atrHTML}${volHTML}</div>`;
+    // Fundamental score badge
     const fund=r.fund||{};
     const revHigh=revenueHighMap[r.code];
     const fg=calcFundGrade(fund,revHigh);
@@ -1989,22 +1865,9 @@ function renderTable(){
       fund.revenueGrowth!=null?`<div class="fund-row"><span class="fund-lbl">營收↑</span>${fmtPct2(fund.revenueGrowth)}</div>`:'',
       revHigh!=null?`<div class="fund-row"><span class="fund-lbl">月營</span><span class="sig ${revHigh?'sig-g':'sig-n'}">${revHigh?'🔥新高':'普通'}</span></div>`:'',
     ].filter(Boolean).join('');
-    let fundLabel,fundCls,fundDetailFinal;
-    if(fg){
-      fundLabel=`${fg.label} ${fg.score}`;fundCls=fg.cls;fundDetailFinal=fundDetail||'<span style="color:#9ca3af">暫無細項</span>';
-    } else if(!phase2Done && !r.fund){
-      // Phase 2 still running
-      fundLabel='掃描中';fundCls='sN';fundDetailFinal='<span style="color:#9ca3af;font-size:.65rem">基本面載入中...</span>';
-    } else {
-      const synS=syntheticFundScore(v);
-      if(synS!=null){
-        const synG=synS>=70?{label:'技估佳',cls:'sA'}:synS>=45?{label:'技估中',cls:'sB'}:{label:'技估弱',cls:'sC'};
-        fundLabel=`${synG.label} ${synS}`;fundCls=synG.cls;
-        const _s=v.stage2?'sig-g':'sig-o';const _a=v.atrS==='g'?'sig-g':'sig-o';
-        fundDetailFinal=`<div class="fund-row"><span class="fund-lbl" style="color:#9ca3af;font-size:.6rem">技術面估算（無財報）</span></div><div class="fund-row"><span class="fund-lbl">MA排列</span><span class="sig ${_s}">${v.stage2?'Stage2':'未達'}</span></div><div class="fund-row"><span class="fund-lbl">趨勢強</span><span class="sig ${_a}">${v.atrL}</span></div>`;
-      }else{fundLabel=null;fundCls='sN';fundDetailFinal='<span style="color:#9ca3af">無資料</span>';}
-    }
-    const fundHTML=scoreBadge(fundLabel,fundCls||'sN',fundDetailFinal||'<span style="color:#9ca3af">無財報資料</span>');
+    const fundLabel=fg?`${fg.label} ${fg.score}`:null;
+    const fundHTML=scoreBadge(fundLabel,fg?.cls||'sN',fundDetail||'<span style="color:#9ca3af">無財報資料</span>');
+    // Chips badge
     const chips=chipsMap[r.code];
     const cl=chipsLabel(chips);
     const chipsDetail=chips?[
@@ -2012,15 +1875,25 @@ function renderTable(){
       `<div class="chips-row"><span class="chips-lbl">投信</span>${fmtChipN(chips.trustNet)}</div>`,
     ].join(''):'';
     const chipsHTML=scoreBadge(cl?.label||null,cl?.cls||'sN',chipsDetail||'<span style="color:#9ca3af">—</span>');
+    const spk=sparkline(r.closes||null);
     return `<tr>
       <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
       <td class="tn">${r.name}</td>
-      <td>${exchSec}</td>
+      <td><span style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span><span class="tsec">${r.sector}</span></td>
       <td class="tprice">NT$${fmtP(v.price)}</td>
-      <td>${vcpScoreCell}</td>
+      <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
+      <td><div class="ma-row">${maHTML||'—'}</div></td>
+      <td>${techHTML}</td>
+      <td class="spark-cell">${spk}</td>
+      <td>
+        <div class="scr-wrap">
+          <div class="scr-bg"><div class="scr-fill f${s}" style="width:${v.score}%"></div></div>
+          <span class="scr-num s${s}">${v.score}</span>
+        </div>
+      </td>
       <td>${fundHTML}</td>
       <td>${chipsHTML}</td>
-      ${opCell}
+      <td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
     </tr>`;
   }).join('');
 }
@@ -2164,7 +2037,6 @@ function sparkline(closes,w=80,h=28){
       const age=(Date.now()-ts)/60000;
       if(age<=360){ // 6 小時內有效
         allResults=results;
-        phase2Done=true; // cached results already have fund data
         document.getElementById('scanBtn').textContent='重新掃描';
         const ageStr=age>=60?`${Math.round(age/60)} 小時`:`${Math.round(age)} 分鐘`;
         document.getElementById('scanInfo').innerHTML=`上次掃描：<strong>${new Date(ts).toLocaleTimeString('zh-TW')}</strong>（${ageStr}前）`;
