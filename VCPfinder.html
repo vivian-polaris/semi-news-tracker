@@ -331,7 +331,7 @@ footer a:hover{text-decoration:underline}
     </div>
     <div class="news-card trump" style="margin:0">
       <div class="news-head">
-        <div class="news-title t-trump">川普+戰爭→美股台股衝擊</div>
+        <div class="news-title t-trump">最重要財經消息・影響台股 Top 10</div>
         <div style="display:flex;gap:5px">
           <button class="news-refresh" onclick="loadTrump()">↻ 刷新</button>
           <button class="news-refresh" id="logicBtn" onclick="loadTrumpLogic()" style="border-color:var(--purple);color:var(--purple)">底層邏輯</button>
@@ -1000,9 +1000,11 @@ async function callAI(prompt){
 
 // ─── RSS fetch（多個 proxy 輪流試）─────────────────────────────────────────
 function parseRSSXml(xml){
-  return [...xml.matchAll(/<item>[\s\S]*?<\/item>/g)].slice(0,10).map(m=>{
+  return [...xml.matchAll(/<item>[\s\S]*?<\/item>/g)].slice(0,15).map(m=>{
     const title=(m[0].match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)||m[0].match(/<title>(.*?)<\/title>/))?.[1]||'';
-    return {title:title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')};
+    const pubRaw=(m[0].match(/<pubDate>(.*?)<\/pubDate>/))?.[1]||'';
+    const dateStr=pubRaw?new Date(pubRaw).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+    return {title:title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'),dateStr};
   }).filter(x=>x.title);
 }
 async function fetchRSSUrl(directUrl){
@@ -1048,43 +1050,44 @@ async function loadTrump(useCache=false){
     if(c){b.className='news-body';b.textContent=c.text;t.textContent='快取（'+cacheAgeStr(c.ts)+'）・點 ↻ 強制更新';return;}
   }
   b.className='news-body loading'; b.textContent='抓取最新新聞...'; t.textContent='';
-  const todayQ=new Date().toISOString().slice(0,10);
-  const [a,c2,d,ff]=await Promise.all([
-    fetchRSS(`Trump tariff trade war stock market after:${todayQ}`).catch(()=>[]),
-    fetchRSS(`Iran Israel nuclear deadline sanction after:${todayQ}`).catch(()=>[]),
-    fetchRSS(`Ukraine Russia ceasefire oil price after:${todayQ}`).catch(()=>[]),
-    fetchRSSUrl('https://www.forexfactory.com/rss.php?category=market_news').catch(()=>[])
+  // 使用 5 天前日期，避免今日新聞未被 Google News 索引而回傳空集合（會讓 AI 用舊訓練資料）
+  const recentQ=new Date(Date.now()-5*24*60*60*1000).toISOString().slice(0,10);
+  const [a,b2,c,d,e,ff1,ff2]=await Promise.all([
+    fetchRSS(`Trump tariff trade policy statement after:${recentQ}`).catch(()=>[]),
+    fetchRSS(`Federal Reserve interest rate inflation CPI GDP after:${recentQ}`).catch(()=>[]),
+    fetchRSS(`semiconductor TSMC Nvidia AMD earnings supply chain after:${recentQ}`).catch(()=>[]),
+    fetchRSS(`site:wsj.com stock market finance economy after:${recentQ}`).catch(()=>[]),
+    fetchRSS(`site:reuters.com finance stocks market after:${recentQ}`).catch(()=>[]),
+    fetchRSSUrl('https://www.forexfactory.com/rss.php?category=market_news').catch(()=>[]),
+    fetchRSSUrl('https://www.forexfactory.com/rss.php').catch(()=>[]),
   ]);
-  const items=[...a,...c2,...d,...ff].slice(0,20);
+  const seen=new Set();
+  const items=[...a,...b2,...c,...d,...e,...ff1,...ff2]
+    .filter(x=>{if(seen.has(x.title))return false;seen.add(x.title);return true;})
+    .slice(0,30);
+  if(!items.length){
+    b.className='news-body';
+    b.textContent='⚠️ RSS 全部連線失敗，無法取得最新新聞。\n請點 ↻ 刷新重試，或檢查網路連線。\n（不補充舊訓練資料，避免誤導）';
+    t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    return;
+  }
   b.textContent='AI 分析中...';
   const today=new Date().toLocaleDateString('zh-TW');
   const sysNote='【輸出規則】純文字，禁止使用 markdown、代碼塊、星號、#號。';
-  const prompt=items.length
-    ? `今天${today}。${sysNote}你是股市分析師，定義「重要」＝跟錢有關、會讓股票漲跌。以下是最新新聞，繁體中文，人名機構用英文。分析格式（每條「・」開頭，共200字內）：
+  const newsList=items.map((x,i)=>`${i+1}. [${x.dateStr||'近期'}] ${x.title}`).join('\n');
+  const prompt=`今天${today}。${sysNote}
+你是台股分析師。以下新聞來自 ForexFactory、WSJ（site:wsj.com）、Reuters 等中立財經媒體（最近 5 天）。
+只能使用下方清單的真實新聞，禁止補充訓練資料舊消息。
+從中挑出最會影響台灣股市的 10 條，依重要性排序，繁體中文，機構/公司名稱保留英文。
 
-【Trump動向→美股影響】
-・具體政策或聲明+受影響sector（Nvidia/AMD/半導體/石油等）+估計漲跌%
-・第二條
+輸出格式（嚴格照此）：
+1. 【來源/事件】新聞要點 1 句（含具體數字）→ 影響台股族群/個股 → 預估漲跌±%
+2～10. 同上
 
-【戰爭地緣→市場影響】
-・Iran/Ukraine/Israel最重要的1條（必須是影響石油/軍工/避險資產的）+影響哪類美股
+每條必須有數字。禁止「局勢緊張」「持續關注」「值得觀察」「可能影響」等廢話。
 
-【台股衝擊】
-・上述事件對TSMC/台灣半導體/台幣的直接影響+外資動向
-
-禁止：「局勢緊張」「持續關注」「值得觀察」。必須給數字。\n\n`+items.map((x,i)=>`${i+1}. ${x.title}`).join('\n')
-    : `今天${today}。${sysNote}你是股市分析師，定義「重要」＝跟錢有關、會讓股票漲跌。繁體中文，人名機構用英文。分析格式（每條「・」開頭，共200字內）：
-
-【Trump動向→美股影響】
-・Trump最新關稅/政策+受影響sector（Nvidia/AMD/半導體/石油等）+估計漲跌%
-
-【戰爭地緣→市場影響】
-・Iran核談判現況或Ukraine停火最新+影響石油/軍工/避險資產的數字
-
-【台股衝擊】
-・上述事件對TSMC/台幣/外資動向的直接影響
-
-禁止：「局勢緊張」「持續關注」。必須給數字。`;
+新聞清單：
+${newsList}`;
   const res=await Promise.race([
     callAI(prompt),
     new Promise(r=>setTimeout(()=>r('⚠️ 等待 AI 回應超過 35 秒，請點 ↻ 重試（或明天 Groq 額度重置後自動恢復）'),35000))
@@ -1296,6 +1299,28 @@ async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
   const results=[];
   // 預設清單的詳細產業對照表（保留精細分類）
   const sectorMap=new Map(STOCKS.map(s=>[s.code,s.sector]));
+  // 從 TWSE / TPEX openapi 取得完整產業別（補全全掃模式下的非預設股票）
+  const twseInfoMap=new Map();
+  try{
+    const ti=await fetchJsonCORS('https://openapi.twse.com.tw/v1/company/public_information','TWSE公司資訊');
+    if(Array.isArray(ti)){
+      ti.forEach(r=>{
+        const c=String(r['股票代號']||r.stockCode||r.Code||'').trim();
+        const i=String(r['產業別']||r.industryType||r.industry||'').replace(/業$/,'').trim();
+        if(c&&i) twseInfoMap.set(c,i);
+      });
+    }
+  }catch(_){}
+  try{
+    const tp=await fetchJsonCORS('https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_L','TPEX公司資訊');
+    if(Array.isArray(tp)){
+      tp.forEach(r=>{
+        const c=String(r['SecuritiesCompanyCode']||r['股票代號']||'').trim();
+        const i=String(r['IndustryType']||r['產業別']||'').replace(/業$/,'').trim();
+        if(c&&i&&!twseInfoMap.has(c)) twseInfoMap.set(c,i);
+      });
+    }
+  }catch(_){}
 
   if(includeTSE){
     if(pT) pT.textContent='第 1 步：取得上市股票清單...';
@@ -1308,7 +1333,7 @@ async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
         const code=(s.Code||s.code||'').trim();
         const name=(s.Name||s.name||code).trim();
         if(/^\d{4}$/.test(code))
-          results.push({code,name,sector:sectorMap.get(code)||'',ex:'TW'});
+          results.push({code,name,sector:sectorMap.get(code)||twseInfoMap.get(code)||'',ex:'TW'});
       });
       if(infoEl) infoEl.textContent=`✅ 上市：${results.length} 支`;
     } else {
@@ -1338,7 +1363,7 @@ async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
         const code=String(codeKey?s[codeKey]:'').trim();
         const name=String(nameKey?s[nameKey]:code).trim();
         if(/^\d{4}$/.test(code)&&!results.find(r=>r.code===code))
-          results.push({code,name,sector:sectorMap.get(code)||'',ex:'TWO'});
+          results.push({code,name,sector:sectorMap.get(code)||twseInfoMap.get(code)||'',ex:'TWO'});
       });
       if(infoEl) infoEl.textContent=`✅ 上市 ${otcStart} 支 ＋ 上櫃 ${results.length-otcStart} 支`;
     } else {
@@ -1435,18 +1460,31 @@ const PROXIES=[
   'https://corsproxy.io/?',  // retry corsproxy last
   '',                          // direct (browser CORS 可能擋)
 ];
-function fetchTO(url,ms=9000){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal}).finally(()=>clearTimeout(t));}
+function fetchTO(url,ms=9000,opts={}){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal,...opts}).finally(()=>clearTimeout(t));}
 // FinMind 需要走 CORS proxy（直連被瀏覽器 CORS 攔截）
-const FM_PROXIES=['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest=',''];
+const FM_PROXIES=['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest='];
+// POST 模式：把 URL 參數放進 body，避免部分 CORS proxy 截斷 query string（修正 start_date missing 400 錯誤）
 async function fetchFinMind(url,ms=18000){
+  let baseUrl=url,body='';
+  try{const u=new URL(url);baseUrl=u.origin+u.pathname;body=u.searchParams.toString();}catch(_){}
+  const postOpts=body?{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body}:{};
   for(const px of FM_PROXIES){
     try{
-      const purl=px?px+encodeURIComponent(url):url;
-      const r=await fetchTO(purl,ms);
+      const purl=px+encodeURIComponent(baseUrl);
+      const r=await fetchTO(purl,ms,postOpts);
       if(!r.ok) continue;
       const text=await r.text();
       if(!text||text.trim().startsWith('<')||text.trim().startsWith('<!')) continue;
-      return JSON.parse(text);
+      const json=JSON.parse(text);
+      if(json&&(json.status===405||json.msg==='Method Not Allowed')){
+        // proxy 不支援 POST → 降回 GET
+        const rg=await fetchTO(px+encodeURIComponent(url),ms);
+        if(!rg.ok) continue;
+        const tg=await rg.text();
+        if(!tg||tg.trim().startsWith('<')) continue;
+        return JSON.parse(tg);
+      }
+      return json;
     }catch(_){}
   }
   return null;
