@@ -309,15 +309,6 @@ footer a:hover{text-decoration:underline}
   <div class="key-status key-no" id="keyStatus">未設定 Key（使用免費 Pollinations 備援）</div>
   <div id="testResult" style="display:none;margin-top:6px;font-size:.75rem;padding:6px 10px;border-radius:8px"></div>
   <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-    <p style="font-size:.75rem;color:var(--text2);margin-bottom:8px">設定 <a href="https://finmindtrade.com/" target="_blank" style="color:var(--purple)">FinMind Token</a>（台股基本面資料，免費註冊）</p>
-    <div class="key-row">
-      <input class="key-input" id="fmInput" type="password" placeholder="FinMind Token（eyJ...）輸入後自動儲存"
-        oninput="autoSaveFm(this.value)" onpaste="setTimeout(()=>autoSaveFm(document.getElementById('fmInput').value),50)">
-      <button class="key-save" onclick="localStorage.removeItem('finmind_token');document.getElementById('fmInput').value='';updateKeyStatus();alert('FinMind Token 已清除')" style="background:#fee2e2;border-color:#fca5a5;color:#b91c1c">清除</button>
-    </div>
-    <div class="key-status" id="fmStatus">未設定 FinMind Token（基本面將嘗試 Yahoo Finance）</div>
-  </div>
-  <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
     <button class="key-save" onclick="genBookmark()" style="width:100%;background:var(--purple);color:#fff;border-color:var(--purple)">產生個人書籤網址（換瀏覽器不用重輸）</button>
     <div id="bookmarkOut" style="display:none;margin-top:8px;font-size:.72rem;color:var(--text2);word-break:break-all"></div>
   </div>
@@ -488,6 +479,7 @@ footer a:hover{text-decoration:underline}
     <button class="srt on" onclick="setSort('score',this)">VCP分數↓</button>
     <button class="srt" onclick="setSort('pct',this)">距高點↑</button>
     <button class="srt" onclick="setSort('price',this)">股價</button>
+    <button class="srt" onclick="setSort('chips',this)">籌碼（雙買↑）</button>
     <button class="srt" onclick="setSort('code',this)">代號</button>
   </div>
 </div>
@@ -631,17 +623,15 @@ let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=fal
 let hideDoubleShort=false;
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
+let twseDailyMap={chips:{},monthRevenue:{},income:{}}; // pre-fetched by GitHub Actions
 
 // ─── Key helpers ──────────────────────────────────────────────────────────
 const getKey=()=>localStorage.getItem('groq_key')||'';
 const getDsKey=()=>localStorage.getItem('deepseek_key')||'';
-const getFmToken=()=>localStorage.getItem('finmind_token')||'';
 function toggleKeyPanel(){
   document.getElementById('keyPanel').classList.toggle('show');
   const g=getKey();
   if(g){const el=document.getElementById('groqInput');if(!el.value)el.value=g;}
-  const fm=getFmToken();
-  if(fm){const el=document.getElementById('fmInput');if(el&&!el.value)el.value=fm;}
   updateKeyStatus();
 }
 function keyHint(k){return k&&k.length>8?`${k.slice(0,6)}…${k.slice(-4)}`:'(太短)';}
@@ -650,12 +640,6 @@ function updateKeyStatus(){
   const g=getKey();
   if(g){s.className='key-status key-ok';s.innerHTML=`✅ Groq：${keyHint(g)}<br><span style="font-size:.68rem;color:#6b7280">↑ 這是目前儲存的 Key，請確認尾碼對應最新申請</span>`;}
   else{s.className='key-status key-no';s.textContent='⚠️ 未設定 Groq Key（使用免費 Pollinations 備援，速度較慢）';}
-  const fmS=document.getElementById('fmStatus');
-  const fm=getFmToken();
-  if(fmS){
-    if(fm){fmS.className='key-status key-ok';fmS.textContent=`✅ FinMind Token：${keyHint(fm)}（基本面優先使用）`;}
-    else{fmS.className='key-status key-no';fmS.textContent='未設定 FinMind Token（基本面將嘗試 Yahoo Finance）';}
-  }
   const banner=document.getElementById('noKeyBanner');
   if(banner) banner.style.display=g?'none':'block';
 }
@@ -667,9 +651,18 @@ function autoSaveGroq(v){
   v=v.trim();
   if(v.length>10){localStorage.setItem('groq_key',v);updateKeyStatus();}
 }
-function autoSaveFm(v){
-  v=v.trim();
-  if(v.length>10){localStorage.setItem('finmind_token',v);updateKeyStatus();}
+// ─── TWSE Daily 預載（GitHub Actions 每日更新）────────────────────────────
+async function loadTWSEDaily(){
+  const infoEl=document.getElementById('fetchApiStatus');
+  try{
+    const r=await fetchTO('./twse_daily.json',8000);
+    if(!r.ok)return;
+    const d=await r.json();
+    if(d.chips&&Object.keys(d.chips).length>10){
+      twseDailyMap=d;
+      if(infoEl) infoEl.textContent=`✅ 每日資料載入：籌碼 ${Object.keys(d.chips).length} 支、財報 ${Object.keys(d.income||{}).length} 支（${d.date||''}）`;
+    }
+  }catch(_){}
 }
 async function testGroq(){
   const k=document.getElementById('groqInput').value.trim()||getKey();
@@ -704,10 +697,7 @@ async function testGroq(){
 function genBookmark(){
   const g=getKey();
   if(!g){alert('請先儲存 Groq API Key');return;}
-  const obj={g};
-  const fm=getFmToken();
-  if(fm) obj.fm=fm;
-  const payload=btoa(JSON.stringify(obj));
+  const payload=btoa(JSON.stringify({g}));
   const url=location.origin+location.pathname+'#keys='+payload;
   const out=document.getElementById('bookmarkOut');
   out.style.display='block';
@@ -721,7 +711,6 @@ function loadKeysFromHash(){
     const raw=h.split('keys=')[1];
     const obj=JSON.parse(atob(raw));
     if(obj.g && !obj.g.startsWith('http') && obj.g.length>10) localStorage.setItem('groq_key',obj.g);
-    if(obj.fm && obj.fm.length>10) localStorage.setItem('finmind_token',obj.fm);
     localStorage.removeItem('deepseek_key');
     history.replaceState(null,'',location.pathname);
     updateKeyStatus();
@@ -1389,75 +1378,27 @@ async function fetchFundamentalsYahoo(sym){
   return null;
 }
 
-// ─── Fetch Fundamentals via FinMind（台股財報，需 token）────────────────────
-async function fetchFundamentalsFinMind(stockId){
-  const token=getFmToken();
-  if(!token) return null;
-  const sd=new Date(); sd.setFullYear(sd.getFullYear()-2);
-  const startDate=sd.toISOString().slice(0,10);
-  try{
-    const r=await fetchTO(
-      `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockFinancialStatements&stock_id=${encodeURIComponent(stockId)}&start_date=${startDate}&token=${encodeURIComponent(token)}`,
-      15000
-    );
-    if(!r.ok) return null;
-    const data=await r.json();
-    if(data.status!==200||!data.data?.length) return null;
-    // 依季度分組
-    const byDate={};
-    for(const row of data.data){
-      if(!byDate[row.date]) byDate[row.date]={};
-      byDate[row.date][row.type]=parseFloat(row.value)||0;
-    }
-    const dates=Object.keys(byDate).sort().reverse();
-    if(!dates.length) return null;
-    const latest=byDate[dates[0]];
-    // 找去年同季
-    const latestYear=dates[0].slice(0,4);
-    const prevYearDate=dates.find(d=>d.slice(0,4)<latestYear);
-    const prevData=prevYearDate?byDate[prevYearDate]:null;
-    const rev=latest['Revenue']||latest['營業收入']||0;
-    const gp=latest['GrossProfit']||latest['毛利潤']||0;
-    const oi=latest['OperatingIncome']||latest['營業利益']||0;
-    const eps=latest['EPS']||null;
-    const prevEps=prevData?(prevData['EPS']||null):null;
-    const result={
-      roe:latest['ROE']!=null?(latest['ROE']/100):null,
-      grossMargin:rev>0?(gp/rev):null,
-      operatingMargin:rev>0?(oi/rev):null,
-      revenueGrowth:null,
-      earningsGrowth:(eps!=null&&prevEps!=null&&prevEps!==0)?((eps-prevEps)/Math.abs(prevEps)):null,
-    };
-    // 月營收 YoY
-    try{
-      const mr=await fetchTO(
-        `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockMonthRevenue&stock_id=${encodeURIComponent(stockId)}&start_date=${startDate}&token=${encodeURIComponent(token)}`,
-        10000
-      );
-      if(mr.ok){
-        const mrData=await mr.json();
-        if(mrData.status===200&&mrData.data?.length){
-          const mrRows=mrData.data.sort((a,b)=>b.date.localeCompare(a.date));
-          const latest=mrRows[0];
-          const lDate=new Date(latest.date);
-          const prev=mrRows.find(r=>{const d=new Date(r.date);return d.getMonth()===lDate.getMonth()&&d.getFullYear()===lDate.getFullYear()-1;});
-          if(latest.revenue&&prev?.revenue)
-            result.revenueGrowth=(latest.revenue-prev.revenue)/prev.revenue;
-        }
-      }
-    }catch(_){}
-    if(Object.values(result).some(v=>v!=null)) return result;
-  }catch(_){}
-  return null;
-}
-
 async function fetchFundamentals(sym){
   const stockId=sym.split('.')[0];
   const bwi=twseFundMap[stockId]||null;
-  // 1. 優先用 FinMind（台股財報更可靠）
-  const fm=await fetchFundamentalsFinMind(stockId);
-  if(fm) return{...fm,pe:bwi?.pe??null,pb:bwi?.pb??null,divYield:bwi?.divYield??null};
-  // 2. 備援：Yahoo Finance v7 quote（不需 crumb，但 CORS proxy 不穩）
+  // 1. 優先用 twse_daily.json（GitHub Actions 每日預取，同源無 CORS 問題）
+  const inc=twseDailyMap.income?.[stockId];
+  const mr=twseDailyMap.monthRevenue?.[stockId];
+  if(inc||mr){
+    const rev=inc?.revenue||0;
+    const oi=inc?.operatingIncome||0;
+    return{
+      roe:null, // TWSE openapi 無 ROE，未來可補
+      grossMargin:null,
+      operatingMargin:rev>0?(oi/rev):null,
+      revenueGrowth:mr?.yoy!=null?(mr.yoy/100):null,
+      earningsGrowth:null, // 需歷史季報對比，目前未存
+      pe:bwi?.pe??null,
+      pb:bwi?.pb??null,
+      divYield:bwi?.divYield??null,
+    };
+  }
+  // 2. 備援：Yahoo Finance v7 quote（CORS proxy 不穩，可能失敗）
   const yf=await fetchFundamentalsYahoo(sym);
   const merged={
     roe:yf?.roe??null,
@@ -1473,56 +1414,52 @@ async function fetchFundamentals(sym){
   return null;
 }
 
-// ─── Fetch Institutional（TWSE T86）─────────────────────────────────────────
+// ─── Fetch Institutional（優先 twse_daily.json，備援 T86 CORS）────────────
 async function fetchChips(){
   chipsMap={};
   const infoEl=document.getElementById('fetchApiStatus');
-  // ── TWSE T86 ──
+  // ── 主要來源：GitHub Actions 預存的 twse_daily.json（同源，無 CORS 問題）──
+  if(Object.keys(twseDailyMap.chips).length>10){
+    chipsMap=twseDailyMap.chips;
+    if(infoEl) infoEl.textContent=`✅ 籌碼載入（twse_daily.json，${Object.keys(chipsMap).length} 支，${twseDailyMap.date||''}）`;
+    return;
+  }
+  // ── 備援：直連 TWSE T86（需 CORS proxy 或瀏覽器允許）────────────────────
   for(let back=0;back<7;back++){
     const dt=new Date();dt.setDate(dt.getDate()-back);
     if(dt.getDay()===0||dt.getDay()===6) continue;
     const yyyymmdd=dt.getFullYear()+String(dt.getMonth()+1).padStart(2,'0')+String(dt.getDate()).padStart(2,'0');
-    const endpoints=[
-      `https://www.twse.com.tw/fund/T86?response=json&date=${yyyymmdd}&selectType=ALL`,
-      `https://www.twse.com.tw/rwd/zh/fund/T86?date=${yyyymmdd}&response=json`,
-    ];
-    for(const base of endpoints){
-      const proxies=['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest=',''];
-      for(const px of proxies){
-        try{
-          const url=px?px+encodeURIComponent(base):base;
-          const r=await fetchTO(url,15000);
-          if(!r.ok)continue;
-          const text=await r.text();
-          if(!text||text.trim().startsWith('<'))continue;
-          const json=JSON.parse(text);
-          if(!json.data||!json.data.length)continue;
-          const fields=json.fields||[];
-          let fIdx=4,tIdx=7,dIdx=8;
-          if(fields.length>10){
-            const fi=fields.findIndex(f=>f.includes('外資及陸資')&&f.includes('買賣超')&&!f.includes('自營'));
-            const ti=fields.findIndex(f=>f.includes('投信')&&f.includes('買賣超'));
-            const di=fields.findIndex(f=>f.includes('自營商')&&f.includes('買賣超')&&f.includes('合計'));
-            if(fi>0)fIdx=fi;if(ti>0)tIdx=ti;if(di>0)dIdx=di;
-          }
-          json.data.forEach(row=>{
-            if(!row||row.length<Math.max(fIdx,tIdx,dIdx)+1)return;
-            const code=(row[0]||'').trim();
-            if(!code||!/^\d{4,6}$/.test(code))return;
-            chipsMap[code]={
-              foreignNet:parseChipNum(row[fIdx]),
-              trustNet:parseChipNum(row[tIdx]),
-              dealerNet:parseChipNum(row[dIdx])
-            };
-          });
-          if(Object.keys(chipsMap).length>10){
-            if(infoEl) infoEl.textContent=`✅ 籌碼取得成功（TWSE T86 ${yyyymmdd}，${Object.keys(chipsMap).length} 支）`;
-            return;
-          }
-        }catch(_){}
-      }
+    const base=`https://www.twse.com.tw/rwd/zh/fund/T86?date=${yyyymmdd}&response=json`;
+    const proxies=['','https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest='];
+    for(const px of proxies){
+      try{
+        const url=px?px+encodeURIComponent(base):base;
+        const r=await fetchTO(url,10000);
+        if(!r.ok)continue;
+        const text=await r.text();
+        if(!text||text.trim().startsWith('<'))continue;
+        const json=JSON.parse(text);
+        if(json.stat!=='OK'||!json.data?.length)continue;
+        const fields=json.fields||[];
+        // 正確的欄位索引（T86 2025 格式）
+        const fi=fields.findIndex(f=>(f.includes('外陸資')||f.includes('外資及陸資'))&&f.includes('買賣超')&&!f.includes('自營'));
+        const ti=fields.findIndex(f=>f.includes('投信')&&f.includes('買賣超'));
+        const di=fields.findIndex(f=>f.includes('自營商')&&f.includes('買賣超')&&!f.includes('自行')&&!f.includes('避險'));
+        const fIdx=fi>0?fi:4, tIdx=ti>0?ti:10, dIdx=di>0?di:11;
+        json.data.forEach(row=>{
+          if(!row||row.length<Math.max(fIdx,tIdx,dIdx)+1)return;
+          const code=(row[0]||'').trim();
+          if(!code||!/^\d{4,6}$/.test(code))return;
+          chipsMap[code]={foreignNet:parseChipNum(row[fIdx]),trustNet:parseChipNum(row[tIdx]),dealerNet:parseChipNum(row[dIdx])};
+        });
+        if(Object.keys(chipsMap).length>10){
+          if(infoEl) infoEl.textContent=`✅ 籌碼取得成功（TWSE T86 ${yyyymmdd}，${Object.keys(chipsMap).length} 支）`;
+          return;
+        }
+      }catch(_){}
     }
   }
+  if(infoEl&&Object.keys(chipsMap).length===0) infoEl.textContent='⚠️ 籌碼資料無法取得（需 GitHub Actions 部署 twse_daily.json）';
 }
 
 // ─── Scan ─────────────────────────────────────────────────────────────────
@@ -1545,6 +1482,9 @@ async function startScan(){
   chipsMap={};
   twseFundMap={};
 
+  // 預載每日資料（twse_daily.json，GitHub Actions 每日更新）
+  document.getElementById('progText').textContent='載入每日資料（twse_daily.json）...';
+  await loadTWSEDaily();
   // Fetch institutional chips data once before scan
   document.getElementById('progText').textContent='取得籌碼資料（TWSE）...';
   await fetchChips();
@@ -1713,6 +1653,10 @@ function getSorted(list){
     if(sortKey==='pct'){const va=av?.pctH??999,vb=bv?.pctH??999;return sortAsc?va-vb:vb-va;}
     if(sortKey==='price'){const va=av?.price??0,vb=bv?.price??0;return sortAsc?va-vb:vb-va;}
     if(sortKey==='code'||sortKey==='name'){return sortAsc?a[sortKey].localeCompare(b[sortKey]):b[sortKey].localeCompare(a[sortKey]);}
+    if(sortKey==='chips'){
+      const chipsScore=r=>{const c=chipsMap[r.code];if(!c)return-1;const f=parseChipNum(c.foreignNet)||0,t=parseChipNum(c.trustNet)||0;return(f>0&&t>0)?3:(f>0)?2:(t>0)?1:0;};
+      return sortAsc?chipsScore(a)-chipsScore(b):chipsScore(b)-chipsScore(a);
+    }
     return 0;
   });
 }
@@ -1784,11 +1728,9 @@ function renderTable(){
     }
     const g=grade(v.score),s=sc(v.score);
     const pBadge=v.pctH<15?'pct-A':v.pctH<25?'pct-B':'pct-C';
-    const maHTML=[
-      v.ma50!=null?`<div class="leg" title="MA50: ${v.ma50}"><div class="legdot" style="background:${v.abM50?'#059669':'#dc2626'}"></div><span class="ma-mini">50</span></div>`:'',
-      v.ma150!=null?`<div class="leg" title="MA150: ${v.ma150}"><div class="legdot" style="background:${v.abM150?'#059669':'#dc2626'}"></div><span class="ma-mini">150</span></div>`:'',
-      v.ma200!=null?`<div class="leg" title="MA200: ${v.ma200}"><div class="legdot" style="background:${v.abM200?'#059669':'#dc2626'}"></div><span class="ma-mini">200</span></div>`:'',
-    ].join('');
+    // 緊湊 MA 顯示：● 50 ● 150 ● 200 in one line
+    const maDot=(ab,val,lbl)=>val!=null?`<span title="MA${lbl}: ${Math.round(val)}" style="display:inline-flex;align-items:center;gap:2px;margin-right:4px"><span style="width:7px;height:7px;border-radius:50%;background:${ab?'#059669':'#dc2626'};display:inline-block;flex-shrink:0"></span><span class="ma-mini">${lbl}</span></span>`:'';
+    const maHTML=maDot(v.abM50,v.ma50,'50')+maDot(v.abM150,v.ma150,'150')+maDot(v.abM200,v.ma200,'200');
     const atrHTML=v.atrL!=='—'
       ?`<span class="sig sig-${v.atrS}">${v.atrL}</span>${v.atrRat!=null?`<br><span style="font-size:.6rem;color:#9ca3af">${v.atrRat}</span>`:''}`
       :'<span style="color:#d1d5db">—</span>';
