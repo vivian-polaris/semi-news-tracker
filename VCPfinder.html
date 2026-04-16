@@ -474,6 +474,10 @@ footer a:hover{text-decoration:underline}
     <span class="pill" id="hideErrPill" onclick="toggleHideErr(this)">隱藏無數據</span>
     <span class="pill" id="watchPill" onclick="toggleWatchFilter(this)">★ 自選股</span>
   </div>
+  <div class="filter-row">
+    <span class="flabel">籌碼</span>
+    <span class="pill" id="hideDoubleShortPill" onclick="toggleHideDoubleShort(this)">排除雙賣</span>
+  </div>
 </div>
 
 <!-- ── Stats + Sort ── -->
@@ -624,6 +628,7 @@ const STOCKS = [
 let allResults=[], scoreMin=60, pctMax=999, secFilter='ALL', exFilter='ALL';
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
+let hideDoubleShort=false;
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
 
@@ -1694,6 +1699,10 @@ function getFiltered(){
     else if(secFilter!=='ALL'&&r.sector!==secFilter)return false;
     if(exFilter!=='ALL'&&r.ex!==exFilter)return false;
     if(onlyStage2&&!r.vcp.stage2)return false;
+    if(hideDoubleShort){
+      const chips=chipsMap[r.code];
+      if(chips){const f=parseChipNum(chips.foreignNet)||0,t=parseChipNum(chips.trustNet)||0;if(f<=0&&t<=0)return false;}
+    }
     return true;
   });
 }
@@ -1879,6 +1888,7 @@ function toggleWatch(code,btn){
   localStorage.setItem('wl',JSON.stringify(w));
 }
 function toggleWatchFilter(el){watchFilter=!watchFilter;el.classList.toggle('g-on',watchFilter);renderTable();}
+function toggleHideDoubleShort(el){hideDoubleShort=!hideDoubleShort;el.classList.toggle('g-on',hideDoubleShort);renderTable();}
 
 // ─── Export CSV ─────────────────────────────────────────────────────────────
 function exportCSV(){
