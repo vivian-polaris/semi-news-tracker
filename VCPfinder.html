@@ -695,7 +695,7 @@ function autoSaveGroq(v){
 async function loadTWSEDaily(){
   const infoEl=document.getElementById('fetchApiStatus');
   try{
-    const r=await fetchTO('./twse_daily.json',8000);
+    const r=await fetchTO('./twse_daily.json?v='+new Date().toISOString().slice(0,10),8000);
     if(!r.ok)return;
     const d=await r.json();
     if(d.date){

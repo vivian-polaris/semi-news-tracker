@@ -145,7 +145,10 @@ def fetch_chips():
                 'dealerNet':  _int(row[di]),
             }
         print(f'  TSE chips ({yyyymmdd}): {len(chips)}')
-        break
+        if len(chips) > 100:
+            break
+        else:
+            chips = {}  # 資料不足，嘗試前一交易日
 
     # OTC chips – TPEX equivalent
     for delta in range(7):
@@ -172,7 +175,7 @@ def fetch_chips():
                     'dealerNet':  _int(row[6]) if len(row) > 6 else 0,
                 }
                 added += 1
-        if added > 0:
+        if added > 50:
             print(f'  OTC chips ({yyyymmdd}): +{added}')
             break
 
