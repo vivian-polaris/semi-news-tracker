@@ -1398,7 +1398,12 @@ async function fetchFundamentals(sym){
       divYield:bwi?.divYield??null,
     };
   }
-  // 2. 備援：Yahoo Finance v7 quote（CORS proxy 不穩，可能失敗）
+  // 2. 如果有 BWIBBU_d 估值資料，直接回傳（跳過常 429 的 Yahoo proxy）
+  if(bwi?.pe!=null||bwi?.pb!=null||bwi?.divYield!=null){
+    return{roe:null,grossMargin:null,operatingMargin:null,earningsGrowth:null,revenueGrowth:null,
+      pe:bwi.pe??null,pb:bwi.pb??null,divYield:bwi.divYield??null};
+  }
+  // 3. 最後備援：Yahoo Finance v7 quote（CORS proxy 不穩，可能失敗）
   const yf=await fetchFundamentalsYahoo(sym);
   const merged={
     roe:yf?.roe??null,
@@ -1406,9 +1411,7 @@ async function fetchFundamentals(sym){
     operatingMargin:yf?.operatingMargin??null,
     revenueGrowth:yf?.revenueGrowth??null,
     earningsGrowth:yf?.earningsGrowth??null,
-    pe:bwi?.pe??null,
-    pb:bwi?.pb??null,
-    divYield:bwi?.divYield??null,
+    pe:null,pb:null,divYield:null,
   };
   if(Object.values(merged).some(v=>v!=null)) return merged;
   return null;
@@ -1680,7 +1683,11 @@ function calcFundGrade(fund){
   if(fund.operatingMargin!=null){tot+=15; pts+=fund.operatingMargin>=0.15?15:fund.operatingMargin>=0.08?8:fund.operatingMargin>0?4:0;}
   if(fund.earningsGrowth!=null){tot+=20; pts+=fund.earningsGrowth>=0.15?20:fund.earningsGrowth>=0?10:0;}
   if(fund.revenueGrowth!=null){tot+=15; pts+=fund.revenueGrowth>=0.1?15:fund.revenueGrowth>=0?7:0;}
-  if(tot===0) return null;
+  if(tot===0){
+    // 無獲利數據，但有估值資料（P/E、P/B、殖利率）
+    if(fund.pe!=null||fund.pb!=null||fund.divYield!=null) return{label:'估值',cls:'sN',score:null};
+    return null;
+  }
   const score=Math.round(pts/tot*100);
   return score>=70?{label:'優',cls:'sA',score}:score>=45?{label:'中',cls:'sB',score}:{label:'弱',cls:'sC',score};
 }
@@ -1753,7 +1760,7 @@ function renderTable(){
       fund.pb!=null?`<div class="fund-row"><span class="fund-lbl">P/B</span><span>${fund.pb.toFixed(2)}x</span></div>`:'',
       fund.divYield!=null?`<div class="fund-row"><span class="fund-lbl">殖利率</span><span>${fund.divYield.toFixed(2)}%</span></div>`:'',
     ].filter(Boolean).join('');
-    const fundLabel=fg?`${fg.label} ${fg.score}`:null;
+    const fundLabel=fg?(fg.score!=null?`${fg.label} ${fg.score}`:fg.label):null;
     const fundHTML=scoreBadge(fundLabel,fg?.cls||'sN',fundDetail||'<span style="color:#9ca3af">無財報資料</span>');
     // Chips badge
     const chips=chipsMap[r.code];
