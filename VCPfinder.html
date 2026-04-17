@@ -683,7 +683,7 @@ async function loadTWSEDaily(){
     const r=await fetchTO('./twse_daily.json',8000);
     if(!r.ok)return;
     const d=await r.json();
-    if(d.chips&&Object.keys(d.chips).length>10){
+    if(d.date){
       twseDailyMap=d;
       // 把 bwibbu 合進 twseFundMap（覆蓋 BWIBBU_d 直連失敗的情況）
       if(d.bwibbu){Object.entries(d.bwibbu).forEach(([c,v])=>{if(!twseFundMap[c])twseFundMap[c]=v;});}
@@ -1236,32 +1236,32 @@ async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
   if(includeOTC){
     const otcStart=results.length;
     if(pT) pT.textContent=`第 2 步：取得上櫃股票清單（已有上市 ${otcStart} 支）...`;
-    let otcData=null;
-    for(const ep of [
-      'https://www.tpex.org.tw/openapi/v1/tpex_mainboard_perday_quotation',
-      'https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes',
-    ]){
-      otcData=await fetchJsonCORS(ep,'上櫃 OTC');
-      if(otcData) break;
-    }
-    if(otcData){
-      const sample=otcData[0]||{};
-      const codeKey=Object.keys(sample).find(k=>/code|securities|symbol/i.test(k));
-      const nameKey=Object.keys(sample).find(k=>/name|company/i.test(k));
-      otcData.forEach(s=>{
-        const code=String(codeKey?s[codeKey]:'').trim();
-        const name=String(nameKey?s[nameKey]:code).trim();
-        if(/^\d{4}$/.test(code)&&!results.find(r=>r.code===code))
-          results.push({code,name,sector:sectorMap.get(code)||twseInfoMap.get(code)||'',ex:'TWO'});
+    // Primary: pre-fetched list from twse_daily.json (GitHub Actions, no CORS)
+    if(twseDailyMap.otcStocks&&twseDailyMap.otcStocks.length>100){
+      twseDailyMap.otcStocks.forEach(s=>{
+        if(/^\d{4}$/.test(s.code)&&!results.find(r=>r.code===s.code))
+          results.push({code:s.code,name:s.name,sector:sectorMap.get(s.code)||twseInfoMap.get(s.code)||'',ex:'TWO'});
       });
-      if(infoEl) infoEl.textContent=`✅ 上市 ${otcStart} 支 ＋ 上櫃 ${results.length-otcStart} 支`;
+      if(infoEl) infoEl.textContent=`✅ 上市 ${otcStart} 支 ＋ 上櫃 ${results.length-otcStart} 支（每日快取）`;
     } else {
-      DEFAULT_STOCKS.filter(s=>s.ex==='TWO').forEach(s=>{
-        if(!results.find(r=>r.code===s.code)) results.push(s);
-      });
-      if(infoEl) infoEl.textContent=`⚠️ 上櫃 API 失敗，上市 ${otcStart} 支 ＋ 上櫃內建 ${results.length-otcStart} 支`;
+      // Fallback: TPEX daily_close_quotes (correct endpoint + field names)
+      const otcData=await fetchJsonCORS('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes','上櫃 OTC');
+      if(otcData){
+        otcData.forEach(s=>{
+          const code=String(s.SecuritiesCompanyCode||'').trim();
+          const name=String(s.CompanyName||code).trim();
+          if(/^\d{4}$/.test(code)&&!results.find(r=>r.code===code))
+            results.push({code,name,sector:sectorMap.get(code)||twseInfoMap.get(code)||'',ex:'TWO'});
+        });
+        if(infoEl) infoEl.textContent=`✅ 上市 ${otcStart} 支 ＋ 上櫃 ${results.length-otcStart} 支`;
+      } else {
+        DEFAULT_STOCKS.filter(s=>s.ex==='TWO').forEach(s=>{
+          if(!results.find(r=>r.code===s.code)) results.push(s);
+        });
+        if(infoEl) infoEl.textContent=`⚠️ 上櫃 API 失敗，上市 ${otcStart} 支 ＋ 上櫃內建 ${results.length-otcStart} 支`;
+      }
     }
-    if(pT) pT.textContent=`股票清單完成：共 ${results.length} 支，開始掃描 VCP...`;
+    if(pT) pT.textContent=`股票清單完成：共 ${results.length} 支，開始揃描 VCP...`;
   }
 
   return results;
