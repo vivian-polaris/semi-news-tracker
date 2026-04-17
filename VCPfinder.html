@@ -469,6 +469,14 @@ footer a:hover{text-decoration:underline}
     <span class="flabel">籌碼</span>
     <span class="pill" id="hideDoubleShortPill" onclick="toggleHideDoubleShort(this)">排除雙賣</span>
   </div>
+  <div class="filter-row">
+    <span class="flabel">基本面</span>
+    <span class="pill g-on" id="fundMinAll" onclick="setFundMin(0,this)">全部</span>
+    <span class="pill" id="fundMinHas" onclick="setFundMin(-1,this)">有資料</span>
+    <span class="pill" id="fundMin70" onclick="setFundMin(70,this)">僅優（≥70）</span>
+    <span class="pill" id="fundMin80" onclick="setFundMin(80,this)">≥ 80</span>
+    <span class="pill" id="fundMin90" onclick="setFundMin(90,this)">≥ 90</span>
+  </div>
 </div>
 
 <!-- ── Stats + Sort ── -->
@@ -621,6 +629,7 @@ let allResults=[], scoreMin=60, pctMax=999, secFilter='ALL', exFilter='ALL';
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
 let hideDoubleShort=false;
+let fundMin=0; // 0=全部, 正數=基本面分數下限（無資料的股票也排除）
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
 let twseDailyMap={chips:{},monthRevenue:{},income:{}}; // pre-fetched by GitHub Actions
@@ -1646,6 +1655,11 @@ function getFiltered(){
       const chips=chipsMap[r.code];
       if(chips){const f=parseChipNum(chips.foreignNet)||0,t=parseChipNum(chips.trustNet)||0;if(f<=0&&t<=0)return false;}
     }
+    if(fundMin!==0){
+      const fs=calcFundScore(r.fund||{});
+      if(fundMin===-1){if(fs==null)return false;} // 有資料即可
+      else{if(fs==null||fs<fundMin)return false;}  // 分數達標
+    }
     return true;
   });
 }
@@ -1838,6 +1852,14 @@ function toggleWatch(code,btn){
 }
 function toggleWatchFilter(el){watchFilter=!watchFilter;el.classList.toggle('g-on',watchFilter);renderTable();}
 function toggleHideDoubleShort(el){hideDoubleShort=!hideDoubleShort;el.classList.toggle('g-on',hideDoubleShort);renderTable();}
+function setFundMin(v,el){
+  fundMin=v;
+  ['fundMinAll','fundMinHas','fundMin70','fundMin80','fundMin90'].forEach(id=>{
+    const p=document.getElementById(id);if(p)p.classList.remove('g-on');
+  });
+  el.classList.add('g-on');
+  renderTable();
+}
 
 // ─── Export CSV ─────────────────────────────────────────────────────────────
 function exportCSV(){
