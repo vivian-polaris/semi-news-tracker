@@ -640,7 +640,7 @@ const STOCKS = [
 ];
 
 // ─── State ────────────────────────────────────────────────────────────────
-let allResults=[], scoreMin=60, pctMax=999, secFilter='ALL', exFilter='ALL';
+let allResults=[], scoreMin=60, pctMax=999, secFilter=new Set(['ALL']), exFilter='ALL';
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
 let hideDoubleShort=true;  // 預設排除雙賣
@@ -1658,8 +1658,11 @@ function getFiltered(){
     if(wl&&!wl.includes(r.code)) return false;
     if(r.vcp.score<scoreMin)return false;
     if(r.vcp.pctH>pctMax)return false;
-    if(secFilter==='SEMI'){if(!SEMI_SECTORS.has(r.sector))return false;}
-    else if(secFilter!=='ALL'&&r.sector!==secFilter)return false;
+    if(!secFilter.has('ALL')&&!secFilter.has('SEMI')){
+      if(!secFilter.has(r.sector))return false;
+    } else if(secFilter.has('SEMI')&&!secFilter.has('ALL')){
+      if(!SEMI_SECTORS.has(r.sector))return false;
+    }
     if(exFilter!=='ALL'&&r.ex!==exFilter)return false;
     if(onlyStage2&&!r.vcp.stage2)return false;
     if(hideDoubleShort){
@@ -1835,9 +1838,17 @@ function setEx(v,el){
   el.classList.add('s-on');renderTable();
 }
 function setSec(v,el){
-  secFilter=v;
-  document.querySelectorAll('[data-sec]').forEach(p=>p.classList.remove('s-on'));
-  el.classList.add('s-on');
+  if(v==='ALL'){
+    secFilter=new Set(['ALL']);
+    document.querySelectorAll('[data-sec]').forEach(p=>p.classList.remove('s-on'));
+    document.querySelector('[data-sec="ALL"]').classList.add('s-on');
+  } else {
+    secFilter.delete('ALL');
+    document.querySelector('[data-sec="ALL"]').classList.remove('s-on');
+    if(secFilter.has(v)){secFilter.delete(v);el.classList.remove('s-on');}
+    else{secFilter.add(v);el.classList.add('s-on');}
+    if(secFilter.size===0){secFilter.add('ALL');document.querySelector('[data-sec="ALL"]').classList.add('s-on');}
+  }
   renderTable();
 }
 function toggleStage2(el){onlyStage2=!onlyStage2;el.classList.toggle('g-on',onlyStage2);renderTable();}
