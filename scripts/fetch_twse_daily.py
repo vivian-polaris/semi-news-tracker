@@ -29,53 +29,61 @@ def get(url, timeout=30):
         print(f'  [WARN] GET failed {url[:80]}: {e}')
         return None
 
+# ── Industry code → name table (TWSE/TPEX 產業別代碼) ──────────────────────────
+IND_CODE = {
+    '01':'水泥','02':'食品','03':'塑膠','04':'紡織','05':'電機',
+    '06':'電器電纜','07':'化學生技醫療','08':'玻璃陶瓷','09':'造紙','10':'鋼鐵',
+    '11':'橡膠','12':'汽車','13':'電子','14':'建材','15':'航運',
+    '16':'觀光','17':'金融','18':'貿易百貨','19':'綜合','20':'其他',
+    '21':'化學','22':'生技醫療','23':'油電燃氣','24':'半導體','25':'電腦周邊',
+    '26':'光電','27':'通信網路','28':'電子零組件','29':'電子通路','30':'資訊服務',
+    '31':'其他電子','32':'文化創意','33':'農業科技','34':'電子商務','35':'綠能環保',
+    '36':'數位雲端','37':'運動休閒','38':'居家生活',
+}
+
 # ── 1. Sectors ────────────────────────────────────────────────────────────────
 def fetch_sectors():
     sectors = {}
 
-    # TSE: company/public_information  →  field: 産業別 or IndustryType
-    data = get('https://openapi.twse.com.tw/v1/company/public_information')
+    # t187ap03_L includes BOTH TSE and OTC companies with 產業別 (numeric code)
+    data = get('https://openapi.twse.com.tw/v1/opendata/t187ap03_L')
     if data:
         for r in data:
-            code = str(r.get('公司代號') or r.get('股票代號') or r.get('Code') or '').strip()
-            ind  = str(r.get('産業別') or r.get('產業別') or r.get('IndustryType') or r.get('Industry') or '').strip()
-            if code and ind:
-                sectors[code] = re.sub(r'業$', '', ind)
-        print(f'  TSE sectors (public_info): {len(sectors)}')
+            code = str(r.get('公司代號') or '').strip()
+            ind_code = str(r.get('產業別') or '').strip()
+            if code and ind_code:
+                sectors[code] = IND_CODE.get(ind_code, ind_code)
+        print(f'  sectors from t187ap03_L: {len(sectors)}')
 
-    # TSE fallback: BWIBBU_d also has 産業別 on some versions
+    # Fallback: BWIBBU_d for any remaining TSE codes
     if len(sectors) < 100:
         data2 = get('https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_d')
         if data2:
             for r in data2:
-                code = str(r.get('Code') or r.get('證券代號') or r.get('股票代號') or '').strip()
-                ind  = str(r.get('產業別') or r.get('IndustryType') or r.get('Industry') or '').strip()
+                code = str(r.get('Code') or '').strip()
+                ind  = str(r.get('產業別') or r.get('IndustryType') or '').strip()
                 if code and ind and code not in sectors:
                     sectors[code] = re.sub(r'業$', '', ind)
-            print(f'  TSE sectors after BWIBBU_d: {len(sectors)}')
-
-    # OTC: mopsfin_t187ap03_L
-    otc_eps = [
-        'https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_L',
-        'https://www.tpex.org.tw/openapi/v1/tpex_mainboard_perday_quotation',
-    ]
-    for url in otc_eps:
-        data3 = get(url)
-        if not data3:
-            continue
-        added = 0
-        for r in data3:
-            code = str(r.get('SecuritiesCompanyCode') or r.get('股票代號') or r.get('代號') or r.get('Code') or '').strip()
-            ind  = str(r.get('IndustryType') or r.get('産業別') or r.get('產業別') or r.get('類別') or '').strip()
-            if code and ind and code not in sectors:
-                sectors[code] = re.sub(r'業$', '', ind)
-                added += 1
-        print(f'  OTC sectors from {url.split("/")[-1]}: +{added}')
-        if added > 100:
-            break
+            print(f'  sectors after BWIBBU_d fallback: {len(sectors)}')
 
     print(f'  Total sectors: {len(sectors)}')
     return sectors
+
+# ── 1b. OTC stock list (code + name) for browser use ─────────────────────────
+def fetch_otc_stocks():
+    """Returns [{code, name}] for all mainboard OTC stocks."""
+    otc = []
+    data = get('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes')
+    if data:
+        for r in data:
+            code = str(r.get('SecuritiesCompanyCode') or '').strip()
+            name = str(r.get('CompanyName') or code).strip()
+            if re.match(r'^\d{4}$', code):
+                otc.append({'code': code, 'name': name})
+        print(f'  OTC stocks: {len(otc)}')
+    else:
+        print('  OTC stocks: API failed')
+    return otc
 
 # ── 2. BWIBBU (PE / PB / DividendYield) ──────────────────────────────────────
 def fetch_bwibbu():
@@ -93,23 +101,9 @@ def fetch_bwibbu():
                 bwibbu[code] = {'pe': pe, 'pb': pb, 'divYield': dy}
         print(f'  TSE BWIBBU: {len(bwibbu)}')
 
-    # OTC: TPEX equivalent
-    for url in [
-        'https://www.tpex.org.tw/openapi/v1/tpex_mainboard_perday_quotation',
-    ]:
-        data2 = get(url)
-        if not data2:
-            continue
-        added = 0
-        for r in data2:
-            code = str(r.get('SecuritiesCompanyCode') or r.get('股票代號') or r.get('代號') or '').strip()
-            pe   = _flt(r.get('PEratio') or r.get('本益比'))
-            pb   = _flt(r.get('PBratio') or r.get('股價淨值比'))
-            dy   = _flt(r.get('DividendYield') or r.get('殖利率'))
-            if code and code not in bwibbu and any(v is not None for v in [pe, pb, dy]):
-                bwibbu[code] = {'pe': pe, 'pb': pb, 'divYield': dy}
-                added += 1
-        print(f'  OTC BWIBBU from {url.split("/")[-1]}: +{added}')
+    # OTC: tpex_mainboard_daily_close_quotes (no PE/PB fields, skip BWIBBU for OTC)
+    # Note: tpex_mainboard_perday_quotation returns HTML, not JSON
+    print('  OTC BWIBBU: skipped (TPEX PE/PB API unavailable)')
 
     print(f'  Total BWIBBU: {len(bwibbu)}')
     return bwibbu
@@ -326,6 +320,9 @@ def main():
     print('\n1. Sectors...')
     sectors = fetch_sectors()
 
+    print('\n1b. OTC stock list...')
+    otc_stocks = fetch_otc_stocks()
+
     print('\n2. BWIBBU (PE/PB/DY)...')
     bwibbu = fetch_bwibbu()
 
@@ -341,6 +338,7 @@ def main():
     output = {
         'date':         date_str,
         'sectors':      sectors,
+        'otcStocks':    otc_stocks,
         'chips':        chips,
         'bwibbu':       bwibbu,
         'monthRevenue': month_revenue,
@@ -351,7 +349,7 @@ def main():
         json.dump(output, f, ensure_ascii=False, separators=(',', ':'))
 
     print(f'\n✅ twse_daily.json written:')
-    print(f'   sectors={len(sectors)}, chips={len(chips)}, bwibbu={len(bwibbu)}')
+    print(f'   sectors={len(sectors)}, otcStocks={len(otc_stocks)}, chips={len(chips)}, bwibbu={len(bwibbu)}')
     print(f'   revenue={len(month_revenue)}, income={len(income)}')
 
 if __name__ == '__main__':
