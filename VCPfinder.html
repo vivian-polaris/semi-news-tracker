@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
@@ -500,6 +500,22 @@ footer a:hover{text-decoration:underline}
 </div>
 
 <!-- ── Table ── -->
+
+<!-- 個股快查 -->
+<div class="lcard" style="margin-bottom:12px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+    <span style="font-size:.75rem;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:.06em">個股快查</span>
+    <span style="font-size:.68rem;color:var(--text2)">輸入代號或名稱，查買賣評估</span>
+  </div>
+  <div class="scan-row" style="gap:8px">
+    <input id="lookupInput" type="text" placeholder="台灣股票代號或名稱（如 2330 或 台積電）"
+      style="flex:1;padding:10px 14px;background:var(--tag);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:.88rem;outline:none;min-width:0;font-family:inherit"
+      onfocus="this.style.borderColor='var(--purple)'" onblur="this.style.borderColor='var(--border)'"
+      onkeydown="if(event.key==='Enter')lookupStock()">
+    <button class="scan-btn" onclick="lookupStock()" style="padding:10px 22px;font-size:.88rem">查詢</button>
+  </div>
+  <div id="lookupResult" style="margin-top:12px;display:none"></div>
+</div>
 <div class="tbl-wrap" id="tblWrap">
 <table>
   <thead>
@@ -1933,6 +1949,122 @@ function sparkline(closes,w=80,h=28){
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────
+
+// 個股快查
+async function lookupStock() {
+  const raw = document.getElementById('lookupInput').value.trim();
+  if (!raw) return;
+  const res = document.getElementById('lookupResult');
+  res.style.display = 'block';
+  res.innerHTML = '<span class="spin"></span> 查詢中...';
+
+  let stockInfo = null;
+  let vcpData = null;
+
+  const foundInResults = allResults.find(r =>
+    r.code === raw ||
+    r.name === raw ||
+    r.name.replace(/\s/g,'').includes(raw) ||
+    (raw.length >= 2 && r.name.includes(raw))
+  );
+
+  if (foundInResults) {
+    stockInfo = foundInResults;
+    vcpData = foundInResults.vcp;
+  } else {
+    const inStocks = [...STOCKS].find(s =>
+      s.code === raw || s.name === raw ||
+      (raw.length >= 2 && s.name.includes(raw))
+    );
+    const code = inStocks ? inStocks.code : (/^\d{4,6}$/.test(raw) ? raw : null);
+    if (!code) {
+      res.innerHTML = '<span style="color:#f87171">找不到此股票，請輸入4位股票代號或中文名稱</span>';
+      return;
+    }
+    stockInfo = inStocks || { code, name: raw, sector: '', ex: 'TW' };
+    let data = await fetchYahoo(`${code}.TW`);
+    if (!data || data.length < 55) {
+      data = await fetchYahoo(`${code}.TWO`);
+      if (data) stockInfo = { ...stockInfo, ex: 'TWO' };
+    }
+    if (!data || data.length < 55) {
+      res.innerHTML = '<span style="color:#f87171">無法取得股價資料，請確認代號是否正確</span>';
+      return;
+    }
+    if (data._yahooName && (!stockInfo.name || stockInfo.name === code)) stockInfo.name = data._yahooName;
+    vcpData = calcVCP(data);
+  }
+
+  if (!vcpData) {
+    res.innerHTML = '<span style="color:#f87171">資料不足（需至少55天），無法計算 VCP 指標</span>';
+    return;
+  }
+
+  const buyScore = vcpData.score;
+
+  let sellPts = 0;
+  if (vcpData.pctH < 3)       sellPts += 45;
+  else if (vcpData.pctH < 7)  sellPts += 28;
+  else if (vcpData.pctH < 12) sellPts += 15;
+  if (vcpData.rsi != null) {
+    if (vcpData.rsi > 75)      sellPts += 35;
+    else if (vcpData.rsi > 68) sellPts += 18;
+  }
+  if (vcpData.atrRat != null && vcpData.atrRat > 1.1)  sellPts += 20;
+  else if (vcpData.atrRat != null && vcpData.atrRat > 0.92) sellPts += 8;
+  if (vcpData.vRat != null && vcpData.vRat > 1.3) sellPts += 15;
+  const sellScore = Math.min(Math.round(sellPts), 100);
+
+  let reason = '';
+  if (sellScore >= 65 && vcpData.pctH < 7) {
+    reason = `距52週高點僅 ${vcpData.pctH}%，已接近壓力區，宜評估獲利了結。`;
+  } else if (vcpData.rsi != null && vcpData.rsi > 75) {
+    reason = `RSI(${vcpData.rsi}) 過熱，短期漲幅已大，注意回調風險。`;
+  } else if (buyScore >= 80) {
+    reason = `強勢 VCP 形態，波動收縮${vcpData.contractions >= 2 ? vcpData.contractions + '次' : ''}明顯，可留意突破買點。`;
+  } else if (buyScore >= 60) {
+    reason = `符合 VCP 條件，整理中${vcpData.stage2 ? '且站上 MA50/150/200' : ''}，可等待突破確認再進場。`;
+  } else if (buyScore >= 40) {
+    reason = `VCP 形態尚未成熟，趨勢偏弱，需等待更長收縮週期。`;
+  } else {
+    reason = `不符合 VCP 條件${!vcpData.stage2 ? '，未達 Stage 2 趨勢' : ''}，建議耐心觀望。`;
+  }
+
+  const bCls = buyScore >= 80 ? 'sA' : buyScore >= 60 ? 'sB' : buyScore >= 40 ? 'sC' : 'sD';
+  const sCls = sellScore >= 60 ? 'sA' : sellScore >= 40 ? 'sB' : 'sC';
+  const tv = `https://www.tradingview.com/chart/?symbol=${stockInfo.ex==='TWO'?'TPEX':'TWSE'}%3A${stockInfo.code}`;
+
+  res.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <span class="tc" style="font-size:1rem">${stockInfo.code}</span>
+      <span class="tn" style="font-size:.95rem">${escH(stockInfo.name)}</span>
+      ${stockInfo.sector ? `<span class="tsec">${escH(stockInfo.sector)}</span>` : ''}
+      <a href="${tv}" target="_blank" class="tv-btn">TV</a>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div class="sum-card" style="padding:12px;text-align:center">
+        <div class="sum-label">買入潛力</div>
+        <div class="sum-val ${bCls}" style="font-size:1.6rem">${buyScore}</div>
+        <div class="sum-sub">VCP 分數 / 100</div>
+      </div>
+      <div class="sum-card" style="padding:12px;text-align:center">
+        <div class="sum-label">賣出壓力</div>
+        <div class="sum-val ${sCls}" style="font-size:1.6rem">${sellScore}</div>
+        <div class="sum-sub">超買訊號 / 100</div>
+      </div>
+    </div>
+    <div style="background:var(--tag);border-radius:10px;padding:10px 14px;font-size:.82rem;line-height:1.65">
+      <span style="color:var(--text2);font-size:.68rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase">一句評語　</span>
+      <span style="color:var(--text)">${reason}</span>
+      <div style="margin-top:6px;font-size:.68rem;color:var(--text2)">
+        距52週高 <strong>${vcpData.pctH}%</strong>
+        ｜ Stage2 <strong>${vcpData.stage2 ? '✓' : '✗'}</strong>
+        ｜ ATR比 <strong>${vcpData.atrRat ?? 'N/A'}</strong>
+        ｜ 量比 <strong>${vcpData.vRat ?? 'N/A'}</strong>
+        ${vcpData.rsi != null ? `｜ RSI <strong>${vcpData.rsi}</strong>` : ''}
+      </div>
+    </div>`;
+}
 (function init(){
   localStorage.removeItem('deepseek_key'); // 移除已停用的 DeepSeek key
   // 清除格式錯誤的 Groq key（可能是舊版 hash bug 把 URL 存成 key）
