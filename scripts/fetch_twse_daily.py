@@ -201,8 +201,8 @@ def fetch_month_revenue():
             added = 0
             for r in data:
                 code   = str(r.get('公司代號') or r.get('股票代號') or '').strip()
-                cur    = _flt(r.get('當月營收') or r.get('revenue'))
-                yoy    = _flt(r.get('上年同月增減(%)') or r.get('yoy'))
+                cur    = _flt(r.get('營業收入-當月營收') or r.get('當月營收') or r.get('revenue'))
+                yoy    = _flt(r.get('營業收入-去年同月增減(%)') or r.get('上年同月增減(%)') or r.get('yoy'))
                 if code and cur is not None:
                     rev[code] = {'current': int(cur) if cur else 0, 'yoy': round(yoy, 2) if yoy is not None else None}
                     added += 1
@@ -225,8 +225,8 @@ def fetch_month_revenue():
             added = 0
             for r in data:
                 code = str(r.get('公司代號') or r.get('股票代號') or r.get('SecuritiesCompanyCode') or '').strip()
-                cur  = _flt(r.get('當月營收') or r.get('revenue'))
-                yoy  = _flt(r.get('上年同月增減(%)') or r.get('yoy'))
+                cur  = _flt(r.get('營業收入-當月營收') or r.get('當月營收') or r.get('revenue'))
+                yoy  = _flt(r.get('營業收入-去年同月增減(%)') or r.get('上年同月增減(%)') or r.get('yoy'))
                 if code and cur is not None and code not in rev:
                     rev[code] = {'current': int(cur) if cur else 0, 'yoy': round(yoy, 2) if yoy is not None else None}
                     added += 1
@@ -332,11 +332,30 @@ def main():
     print('\n3. Chips (T86)...')
     chips = fetch_chips()
 
+    # 讀取舊資料，避免 API 暫時失敗時覆蓋掉好的歷史資料
+    existing = {}
+    try:
+        with open('twse_daily.json', encoding='utf-8') as f:
+            existing = json.load(f)
+        print(f'  Loaded existing twse_daily.json (date={existing.get("date","")})')
+    except Exception:
+        pass
+
     print('\n4. Monthly Revenue...')
     month_revenue = fetch_month_revenue()
+    if len(month_revenue) < 100:
+        old_rev = existing.get('monthRevenue', {})
+        if len(old_rev) > len(month_revenue):
+            print(f'  ⚠️ 新資料不足（{len(month_revenue)}），保留舊資料（{len(old_rev)}）')
+            month_revenue = old_rev
 
     print('\n5. Income (quarterly)...')
     income = fetch_income()
+    if len(income) < 100:
+        old_inc = existing.get('income', {})
+        if len(old_inc) > len(income):
+            print(f'  ⚠️ 新資料不足（{len(income)}），保留舊資料（{len(old_inc)}）')
+            income = old_inc
 
     output = {
         'date':         date_str,
