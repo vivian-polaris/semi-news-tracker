@@ -467,13 +467,13 @@ footer a:hover{text-decoration:underline}
   </div>
   <div class="filter-row">
     <span class="flabel">籌碼</span>
-    <span class="pill" id="hideDoubleShortPill" onclick="toggleHideDoubleShort(this)">排除雙賣</span>
+    <span class="pill g-on" id="hideDoubleShortPill" onclick="toggleHideDoubleShort(this)">排除雙賣</span>
   </div>
   <div class="filter-row">
     <span class="flabel">基本面</span>
-    <span class="pill g-on" id="fundMinAll" onclick="setFundMin(0,this)">全部</span>
+    <span class="pill" id="fundMinAll" onclick="setFundMin(0,this)">全部</span>
     <span class="pill" id="fundMinHas" onclick="setFundMin(-1,this)">有資料</span>
-    <span class="pill" id="fundMin70" onclick="setFundMin(70,this)">僅優（≥70）</span>
+    <span class="pill g-on" id="fundMin70" onclick="setFundMin(70,this)">僅優（≥70）</span>
     <span class="pill" id="fundMin80" onclick="setFundMin(80,this)">≥ 80</span>
     <span class="pill" id="fundMin90" onclick="setFundMin(90,this)">≥ 90</span>
   </div>
@@ -628,8 +628,8 @@ const STOCKS = [
 let allResults=[], scoreMin=60, pctMax=999, secFilter='ALL', exFilter='ALL';
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
-let hideDoubleShort=false;
-let fundMin=0; // 0=全部, 正數=基本面分數下限（無資料的股票也排除）
+let hideDoubleShort=true;  // 預設排除雙賣
+let fundMin=70; // 預設僅優（≥70）
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
 let twseDailyMap={chips:{},monthRevenue:{},income:{}}; // pre-fetched by GitHub Actions
@@ -669,7 +669,9 @@ async function loadTWSEDaily(){
     const d=await r.json();
     if(d.chips&&Object.keys(d.chips).length>10){
       twseDailyMap=d;
-      if(infoEl) infoEl.textContent=`✅ 每日資料載入：籌碼 ${Object.keys(d.chips).length} 支、財報 ${Object.keys(d.income||{}).length} 支（${d.date||''}）`;
+      // 把 bwibbu 合進 twseFundMap（覆蓋 BWIBBU_d 直連失敗的情況）
+      if(d.bwibbu){Object.entries(d.bwibbu).forEach(([c,v])=>{if(!twseFundMap[c])twseFundMap[c]=v;});}
+      if(infoEl) infoEl.textContent=`✅ 每日資料載入：籌碼 ${Object.keys(d.chips).length} 支、財報 ${Object.keys(d.income||{}).length} 支、産業 ${Object.keys(d.sectors||{}).length} 支（${d.date||''}）`;
     }
   }catch(_){}
 }
@@ -1152,52 +1154,46 @@ async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
   const results=[];
   // 預設清單的詳細產業對照表（保留精細分類）
   const sectorMap=new Map(STOCKS.map(s=>[s.code,s.sector]));
-  // 從 TWSE / TPEX openapi 取得完整產業別（補全全掃模式下的非預設股票）
-  const twseInfoMap=new Map();
-  try{
-    // 嘗試多個 TWSE 端點取得產業別
-    for(const ep of [
-      'https://openapi.twse.com.tw/v1/company/public_information',
-      'https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_d',
-    ]){
-      try{
-        const ti=await fetchJsonCORS(ep,'TWSE公司資訊');
-        if(!Array.isArray(ti)||!ti.length) continue;
-        ti.forEach(r=>{
-          const c=String(r['股票代號']||r.Code||r.stockCode||r['證券代號']||'').trim();
-          const i=String(r['產業別']||r['Industry']||r['IndustryType']||r.industryType||r.industry||r['產業類別']||r['類別']||'').replace(/業$/,'').trim();
-          if(c&&i) twseInfoMap.set(c,i);
-          // 同時存 P/E、P/B、殖利率（BWIBBU_d 有這些欄位）
-          const pe=parseFloat(r['PEratio']||r['本益比']||0)||null;
-          const pb=parseFloat(r['PBratio']||r['股價淨值比']||0)||null;
-          const dy=parseFloat(r['DividendYield']||r['殖利率']||0)||null;
-          if(c&&(pe||pb||dy)) twseFundMap[c]={pe,pb,divYield:dy};
-        });
-        if(twseInfoMap.size>10) break; // success
-      }catch(_){}
-    }
-  }catch(_){}
-  try{
-    for(const ep of [
-      'https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_L',
-      'https://www.tpex.org.tw/openapi/v1/tpex_mainboard_perday_quotation',
-    ]){
-      try{
-        const tp=await fetchJsonCORS(ep,'TPEX公司資訊');
-        if(!Array.isArray(tp)||!tp.length) continue;
-        tp.forEach(r=>{
-          const c=String(r['SecuritiesCompanyCode']||r['股票代號']||r['代號']||'').trim();
-          const i=String(r['IndustryType']||r['產業別']||r['類別']||'').replace(/業$/,'').trim();
-          if(c&&i&&!twseInfoMap.has(c)) twseInfoMap.set(c,i);
-          const pe=parseFloat(r['PEratio']||r['本益比']||0)||null;
-          const pb=parseFloat(r['PBratio']||r['股價淨值比']||0)||null;
-          const dy=parseFloat(r['DividendYield']||r['殖利率']||0)||null;
-          if(c&&(pe||pb||dy)&&!twseFundMap[c]) twseFundMap[c]={pe,pb,divYield:dy};
-        });
-        if(twseInfoMap.size>0) break;
-      }catch(_){}
-    }
-  }catch(_){}
+  // 從 twse_daily.json 的 sectors 欄位取得完整產業別（GitHub Actions 每日更新，無 CORS 問題）
+  const twseInfoMap=new Map(Object.entries(twseDailyMap.sectors||{}));
+  // twse_daily.json sectors 已在上方載入（twseInfoMap）。
+  // 若資料不足（舊版 JSON 無 sectors 欄位），才嘗試直連（通常會被 CORS 擋住）。
+  if(twseInfoMap.size<100){
+    try{
+      for(const ep of ['https://openapi.twse.com.tw/v1/company/public_information','https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_d']){
+        try{
+          const ti=await fetchJsonCORS(ep,'TWSE公司資訊');
+          if(!Array.isArray(ti)||!ti.length) continue;
+          ti.forEach(r=>{
+            const c=String(r['股票代號']||r.Code||r['證券代號']||'').trim();
+            const i=String(r['產業別']||r['Industry']||r['IndustryType']||'').replace(/業$/,'').trim();
+            if(c&&i&&!twseInfoMap.has(c)) twseInfoMap.set(c,i);
+            const pe=parseFloat(r['PEratio']||0)||null;
+            const pb=parseFloat(r['PBratio']||0)||null;
+            const dy=parseFloat(r['DividendYield']||0)||null;
+            if(c&&(pe||pb||dy)&&!twseFundMap[c]) twseFundMap[c]={pe,pb,divYield:dy};
+          });
+          if(twseInfoMap.size>100) break;
+        }catch(_){}
+      }
+      for(const ep of ['https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap03_L','https://www.tpex.org.tw/openapi/v1/tpex_mainboard_perday_quotation']){
+        try{
+          const tp=await fetchJsonCORS(ep,'TPEX公司資訊');
+          if(!Array.isArray(tp)||!tp.length) continue;
+          tp.forEach(r=>{
+            const c=String(r['SecuritiesCompanyCode']||r['股票代號']||r['代號']||'').trim();
+            const i=String(r['IndustryType']||r['產業別']||r['類別']||'').replace(/業$/,'').trim();
+            if(c&&i&&!twseInfoMap.has(c)) twseInfoMap.set(c,i);
+            const pe=parseFloat(r['PEratio']||0)||null;
+            const pb=parseFloat(r['PBratio']||0)||null;
+            const dy=parseFloat(r['DividendYield']||0)||null;
+            if(c&&(pe||pb||dy)&&!twseFundMap[c]) twseFundMap[c]={pe,pb,divYield:dy};
+          });
+          if(twseInfoMap.size>100) break;
+        }catch(_){}
+      }
+    }catch(_){}
+  }
 
   if(includeTSE){
     if(pT) pT.textContent='第 1 步：取得上市股票清單...';
