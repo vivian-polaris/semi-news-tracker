@@ -440,30 +440,28 @@ footer a:hover{text-decoration:underline}
 </div>
 
 <div class="scan-box">
-  <!-- 掃描來源選擇 -->
-  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;align-items:center">
-    <span class="hide-mobile" style="font-size:.68rem;font-weight:800;color:var(--text2);letter-spacing:.05em;text-transform:uppercase">掃描範圍</span>
-    <span class="pill" id="src-preset" onclick="setScanSrc('preset',this)">預設清單 57支</span>
-    <span class="pill" id="src-tse" onclick="setScanSrc('tse',this)">全上市 TSE ~900支</span>
-    <span class="pill s-on" id="src-all" onclick="setScanSrc('all',this)">全台灣 TSE+OTC ~1700支</span>
-    <span class="pill" id="src-custom" onclick="setScanSrc('custom',this)">自訂匯入</span>
-  </div>
-
-  <!-- 自訂匯入區 -->
-  <div id="customImportArea" style="display:none;margin-bottom:12px;border-top:1px solid var(--border);padding-top:12px">
-    <div class="hide-mobile" style="font-size:.72rem;color:var(--text2);margin-bottom:6px">
-      貼上股票代號（逗號/空格/換行） ·
-      <a href="https://www.wantgoo.com/screener" target="_blank" style="color:var(--purple)">玩股網選股器 →</a>
-    </div>
-    <textarea id="importInput" rows="2" placeholder="例：2330,2454,3034,6669" style="width:100%;padding:8px 10px;background:var(--tag);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:.78rem;outline:none;resize:vertical;font-family:inherit"></textarea>
-    <div id="importStatus" style="font-size:.7rem;color:var(--text2);margin-top:4px"></div>
-  </div>
-
-  <!-- 掃描按鈕 -->
+  <!-- 掃描按鈕 row（永遠顯示） -->
   <div class="scan-row">
     <button class="scan-btn" id="scanBtn" onclick="startScan()">開始掃描 VCP</button>
     <button id="cancelBtn" onclick="cancelScan()" style="display:none;padding:11px 20px;background:var(--card);border:1.5px solid var(--red);border-radius:16px;color:var(--red);font-size:.85rem;font-weight:700;cursor:pointer">停止</button>
+    <button id="scanOptBtn" onclick="toggleScanOpts()" style="padding:10px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:16px;color:var(--text2);font-size:.82rem;cursor:pointer;transition:all .18s;white-space:nowrap">⚙️ 選項</button>
     <div class="scan-info" id="scanInfo">只顯示 VCP 候選股，掃描中即時更新。全台灣掃描約 <strong>8–15 分鐘</strong>。</div>
+  </div>
+
+  <!-- 掃描選項（手機預設收起） -->
+  <div id="scanOptsPanel" style="overflow:hidden;transition:max-height .3s ease,opacity .25s ease,margin .25s ease;max-height:0;opacity:0;margin-top:0">
+    <!-- 掃描來源選擇 -->
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;margin-bottom:12px;align-items:center">
+      <span class="pill" id="src-preset" onclick="setScanSrc('preset',this)">預設 57支</span>
+      <span class="pill" id="src-tse" onclick="setScanSrc('tse',this)">上市 TSE</span>
+      <span class="pill s-on" id="src-all" onclick="setScanSrc('all',this)">全台灣 ~1700支</span>
+      <span class="pill" id="src-custom" onclick="setScanSrc('custom',this)">自訂匯入</span>
+    </div>
+    <!-- 自訂匯入區 -->
+    <div id="customImportArea" style="display:none;margin-bottom:12px;border-top:1px solid var(--border);padding-top:12px">
+      <textarea id="importInput" rows="2" placeholder="例：2330,2454,3034,6669" style="width:100%;padding:8px 10px;background:var(--tag);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:.78rem;outline:none;resize:vertical;font-family:inherit"></textarea>
+      <div id="importStatus" style="font-size:.7rem;color:var(--text2);margin-top:4px"></div>
+    </div>
   </div>
   <div id="fetchApiStatus" style="font-size:.72rem;color:var(--text2);margin-top:6px;display:none"></div>
   <div class="prog-wrap" id="progWrap">
@@ -574,6 +572,25 @@ footer a:hover{text-decoration:underline}
   document.querySelector('details.note').addEventListener('toggle',function(){
     document.getElementById('noteArrow').style.transform=this.open?'rotate(90deg)':'';
   });
+  // On desktop always show scan options
+  if(window.innerWidth>640){
+    const p=document.getElementById('scanOptsPanel');
+    if(p){p.style.maxHeight='600px';p.style.opacity='1';p.style.marginTop='12px';}
+    const b=document.getElementById('scanOptBtn');
+    if(b) b.style.display='none';
+  }
+  function toggleScanOpts(){
+    const p=document.getElementById('scanOptsPanel');
+    const b=document.getElementById('scanOptBtn');
+    const isOpen=p.style.maxHeight!=='0px'&&p.style.maxHeight!=='';
+    if(isOpen){
+      p.style.maxHeight='0';p.style.opacity='0';p.style.marginTop='0';
+      b.textContent='⚙️ 選項';b.style.borderColor='';b.style.color='';
+    } else {
+      p.style.maxHeight='600px';p.style.opacity='1';p.style.marginTop='12px';
+      b.textContent='✕ 收起';b.style.borderColor='var(--purple)';b.style.color='var(--purple)';
+    }
+  }
   function toggleSec(id){
     const body=document.getElementById(id+'SecBody');
     const chevron=document.getElementById(id+'Chevron');
