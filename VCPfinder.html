@@ -301,8 +301,11 @@ footer a:hover{text-decoration:underline}
   .inv-time,
   .news-time,
   header p,
-  .hide-mobile
+  .hide-mobile,
+  .two-col-row
   {display:none!important}
+  /* filter rows: hide pills beyond the 2nd (label is child 1, pills are child 2+) */
+  .filter-row>.pill:nth-child(n+4){display:none!important}
 }
 </style>
 </head>
