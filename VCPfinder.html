@@ -305,14 +305,8 @@ footer a:hover{text-decoration:underline}
   {display:none!important}
   /* filter rows: hide pills beyond the 2nd (label is child 1, pills are child 2+) */
   .filter-row>.pill:nth-child(n+4){display:none!important}
-  /* market news/clock: collapse by default, show toggle button */
-  .mobile-section-toggle{display:block!important}
-  #newsClockDetails>.two-col-row{display:grid!important;grid-template-columns:1fr!important}
-}
-/* Desktop: always open, hide the toggle summary */
-@media(min-width:641px){
-  #newsClockDetails{display:contents}
-  #newsClockDetails>.two-col-row{display:grid!important}
+  /* market news/clock: single column stack on mobile */
+  .two-col-row{grid-template-columns:1fr!important}
 }
 </style>
 </head>
@@ -348,10 +342,6 @@ footer a:hover{text-decoration:underline}
 </div>
 
 <!-- ── 市場震撼彈 + 投資人專區 同一 row ── -->
-<details id="newsClockDetails" style="margin-bottom:4px">
-  <summary class="mobile-section-toggle" style="display:none;cursor:pointer;list-style:none;padding:8px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;font-size:.82rem;font-weight:700;color:var(--text2);margin-bottom:8px">
-    ▶ 市場消息 &amp; 投資時鐘
-  </summary>
 <div class="two-col-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-top:6px;margin-bottom:12px">
 
   <!-- 左：市場震撼彈 -->
@@ -399,7 +389,6 @@ footer a:hover{text-decoration:underline}
   </div>
 
 </div>
-</details>
 
 <div class="sec-div"></div>
 
@@ -543,10 +532,6 @@ footer a:hover{text-decoration:underline}
 <script>
   document.querySelector('details.note').addEventListener('toggle',function(){
     document.getElementById('noteArrow').style.transform=this.open?'rotate(90deg)':'';
-  });
-  document.getElementById('newsClockDetails').addEventListener('toggle',function(){
-    const s=this.querySelector('.mobile-section-toggle');
-    if(s) s.textContent=(this.open?'▼':'▶')+' 市場消息 & 投資時鐘';
   });
 </script>
 
