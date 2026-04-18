@@ -338,6 +338,10 @@ footer a:hover{text-decoration:underline}
   {display:none!important}
   /* market news/clock: single column stack on mobile */
   .two-col-row{grid-template-columns:1fr!important}
+  /* filter collapse on mobile */
+  .filter-toggle-hd{display:flex!important}
+  #filterRowsWrap{overflow:hidden;transition:max-height .3s ease,opacity .25s ease;max-height:0;opacity:0}
+  #filterRowsWrap.open{max-height:1200px;opacity:1}
   /* toggle border radius when open */
   .sec-body.open .news-card,.sec-body.open .inv-card{border-top-left-radius:0!important;border-top-right-radius:0!important;border-top:none!important}
   .sec-toggle{border-bottom-left-radius:0;border-bottom-right-radius:0;margin-bottom:0}
@@ -512,6 +516,12 @@ footer a:hover{text-decoration:underline}
 
 <!-- ── Filters ── -->
 <div class="filter-box" id="filterBox" style="display:none">
+  <!-- mobile toggle header -->
+  <div class="filter-toggle-hd" id="filterToggleHd" onclick="toggleFilterBox()" style="display:none;align-items:center;justify-content:space-between;cursor:pointer;padding:2px 0 10px">
+    <span style="font-size:.82rem;font-weight:800;color:var(--text)">🔍 篩選條件</span>
+    <span id="filterToggleChevron" style="font-size:.75rem;color:var(--text2);transition:transform .25s">▼</span>
+  </div>
+  <div id="filterRowsWrap">
   <div class="filter-row" id="exRow">
     <span class="flabel">交易所</span>
     <span class="pill s-on" onclick="setEx('ALL',this)">全部</span>
@@ -556,6 +566,7 @@ footer a:hover{text-decoration:underline}
     <span class="pill" id="fundMin80" onclick="setFundMin(80,this)">≥ 80</span>
     <span class="pill" id="fundMin90" onclick="setFundMin(90,this)">≥ 90</span>
   </div>
+  </div><!-- /filterRowsWrap -->
 </div>
 
 <!-- ── Stats + Sort ── -->
@@ -586,12 +597,20 @@ footer a:hover{text-decoration:underline}
   document.querySelector('details.note').addEventListener('toggle',function(){
     document.getElementById('noteArrow').style.transform=this.open?'rotate(90deg)':'';
   });
-  // On desktop always show scan options
+  function toggleFilterBox(){
+    const wrap=document.getElementById('filterRowsWrap');
+    const chev=document.getElementById('filterToggleChevron');
+    const isOpen=wrap.classList.toggle('open');
+    if(chev) chev.style.transform=isOpen?'rotate(180deg)':'';
+  }
+  // On desktop always show scan options and filter rows
   if(window.innerWidth>640){
     const p=document.getElementById('scanOptsPanel');
     if(p){p.style.maxHeight='600px';p.style.opacity='1';p.style.marginTop='12px';}
     const b=document.getElementById('scanOptBtn');
     if(b) b.style.display='none';
+    const fw=document.getElementById('filterRowsWrap');
+    if(fw){fw.style.maxHeight='none';fw.style.opacity='1';fw.style.overflow='visible';}
   }
   function toggleScanOpts(){
     const p=document.getElementById('scanOptsPanel');
