@@ -283,6 +283,27 @@ footer a:hover{text-decoration:underline}
 
 /* ── Sparkline ── */
 .spark-cell{white-space:nowrap;padding:6px 10px!important}
+
+/* ── Mobile: hide all explanatory/descriptive text ── */
+@media(max-width:640px){
+  .subtitle-badge,
+  details.note,
+  .sum-sub,
+  .scan-info,
+  #scanSrcLabel,
+  #fetchApiStatus,
+  .clock-sub,
+  .stats-l,
+  .prog-text,
+  #importStatus,
+  .note,
+  footer p,
+  .inv-time,
+  .news-time,
+  header p,
+  .hide-mobile
+  {display:none!important}
+}
 </style>
 </head>
 <body>
@@ -323,7 +344,7 @@ footer a:hover{text-decoration:underline}
   <div>
     <div class="inv-title-row">
       <span class="inv-main-title">市場震撼彈</span>
-      <span style="font-size:.7rem;color:var(--text2)">跟錢有關的才算重要</span>
+      <span class="hide-mobile" style="font-size:.7rem;color:var(--text2)">跟錢有關的才算重要</span>
     </div>
     <div class="news-card trump" style="margin:0">
       <div class="news-head">
@@ -377,7 +398,7 @@ footer a:hover{text-decoration:underline}
 <div class="scan-box">
   <!-- 掃描來源選擇 -->
   <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;align-items:center">
-    <span style="font-size:.68rem;font-weight:800;color:var(--text2);letter-spacing:.05em;text-transform:uppercase">掃描範圍</span>
+    <span class="hide-mobile" style="font-size:.68rem;font-weight:800;color:var(--text2);letter-spacing:.05em;text-transform:uppercase">掃描範圍</span>
     <span class="pill" id="src-preset" onclick="setScanSrc('preset',this)">預設清單 57支</span>
     <span class="pill" id="src-tse" onclick="setScanSrc('tse',this)">全上市 TSE ~900支</span>
     <span class="pill s-on" id="src-all" onclick="setScanSrc('all',this)">全台灣 TSE+OTC ~1700支</span>
@@ -386,7 +407,7 @@ footer a:hover{text-decoration:underline}
 
   <!-- 自訂匯入區 -->
   <div id="customImportArea" style="display:none;margin-bottom:12px;border-top:1px solid var(--border);padding-top:12px">
-    <div style="font-size:.72rem;color:var(--text2);margin-bottom:6px">
+    <div class="hide-mobile" style="font-size:.72rem;color:var(--text2);margin-bottom:6px">
       貼上股票代號（逗號/空格/換行） ·
       <a href="https://www.wantgoo.com/screener" target="_blank" style="color:var(--purple)">玩股網選股器 →</a>
     </div>
