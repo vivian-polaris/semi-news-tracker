@@ -188,6 +188,14 @@ tbody td{padding:9px 12px;vertical-align:top}
 thead th:nth-child(1),tbody td:nth-child(1){min-width:56px}
 thead th:nth-child(10),tbody td:nth-child(10){min-width:120px}
 thead th:nth-child(11),tbody td:nth-child(11){min-width:96px}
+/* ── CAN SLIM badge ── */
+.cs-row{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;margin-bottom:3px}
+.cs-l{font-size:.58rem;font-weight:700;padding:1px 4px;border-radius:3px;letter-spacing:.03em}
+.cs-y{background:rgba(5,150,105,.18);color:#34d399;border:1px solid rgba(5,150,105,.3)}
+.cs-n{background:rgba(220,38,38,.12);color:#f87171;border:1px solid rgba(220,38,38,.25)}
+.cs-u{background:rgba(113,113,122,.12);color:#9ca3af;border:1px solid rgba(113,113,122,.2)}
+.cs-total{font-size:.62rem;color:var(--text2);text-align:center;line-height:1.3}
+.cs-total strong{color:var(--text)}
 /* ── Fundamental / Chips score badge ── */
 .score-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:4px;font-size:.76rem;font-weight:700;cursor:pointer;user-select:none;transition:opacity .15s}
 .score-badge:hover{opacity:.75}
@@ -606,6 +614,14 @@ footer a:hover{text-decoration:underline}
     <span class="pill" id="fundMin80" onclick="setFundMin(80,this)">≥ 80</span>
     <span class="pill" id="fundMin90" onclick="setFundMin(90,this)">≥ 90</span>
   </div>
+  <div class="filter-row">
+    <span class="flabel">CAN SLIM</span>
+    <span class="pill g-on" id="csMin0" onclick="setCANSLIM(0,this)">全部</span>
+    <span class="pill" id="csMin3" onclick="setCANSLIM(3,this)">≥ 3項</span>
+    <span class="pill" id="csMin4" onclick="setCANSLIM(4,this)">≥ 4項 🌸</span>
+    <span class="pill" id="csMin5" onclick="setCANSLIM(5,this)">≥ 5項 ⭐</span>
+    <span class="pill" id="csMin6" onclick="setCANSLIM(6,this)">≥ 6項</span>
+  </div>
   </div><!-- /filterRowsWrap -->
 </div>
 
@@ -623,7 +639,8 @@ footer a:hover{text-decoration:underline}
   <div class="note">
     <strong>VCP 四大條件：</strong>Stage 2（股價 &gt; MA50 &gt; MA150 &gt; MA200）· 距 52 週高點 &lt;25% · ATR 波動率收縮 · 成交量萎縮。分數 ≥ 80 為強力候選。<br>
     <strong>基本面：</strong>ROE ≥ 15% 佳 · 毛利率 / 營益率越高越好 · EPS 年增 / 營收年增為正成長。資料來源：Yahoo Finance。<br>
-    <strong>籌碼：</strong>外資 / 投信買賣超，來源：TWSE T86。數值為正 = 買超，負 = 賣超。
+    <strong>籌碼：</strong>外資 / 投信買賣超，來源：TWSE T86。數值為正 = 買超，負 = 賣超。<br>
+    <strong>CAN SLIM（William O'Neil）：</strong>C＝當季EPS成長≥25% · A＝ROE≥15%（年度獲利持續） · N＝距52週高點&lt;5%（突破新高） · S＝縮量整理（供給緊縮） · L＝VCP分數≥70（相對強勢） · I＝外資/投信買超（法人進場） · M＝Stage2上升趨勢。≥5項視為強力CAN SLIM候選。
   </div>
   <div class="note" style="margin-top:8px">
     <strong>掃描說明：</strong>只顯示 VCP 候選股，掃描中即時更新。全台灣掃描約 <strong>8–15 分鐘</strong>。<br>
@@ -705,11 +722,12 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('score')">VCP分數 ⇅</th>
       <th onclick="setSort('fund',this)">基本面 ⇅</th>
       <th onclick="setSort('chips',this)">籌碼(外資/投信) ⇅</th>
+      <th onclick="setSort('canslim',this)">CAN SLIM ⇅</th>
       <th>操作</th>
     </tr>
   </thead>
   <tbody id="tblBody">
-    <tr class="load-row"><td colspan="12">開啟自動掃描中...</td></tr>
+    <tr class="load-row"><td colspan="13">開啟自動掃描中...</td></tr>
   </tbody>
 </table>
 </div>
@@ -808,6 +826,7 @@ const STOCKS = [
 
 // ─── State ────────────────────────────────────────────────────────────────
 let allResults=[], scoreMin=60, pctMax=999, secFilter=new Set(['ALL']), exFilter='ALL';
+let canslimMin=0;
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
 let hideDoubleShort=true;  // 預設排除雙賣
@@ -1731,7 +1750,7 @@ async function startScan(){
   document.getElementById('sumGrid').style.display='';
   document.getElementById('filterBox').style.display='';
   document.getElementById('statsBar').style.display='';
-  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="12"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
+  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="13"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
 
   // Get stock list based on selected source
   let stocks;
@@ -1887,6 +1906,10 @@ function getFiltered(){
       if(fundMin===-1){if(fs==null)return false;} // 有資料即可
       else{if(fs==null||fs<fundMin)return false;}  // 分數達標
     }
+    if(canslimMin>0&&r.vcp){
+      const cs=calcCANSLIM(r.vcp,r.fund||null,chipsMap[r.code]||null);
+      if(cs.total<canslimMin)return false;
+    }
     return true;
   });
 }
@@ -1901,6 +1924,10 @@ function getSorted(list){
     if(sortKey==='fund'){
       const fs=r=>{const s=calcFundScore(r.fund);return s??-1;};
       return sortAsc?fs(a)-fs(b):fs(b)-fs(a);
+    }
+    if(sortKey==='canslim'){
+      const cv=r=>r.vcp?calcCANSLIM(r.vcp,r.fund||null,chipsMap[r.code]||null).total:-1;
+      return sortAsc?cv(a)-cv(b):cv(b)-cv(a);
     }
     if(sortKey==='chips'){
       const chipsScore=r=>{const c=chipsMap[r.code];if(!c)return-1;const f=parseChipNum(c.foreignNet)||0,t=parseChipNum(c.trustNet)||0;return(f>0&&t>0)?3:(f>0)?2:(t>0)?1:0;};
@@ -1920,6 +1947,53 @@ function calcFundScore(fund){
   if(fund.revenueGrowth!=null){tot+=15; pts+=fund.revenueGrowth>=0.1?15:fund.revenueGrowth>=0?7:0;}
   if(tot===0) return null;
   return Math.round(pts/tot*100);
+}
+// ─── CAN SLIM (O'Neil) ────────────────────────────────────────────────────
+// C: Current qtr EPS growth ≥25%  A: Annual ROE≥15% (sustained profits proxy)
+// N: Near new high pctH<5%        S: Supply tightening (vol contraction + base)
+// L: Leader – VCP score≥70        I: Institutional buying (外資/投信 買超)
+// M: Market uptrend – Stage 2
+function calcCANSLIM(vcp, fund, chips){
+  const C=fund?.earningsGrowth!=null?fund.earningsGrowth>=0.25:null;
+  const A=fund?.roe!=null?fund.roe>=0.15:(fund?.operatingMargin!=null?fund.operatingMargin>=0.12:null);
+  const N=vcp?vcp.pctH<5:null;
+  const S=vcp?(vcp.vRat!=null?(vcp.vRat<0.85&&vcp.contractions>=1):vcp.contractions>=2):null;
+  const L=vcp?vcp.score>=70:null;
+  const fNet=chips?parseChipNum(chips.foreignNet)??0:null;
+  const tNet=chips?parseChipNum(chips.trustNet)??0:null;
+  const I=(fNet!==null||tNet!==null)?((fNet||0)>0||(tNet||0)>0):null;
+  const M=vcp?vcp.stage2:null;
+  const letters={C,A,N,S,L,I,M};
+  const total=Object.values(letters).filter(v=>v===true).length;
+  const known=Object.values(letters).filter(v=>v!==null).length;
+  return{...letters,total,known};
+}
+function csLetterHTML(key,val){
+  const cls=val===true?'cs-y':val===false?'cs-n':'cs-u';
+  const sym=val===true?'✓':val===false?'✗':'?';
+  return`<span class="cs-l ${cls}" title="${csDesc(key)}">${key}${sym}</span>`;
+}
+const CS_DESC={
+  C:'Current EPS成長 ≥25%',A:'Annual ROE ≥15%（持續獲利）',
+  N:'Near high：距52週高點 <5%',S:'Supply tight：縮量整理',
+  L:'Leader：VCP分數 ≥70',I:'Institutional：外資/投信買超',
+  M:'Market uptrend：Stage 2'
+};
+function csDesc(k){return CS_DESC[k]||k;}
+function canslimBadge(vcp,fund,chips){
+  const cs=calcCANSLIM(vcp,fund,chips);
+  const row=Object.entries({C:cs.C,A:cs.A,N:cs.N,S:cs.S,L:cs.L,I:cs.I,M:cs.M})
+    .map(([k,v])=>csLetterHTML(k,v)).join('');
+  const cls=cs.total>=5?'sA':cs.total>=3?'sB':'sC';
+  return scoreBadge(`${cs.total}/7`,cls,`<div class="cs-row" style="margin:0;gap:3px">${row}</div><div style="font-size:.6rem;color:var(--text2);margin-top:4px;line-height:1.6">C=EPS成長≥25% · A=ROE≥15%<br>N=距高點&lt;5% · S=縮量整理<br>L=VCP≥70 · I=機構買超 · M=Stage2</div>`);
+}
+function setCANSLIM(v,el){
+  canslimMin=v;
+  ['csMin0','csMin3','csMin4','csMin5','csMin6'].forEach(id=>{
+    const p=document.getElementById(id);if(p)p.classList.remove('g-on');
+  });
+  el.classList.add('g-on');
+  renderTable();
 }
 function calcFundGrade(fund){
   if(!fund||Object.keys(fund).length===0) return null;
@@ -1963,8 +2037,8 @@ function renderTable(){
   document.getElementById('showN').textContent=sorted.length;
   document.getElementById('totalN').textContent=counted;
   const tbody=document.getElementById('tblBody');
-  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="12">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
-  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="12">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
+  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="13">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
+  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="13">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
   tbody.innerHTML=sorted.map(r=>{
     const v=r.vcp;
     const tv=`https://www.tradingview.com/chart/?symbol=TWSE%3A${r.code}`;
@@ -1975,7 +2049,7 @@ function renderTable(){
         <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
         <td class="tn">${r.name}</td>
         <td><span style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span>${r.sector?`<span class="tsec">${r.sector}</span>`:''}</td>
-        <td colspan="8" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
+        <td colspan="9" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
         <td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
       </tr>`;
     }
@@ -2034,6 +2108,7 @@ function renderTable(){
       </td>
       <td>${fundHTML}</td>
       <td>${chipsHTML}</td>
+      <td>${canslimBadge(v,r.fund||null,chipsMap[r.code]||null)}</td>
       <td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
     </tr>`;
   }).join('');
@@ -2346,7 +2421,7 @@ async function lookupStock() {
 
   // 無快取時才自動啟動掃描
   if(!cacheLoaded){
-    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="12"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
+    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="13"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
     setTimeout(()=>startScan(),1200);
   }
 
