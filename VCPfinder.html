@@ -575,9 +575,9 @@ footer a:hover{text-decoration:underline}
   </div>
   <div class="filter-row">
     <span class="flabel">基本面</span>
-    <span class="pill" id="fundMinAll" onclick="setFundMin(0,this)">全部</span>
+    <span class="pill g-on" id="fundMinAll" onclick="setFundMin(0,this)">全部</span>
     <span class="pill" id="fundMinHas" onclick="setFundMin(-1,this)">有資料</span>
-    <span class="pill g-on" id="fundMin70" onclick="setFundMin(70,this)">僅優（≥70）</span>
+    <span class="pill" id="fundMin70" onclick="setFundMin(70,this)">僅優（≥70）</span>
     <span class="pill" id="fundMin80" onclick="setFundMin(80,this)">≥ 80</span>
     <span class="pill" id="fundMin90" onclick="setFundMin(90,this)">≥ 90</span>
   </div>
@@ -655,7 +655,7 @@ footer a:hover{text-decoration:underline}
     <tr>
       <th onclick="setSort('code')">代號 ⇅</th>
       <th onclick="setSort('name')">名稱</th>
-      <th>交易所／產業</th>
+      <th onclick="setSort('sector',this)">交易所／產業 ⇅</th>
       <th onclick="setSort('price')">現價 ⇅</th>
       <th onclick="setSort('pct')" class="th-on">距高點 ⇅</th>
       <th>MA排列</th>
@@ -778,7 +778,7 @@ let allResults=[], scoreMin=60, pctMax=999, secFilter=new Set(['ALL']), exFilter
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
 let hideDoubleShort=true;  // 預設排除雙賣
-let fundMin=70; // 預設僅優（≥70）
+let fundMin=0;
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
 let twseDailyMap={chips:{},monthRevenue:{},income:{}}; // pre-fetched by GitHub Actions
@@ -1867,6 +1867,7 @@ function getSorted(list){
     if(sortKey==='pct'){const va=av?.pctH??999,vb=bv?.pctH??999;return sortAsc?va-vb:vb-va;}
     if(sortKey==='price'){const va=av?.price??0,vb=bv?.price??0;return sortAsc?va-vb:vb-va;}
     if(sortKey==='code'||sortKey==='name'){return sortAsc?a[sortKey].localeCompare(b[sortKey]):b[sortKey].localeCompare(a[sortKey]);}
+    if(sortKey==='sector'){return sortAsc?a.sector.localeCompare(b.sector):b.sector.localeCompare(a.sector);}
     if(sortKey==='fund'){
       const fs=r=>{const s=calcFundScore(r.fund);return s??-1;};
       return sortAsc?fs(a)-fs(b):fs(b)-fs(a);
