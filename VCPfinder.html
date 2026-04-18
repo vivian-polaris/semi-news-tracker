@@ -9,24 +9,24 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#0d0d0b;
-  --bg2:#131310;
-  --card:#181714;
-  --card2:#1f1e1a;
-  --border:#2d2c28;
-  --border2:#3e3c36;
-  --purple:#5573eb;
-  --pink:#7b9af0;
-  --mint:#4a9669;
-  --orange:#c4984e;
-  --red:#b05252;
-  --sky:#4a7fa8;
-  --yellow:#c4984e;
-  --text:#e8e4d8;
-  --text2:#706d63;
-  --tag:#1e1d1a;
-  --shadow:rgba(0,0,0,.65);
-  --shadow2:rgba(0,0,0,.5);
+  --bg:#0d1117;
+  --bg2:#111820;
+  --card:#161b22;
+  --card2:#1c2128;
+  --border:#2d3748;
+  --border2:#3d4a5c;
+  --purple:#4f7ef7;
+  --pink:#7aa2f7;
+  --mint:#3fb97a;
+  --orange:#d4a84b;
+  --red:#e05c5c;
+  --sky:#4a90c4;
+  --yellow:#d4a84b;
+  --text:#e2e8f0;
+  --text2:#718096;
+  --tag:#1a2030;
+  --shadow:rgba(0,0,0,.7);
+  --shadow2:rgba(0,0,0,.55);
 }
 body{
   font-family:'Noto Sans TC','Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic',
@@ -43,28 +43,30 @@ body{
 @media(max-width:640px){.wrap{padding:10px 14px}}
 
 /* ── Header ── */
-header{text-align:center;padding:40px 20px 28px;position:relative;
-  background:linear-gradient(160deg,#131210 0%,#0d0d0b 60%,#111210 100%);
-  border-bottom:1px solid var(--border);margin-bottom:8px;overflow:hidden}
+header{text-align:center;padding:48px 20px 32px;position:relative;
+  background:url('https://images.pexels.com/photos/8462956/pexels-photo-8462956.jpeg?auto=compress&cs=tinysrgb&w=1400&h=500&fit=crop&crop=center') center center/cover no-repeat;
+  border-bottom:1px solid var(--border);margin-bottom:8px;overflow:hidden;min-height:200px}
 header::before{content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(85,115,235,.07) 0%,transparent 70%);
+  background:linear-gradient(to bottom,rgba(13,17,23,.55) 0%,rgba(13,17,23,.78) 100%);
   pointer-events:none}
 header>*{position:relative;z-index:1}
-.back-btn{position:absolute;left:16px;top:18px;padding:5px 12px;background:var(--card);
-  border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;
-  font-size:.72rem;font-weight:500;text-decoration:none;display:inline-block;transition:all .2s;letter-spacing:.01em}
-.back-btn:hover{border-color:var(--purple);color:var(--text)}
-.key-btn{position:absolute;right:16px;top:18px;padding:5px 12px;background:var(--card);
-  border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;font-size:.72rem;transition:all .2s}
-.key-btn:hover{border-color:var(--purple);color:var(--text)}
-h1{font-size:1.65rem;color:var(--text);margin-bottom:5px;font-weight:700;letter-spacing:-.015em}
-header p{color:var(--text2);font-size:.78rem;line-height:1.6}
+.back-btn{position:absolute;left:16px;top:18px;padding:5px 12px;
+  background:rgba(13,17,23,.75);border:1px solid rgba(255,255,255,.2);border-radius:6px;
+  color:rgba(255,255,255,.8);cursor:pointer;font-size:.72rem;font-weight:500;
+  text-decoration:none;display:inline-block;transition:all .2s;backdrop-filter:blur(8px)}
+.back-btn:hover{border-color:rgba(255,255,255,.5);color:#fff}
+.key-btn{position:absolute;right:16px;top:18px;padding:5px 12px;
+  background:rgba(13,17,23,.75);border:1px solid rgba(255,255,255,.2);border-radius:6px;
+  color:rgba(255,255,255,.8);cursor:pointer;font-size:.72rem;transition:all .2s;backdrop-filter:blur(8px)}
+.key-btn:hover{border-color:rgba(255,255,255,.5);color:#fff}
+h1{font-size:1.65rem;color:#fff;margin-bottom:5px;font-weight:700;letter-spacing:-.015em;text-shadow:0 2px 12px rgba(0,0,0,.5)}
+header p{color:rgba(255,255,255,.7);font-size:.78rem;line-height:1.6;text-shadow:0 1px 4px rgba(0,0,0,.4)}
 .subtitle-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.68rem;
-  font-weight:600;background:rgba(85,115,235,.15);color:var(--purple);
-  border:1px solid rgba(85,115,235,.3);margin-left:6px;letter-spacing:.03em}
+  font-weight:600;background:rgba(79,126,247,.25);color:#93c5fd;
+  border:1px solid rgba(79,126,247,.4);margin-left:6px;letter-spacing:.03em}
 @media(max-width:640px){
-  header{padding:36px 14px 22px}
-  h1{font-size:1.35rem}
+  header{padding:40px 14px 24px;min-height:160px}
+  h1{font-size:1.3rem}
   .back-btn,.key-btn{top:12px}
 }
 
