@@ -342,6 +342,12 @@ def main():
         pass
 
     print('\n4. Monthly Revenue...')
+    if len(chips) < 100:
+        old_chips = existing.get('chips', {})
+        if len(old_chips) > len(chips):
+            print(f'  ⚠️ 籌碼資料不足（{len(chips)}筆），保留舊資料（{len(old_chips)}筆）')
+            chips = old_chips
+
     month_revenue = fetch_month_revenue()
     if len(month_revenue) < 100:
         old_rev = existing.get('monthRevenue', {})
