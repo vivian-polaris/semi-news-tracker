@@ -363,6 +363,21 @@ footer a:hover{text-decoration:underline}
   <p>台股強勢股自動掃描 <span class="subtitle-badge">Mark Minervini VCP</span></p>
 </header>
 
+<!-- ── 個股快查（置頂）── -->
+<div class="lcard" style="margin:10px 0 12px">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    <span style="font-size:.75rem;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:.06em">個股快查</span>
+  </div>
+  <div class="scan-row" style="gap:8px">
+    <input id="lookupInput" type="text" placeholder="代號或名稱（如 2603 或 長榮）"
+      style="flex:1;padding:10px 14px;background:var(--tag);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:.88rem;outline:none;min-width:0;font-family:inherit"
+      onfocus="this.style.borderColor='var(--purple)'" onblur="this.style.borderColor='var(--border)'"
+      onkeydown="if(event.key==='Enter')lookupStock()">
+    <button class="scan-btn" onclick="lookupStock()" style="padding:10px 22px;font-size:.88rem">查詢</button>
+  </div>
+  <div id="lookupResult" style="margin-top:12px;display:none"></div>
+</div>
+
 <!-- Key Panel hidden (Groq key is server-side) -->
 <div class="key-panel" id="keyPanel" style="display:none!important">
   <p>設定 <a href="https://console.groq.com" target="_blank">Groq API Key</a>（免費，每日額度充足），享 AI 快訊摘要。</p>
@@ -641,22 +656,6 @@ footer a:hover{text-decoration:underline}
 </script>
 
 <!-- ── Table ── -->
-
-<!-- 個股快查 -->
-<div class="lcard" style="margin-bottom:12px">
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-    <span style="font-size:.75rem;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:.06em">個股快查</span>
-    <span style="font-size:.68rem;color:var(--text2)">輸入代號或名稱，查買賣評估</span>
-  </div>
-  <div class="scan-row" style="gap:8px">
-    <input id="lookupInput" type="text" placeholder="台灣股票代號或名稱（如 2330 或 台積電）"
-      style="flex:1;padding:10px 14px;background:var(--tag);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:.88rem;outline:none;min-width:0;font-family:inherit"
-      onfocus="this.style.borderColor='var(--purple)'" onblur="this.style.borderColor='var(--border)'"
-      onkeydown="if(event.key==='Enter')lookupStock()">
-    <button class="scan-btn" onclick="lookupStock()" style="padding:10px 22px;font-size:.88rem">查詢</button>
-  </div>
-  <div id="lookupResult" style="margin-top:12px;display:none"></div>
-</div>
 <div class="tbl-wrap" id="tblWrap">
 <table>
   <thead>
@@ -1050,7 +1049,7 @@ function buildTrumpSwiper(rawText, container){
   const items=[];
   let cur='';
   rawText.split('\n').forEach(line=>{
-    if(/^\d+[\.、．]\s/.test(line.trim())){
+    if(/^\d+[\.、．]/.test(line.trim())){
       if(cur.trim()) items.push(cur.trim());
       cur=line;
     } else { cur+='\n'+line; }
@@ -1093,12 +1092,12 @@ function trumpGo(dir){
 async function loadTrump(useCache=false){
   const b=document.getElementById('trumpBody'), t=document.getElementById('trumpTime');
   if(useCache){
-    const c=getAICache('trump');
+    const c=getAICache('trump2');
     if(c){
       b.className='news-body';
-      const raw=c.rawText||c.text;
-      if(window.innerWidth<=640 && raw && !raw.trim().startsWith('<') && buildTrumpSwiper(raw,b)){}
-      else if(raw.trim().startsWith('<'))b.innerHTML=raw; else b.textContent=raw;
+      const raw=c.rawText||c.text||'';
+      if(window.innerWidth<=640 && raw && buildTrumpSwiper(raw,b)){}
+      else b.textContent=raw;
       t.textContent='快取（'+cacheAgeStr(c.ts)+'）・點 ↻ 強制更新';return;
     }
   }
@@ -1155,7 +1154,7 @@ ${newsList}`;
     if(aiDiv){aiDiv.style.color='';aiDiv.style.fontStyle='';aiDiv.textContent=aiText;}
     else{b.className='news-body';b.innerHTML='<div id="tAI" style="white-space:pre-wrap">'+escH(aiText)+'</div>'+buildSrcHtml(items);}
   }
-  if(!aiText.startsWith('⚠️')&&!aiText.startsWith('❌')) setAICache('trump',aiText,{rawText:aiText});
+  if(!aiText.startsWith('⚠️')&&!aiText.startsWith('❌')) setAICache('trump2',aiText,{rawText:aiText});
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
@@ -2173,10 +2172,29 @@ async function lookupStock() {
     stockInfo = foundInResults;
     vcpData = foundInResults.vcp;
   } else {
-    const inStocks = [...STOCKS].find(s =>
+    let inStocks = [...STOCKS].find(s =>
       s.code === raw || s.name === raw ||
       (raw.length >= 2 && s.name.includes(raw))
     );
+    // Also search OTC list from twse_daily.json
+    if(!inStocks && twseDailyMap.otcStocks){
+      const found=twseDailyMap.otcStocks.find(s=>s.code===raw||(raw.length>=2&&s.name&&s.name.includes(raw)));
+      if(found) inStocks={code:found.code,name:found.name,sector:'',ex:'TWO'};
+    }
+    // If still not found by name, fetch full TSE list once
+    if(!inStocks && !/^\d{4,6}$/.test(raw)){
+      res.innerHTML='<span class="spin"></span> 搜尋全台股清單中...';
+      try{
+        if(!window._tseFull){
+          const d=await fetchJsonCORS('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL','TSE');
+          if(d) window._tseFull=d.map(s=>({code:(s.Code||s.code||'').trim(),name:(s.Name||s.name||'').trim(),ex:'TW'})).filter(s=>/^\d{4}$/.test(s.code));
+        }
+        if(window._tseFull){
+          const found=window._tseFull.find(s=>s.name===raw||(raw.length>=2&&s.name.includes(raw)));
+          if(found) inStocks=found;
+        }
+      }catch(_){}
+    }
     const code = inStocks ? inStocks.code : (/^\d{4,6}$/.test(raw) ? raw : null);
     if (!code) {
       res.innerHTML = '<span style="color:#f87171">找不到此股票，請輸入4位股票代號或中文名稱</span>';
