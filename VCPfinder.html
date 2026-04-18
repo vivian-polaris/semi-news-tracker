@@ -284,6 +284,22 @@ footer a:hover{text-decoration:underline}
 /* ── Sparkline ── */
 .spark-cell{white-space:nowrap;padding:6px 10px!important}
 
+/* ── Mobile news swiper ── */
+@media(max-width:640px){
+  .trump-swiper{overflow:hidden;-webkit-overflow-scrolling:touch}
+  .trump-track{display:flex;transition:transform .32s cubic-bezier(.4,0,.2,1);will-change:transform}
+  .trump-card{flex-shrink:0;width:100%;box-sizing:border-box;padding:4px 0 10px}
+  .trump-card-num{font-size:.62rem;font-weight:800;letter-spacing:.06em;color:var(--red);margin-bottom:6px;text-transform:uppercase}
+  .trump-card-text{font-size:.84rem;line-height:1.75;white-space:pre-wrap;color:var(--text)}
+  .trump-nav{display:flex;align-items:center;gap:8px;margin-top:12px}
+  .trump-nav-btn{flex-shrink:0;width:34px;height:34px;background:var(--card2);border:1.5px solid var(--border);border-radius:50%;color:var(--text);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .16s;user-select:none}
+  .trump-nav-btn:active{background:var(--purple);border-color:var(--purple);color:#fff}
+  .trump-dots{display:flex;gap:5px;justify-content:center;flex:1;flex-wrap:wrap}
+  .trump-dot{width:6px;height:6px;border-radius:50%;background:var(--border);transition:background .2s,transform .2s;flex-shrink:0}
+  .trump-dot.on{background:var(--red);transform:scale(1.3)}
+  .trump-counter{font-size:.65rem;color:var(--text2);text-align:center;margin-top:6px}
+}
+
 /* ── Collapsible section header ── */
 .sec-toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:14px;cursor:pointer;user-select:none;transition:border-color .18s,background .18s;margin-bottom:0}
 .sec-toggle:hover{border-color:var(--purple);background:var(--card2)}
@@ -1000,19 +1016,72 @@ const AI_CACHE_TTL=4*60*60*1000; // 4 小時快取
 function getAICache(key){
   try{const c=JSON.parse(localStorage.getItem('ai_'+key)||'{}');if(c.ts&&Date.now()-c.ts<AI_CACHE_TTL)return c;}catch(_){}return null;
 }
-function setAICache(key,text){
-  try{localStorage.setItem('ai_'+key,JSON.stringify({text,ts:Date.now()}));}catch(_){}
+function setAICache(key,text,extra){
+  try{localStorage.setItem('ai_'+key,JSON.stringify({text,...(extra||{}),ts:Date.now()}));}catch(_){}
 }
 function cacheAgeStr(ts){
   const m=Math.round((Date.now()-ts)/60000);
   return m<60?`${m} 分鐘前`:`${Math.floor(m/60)} 小時前`;
 }
 
+// ── Mobile news swiper ──────────────────────────────────────────────────────
+let _tIdx=0, _tTotal=0;
+function buildTrumpSwiper(rawText, container){
+  // Parse numbered items (1. 2. … or 1、2、)
+  const items=[];
+  let cur='';
+  rawText.split('\n').forEach(line=>{
+    if(/^\d+[\.、．]\s/.test(line.trim())){
+      if(cur.trim()) items.push(cur.trim());
+      cur=line;
+    } else { cur+='\n'+line; }
+  });
+  if(cur.trim()) items.push(cur.trim());
+  if(items.length<2) return false;
+  _tIdx=0; _tTotal=items.length;
+  const cards=items.map((item,i)=>`
+    <div class="trump-card">
+      <div class="trump-card-num">第 ${i+1} 條 / 共 ${_tTotal}</div>
+      <div class="trump-card-text">${escH(item)}</div>
+    </div>`).join('');
+  const dots=items.map((_,i)=>`<div class="trump-dot${i===0?' on':''}" id="td${i}"></div>`).join('');
+  container.innerHTML=`
+    <div class="trump-swiper" id="trumpSwiperWrap">
+      <div class="trump-track" id="trumpTrack">${cards}</div>
+      <div class="trump-nav">
+        <button class="trump-nav-btn" onclick="trumpGo(-1)">‹</button>
+        <div class="trump-dots">${dots}</div>
+        <button class="trump-nav-btn" onclick="trumpGo(1)">›</button>
+      </div>
+    </div>`;
+  // Touch swipe
+  const wrap=document.getElementById('trumpSwiperWrap');
+  let sx=0;
+  wrap.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;},{passive:true});
+  wrap.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-sx;
+    if(Math.abs(dx)>40) trumpGo(dx<0?1:-1);
+  },{passive:true});
+  return true;
+}
+function trumpGo(dir){
+  _tIdx=Math.max(0,Math.min(_tTotal-1,_tIdx+dir));
+  const track=document.getElementById('trumpTrack');
+  if(track) track.style.transform=`translateX(-${_tIdx*100}%)`;
+  document.querySelectorAll('.trump-dot').forEach((d,i)=>d.classList.toggle('on',i===_tIdx));
+}
+
 async function loadTrump(useCache=false){
   const b=document.getElementById('trumpBody'), t=document.getElementById('trumpTime');
   if(useCache){
     const c=getAICache('trump');
-    if(c){b.className='news-body';if(c.text.trim().startsWith('<'))b.innerHTML=c.text;else b.textContent=c.text;t.textContent='快取（'+cacheAgeStr(c.ts)+'）・點 ↻ 強制更新';return;}
+    if(c){
+      b.className='news-body';
+      const raw=c.rawText||c.text;
+      if(window.innerWidth<=640 && raw && !raw.trim().startsWith('<') && buildTrumpSwiper(raw,b)){}
+      else if(raw.trim().startsWith('<'))b.innerHTML=raw; else b.textContent=raw;
+      t.textContent='快取（'+cacheAgeStr(c.ts)+'）・點 ↻ 強制更新';return;
+    }
   }
   b.className='news-body loading'; b.textContent='抓取最新新聞...'; t.textContent='';
   // 使用 5 天前日期，避免今日新聞未被 Google News 索引而回傳空集合（會讓 AI 用舊訓練資料）
@@ -1061,10 +1130,13 @@ ${newsList}`;
   ]);
   const aiText=stripMd(res);
   const aiDiv=document.getElementById('tAI');
-  if(aiDiv){aiDiv.style.color='';aiDiv.style.fontStyle='';aiDiv.textContent=aiText;}
-  else{b.className='news-body';b.innerHTML='<div id="tAI" style="white-space:pre-wrap">'+escH(aiText)+'</div>'+buildSrcHtml(items);}
-  const finalHtml=b.innerHTML;
-  if(!aiText.startsWith('⚠️')&&!aiText.startsWith('❌')) setAICache('trump',finalHtml);
+  if(window.innerWidth<=640 && !aiText.startsWith('⚠️') && !aiText.startsWith('❌') && buildTrumpSwiper(aiText,b)){
+    // swiper built, nothing else needed
+  } else {
+    if(aiDiv){aiDiv.style.color='';aiDiv.style.fontStyle='';aiDiv.textContent=aiText;}
+    else{b.className='news-body';b.innerHTML='<div id="tAI" style="white-space:pre-wrap">'+escH(aiText)+'</div>'+buildSrcHtml(items);}
+  }
+  if(!aiText.startsWith('⚠️')&&!aiText.startsWith('❌')) setAICache('trump',aiText,{rawText:aiText});
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
