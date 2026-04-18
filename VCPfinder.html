@@ -2297,25 +2297,30 @@ async function lookupStock() {
   loadKeysFromHash();
   updateKeyStatus();
 
-  // Restore cache or auto-scan
+  // Restore cache — always show cached results regardless of age; only auto-scan if no cache at all
   let cacheLoaded=false;
   try{
     const raw=localStorage.getItem('vcpCache');
     if(raw){
       const{results,ts}=JSON.parse(raw);
-      const age=(Date.now()-ts)/60000;
-      if(age<=360){ // 6 小時內有效
+      if(results&&results.length>0){
         allResults=results;
         document.getElementById('scanBtn').textContent='重新掃描';
-        const ageStr=age>=60?`${Math.round(age/60)} 小時`:`${Math.round(age)} 分鐘`;
-        document.getElementById('scanInfo').innerHTML=`上次掃描：<strong>${new Date(ts).toLocaleTimeString('zh-TW')}</strong>（${ageStr}前）`;
+        const age=(Date.now()-ts)/60000;
+        const dt=new Date(ts);
+        const dateStr=dt.toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',weekday:'short'});
+        const timeStr=dt.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+        const ageStr=age>=1440?`${Math.round(age/1440)}天前`:age>=60?`${Math.round(age/60)}小時前`:`${Math.round(age)}分鐘前`;
+        const stale=age>360; // >6小時標注為舊資料
+        document.getElementById('scanInfo').innerHTML=
+          `${stale?'📅 ':''}上次掃描：<strong>${dateStr} ${timeStr}</strong>（${ageStr}）${stale?' · <span style="color:var(--purple);cursor:pointer" onclick="startScan()">重新掃描</span>':''}`;
         renderAll();
         cacheLoaded=true;
       }
     }
   }catch(_){}
 
-  // 無快取時自動啟動掃描
+  // 無快取時才自動啟動掃描
   if(!cacheLoaded){
     document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="12"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
     setTimeout(()=>startScan(),1200);
