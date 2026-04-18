@@ -284,6 +284,23 @@ footer a:hover{text-decoration:underline}
 /* ── Sparkline ── */
 .spark-cell{white-space:nowrap;padding:6px 10px!important}
 
+/* ── Collapsible section header ── */
+.sec-toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:14px;cursor:pointer;user-select:none;transition:border-color .18s,background .18s;margin-bottom:0}
+.sec-toggle:hover{border-color:var(--purple);background:var(--card2)}
+.sec-toggle-left{display:flex;align-items:center;gap:8px}
+.sec-toggle-icon{font-size:1rem}
+.sec-toggle-title{font-size:.88rem;font-weight:800;color:var(--text)}
+.sec-toggle-badge{font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:8px;background:rgba(139,92,246,.2);color:#a78bfa;border:1px solid rgba(139,92,246,.3)}
+.sec-chevron{font-size:.7rem;color:var(--text2);transition:transform .25s;flex-shrink:0}
+.sec-chevron.open{transform:rotate(180deg)}
+.sec-body{overflow:hidden;transition:max-height .3s ease,opacity .25s ease;max-height:0;opacity:0}
+.sec-body.open{max-height:2000px;opacity:1}
+/* On desktop, always show both open by default */
+@media(min-width:641px){
+  .sec-toggle{display:none}
+  .sec-body{max-height:none!important;opacity:1!important;overflow:visible!important}
+}
+
 /* ── Mobile: hide all explanatory/descriptive text ── */
 @media(max-width:640px){
   .subtitle-badge,
@@ -307,6 +324,10 @@ footer a:hover{text-decoration:underline}
   .filter-row>.pill:nth-child(n+4){display:none!important}
   /* market news/clock: single column stack on mobile */
   .two-col-row{grid-template-columns:1fr!important}
+  /* toggle border radius when open */
+  .sec-body.open .news-card,.sec-body.open .inv-card{border-top-left-radius:0!important;border-top-right-radius:0!important;border-top:none!important}
+  .sec-toggle{border-bottom-left-radius:0;border-bottom-right-radius:0;margin-bottom:0}
+  .sec-toggle+.sec-body.open{margin-bottom:8px}
 }
 </style>
 </head>
@@ -346,14 +367,23 @@ footer a:hover{text-decoration:underline}
 
   <!-- 左：市場震撼彈 -->
   <div>
-    <div class="inv-title-row">
+    <div class="inv-title-row hide-mobile">
       <span class="inv-main-title">市場震撼彈</span>
-      <span class="hide-mobile" style="font-size:.7rem;color:var(--text2)">跟錢有關的才算重要</span>
     </div>
-    <div class="news-card trump" style="margin:0">
+    <!-- mobile toggle -->
+    <div class="sec-toggle" onclick="toggleSec('trump')" id="trumpToggle">
+      <div class="sec-toggle-left">
+        <span class="sec-toggle-icon">📰</span>
+        <span class="sec-toggle-title">市場震撼彈</span>
+        <span class="sec-toggle-badge">Top 10</span>
+      </div>
+      <span class="sec-chevron" id="trumpChevron">▼</span>
+    </div>
+    <div class="sec-body" id="trumpSecBody">
+    <div class="news-card trump" style="margin:0;border-top-left-radius:0;border-top-right-radius:0;border-top:none">
       <div class="news-head">
-        <div class="news-title t-trump">最重要財經消息・影響台股 Top 10</div>
-        <div style="display:flex;gap:5px">
+        <div class="news-title t-trump hide-mobile">最重要財經消息・影響台股 Top 10</div>
+        <div style="display:flex;gap:5px;margin-left:auto">
           <button class="news-refresh" onclick="loadTrump()">↻ 刷新</button>
           <button class="news-refresh" id="logicBtn" onclick="loadTrumpLogic()" style="border-color:var(--purple);color:var(--purple)">底層邏輯</button>
         </div>
@@ -367,16 +397,26 @@ footer a:hover{text-decoration:underline}
         <div class="news-time" id="trumpLogicTime"></div>
       </div>
     </div>
+    </div>
   </div>
 
   <!-- 右：投資人專區（美林時鐘） -->
   <div>
-    <div class="inv-title-row">
+    <div class="inv-title-row hide-mobile">
       <span class="inv-main-title">投資人專區</span>
     </div>
-    <div class="inv-card c-clock" style="text-align:center">
+    <!-- mobile toggle -->
+    <div class="sec-toggle" onclick="toggleSec('clock')" id="clockToggle">
+      <div class="sec-toggle-left">
+        <span class="sec-toggle-icon">🕐</span>
+        <span class="sec-toggle-title">美林投資時鐘</span>
+      </div>
+      <span class="sec-chevron" id="clockChevron">▼</span>
+    </div>
+    <div class="sec-body" id="clockSecBody">
+    <div class="inv-card c-clock" style="text-align:center;border-top-left-radius:0;border-top-right-radius:0;border-top:none">
       <div class="inv-head" style="justify-content:center;gap:8px;margin-bottom:10px">
-        <div class="inv-label lbl-clock" style="font-size:.85rem">美林投資時鐘</div>
+        <div class="inv-label lbl-clock hide-mobile" style="font-size:.85rem">美林投資時鐘</div>
         <button class="inv-rf" onclick="loadClock()">↻</button>
       </div>
       <div id="clockSvg" style="margin:0 auto 8px"></div>
@@ -385,6 +425,7 @@ footer a:hover{text-decoration:underline}
       </div>
       <div id="clockBody" style="text-align:left;font-size:.8rem;line-height:1.75;color:var(--text);white-space:pre-wrap;background:var(--tag);border-radius:12px;padding:12px 14px;margin-top:2px;min-height:60px"></div>
       <div class="inv-time" id="clockTime" style="margin-top:8px"></div>
+    </div>
     </div>
   </div>
 
@@ -533,6 +574,20 @@ footer a:hover{text-decoration:underline}
   document.querySelector('details.note').addEventListener('toggle',function(){
     document.getElementById('noteArrow').style.transform=this.open?'rotate(90deg)':'';
   });
+  function toggleSec(id){
+    const body=document.getElementById(id+'SecBody');
+    const chevron=document.getElementById(id+'Chevron');
+    const toggle=document.getElementById(id+'Toggle');
+    const isOpen=body.classList.toggle('open');
+    chevron.classList.toggle('open',isOpen);
+    if(isOpen){
+      toggle.style.borderBottomLeftRadius='0';
+      toggle.style.borderBottomRightRadius='0';
+    } else {
+      toggle.style.borderBottomLeftRadius='';
+      toggle.style.borderBottomRightRadius='';
+    }
+  }
 </script>
 
 <!-- ── Table ── -->
