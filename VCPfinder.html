@@ -588,13 +588,6 @@ footer a:hover{text-decoration:underline}
 <div class="stats-bar" id="statsBar" style="display:none">
   <div class="stats-l">顯示 <strong id="showN">0</strong> / <strong id="totalN">0</strong> 支</div>
   <button class="export-btn" onclick="exportCSV()">⬇ 匯出 CSV</button>
-  <div class="sort-row">
-    <button class="srt on" onclick="setSort('score',this)">VCP分數↓</button>
-    <button class="srt" onclick="setSort('pct',this)">距高點↑</button>
-    <button class="srt" onclick="setSort('price',this)">股價</button>
-    <button class="srt" onclick="setSort('chips',this)">籌碼（雙買↑）</button>
-    <button class="srt" onclick="setSort('code',this)">代號</button>
-  </div>
 </div>
 
 <!-- ── Note ── -->
@@ -669,8 +662,8 @@ footer a:hover{text-decoration:underline}
       <th>技術信號</th>
       <th>走勢</th>
       <th onclick="setSort('score')">VCP分數 ⇅</th>
-      <th>基本面</th>
-      <th>籌碼(外資/投信)</th>
+      <th onclick="setSort('fund',this)">基本面 ⇅</th>
+      <th onclick="setSort('chips',this)">籌碼(外資/投信) ⇅</th>
       <th>操作</th>
     </tr>
   </thead>
@@ -1874,6 +1867,10 @@ function getSorted(list){
     if(sortKey==='pct'){const va=av?.pctH??999,vb=bv?.pctH??999;return sortAsc?va-vb:vb-va;}
     if(sortKey==='price'){const va=av?.price??0,vb=bv?.price??0;return sortAsc?va-vb:vb-va;}
     if(sortKey==='code'||sortKey==='name'){return sortAsc?a[sortKey].localeCompare(b[sortKey]):b[sortKey].localeCompare(a[sortKey]);}
+    if(sortKey==='fund'){
+      const fs=r=>{const s=calcFundScore(r.fund);return s??-1;};
+      return sortAsc?fs(a)-fs(b):fs(b)-fs(a);
+    }
     if(sortKey==='chips'){
       const chipsScore=r=>{const c=chipsMap[r.code];if(!c)return-1;const f=parseChipNum(c.foreignNet)||0,t=parseChipNum(c.trustNet)||0;return(f>0&&t>0)?3:(f>0)?2:(t>0)?1:0;};
       return sortAsc?chipsScore(a)-chipsScore(b):chipsScore(b)-chipsScore(a);
@@ -2046,8 +2043,8 @@ function toggleHideErr(el){hideErr=!hideErr;el.classList.toggle('g-on',hideErr);
 function setSort(k,el){
   if(sortKey===k)sortAsc=!sortAsc;
   else{sortKey=k;sortAsc=(k==='pct'||k==='code'||k==='name');}
-  document.querySelectorAll('.srt').forEach(b=>b.classList.remove('on'));
-  if(el)el.classList.add('on');
+  document.querySelectorAll('thead th').forEach(b=>b.classList.remove('th-on'));
+  if(el)el.classList.add('th-on');
   renderTable();
 }
 
