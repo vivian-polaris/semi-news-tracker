@@ -478,7 +478,7 @@ footer a:hover{text-decoration:underline}
     <button class="scan-btn" id="scanBtn" onclick="startScan()">開始掃描 VCP</button>
     <button id="cancelBtn" onclick="cancelScan()" style="display:none;padding:11px 20px;background:var(--card);border:1.5px solid var(--red);border-radius:16px;color:var(--red);font-size:.85rem;font-weight:700;cursor:pointer">停止</button>
     <button id="scanOptBtn" onclick="toggleScanOpts()" style="padding:10px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:16px;color:var(--text2);font-size:.82rem;cursor:pointer;transition:all .18s;white-space:nowrap">⚙️ 選項</button>
-    <div class="scan-info" id="scanInfo">只顯示 VCP 候選股，掃描中即時更新。全台灣掃描約 <strong>8–15 分鐘</strong>。</div>
+    <div class="scan-info" id="scanInfo"></div>
   </div>
 
   <!-- 掃描選項（手機預設收起） -->
@@ -600,6 +600,15 @@ footer a:hover{text-decoration:underline}
     <strong>基本面：</strong>ROE ≥ 15% 佳 · 毛利率 / 營益率越高越好 · EPS 年增 / 營收年增為正成長。資料來源：Yahoo Finance。<br>
     <strong>籌碼：</strong>外資 / 投信買賣超，來源：TWSE T86。數值為正 = 買超，負 = 賣超。
   </div>
+  <div class="note" style="margin-top:8px">
+    <strong>掃描說明：</strong>只顯示 VCP 候選股，掃描中即時更新。全台灣掃描約 <strong>8–15 分鐘</strong>。<br>
+    <strong>VCP 理論：</strong>出自 Mark Minervini《超級績效》· 僅供研究參考，不構成投資建議。<br>
+    <strong>延伸資源：</strong>
+    <a href="https://www.tradingview.com/" target="_blank">TradingView VCP腳本</a> ·
+    <a href="https://www.finlab.tw/成長飆股怎麼找？超級績效選股法大解密" target="_blank">FinLab 台股VCP</a> ·
+    <a href="https://cevisub.com/technical-analysis-guide/vcp-pattern-taiwan-stocks-high-win-rate-buy-points/" target="_blank">VCP台股教學</a> ·
+    <a href="https://www.wantgoo.com/screener" target="_blank">玩股網選股器</a>
+  </div>
 </div>
 <script>
   function toggleExplain(e){
@@ -690,15 +699,7 @@ footer a:hover{text-decoration:underline}
   </span>
 </div>
 
-<footer>
-  VCP Finder · 台股 Volatility Contraction Pattern 掃描<br>
-  VCP 理論出自 Mark Minervini《超級績效》· 僅供研究參考，不構成投資建議<br>
-  延伸資源：
-  <a href="https://www.tradingview.com/" target="_blank">TradingView VCP腳本</a> ·
-  <a href="https://www.finlab.tw/成長飆股怎麼找？超級績效選股法大解密" target="_blank">FinLab 台股VCP</a> ·
-  <a href="https://cevisub.com/technical-analysis-guide/vcp-pattern-taiwan-stocks-high-win-rate-buy-points/" target="_blank">VCP台股教學</a> ·
-  <a href="https://www.wantgoo.com/screener" target="_blank">玩股網選股器</a>
-</footer>
+<footer>VCP Finder · 僅供研究參考，不構成投資建議</footer>
 </div>
 
 <!-- ════════════════════ SCRIPT ════════════════════ -->
