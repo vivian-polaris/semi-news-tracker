@@ -119,7 +119,7 @@ def fetch_chips():
         if dt.weekday() >= 5:
             continue
         yyyymmdd = dt.strftime('%Y%m%d')
-        url = f'https://www.twse.com.tw/rwd/zh/fund/T86?date={yyyymmdd}&response=json'
+        url = f'https://www.twse.com.tw/rwd/zh/fund/T86?date={yyyymmdd}&selectType=ALL&response=json'
         data = get(url)
         if not data or data.get('stat') not in ('OK', '成功'):
             continue
