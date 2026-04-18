@@ -288,22 +288,19 @@ footer a:hover{text-decoration:underline}
 <body>
 <div class="wrap">
 
-<!-- ── No-Key Warning Banner ── -->
-<div id="noKeyBanner" style="display:none;background:rgba(220,38,38,.1);border-bottom:1.5px solid rgba(220,38,38,.3);padding:8px 16px;font-size:.78rem;color:#f87171;text-align:center">
-  未設定 Groq API Key，AI 快訊功能受限。請點右上角 <strong>API Key</strong>，貼上你的 Key（到 <a href="https://console.groq.com" target="_blank" style="color:#f87171;text-decoration:underline">console.groq.com</a> 免費申請），輸入後自動儲存。
-  <button onclick="document.getElementById('noKeyBanner').style.display='none'" style="margin-left:12px;background:transparent;border:none;color:#f87171;cursor:pointer;font-size:.8rem">✕</button>
-</div>
+<!-- No-Key Banner hidden (key is server-side) -->
+<div id="noKeyBanner" style="display:none"></div>
 
 <!-- ── Header ── -->
 <header>
   <a href="index-pro.html" class="back-btn">← 返回新聞</a>
-  <button class="key-btn" onclick="toggleKeyPanel()">⚙️ API Key</button>
+  <button class="key-btn" onclick="toggleKeyPanel()" style="display:none">⚙️ API Key</button>
   <h1>Vivian’s VCP Finder</h1>
   <p>台股強勢股自動掃描 <span class="subtitle-badge">Mark Minervini VCP</span></p>
 </header>
 
-<!-- ── Key Panel ── -->
-<div class="key-panel" id="keyPanel">
+<!-- Key Panel hidden (Groq key is server-side) -->
+<div class="key-panel" id="keyPanel" style="display:none!important">
   <p>設定 <a href="https://console.groq.com" target="_blank">Groq API Key</a>（免費，每日額度充足），享 AI 快訊摘要。</p>
   <div class="key-row">
     <input class="key-input" id="groqInput" type="password" placeholder="Groq API Key（gsk_...）輸入後自動儲存"
@@ -818,30 +815,23 @@ async function callAIFree(prompt){
 }
 
 async function callAI(prompt){
-  const gk=getKey();
-  // ── Groq ──
-  if(gk && gk.length>10 && !gk.startsWith('http')){
-    const groqModels=['llama-3.3-70b-versatile','llama-3.1-70b-versatile','llama3-70b-8192','gemma2-9b-it','llama3-8b-8192'];
-    for(const model of groqModels){
-      try{
-        const r=await fetchTimed('https://api.groq.com/openai/v1/chat/completions',{
-          method:'POST',
-          headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk},
-          body:JSON.stringify({messages:[{role:'user',content:prompt}],model,max_tokens:500,temperature:0.7})
-        },8000);
-        if(r.status===429) return '⚠️ Groq 速率限制（每分鐘有上限），請稍等 30 秒後點 ↻ 重試';
-        if(r.status===401||r.status===403){
-          const hint=gk.length>8?`（目前儲存：${gk.slice(0,4)}...${gk.slice(-4)}）`:'';
-          return `❌ Groq 驗證失敗${hint}，請到 ⚙️ 清除舊 Key 再重新貼上新申請的 Key`;
-        }
-        if(r.status===400||r.status===404) continue;
-        if(r.ok){const j=await r.json();const t=j.choices?.[0]?.message?.content||'';if(t.trim().length>10)return t.trim();}
-      }catch(_){}
-    }
+  // ── Server-side Groq proxy ──
+  const groqModels=['llama-3.3-70b-versatile','llama-3.1-70b-versatile','llama3-70b-8192','gemma2-9b-it','llama3-8b-8192'];
+  for(const model of groqModels){
+    try{
+      const r=await fetchTimed('/api/groq',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:[{role:'user',content:prompt}],model,max_tokens:500,temperature:0.7})
+      },8000);
+      if(r.status===429) return '⚠️ Groq 速率限制（每分鐘有上限），請稍等 30 秒後點 ↻ 重試';
+      if(r.status===400||r.status===404) continue;
+      if(r.ok){const j=await r.json();const t=j.choices?.[0]?.message?.content||'';if(t.trim().length>10)return t.trim();}
+    }catch(_){}
   }
-  // ── Pollinations 免費備援（無 Groq key 時） ──
+  // ── Pollinations 免費備援 ──
   try{return await callAIFree(prompt);}catch(e){
-    if(e.message&&e.message.includes('429')) return '⚠️ 免費 AI 已達上限，請到 ⚙️ 設定 Groq Key（console.groq.com 免費申請）';
+    if(e.message&&e.message.includes('429')) return '⚠️ 免費 AI 已達上限，請稍後再試';
   }
   return '⚠️ AI 暫時無法回應，請點 ↻ 重試';
 }
