@@ -47,7 +47,7 @@ header p{color:rgba(255,255,255,.65);font-size:.78rem;margin-top:4px;text-shadow
 .srch-btn{padding:10px 16px;background:var(--accent);border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:.84rem;font-weight:600;white-space:nowrap;flex-shrink:0;height:42px}
 .srch-inner input:focus{border-color:var(--accent)}
 .srch-inner input::placeholder{color:var(--text2)}
-.srch-ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:1rem;pointer-events:none}
+.srch-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:.8rem;pointer-events:none;font-style:normal}
 .hint{display:none}
 .ai-wrap{display:contents}
 .ai-big-btn{padding:10px 16px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:.84rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;height:42px;transition:opacity .2s}
@@ -183,7 +183,7 @@ header{position:relative}
     <button class="key-btn" onclick="toggleKeyPanel()">⚙️ AI 設定</button>
   </header>
   <div class="key-panel" id="keyPanel">
-    <p>🤖 AI 摘要功能需要 <strong>Groq API Key</strong>（完全免費，無信用卡，台灣可用）<br>
+    <p>AI 摘要功能需要 <strong>Groq API Key</strong>（完全免費，無信用卡，台灣可用）<br>
     ① 開 <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a> → 用 Google 帳號登入<br>
     ② 點「Create API Key」→ 複製（<code>gsk_...</code> 開頭）→ 貼下方</p>
     <div class="key-row">
@@ -197,31 +197,31 @@ header{position:relative}
 
   <div class="srch-wrap">
     <div class="srch-inner">
-      <span class="srch-ico">🔍</span>
+      <span class="srch-ico">◎</span>
       <input type="text" id="si" placeholder="輸入任何句子... 例：TSMC 先進封裝 / HBM4 供應鏈 / CoWoS 良率">
     </div>
     <button class="srch-btn" onclick="triggerSearch()">搜尋</button>
     <div class="ai-wrap">
-      <button class="ai-big-btn" onclick="askAI()">🤖 問AI</button>
+      <button class="ai-big-btn" onclick="askAI()">問 AI</button>
     </div>
   </div>
   <div class="qdisp" id="qdisp"></div>
   <div class="ai-panel" id="aipanel"></div>
 
-  <div class="lbl">📂 來源</div>
+  <div class="lbl">來源</div>
   <div class="row" id="srcRow">
-    <div class="pill p-src on" data-s="all"   onclick="setSrc('all')">🌐 全部</div>
-    <div class="pill p-src"    data-s="news"  onclick="setSrc('news')">📰 新聞</div>
-    <div class="pill p-src"    data-s="paper" onclick="setSrc('paper')">📄 論文 (arXiv)</div>
-    <div class="pill p-src"    data-s="abc"   onclick="setSrc('abc')">📧 Always Be Curious</div>
-    <div class="pill p-src"    data-s="youtube" onclick="setSrc('youtube')">📺 YouTube 影片</div>
+    <div class="pill p-src on" data-s="all"   onclick="setSrc('all')">全部</div>
+    <div class="pill p-src"    data-s="news"  onclick="setSrc('news')">新聞</div>
+    <div class="pill p-src"    data-s="paper" onclick="setSrc('paper')">論文 (arXiv)</div>
+    <div class="pill p-src"    data-s="abc"   onclick="setSrc('abc')">Always Be Curious</div>
+    <div class="pill p-src"    data-s="youtube" onclick="setSrc('youtube')">YouTube 影片</div>
     <div class="pill p-src" data-s="tomshardware.com"  onclick="setSrc('tomshardware.com')">Tom's Hardware</div>
     <div class="pill p-src" data-s="techcrunch.com" onclick="setSrc('techcrunch.com')">TechCrunch</div>
     <div class="pill p-src" data-s="theregister.com" onclick="setSrc('theregister.com')">The Register</div>
     <div class="pill p-src" data-s="semiwiki.com"   onclick="setSrc('semiwiki.com')">SemiWiki</div>
   </div>
 
-  <div class="lbl">⏱ 時間範圍</div>
+  <div class="lbl">時間範圍</div>
   <div class="row" id="timeRow">
     <div class="pill p-time"         data-t="1h"     onclick="setTime('1h')">1小時</div>
     <div class="pill p-time"         data-t="12h"    onclick="setTime('12h')">12小時</div>
@@ -231,7 +231,7 @@ header{position:relative}
     <div class="pill p-time"         data-t="1m"     onclick="setTime('1m')">1個月</div>
     <div class="pill p-time"          data-t="3m"     onclick="setTime('3m')">3個月</div>
     <div class="pill p-time"         data-t="1y"     onclick="setTime('1y')">1年</div>
-    <div class="pill p-time"         data-t="custom" onclick="setTime('custom')">✏️ 自訂</div>
+    <div class="pill p-time"         data-t="custom" onclick="setTime('custom')">自訂</div>
   </div>
   <div class="ctime" id="ctime">
     <label>開始 <input type="date" id="sd"></label>
@@ -239,13 +239,13 @@ header{position:relative}
     <button class="apply-btn" onclick="applyCustom()">套用</button>
   </div>
 
-  <div class="lbl">🏷 產業分類（第一層）</div>
+  <div class="lbl">產業分類</div>
   <div class="row" id="l1row"></div>
 
   <div class="l2-panel" id="l2panel"></div>
 
   <div class="rfwrap">
-    <button class="rfbtn" id="rfbtn" onclick="fetchAll()">🔄 重新載入</button>
+    <button class="rfbtn" id="rfbtn" onclick="fetchAll()">↺ 重新載入</button>
   </div>
 
   <div class="stats">
@@ -1229,23 +1229,23 @@ function render(){
   if(videos.length){
     h+=`<div class="div-row">📺 YouTube 影片（${videos.length} 部）</div>`;
     videos.forEach(n=>{h+=cardHTML(n,'video');});
-    if(abc.length+papers.length+live.length+base.length) h+=`<div class="div-row">📰 新聞 / 論文</div>`;
+    if(abc.length+papers.length+live.length+base.length) h+=`<div class="div-row">新聞 / 論文</div>`;
   }
   if(abc.length){
-    h+=`<div class="div-row">📧 Always Be Curious（${abc.length} 篇）</div>`;
+    h+=`<div class="div-row">Always Be Curious（${abc.length} 篇）</div>`;
     abc.forEach(n=>{h+=cardHTML(n,'abc');});
-    if(papers.length+live.length+base.length) h+=`<div class="div-row">📰 新聞 / 論文</div>`;
+    if(papers.length+live.length+base.length) h+=`<div class="div-row">新聞 / 論文</div>`;
   }
   if(papers.length){
-    h+=`<div class="div-row">📄 arXiv 論文（${papers.length} 篇）</div>`;
+    h+=`<div class="div-row">arXiv 論文（${papers.length} 篇）</div>`;
     h+='<div class="infobox">💡 arXiv 為學術預印本（cs / physics / eess）。IEDM、VLSI、ISSCC 等 IEEE 付費論文請至 <a href="https://ieeexplore.ieee.org" target="_blank">ieeexplore.ieee.org</a> 查詢。</div>';
     papers.forEach(n=>{h+=cardHTML(n,'paper');});
-    if(live.length+base.length) h+=`<div class="div-row">📰 新聞</div>`;
+    if(live.length+base.length) h+=`<div class="div-row">新聞</div>`;
   }
   if(live.length){
     if(!papers.length&&!abc.length) h+=`<div class="div-row">📡 即時搜尋結果（${live.length} 則）</div>`;
     live.forEach(n=>{h+=cardHTML(n,'live');});
-    if(base.length) h+=`<div class="div-row">📰 已載入新聞（${base.length} 則）</div>`;
+    if(base.length) h+=`<div class="div-row">已載入新聞（${base.length} 則）</div>`;
   }
   base.forEach(n=>{h+=cardHTML(n,'news');});
 
@@ -1267,7 +1267,7 @@ function cardHTML(n,kind){
   const l2k=l1k?detectL2(n.title,l1k):null;
   const l1tag=l1k?`<span class="tl1">${CAT[l1k].emoji} ${CAT[l1k].label}</span>`:'';
   const l2tag=(l2k&&l1k)?`<span class="tl2">${CAT[l1k].subs[l2k].label}</span>`:'';
-  const badge={news:'<span class="badge bn">📰 新聞</span>',live:'<span class="badge bl">⚡ 即時</span>',paper:'<span class="badge bp">📄 論文</span>',abc:'<span class="badge ba">📧 ABC</span>',video:'<span class="badge bv">📺 影片</span>'}[kind];
+  const badge={news:'<span class="badge bn">新聞</span>',live:'<span class="badge bl">⚡ 即時</span>',paper:'<span class="badge bp">📄 論文</span>',abc:'<span class="badge ba">📧 ABC</span>',video:'<span class="badge bv">📺 影片</span>'}[kind];
   const cls='card'+(kind==='paper'?' cpaper':kind==='live'?' clive':kind==='abc'?' cabc':kind==='video'?' cvideo':'');
   const thumb=n.thumb?`<img class="cthumb" src="${esc(n.thumb)}" alt="" loading="lazy" onerror="this.style.display='none'">`:'';
   // AI 中文摘要（優先讀 cache，否則顯示佔位）
@@ -1332,7 +1332,7 @@ async function askAI(){
   if(!q){alert('請先輸入關鍵字');return;}
   const panel=document.getElementById('aipanel');
   panel.className='ai-panel show';
-  panel.innerHTML='<span class="ai-lbl">🤖 AI 回答中...</span><div class="ai-loading">思考中，請稍候...</div>';
+  panel.innerHTML='<span class="ai-lbl">AI 回答中...</span><div class="ai-loading">思考中，請稍候...</div>';
   try{
     const r=await fetch('https://text.pollinations.ai/',{
       method:'POST',
@@ -1380,7 +1380,7 @@ function clearKey(){
 
 async function callAI(prompt){
   const key=getKey();
-  if(!key) return '🔑 請點右上角「⚙️ AI 設定」輸入免費 Groq Key（console.groq.com/keys）';
+  if(!key) return '請點右上角「AI 設定」輸入免費 Groq Key（console.groq.com/keys）';
   try{
     const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
       method:'POST',
