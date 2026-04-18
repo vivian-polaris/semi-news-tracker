@@ -114,7 +114,7 @@ def fetch_chips():
     today = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
 
     # TSE T86 – try last 5 trading days
-    for delta in range(7):
+    for delta in range(15):
         dt = today - datetime.timedelta(days=delta)
         if dt.weekday() >= 5:
             continue
@@ -151,7 +151,7 @@ def fetch_chips():
             chips = {}  # 資料不足，嘗試前一交易日
 
     # OTC chips – TPEX equivalent
-    for delta in range(7):
+    for delta in range(15):
         dt = today - datetime.timedelta(days=delta)
         if dt.weekday() >= 5:
             continue
@@ -240,60 +240,31 @@ def fetch_month_revenue():
 # ── 5. Income (Quarterly) ─────────────────────────────────────────────────────
 def fetch_income():
     income = {}
-    today = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
-    year_tw = today.year - 1911
-    # Latest quarter: Q4 is published ~March, Q1 ~May, Q2 ~Aug, Q3 ~Nov
-    quarter_map = {1:4, 2:4, 3:1, 4:1, 5:1, 6:2, 7:2, 8:2, 9:3, 10:3, 11:3, 12:4}
-    q = quarter_map[today.month]
-    yr = year_tw if not (today.month <= 2 and q == 4) else year_tw - 1
-
-    for (y, qq) in [(yr, q), (yr - 1 if q == 1 else yr, q - 1 if q > 1 else 4)]:
-        # TSE income
-        url = f'https://openapi.twse.com.tw/v1/opendata/t187ap06_L?yearquarter={y}Q{qq}'
-        data = get(url)
-        if not data:
-            url2 = f'https://openapi.twse.com.tw/v1/opendata/t187ap06_L?year={y}&quarter={qq}'
-            data = get(url2)
-        if data and isinstance(data, list) and len(data) > 50:
-            added = 0
-            for r in data:
-                code = str(r.get('公司代號') or r.get('股票代號') or '').strip()
-                eps  = _flt(r.get('基本每股盈餘（元）') or r.get('EPS') or r.get('eps'))
-                rev  = _int2(r.get('營業收入') or r.get('revenue'))
-                oi   = _int2(r.get('營業利益（損失）') or r.get('operatingIncome'))
-                ni   = _int2(r.get('本期淨利（淨損）') or r.get('netIncome'))
-                if code and any(v is not None for v in [eps, rev]):
-                    income[code] = {'eps': eps, 'revenue': rev, 'operatingIncome': oi,
-                                    'netIncome': ni, 'year': str(y), 'quarter': str(qq)}
-                    added += 1
-            print(f'  TSE income {y}Q{qq}: {added}')
-            if added > 100:
-                break
-
-    # OTC income
-    for (y, qq) in [(yr, q), (yr - 1 if q == 1 else yr, q - 1 if q > 1 else 4)]:
-        url = f'https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap06_L?yearquarter={y}Q{qq}'
-        data = get(url)
-        if data and isinstance(data, list) and len(data) > 20:
-            added = 0
-            for r in data:
-                code = str(r.get('公司代號') or r.get('SecuritiesCompanyCode') or '').strip()
-                eps  = _flt(r.get('基本每股盈餘（元）') or r.get('EPS'))
-                rev  = _int2(r.get('營業收入') or r.get('revenue'))
-                oi   = _int2(r.get('營業利益（損失）') or r.get('operatingIncome'))
-                ni   = _int2(r.get('本期淨利（淨損）') or r.get('netIncome'))
-                if code and any(v is not None for v in [eps, rev]) and code not in income:
-                    income[code] = {'eps': eps, 'revenue': rev, 'operatingIncome': oi,
-                                    'netIncome': ni, 'year': str(y), 'quarter': str(qq)}
-                    added += 1
-            print(f'  OTC income {y}Q{qq}: +{added}')
-            if added > 20:
-                break
+    # t187ap06_L is broken (returns HTML); use t187ap14_L which returns JSON quarterly income
+    url = 'https://openapi.twse.com.tw/v1/opendata/t187ap14_L'
+    data = get(url)
+    if data and isinstance(data, list) and len(data) > 50:
+        for r in data:
+            code = str(r.get('公司代號') or '').strip()
+            eps  = _flt(r.get('基本每股盈餘(元)'))
+            rev  = _int2(r.get('營業收入'))
+            oi   = _int2(r.get('營業利益'))
+            ni   = _int2(r.get('稅後淨利'))
+            if code and re.match(r'^\d{4,6}$', code):
+                income[code] = {
+                    'eps': eps, 'revenue': rev,
+                    'operatingIncome': oi, 'netIncome': ni,
+                    'year': str(r.get('年度','')),
+                    'quarter': str(r.get('季別',''))
+                }
+        print(f'  TSE income (t187ap14_L): {len(income)}')
+    else:
+        print('  ⚠️ t187ap14_L failed or empty')
 
     print(f'  Total income: {len(income)}')
     return income
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+
 def _flt(v):
     if v is None: return None
     try:
