@@ -44,8 +44,8 @@ body{
 
 /* ── Header ── */
 header{text-align:center;padding:48px 20px 32px;position:relative;
-  background:url('https://images.pexels.com/photos/8462956/pexels-photo-8462956.jpeg?auto=compress&cs=tinysrgb&w=1400&h=500&fit=crop&crop=center') center center/cover no-repeat;
-  border-bottom:1px solid var(--border);margin-bottom:8px;overflow:hidden;min-height:200px}
+  background:url('https://images.pexels.com/photos/8462956/pexels-photo-8462956.jpeg?auto=compress&cs=tinysrgb&w=1600') center 68%/cover no-repeat;
+  border-bottom:1px solid var(--border);margin-bottom:8px;overflow:hidden;min-height:300px}
 header::before{content:'';position:absolute;inset:0;
   background:linear-gradient(to bottom,rgba(13,17,23,.55) 0%,rgba(13,17,23,.78) 100%);
   pointer-events:none}
@@ -65,8 +65,8 @@ header p{color:rgba(255,255,255,.7);font-size:.78rem;line-height:1.6;text-shadow
   font-weight:600;background:rgba(79,126,247,.25);color:#93c5fd;
   border:1px solid rgba(79,126,247,.4);margin-left:6px;letter-spacing:.03em}
 @media(max-width:640px){
-  header{padding:40px 14px 24px;min-height:160px}
-  h1{font-size:1.3rem}
+  header{padding:36px 14px 20px;min-height:240px;background-position:center 68%}
+  h1{font-size:1.25rem}
   .back-btn,.key-btn{top:12px}
 }
 
@@ -385,7 +385,7 @@ footer a:hover{text-decoration:underline}
   <a href="index-pro.html" class="back-btn">← 返回新聞</a>
   <button class="key-btn" onclick="toggleKeyPanel()" style="display:none">⚙️ API Key</button>
   <h1>Vivian’s VCP Finder</h1>
-  <p>台股強勢股自動掃描 <span class="subtitle-badge">Mark Minervini VCP</span></p>
+  <p>台股動能精選 <span class="subtitle-badge">VCP · Stage 2</span></p>
 </header>
 
 <!-- ── 個股快查（置頂）── -->
