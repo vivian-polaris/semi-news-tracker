@@ -41,15 +41,16 @@ header p{color:rgba(255,255,255,.65);font-size:.78rem;margin-top:4px;text-shadow
 .lbl{color:var(--text2);font-size:.62rem;font-weight:600;letter-spacing:.09em;margin:10px 0 5px 2px;text-transform:uppercase}
 
 /* Search */
-.srch-wrap{position:relative;margin:14px 0 6px}
-.srch-wrap input{width:100%;padding:11px 76px 11px 44px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.95rem;outline:none;transition:border .2s}
-.srch-btn{position:absolute;right:7px;top:50%;transform:translateY(-50%);padding:5px 14px;background:var(--accent);border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:.82rem;font-weight:600}
-.srch-wrap input:focus{border-color:var(--accent)}
-.srch-wrap input::placeholder{color:var(--text2)}
-.srch-ico{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:1.05rem;pointer-events:none}
+.srch-wrap{display:flex;gap:8px;margin:14px 0 6px;align-items:center}
+.srch-inner{position:relative;flex:1;min-width:0}
+.srch-inner input{width:100%;padding:10px 76px 10px 40px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.93rem;outline:none;transition:border .2s}
+.srch-btn{position:absolute;right:7px;top:50%;transform:translateY(-50%);padding:5px 12px;background:var(--accent);border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:.8rem;font-weight:600;white-space:nowrap}
+.srch-inner input:focus{border-color:var(--accent)}
+.srch-inner input::placeholder{color:var(--text2)}
+.srch-ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:1rem;pointer-events:none}
 .hint{display:none}
-.ai-wrap{margin:6px 0 4px}
-.ai-big-btn{width:100%;padding:10px;background:var(--accent);border:none;border-radius:6px;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;letter-spacing:.01em;transition:opacity .2s}
+.ai-wrap{display:flex;flex-shrink:0}
+.ai-big-btn{padding:10px 16px;background:var(--accent2);border:none;border-radius:8px;color:#fff;font-size:.82rem;font-weight:700;cursor:pointer;letter-spacing:.01em;transition:opacity .2s;white-space:nowrap}
 .ai-big-btn:hover{opacity:.88}
 .ai-panel{display:none;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.3);border-radius:12px;padding:14px 16px;margin:6px 0 4px;font-size:.88rem;line-height:1.7;color:var(--text);white-space:pre-wrap}
 .ai-panel.show{display:block}
@@ -195,14 +196,16 @@ header{position:relative}
 
 
   <div class="srch-wrap">
-    <span class="srch-ico">🔍</span>
-    <input type="text" id="si" placeholder="輸入任何句子... 例：TSMC 先進封裝的最新進展 / HBM4 供應鏈動態 / CoWoS 良率論文">
-    <button class="srch-btn" onclick="triggerSearch()">搜尋</button>
+    <div class="srch-inner">
+      <span class="srch-ico">🔍</span>
+      <input type="text" id="si" placeholder="輸入任何句子... 例：TSMC 先進封裝 / HBM4 供應鏈 / CoWoS 良率">
+      <button class="srch-btn" onclick="triggerSearch()">搜尋</button>
+    </div>
+    <div class="ai-wrap">
+      <button class="ai-big-btn" onclick="askAI()">🤖 問 AI</button>
+    </div>
   </div>
   <div class="qdisp" id="qdisp"></div>
-  <div class="ai-wrap">
-    <button class="ai-big-btn" onclick="askAI()">🤖 問 AI：用人工智慧直接回答</button>
-  </div>
   <div class="ai-panel" id="aipanel"></div>
 
   <div class="lbl">📂 來源</div>
