@@ -590,21 +590,28 @@ footer a:hover{text-decoration:underline}
   <button class="export-btn" onclick="exportCSV()">⬇ 匯出 CSV</button>
 </div>
 
-<!-- ── Note ── -->
-<details class="note" style="cursor:pointer">
-  <summary style="list-style:none;display:flex;align-items:center;gap:5px;font-size:.74rem;color:var(--text2);user-select:none;outline:none">
-    <span id="noteArrow" style="font-size:.65rem;transition:transform .2s">▶</span> VCP 四大條件 · 基本面 · 籌碼　說明
-  </summary>
-  <div style="margin-top:8px">
+<!-- ── Note + Legend toggle link ── -->
+<div style="text-align:right;margin:6px 2px 2px">
+  <a href="#" id="explainLink" onclick="toggleExplain(event)" style="font-size:.72rem;color:var(--purple);text-decoration:none">說明 ▶</a>
+</div>
+<div id="explainDiv" style="display:none">
+  <div class="note">
     <strong>VCP 四大條件：</strong>Stage 2（股價 &gt; MA50 &gt; MA150 &gt; MA200）· 距 52 週高點 &lt;25% · ATR 波動率收縮 · 成交量萎縮。分數 ≥ 80 為強力候選。<br>
     <strong>基本面：</strong>ROE ≥ 15% 佳 · 毛利率 / 營益率越高越好 · EPS 年增 / 營收年增為正成長。資料來源：Yahoo Finance。<br>
     <strong>籌碼：</strong>外資 / 投信買賣超，來源：TWSE T86。數值為正 = 買超，負 = 賣超。
   </div>
-</details>
+</div>
 <script>
-  document.querySelector('details.note').addEventListener('toggle',function(){
-    document.getElementById('noteArrow').style.transform=this.open?'rotate(90deg)':'';
-  });
+  function toggleExplain(e){
+    e.preventDefault();
+    const d=document.getElementById('explainDiv');
+    const leg=document.getElementById('legendDiv');
+    const lk=document.getElementById('explainLink');
+    const open=d.style.display==='none';
+    d.style.display=open?'':'none';
+    if(leg) leg.style.display=open?'flex':'none';
+    lk.textContent=open?'說明 ▼':'說明 ▶';
+  }
   function toggleFilterBox(){
     const wrap=document.getElementById('filterRowsWrap');
     const chev=document.getElementById('filterToggleChevron');
@@ -1699,7 +1706,6 @@ async function startScan(){
   document.getElementById('sumGrid').style.display='';
   document.getElementById('filterBox').style.display='';
   document.getElementById('statsBar').style.display='';
-  document.getElementById('legendDiv').style.display='';
   document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="12"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
 
   // Get stock list based on selected source
@@ -1816,7 +1822,6 @@ function renderAll(){
   document.getElementById('sumGrid').style.display='';
   document.getElementById('filterBox').style.display='';
   document.getElementById('statsBar').style.display='';
-  document.getElementById('legendDiv').style.display='';
   const wd=allResults.filter(r=>r.vcp);
   document.getElementById('sumScanned').textContent=wd.length;
   document.getElementById('sumVcp').textContent=wd.filter(r=>r.vcp.score>=60).length;
