@@ -2413,11 +2413,9 @@ function renderTable(){
       <td><span style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span><span class="tsec">${r.sector}</span></td>
       <td class="tprice">NT$${fmtP(v.price)}</td>
       <td class="spark-cell">${spk}</td>
-      <td>
-        <div class="scr-wrap">
-          <div class="scr-bg"><div class="scr-fill f${s}" style="width:${v.score}%"></div></div>
-          <span class="scr-num s${s}">${v.score}</span>
-        </div>
+      <td style="text-align:center;white-space:nowrap">
+        <span class="scr-num s${s}">${v.score}</span>
+        <div class="scr-bg" style="width:36px;margin:3px auto 0"><div class="scr-fill f${s}" style="width:${v.score}%"></div></div>
       </td>
       ${(()=>{const cs=renderCSCells(v,r.fund||null,chipsMap[r.code]||null);return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+cs.seven;})()}
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
