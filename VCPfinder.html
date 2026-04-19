@@ -147,7 +147,10 @@ details>summary::-webkit-details-marker,details>summary::marker{display:none;con
 .sum-sub{font-size:.64rem;color:var(--text2);margin-top:2px}
 @media(max-width:640px){
   .sum-grid{grid-template-columns:repeat(2,1fr);gap:8px}
-  #sumGrid .sum-card{flex:0 0 calc(50% - 4px);min-width:0}
+  #sumGrid .sum-card{flex:1 1 0;min-width:0;padding:5px 4px!important}
+  #sumGrid .sum-label{font-size:.52rem;letter-spacing:0;margin-bottom:1px}
+  #sumGrid .sum-val{font-size:1.1rem}
+  #sumGrid .sum-sub{display:none}
   .sum-card{padding:10px 12px;border-radius:6px}
   .sum-label{font-size:.62rem;letter-spacing:.04em;margin-bottom:3px}
   .sum-val{font-size:1.5rem}
