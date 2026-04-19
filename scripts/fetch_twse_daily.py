@@ -488,9 +488,16 @@ def main():
         print(f'  existing OTC price: {len(existing_otc_price)}')
     except Exception: pass
 
-    # 建立股票清單：TSE from bwibbu, OTC from otc_stocks
-    tse_list = [{'code': c, 'ex': 'TW'} for c in bwibbu.keys() if re.match(r'^\d{4,6}$', c)]
-    otc_list = [{'code': s['code'], 'ex': 'TWO'} for s in otc_stocks if re.match(r'^\d{4,6}$', s.get('code',''))]
+    # 建立股票清單：TSE from bwibbu, OTC from otc_stocks（備援：sectors - bwibbu）
+    tse_codes = set(c for c in bwibbu.keys() if re.match(r'^\d{4,6}$', c))
+    tse_list = [{'code': c, 'ex': 'TW'} for c in tse_codes]
+    if otc_stocks:
+        otc_list = [{'code': s['code'], 'ex': 'TWO'} for s in otc_stocks if re.match(r'^\d{4,6}$', s.get('code',''))]
+    else:
+        # 備援：sectors 裡不屬於 TSE 的代號，通常是 OTC
+        otc_codes = [c for c in sectors.keys() if re.match(r'^\d{4,6}$', c) and c not in tse_codes]
+        otc_list = [{'code': c, 'ex': 'TWO'} for c in otc_codes]
+        print(f'  OTC 備援：從 sectors 推算 {len(otc_list)} 支')
     all_stock_list = tse_list + otc_list
     print(f'  stock list: TSE={len(tse_list)}, OTC={len(otc_list)}, total={len(all_stock_list)}')
 
