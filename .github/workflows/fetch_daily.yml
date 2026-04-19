@@ -2,8 +2,8 @@ name: Fetch Daily TWSE Data
 
 on:
   schedule:
-    # 台灣時間 16:45 (08:45 UTC)，收盤後抓資料
-    - cron: '45 8 * * 1-5'
+    # 台灣時間 16:45 (08:45 UTC)，每天跑（週末/假日自動用上一交易日資料）
+    - cron: '45 8 * * *'
   workflow_dispatch:
 
 permissions:
