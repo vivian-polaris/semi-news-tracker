@@ -730,7 +730,7 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('score')">VCP分數 ⇅</th>
       <th onclick="setSort('fund',this)">基本面 ⇅</th>
       <th onclick="setSort('chips',this)">籌碼(外資/投信) ⇅</th>
-      <th title="Current EPS成長≥25%">C</th>
+      <th title="Current：EPS成長≥25%（無EPS時用月營收YoY代替）">C</th>
       <th title="Annual ROE≥15%">A</th>
       <th title="Near new high &lt;5%">N</th>
       <th title="Supply tight 縮量整理">S</th>
@@ -2119,7 +2119,9 @@ function calcFundScore(fund){
 // L: Leader – VCP score≥70        I: Institutional buying (外資/投信 買超)
 // M: Market uptrend – Stage 2
 function calcCANSLIM(vcp, fund, chips){
-  const C=fund?.earningsGrowth!=null?fund.earningsGrowth>=0.25:null;
+  // C：優先用 EPS YoY（當有季報歷史時），否則用月營收 YoY ≥ 25% 作替代
+  const cGrowth=fund?.earningsGrowth??fund?.revenueGrowth??null;
+  const C=cGrowth!=null?cGrowth>=0.25:null;
   const A=fund?.roe!=null?fund.roe>=0.15:(fund?.operatingMargin!=null?fund.operatingMargin>=0.12:null);
   const N=vcp?vcp.pctH<5:null;
   const S=vcp?(vcp.vRat!=null?(vcp.vRat<0.85&&vcp.contractions>=1):vcp.contractions>=2):null;
@@ -2149,8 +2151,10 @@ function canslimBadge(vcp,fund,chips){
   const cs=calcCANSLIM(vcp,fund,chips);
   const na='<span style="color:#6b7280">無資料</span>';
   const rows=[
-    {k:'C',v:cs.C,lbl:'EPS成長',
-     data:fund?.earningsGrowth!=null?fmtPct2(fund.earningsGrowth):na,
+    {k:'C',v:cs.C,
+     lbl:fund?.earningsGrowth!=null?'EPS成長':'營收成長',
+     data:fund?.earningsGrowth!=null?fmtPct2(fund.earningsGrowth):
+          fund?.revenueGrowth!=null?fmtPct2(fund.revenueGrowth)+' <span style="font-size:.55rem;color:var(--text2)">(營收)</span>':na,
      crit:'需≥25%'},
     {k:'A',v:cs.A,lbl:'ROE',
      data:fund?.roe!=null?fmtROE(fund.roe):(fund?.operatingMargin!=null?`營益${fmtPct2(fund.operatingMargin)}`:na),
@@ -2201,7 +2205,9 @@ function csScoreBadge(total){
 function renderCSCells(vcp,fund,chips){
   const cs=calcCANSLIM(vcp,fund,chips);
   const na='—';
-  const C=csCell(cs.C, fund?.earningsGrowth!=null?(((fund.earningsGrowth>=0?'+':'')+( fund.earningsGrowth*100).toFixed(0)+'%')):na);
+  const cVal=fund?.earningsGrowth??fund?.revenueGrowth??null;
+  const cLbl=cVal!=null?((cVal>=0?'+':'')+( cVal*100).toFixed(0)+'%'+(fund?.earningsGrowth==null?'▸':'')):na;
+  const C=csCell(cs.C, cLbl);
   const A=csCell(cs.A, fund?.roe!=null?((fund.roe*100).toFixed(0)+'%'):(fund?.operatingMargin!=null?((fund.operatingMargin*100).toFixed(0)+'%'):na));
   const N=csCell(cs.N, vcp?('-'+vcp.pctH+'%'):na);
   const S=csCell(cs.S, vcp&&vcp.vRat!=null?('×'+vcp.vRat):na, vcp&&vcp.contractions>0?vcp.contractions+'段':null);
