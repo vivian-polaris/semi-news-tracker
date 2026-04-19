@@ -252,26 +252,60 @@ def fetch_month_revenue():
     return rev
 
 # ── 5. Income (Quarterly) ─────────────────────────────────────────────────────
+def parse_income_rows(data):
+    result = {}
+    if not data or not isinstance(data, list):
+        return result
+    for r in data:
+        code = str(r.get('公司代號') or '').strip()
+        if not code or not re.match(r'^\d{4,6}$', code):
+            continue
+        eps = _flt(r.get('基本每股盈餘(元)'))
+        rev = _int2(r.get('營業收入'))
+        oi  = _int2(r.get('營業利益'))
+        ni  = _int2(r.get('稅後淨利'))
+        result[code] = {
+            'eps': eps, 'revenue': rev,
+            'operatingIncome': oi, 'netIncome': ni,
+            'year': str(r.get('年度','')),
+            'quarter': str(r.get('季別',''))
+        }
+    return result
+
 def fetch_income():
     income = {}
-    # t187ap06_L is broken (returns HTML); use t187ap14_L which returns JSON quarterly income
+    # 抓當季資料
     url = 'https://openapi.twse.com.tw/v1/opendata/t187ap14_L'
-    data = get(url)
-    if data and isinstance(data, list) and len(data) > 50:
-        for r in data:
-            code = str(r.get('公司代號') or '').strip()
-            eps  = _flt(r.get('基本每股盈餘(元)'))
-            rev  = _int2(r.get('營業收入'))
-            oi   = _int2(r.get('營業利益'))
-            ni   = _int2(r.get('稅後淨利'))
-            if code and re.match(r'^\d{4,6}$', code):
-                income[code] = {
-                    'eps': eps, 'revenue': rev,
-                    'operatingIncome': oi, 'netIncome': ni,
-                    'year': str(r.get('年度','')),
-                    'quarter': str(r.get('季別',''))
-                }
-        print(f'  TSE income (t187ap14_L): {len(income)}')
+    income = parse_income_rows(get(url))
+    print(f'  TSE income current: {len(income)}')
+
+    # 抓前一年同季資料（計算 YoY EPS 成長）
+    if income:
+        sample = next(iter(income.values()))
+        cur_year = int(sample.get('year', 0) or 0)
+        cur_qtr  = sample.get('quarter', '')
+        prev_year = cur_year - 1
+        if prev_year > 100 and cur_qtr:
+            # TWSE 有提供歷史季報的另一個端點格式
+            prev_url = f'https://openapi.twse.com.tw/v1/opendata/t187ap14_L?year={prev_year}&season={cur_qtr}'
+            prev_data = get(prev_url)
+            if not prev_data:
+                # 嘗試 MOPS API（公開資訊觀測站）
+                tw_year = prev_year  # 民國年
+                season_map = {'1':'Q1','2':'Q2','3':'Q3','4':'Q4'}
+                mops_url = f'https://mops.twse.com.tw/mops/web/ajax_t05st09?encodeURIComponent=1&step=1&firstin=1&off=1&keyword4=&code1=&TYPEK=sii&co_id=&year={tw_year}&season={cur_qtr}'
+                prev_data = get(mops_url)
+            prev_income = parse_income_rows(prev_data) if prev_data else {}
+            # 計算 YoY EPS 成長率
+            yoy_count = 0
+            for code, cur in income.items():
+                prev = prev_income.get(code)
+                if prev and prev.get('eps') and cur.get('eps'):
+                    p_eps, c_eps = prev['eps'], cur['eps']
+                    if p_eps != 0:
+                        cur['earningsGrowth'] = round((c_eps - p_eps) / abs(p_eps), 4)
+                        yoy_count += 1
+            print(f'  prev year income ({prev_year}Q{cur_qtr}): {len(prev_income)}, YoY computed: {yoy_count}')
     else:
         print('  ⚠️ t187ap14_L failed or empty')
 
