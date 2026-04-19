@@ -1209,7 +1209,8 @@ async function loadTrump(useCache=false){
   } else {
     // 備援：直接從 Google News RSS 抓（需要 CORS proxy）
     const recentQ=new Date(Date.now()-5*24*60*60*1000).toISOString().slice(0,10);
-    const [a,b2,c,d,e,ff1,ff2,war1,war2,war3]=await Promise.all([
+    const recentQ2=new Date(Date.now()-3*24*60*60*1000).toISOString().slice(0,10);
+    const [a,b2,c,d,e,ff1,ff2,war1,war2,war3,bbc1,bbc2,ap1,ap2]=await Promise.all([
       fetchRSS(`Trump tariff trade policy statement after:${recentQ}`).catch(()=>[]),
       fetchRSS(`Federal Reserve interest rate inflation CPI GDP after:${recentQ}`).catch(()=>[]),
       fetchRSS(`semiconductor TSMC Nvidia AMD earnings supply chain after:${recentQ}`).catch(()=>[]),
@@ -1217,14 +1218,18 @@ async function loadTrump(useCache=false){
       fetchRSS(`site:reuters.com finance stocks market after:${recentQ}`).catch(()=>[]),
       fetchRSSUrl('https://www.forexfactory.com/rss.php?category=market_news').catch(()=>[]),
       fetchRSSUrl('https://www.forexfactory.com/rss.php').catch(()=>[]),
-      fetchRSS(`Israel Iran war ceasefire attack strike after:${recentQ}`).catch(()=>[]),
-      fetchRSS(`Strait of Hormuz oil tanker blockade Iran after:${recentQ}`).catch(()=>[]),
-      fetchRSS(`Trump Iran Israel US military diplomacy after:${recentQ}`).catch(()=>[]),
+      fetchRSS(`Israel Iran war ceasefire attack strike after:${recentQ2}`).catch(()=>[]),
+      fetchRSS(`Strait of Hormuz oil tanker blockade Iran after:${recentQ2}`).catch(()=>[]),
+      fetchRSS(`Trump Iran Israel US military diplomacy after:${recentQ2}`).catch(()=>[]),
+      fetchRSSUrl('https://feeds.bbci.co.uk/news/world/rss.xml').catch(()=>[]),
+      fetchRSSUrl('https://feeds.bbci.co.uk/news/business/rss.xml').catch(()=>[]),
+      fetchRSSUrl('https://feeds.apnews.com/rss/apf-topnews').catch(()=>[]),
+      fetchRSSUrl('https://feeds.apnews.com/rss/apf-business').catch(()=>[]),
     ]);
     const seen=new Set();
-    items=[...a,...b2,...c,...d,...e,...ff1,...ff2,...war1,...war2,...war3]
+    items=[...a,...b2,...c,...d,...e,...ff1,...ff2,...war1,...war2,...war3,...bbc1,...bbc2,...ap1,...ap2]
       .filter(x=>{if(seen.has(x.title))return false;seen.add(x.title);return true;})
-      .slice(0,40);
+      .slice(0,50);
   }
   if(!items.length){
     // 所有來源失敗 → 強制顯示任何舊的 AI 快取（無論多舊）
