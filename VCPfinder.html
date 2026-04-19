@@ -738,11 +738,10 @@ footer a:hover{text-decoration:underline}
       <th title="Institutional 法人買超">I</th>
       <th title="Market Stage2">M</th>
       <th onclick="setSort('canslim',this)">CANSLIM評分 ⇅</th>
-      <th>操作</th>
     </tr>
   </thead>
   <tbody id="tblBody">
-    <tr class="load-row"><td colspan="20">開啟自動掃描中...</td></tr>
+    <tr class="load-row"><td colspan="19">開啟自動掃描中...</td></tr>
   </tbody>
 </table>
 </div>
@@ -1162,24 +1161,36 @@ async function loadTrump(useCache=false){
     }
   }
   b.className='news-body loading'; b.textContent='抓取最新新聞...'; t.textContent='';
-  // 使用 5 天前日期，避免今日新聞未被 Google News 索引而回傳空集合（會讓 AI 用舊訓練資料）
-  const recentQ=new Date(Date.now()-5*24*60*60*1000).toISOString().slice(0,10);
-  const [a,b2,c,d,e,ff1,ff2]=await Promise.all([
-    fetchRSS(`Trump tariff trade policy statement after:${recentQ}`).catch(()=>[]),
-    fetchRSS(`Federal Reserve interest rate inflation CPI GDP after:${recentQ}`).catch(()=>[]),
-    fetchRSS(`semiconductor TSMC Nvidia AMD earnings supply chain after:${recentQ}`).catch(()=>[]),
-    fetchRSS(`site:wsj.com stock market finance economy after:${recentQ}`).catch(()=>[]),
-    fetchRSS(`site:reuters.com finance stocks market after:${recentQ}`).catch(()=>[]),
-    fetchRSSUrl('https://www.forexfactory.com/rss.php?category=market_news').catch(()=>[]),
-    fetchRSSUrl('https://www.forexfactory.com/rss.php').catch(()=>[]),
-  ]);
-  const seen=new Set();
-  const items=[...a,...b2,...c,...d,...e,...ff1,...ff2]
-    .filter(x=>{if(seen.has(x.title))return false;seen.add(x.title);return true;})
-    .slice(0,30);
+  // 優先用後端快取新聞（GitHub Actions 每天抓，不依賴 CORS proxy）
+  let items=[];
+  const cachedNews=twseDailyMap?.news;
+  if(cachedNews&&cachedNews.length>=5){
+    const seen=new Set();
+    items=cachedNews
+      .map(x=>({title:x.title,link:x.link,dateStr:x.pubDate?new Date(x.pubDate).toLocaleDateString('zh-TW'):'近期',source:x.source||''}))
+      .filter(x=>{if(seen.has(x.title))return false;seen.add(x.title);return true;})
+      .slice(0,30);
+    t.textContent=`後端快取（${twseDailyMap.date||''}）· 點 ↻ 可強制更新`;
+  } else {
+    // 備援：直接從 Google News RSS 抓（需要 CORS proxy）
+    const recentQ=new Date(Date.now()-5*24*60*60*1000).toISOString().slice(0,10);
+    const [a,b2,c,d,e,ff1,ff2]=await Promise.all([
+      fetchRSS(`Trump tariff trade policy statement after:${recentQ}`).catch(()=>[]),
+      fetchRSS(`Federal Reserve interest rate inflation CPI GDP after:${recentQ}`).catch(()=>[]),
+      fetchRSS(`semiconductor TSMC Nvidia AMD earnings supply chain after:${recentQ}`).catch(()=>[]),
+      fetchRSS(`site:wsj.com stock market finance economy after:${recentQ}`).catch(()=>[]),
+      fetchRSS(`site:reuters.com finance stocks market after:${recentQ}`).catch(()=>[]),
+      fetchRSSUrl('https://www.forexfactory.com/rss.php?category=market_news').catch(()=>[]),
+      fetchRSSUrl('https://www.forexfactory.com/rss.php').catch(()=>[]),
+    ]);
+    const seen=new Set();
+    items=[...a,...b2,...c,...d,...e,...ff1,...ff2]
+      .filter(x=>{if(seen.has(x.title))return false;seen.add(x.title);return true;})
+      .slice(0,30);
+  }
   if(!items.length){
     b.className='news-body';
-    b.textContent='⚠️ RSS 全部連線失敗，無法取得最新新聞。\n請點 ↻ 刷新重試，或檢查網路連線。\n（不補充舊訓練資料，避免誤導）';
+    b.textContent='⚠️ 新聞無法取得（後端快取與 RSS 均失敗）。\n請稍後再試或點 ↻ 重試。';
     t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
     return;
   }
@@ -1765,7 +1776,7 @@ async function startScan(){
   document.getElementById('sumGrid').style.display='';
   document.getElementById('filterBox').style.display='';
   document.getElementById('statsBar').style.display='';
-  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="20"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
+  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="19"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
 
   // Get stock list based on selected source
   let stocks;
@@ -2081,8 +2092,16 @@ function calcFundGrade(fund){
   if(fund.earningsGrowth!=null){tot+=20; pts+=fund.earningsGrowth>=0.15?20:fund.earningsGrowth>=0?10:0;}
   if(fund.revenueGrowth!=null){tot+=15; pts+=fund.revenueGrowth>=0.1?15:fund.revenueGrowth>=0?7:0;}
   if(tot===0){
-    // 無獲利數據，但有估值資料（P/E、P/B、殖利率）
-    if(fund.pe!=null||fund.pb!=null||fund.divYield!=null) return{label:'估值',cls:'sN',score:null};
+    // 無獲利數據，改用 PE/PB/殖利率 做簡易評分
+    if(fund.pe!=null||fund.pb!=null||fund.divYield!=null){
+      let vpts=0,vtot=0;
+      if(fund.pe!=null&&fund.pe>0){vtot+=30;vpts+=fund.pe<12?30:fund.pe<18?20:fund.pe<25?12:fund.pe<35?5:0;}
+      if(fund.pb!=null&&fund.pb>0){vtot+=20;vpts+=fund.pb<1?20:fund.pb<2?14:fund.pb<3?8:fund.pb<5?3:0;}
+      if(fund.divYield!=null){vtot+=10;vpts+=fund.divYield>=4?10:fund.divYield>=2?6:fund.divYield>0?2:0;}
+      if(vtot===0) return{label:'估值',cls:'sN',score:null};
+      const vs=Math.round(vpts/vtot*100);
+      return vs>=70?{label:`估值優 ${vs}`,cls:'sA',score:vs}:vs>=45?{label:`估值中 ${vs}`,cls:'sB',score:vs}:{label:`估值弱 ${vs}`,cls:'sC',score:vs};
+    }
     return null;
   }
   const score=Math.round(pts/tot*100);
@@ -2114,8 +2133,8 @@ function renderTable(){
   document.getElementById('showN').textContent=sorted.length;
   document.getElementById('totalN').textContent=counted;
   const tbody=document.getElementById('tblBody');
-  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="20">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
-  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="20">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
+  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="19">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
+  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="19">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
   tbody.innerHTML=sorted.map(r=>{
     const v=r.vcp;
     const tv=`https://www.tradingview.com/chart/?symbol=TWSE%3A${r.code}`;
@@ -2126,8 +2145,7 @@ function renderTable(){
         <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
         <td class="tn">${r.name}</td>
         <td><span style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span>${r.sector?`<span class="tsec">${r.sector}</span>`:''}</td>
-        <td colspan="16" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
-        <td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
+        <td colspan="17" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
       </tr>`;
     }
     const g=grade(v.score),s=sc(v.score);
@@ -2169,7 +2187,7 @@ function renderTable(){
     const chipsHTML=scoreBadge(cl?.label||null,cl?.cls||'sN',chipsDetail||'<span style="color:#9ca3af">—</span>');
     const spk=sparkline(r.closes||null);
     return `<tr>
-      <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
+      <td class="tc"><a href="${tv}" target="_blank" title="在 TradingView 開啟">${r.code}</a><br>${starEl}</td>
       <td class="tn">${r.name}</td>
       <td><span style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span><span class="tsec">${r.sector}</span></td>
       <td class="tprice">NT$${fmtP(v.price)}</td>
@@ -2186,7 +2204,6 @@ function renderTable(){
       <td>${fundHTML}</td>
       <td>${chipsHTML}</td>
       ${renderCSCells(v,r.fund||null,chipsMap[r.code]||null)}
-      <td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
     </tr>`;
   }).join('');
 }
@@ -2498,7 +2515,7 @@ async function lookupStock() {
 
   // 無快取時才自動啟動掃描
   if(!cacheLoaded){
-    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="20"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
+    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="19"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
     setTimeout(()=>startScan(),1200);
   }
 
