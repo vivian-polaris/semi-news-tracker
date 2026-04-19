@@ -2109,7 +2109,8 @@ function calcFundScore(fund){
   if(fund.roe!=null){tot+=30; pts+=fund.roe>=0.15?30:fund.roe>=0.08?18:fund.roe>=0?8:0;}
   if(fund.grossMargin!=null){tot+=15; pts+=fund.grossMargin>=0.3?15:fund.grossMargin>=0.15?8:fund.grossMargin>0?4:0;}
   if(fund.operatingMargin!=null){tot+=15; pts+=fund.operatingMargin>=0.15?15:fund.operatingMargin>=0.08?8:fund.operatingMargin>0?4:0;}
-  if(fund.earningsGrowth!=null){tot+=20; pts+=fund.earningsGrowth>=0.15?20:fund.earningsGrowth>=0?10:0;}
+  const _eg=fund.earningsGrowth!=null&&fund.earningsGrowth!==0?fund.earningsGrowth:null;
+  if(_eg!=null){tot+=20; pts+=_eg>=0.15?20:_eg>=0?10:0;}
   if(fund.revenueGrowth!=null){tot+=15; pts+=fund.revenueGrowth>=0.1?15:fund.revenueGrowth>=0?7:0;}
   if(tot===0) return null;
   return Math.round(pts/tot*100);
@@ -2120,8 +2121,9 @@ function calcFundScore(fund){
 // L: Leader – VCP score≥70        I: Institutional buying (外資/投信 買超)
 // M: Market uptrend – Stage 2
 function calcCANSLIM(vcp, fund, chips){
-  // C：優先用 EPS YoY（當有季報歷史時），否則用月營收 YoY ≥ 25% 作替代
-  const cGrowth=fund?.earningsGrowth??fund?.revenueGrowth??null;
+  // C：EPS YoY（0.0 = pipeline 未計算，視為無效）→ 改用月營收 YoY 替代
+  const _ceg=fund?.earningsGrowth!=null&&fund.earningsGrowth!==0?fund.earningsGrowth:null;
+  const cGrowth=_ceg??fund?.revenueGrowth??null;
   const C=cGrowth!=null?cGrowth>=0.25:null;
   const A=fund?.roe!=null?fund.roe>=0.15:(fund?.operatingMargin!=null?fund.operatingMargin>=0.12:null);
   const N=vcp?vcp.pctH<5:null;
@@ -2150,12 +2152,13 @@ const CS_DESC={
 function csDesc(k){return CS_DESC[k]||k;}
 function canslimBadge(vcp,fund,chips){
   const cs=calcCANSLIM(vcp,fund,chips);
+  const _ceg=fund?.earningsGrowth!=null&&fund.earningsGrowth!==0?fund.earningsGrowth:null;
   const na='<span style="color:#6b7280">無資料</span>';
   const rows=[
     {k:'C',v:cs.C,
-     lbl:fund?.earningsGrowth!=null?'EPS成長':'營收成長',
-     data:fund?.earningsGrowth!=null?fmtPct2(fund.earningsGrowth):
-          fund?.revenueGrowth!=null?fmtPct2(fund.revenueGrowth)+' <span style="font-size:.55rem;color:var(--text2)">(營收)</span>':na,
+     lbl:_ceg!=null?'EPS成長':'營收YoY',
+     data:_ceg!=null?fmtPct2(_ceg):
+          fund?.revenueGrowth!=null?fmtPct2(fund.revenueGrowth)+' <span style="font-size:.55rem;color:var(--text2)">(月營收)</span>':na,
      crit:'需≥25%'},
     {k:'A',v:cs.A,lbl:'ROE',
      data:fund?.roe!=null?fmtROE(fund.roe):(fund?.operatingMargin!=null?`營益${fmtPct2(fund.operatingMargin)}`:na),
@@ -2192,10 +2195,10 @@ function canslimBadge(vcp,fund,chips){
 function csCell(val, line1, line2){
   const c=val===true?'#34d399':val===false?'#f87171':'#6b7280';
   const sym=val===true?'✓':val===false?'✗':'—';
-  return`<div style="text-align:center;line-height:1.4;min-width:36px">
+  return`<div style="text-align:center;line-height:1.4;width:44px;max-width:44px;overflow:hidden">
     <div style="font-size:.72rem;font-weight:800;color:${c}">${sym}</div>
-    <div style="font-size:.6rem;color:${val===true?'var(--text)':'var(--text2)'};white-space:nowrap">${line1||''}</div>
-    ${line2?`<div style="font-size:.55rem;color:var(--text2)">${line2}</div>`:''}
+    <div style="font-size:.6rem;color:${val===true?'var(--text)':'var(--text2)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${line1||''}</div>
+    ${line2?`<div style="font-size:.55rem;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${line2}</div>`:''}
   </div>`;
 }
 function csScoreBadge(total){
@@ -2206,8 +2209,9 @@ function csScoreBadge(total){
 function renderCSCells(vcp,fund,chips){
   const cs=calcCANSLIM(vcp,fund,chips);
   const na='—';
-  const cVal=fund?.earningsGrowth??fund?.revenueGrowth??null;
-  const cLbl=cVal!=null?((cVal>=0?'+':'')+( cVal*100).toFixed(0)+'%'+(fund?.earningsGrowth==null?'▸':'')):na;
+  const _rceg=fund?.earningsGrowth!=null&&fund.earningsGrowth!==0?fund.earningsGrowth:null;
+  const cVal=_rceg??fund?.revenueGrowth??null;
+  const cLbl=cVal!=null?((cVal>=0?'+':'')+(cVal*100).toFixed(0)+'%'+(_rceg==null?'▸':'')):na;
   const C=csCell(cs.C, cLbl);
   const A=csCell(cs.A, fund?.roe!=null?((fund.roe*100).toFixed(0)+'%'):(fund?.operatingMargin!=null?((fund.operatingMargin*100).toFixed(0)+'%'):na));
   const N=csCell(cs.N, vcp?('-'+vcp.pctH+'%'):na);
@@ -2235,7 +2239,8 @@ function calcFundGrade(fund){
   if(fund.roe!=null){tot+=30; pts+=fund.roe>=0.15?30:fund.roe>=0.08?18:fund.roe>=0?8:0;}
   if(fund.grossMargin!=null){tot+=15; pts+=fund.grossMargin>=0.3?15:fund.grossMargin>=0.15?8:fund.grossMargin>0?4:0;}
   if(fund.operatingMargin!=null){tot+=15; pts+=fund.operatingMargin>=0.15?15:fund.operatingMargin>=0.08?8:fund.operatingMargin>0?4:0;}
-  if(fund.earningsGrowth!=null){tot+=20; pts+=fund.earningsGrowth>=0.15?20:fund.earningsGrowth>=0?10:0;}
+  const _eg=fund.earningsGrowth!=null&&fund.earningsGrowth!==0?fund.earningsGrowth:null;
+  if(_eg!=null){tot+=20; pts+=_eg>=0.15?20:_eg>=0?10:0;}
   if(fund.revenueGrowth!=null){tot+=15; pts+=fund.revenueGrowth>=0.1?15:fund.revenueGrowth>=0?7:0;}
   if(tot===0){
     // 無獲利數據，改用 PE/PB/殖利率 做簡易評分
