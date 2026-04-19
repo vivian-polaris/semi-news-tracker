@@ -1632,6 +1632,41 @@ function calcVCP(data){
   const rsi=calcRSI(closes,14);
   const contractions=countContractions(closes);
   if(contractions>=3)score+=8;else if(contractions>=2)score+=4;
+
+  // ── Pivot Point 計算 ──────────────────────────────────────────────
+  const prevD=data[1];
+  const pp   =prevD&&prevD.high&&prevD.low&&prevD.close ? +((prevD.high+prevD.low+prevD.close)/3).toFixed(2) : null;
+  const ppR1 =pp ? +(2*pp-prevD.low).toFixed(2)           : null;
+  const ppR2 =pp ? +(pp+(prevD.high-prevD.low)).toFixed(2) : null;
+  const ppS1 =pp ? +(2*pp-prevD.high).toFixed(2)          : null;
+  const ppS2 =pp ? +(pp-(prevD.high-prevD.low)).toFixed(2) : null;
+
+  // VCP Breakout Pivot：近 15 根 K 線最高點（突破買點）
+  const vcpPivotLookback=Math.min(15,data.length-1);
+  const recentHighArr=data.slice(0,vcpPivotLookback).map(d=>d.high).filter(v=>v!=null&&isFinite(v));
+  const vcpPivot=recentHighArr.length>0 ? +Math.max(...recentHighArr).toFixed(2) : null;
+  const distVcpPivot=vcpPivot&&price>0 ? +((price-vcpPivot)/vcpPivot*100).toFixed(1) : null;
+
+  let pivotStatus='—',pivotStatusCls='n',pivotNote='資料不足';
+  if(distVcpPivot!==null){
+    if(distVcpPivot>0&&distVcpPivot<=3){
+      pivotStatus='突破買點';pivotStatusCls='g';
+      pivotNote=`剛突破近期高點 ${vcpPivot}，漲幅 +${distVcpPivot}%，仍在最佳買進區間`;
+    }else if(distVcpPivot>3&&distVcpPivot<=8){
+      pivotStatus='稍超買點';pivotStatusCls='o';
+      pivotNote=`突破後已漲 +${distVcpPivot}%，稍超最佳進場點，可等回測`;
+    }else if(distVcpPivot>8){
+      pivotStatus='追高風險';pivotStatusCls='r';
+      pivotNote=`已超買點 +${distVcpPivot}%，追高風險偏高，等待回測確認`;
+    }else if(distVcpPivot<0&&distVcpPivot>=-2){
+      pivotStatus='逼近買點';pivotStatusCls='o';
+      pivotNote=`距近期高點 ${vcpPivot} 僅差 ${Math.abs(distVcpPivot)}%，可設定警示等突破`;
+    }else{
+      pivotStatus='整理中';pivotStatusCls='n';
+      pivotNote=`距近期高點 ${vcpPivot} 尚差 ${Math.abs(distVcpPivot)}%，等待形態成熟突破`;
+    }
+  }
+
   return{
     score:Math.min(Math.round(score),100),price,
     ma50:ma50?+ma50.toFixed(2):null,
@@ -1641,7 +1676,9 @@ function calcVCP(data){
     abM50,abM150,abM200,perfOrd:perf,stage2:abM50&&abM150&&abM200,
     atrL,atrS,atrRat:atrRat?+atrRat.toFixed(3):null,
     volL,volS,vRat:vRat?+vRat.toFixed(2):null,
-    rsi,contractions
+    rsi,contractions,
+    pp,ppR1,ppR2,ppS1,ppS2,
+    vcpPivot,distVcpPivot,pivotStatus,pivotStatusCls,pivotNote
   };
 }
 
@@ -1823,35 +1860,28 @@ async function fetchFundamentals(sym){
   return null;
 }
 
-// ─── Fetch Institutional（優先 twse_daily.json，備援 T86 CORS）────────────
+// ─── Fetch Institutional（優先直連 TWSE T86，備援 twse_daily.json）───────
 async function fetchChips(){
   chipsMap={};
   const infoEl=document.getElementById('fetchApiStatus');
-  // ── 主要來源：GitHub Actions 預存的 twse_daily.json（同源，無 CORS 問題）──
-  if(Object.keys(twseDailyMap.chips).length>10){
-    chipsMap=twseDailyMap.chips;
-    lsSet('chips_all',chipsMap);
-    if(infoEl) infoEl.textContent=`✅ 籌碼載入（twse_daily.json，${Object.keys(chipsMap).length} 支，${twseDailyMap.date||''}）`;
-    return;
-  }
-  // ── 備援：直連 TWSE T86（需 CORS proxy 或瀏覽器允許）────────────────────
+
+  // ── 主要：直連 TWSE T86 官方 API（CORS proxy）──────────────────────────
+  const proxies=['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest=',''];
   for(let back=0;back<7;back++){
     const dt=new Date();dt.setDate(dt.getDate()-back);
-    if(dt.getDay()===0||dt.getDay()===6) continue;
+    if(dt.getDay()===0||dt.getDay()===6) continue;  // skip weekends
     const yyyymmdd=dt.getFullYear()+String(dt.getMonth()+1).padStart(2,'0')+String(dt.getDate()).padStart(2,'0');
     const base=`https://www.twse.com.tw/rwd/zh/fund/T86?date=${yyyymmdd}&response=json`;
-    const proxies=['','https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest='];
     for(const px of proxies){
       try{
         const url=px?px+encodeURIComponent(base):base;
-        const r=await fetchTO(url,10000);
+        const r=await fetchTO(url,12000);
         if(!r.ok)continue;
         const text=await r.text();
-        if(!text||text.trim().startsWith('<'))continue;
+        if(!text||text.trim().startsWith('<')||text.includes('Rate limit'))continue;
         const json=JSON.parse(text);
         if(json.stat!=='OK'||!json.data?.length)continue;
         const fields=json.fields||[];
-        // 正確的欄位索引（T86 2025 格式）
         const fi=fields.findIndex(f=>(f.includes('外陸資')||f.includes('外資及陸資'))&&f.includes('買賣超')&&!f.includes('自營'));
         const ti=fields.findIndex(f=>f.includes('投信')&&f.includes('買賣超'));
         const di=fields.findIndex(f=>f.includes('自營商')&&f.includes('買賣超')&&!f.includes('自行')&&!f.includes('避險'));
@@ -1863,23 +1893,29 @@ async function fetchChips(){
           chipsMap[code]={foreignNet:parseChipNum(row[fIdx]),trustNet:parseChipNum(row[tIdx]),dealerNet:parseChipNum(row[dIdx])};
         });
         if(Object.keys(chipsMap).length>10){
-          if(infoEl) infoEl.textContent=`✅ 籌碼取得成功（TWSE T86 ${yyyymmdd}，${Object.keys(chipsMap).length} 支）`;
+          lsSet('chips_all',chipsMap);
+          if(infoEl) infoEl.textContent=`✅ 籌碼：TWSE T86 ${yyyymmdd}，${Object.keys(chipsMap).length} 支`;
           return;
         }
       }catch(_){}
     }
   }
-  if(Object.keys(chipsMap).length===0){
-    // 第四備援：localStorage 舊籌碼快取
-    const cached=lsGet('chips_all');
-    if(cached?.data&&Object.keys(cached.data).length>100){
-      chipsMap=cached.data;
-      if(infoEl) infoEl.textContent=`⚠️ 籌碼使用舊快取（${lsAgeStr(cached.ts)}），${Object.keys(chipsMap).length}支`;
-    } else if(infoEl){
-      infoEl.textContent='⚠️ 籌碼資料無法取得，請稍後重試';
-    }
-  } else {
-    lsSet('chips_all',chipsMap); // 成功時存快取
+
+  // ── 備援 1：twse_daily.json（GitHub Actions 每日預存）──────────────────
+  if(Object.keys(twseDailyMap.chips).length>10){
+    chipsMap=twseDailyMap.chips;
+    lsSet('chips_all',chipsMap);
+    if(infoEl) infoEl.textContent=`⚠️ 籌碼：T86 無法連線，改用 twse_daily.json（${twseDailyMap.date||''}，${Object.keys(chipsMap).length} 支）`;
+    return;
+  }
+
+  // ── 備援 2：localStorage 舊快取 ─────────────────────────────────────────
+  const cached=lsGet('chips_all');
+  if(cached?.data&&Object.keys(cached.data).length>100){
+    chipsMap=cached.data;
+    if(infoEl) infoEl.textContent=`⚠️ 籌碼使用舊快取（${lsAgeStr(cached.ts)}），${Object.keys(chipsMap).length} 支`;
+  } else if(infoEl){
+    infoEl.textContent='⚠️ 籌碼資料無法取得，請稍後重試';
   }
 }
 
@@ -2618,7 +2654,7 @@ async function lookupStock() {
         <div class="sum-sub">超買訊號 / 100</div>
       </div>
     </div>
-    <div style="background:var(--tag);border-radius:10px;padding:10px 14px;font-size:.82rem;line-height:1.65">
+    <div style="background:var(--tag);border-radius:10px;padding:10px 14px;font-size:.82rem;line-height:1.65;margin-bottom:8px">
       <span style="color:var(--text2);font-size:.68rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase">一句評語　</span>
       <span style="color:var(--text)">${reason}</span>
       <div style="margin-top:6px;font-size:.68rem;color:var(--text2)">
@@ -2628,7 +2664,41 @@ async function lookupStock() {
         ｜ 量比 <strong>${vcpData.vRat ?? 'N/A'}</strong>
         ${vcpData.rsi != null ? `｜ RSI <strong>${vcpData.rsi}</strong>` : ''}
       </div>
-    </div>`;
+    </div>
+    ${vcpData.vcpPivot != null ? `
+    <div style="background:var(--card2);border:1px solid var(--border2);border-radius:10px;padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <span style="font-size:.68rem;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:.06em">📍 Pivot Point 買點分析</span>
+        <span class="sig sig-${vcpData.pivotStatusCls}" style="font-size:.72rem">${vcpData.pivotStatus}</span>
+      </div>
+      <div style="font-size:.8rem;color:var(--text);margin-bottom:8px;line-height:1.6">${vcpData.pivotNote}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px">
+        <div style="background:var(--tag);border-radius:6px;padding:7px 10px;text-align:center">
+          <div style="font-size:.58rem;color:var(--text2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px">突破買點</div>
+          <div style="font-size:.95rem;font-weight:700;color:${vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>=0&&vcpData.distVcpPivot<=8?'#34d399':vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>8?'#f87171':'#fbbf24'}">${vcpData.vcpPivot}</div>
+          <div style="font-size:.6rem;color:var(--text2);margin-top:1px">${vcpData.distVcpPivot!=null?(vcpData.distVcpPivot>=0?'+':'')+vcpData.distVcpPivot+'%':'—'}</div>
+        </div>
+        <div style="background:var(--tag);border-radius:6px;padding:7px 10px;text-align:center">
+          <div style="font-size:.58rem;color:var(--text2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px">樞軸 PP</div>
+          <div style="font-size:.95rem;font-weight:700;color:var(--sky)">${vcpData.pp ?? '—'}</div>
+          <div style="font-size:.6rem;color:var(--text2);margin-top:1px">${vcpData.pp!=null?((vcpData.price-vcpData.pp)/vcpData.pp*100).toFixed(1)+'%':'—'}</div>
+        </div>
+        <div style="background:var(--tag);border-radius:6px;padding:7px 10px;text-align:center">
+          <div style="font-size:.58rem;color:var(--text2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px">現價</div>
+          <div style="font-size:.95rem;font-weight:700;color:var(--text)">${vcpData.price}</div>
+          <div style="font-size:.6rem;color:var(--text2);margin-top:1px">最新收盤</div>
+        </div>
+      </div>
+      <div style="font-size:.68rem;color:var(--text2);line-height:1.9;border-top:1px solid var(--border);padding-top:7px">
+        壓力 <strong style="color:#f87171">R2 ${vcpData.ppR2??'—'}</strong>
+        ／<strong style="color:#fca5a5">R1 ${vcpData.ppR1??'—'}</strong>
+        　樞軸 <strong style="color:var(--sky)">PP ${vcpData.pp??'—'}</strong>
+        　支撐 <strong style="color:#86efac">S1 ${vcpData.ppS1??'—'}</strong>
+        ／<strong style="color:#4ade80">S2 ${vcpData.ppS2??'—'}</strong>
+        <span style="margin-left:6px;opacity:.55">（基於前一交易日 H/L/C）</span>
+      </div>
+    </div>` : ''}
+    `;
 }
 (function init(){
   localStorage.removeItem('deepseek_key'); // 移除已停用的 DeepSeek key
