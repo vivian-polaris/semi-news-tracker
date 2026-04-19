@@ -155,6 +155,8 @@ details>summary::-webkit-details-marker,details>summary::marker{display:none;con
 
 /* ── Filters ── */
 .filter-box{background:var(--card);border-radius:8px;padding:10px 14px;margin-bottom:8px;border:1px solid var(--border)}
+#filterRowsWrap{overflow:hidden;transition:max-height .35s ease,opacity .25s ease;max-height:0;opacity:0}
+#filterRowsWrap.open{max-height:2000px;opacity:1}
 .filter-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:7px}
 .filter-row:last-child{margin-bottom:0}
 .flabel{color:var(--text2);font-size:.62rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;min-width:50px;flex-shrink:0}
@@ -188,6 +190,7 @@ tbody td{padding:9px 12px;vertical-align:top}
 thead th:nth-child(1),tbody td:nth-child(1){min-width:56px}
 thead th:nth-child(10),tbody td:nth-child(10){min-width:120px}
 thead th:nth-child(11),tbody td:nth-child(11){min-width:96px}
+.cs-td{width:46px!important;min-width:46px!important;max-width:46px!important;overflow:hidden!important;padding:6px 1px!important}
 /* ── CAN SLIM badge ── */
 .cs-row{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;margin-bottom:3px}
 .cs-l{font-size:.58rem;font-weight:700;padding:1px 4px;border-radius:3px;letter-spacing:.03em}
@@ -372,10 +375,7 @@ footer a:hover{text-decoration:underline}
   {display:none!important}
   /* market news/clock: single column stack on mobile */
   .two-col-row{grid-template-columns:1fr!important}
-  /* filter collapse on mobile */
   .filter-toggle-hd{display:flex!important}
-  #filterRowsWrap{overflow:hidden;transition:max-height .3s ease,opacity .25s ease;max-height:0;opacity:0}
-  #filterRowsWrap.open{max-height:1200px;opacity:1}
   /* toggle border radius when open */
   .sec-body.open .news-card,.sec-body.open .inv-card{border-top-left-radius:0!important;border-top-right-radius:0!important;border-top:none!important}
   .sec-toggle{border-bottom-left-radius:0;border-bottom-right-radius:0;margin-bottom:0}
@@ -727,13 +727,13 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('canslim',this)">CANSLIM評分 ⇅</th>
       <th onclick="setSort('fund',this)">基本面 ⇅</th>
       <th onclick="setSort('chips',this)">籌碼(外資/投信) ⇅</th>
-      <th title="Current：EPS成長≥25%（無EPS時用月營收YoY代替）" style="width:46px;min-width:46px;max-width:46px;text-align:center">C</th>
-      <th title="Annual ROE≥15%" style="width:46px;min-width:46px;max-width:46px;text-align:center">A</th>
-      <th title="Near new high &lt;5%" style="width:46px;min-width:46px;max-width:46px;text-align:center">N</th>
-      <th title="Supply tight 縮量整理" style="width:46px;min-width:46px;max-width:46px;text-align:center">S</th>
-      <th title="Leader VCP≥70" style="width:46px;min-width:46px;max-width:46px;text-align:center">L</th>
-      <th title="Institutional 法人買超" style="width:46px;min-width:46px;max-width:46px;text-align:center">I</th>
-      <th title="Market Stage2" style="width:46px;min-width:46px;max-width:46px;text-align:center">M</th>
+      <th onclick="setSort('csC',this)" title="Current：EPS/營收成長≥25%" style="width:46px;min-width:46px;max-width:46px;text-align:center;cursor:pointer">C ⇅</th>
+      <th onclick="setSort('csA',this)" title="Annual ROE≥15%" style="width:46px;min-width:46px;max-width:46px;text-align:center;cursor:pointer">A ⇅</th>
+      <th onclick="setSort('csN',this)" title="Near new high &lt;5%" style="width:46px;min-width:46px;max-width:46px;text-align:center;cursor:pointer">N ⇅</th>
+      <th onclick="setSort('csS',this)" title="Supply tight 縮量整理" style="width:46px;min-width:46px;max-width:46px;text-align:center;cursor:pointer">S ⇅</th>
+      <th onclick="setSort('csL',this)" title="Leader VCP≥70" style="width:46px;min-width:46px;max-width:46px;text-align:center;cursor:pointer">L ⇅</th>
+      <th onclick="setSort('csI',this)" title="Institutional 法人買超" style="width:46px;min-width:46px;max-width:46px;text-align:center;cursor:pointer">I ⇅</th>
+      <th onclick="setSort('csM',this)" title="Market Stage2" style="width:46px;min-width:46px;max-width:46px;text-align:center;cursor:pointer">M ⇅</th>
       <th onclick="setSort('pct')" class="th-on">距高點 ⇅</th>
       <th>MA排列</th>
       <th>技術信號</th>
@@ -2152,6 +2152,11 @@ function getSorted(list){
       const cv=r=>r.vcp?calcCANSLIM(r.vcp,r.fund||null,chipsMap[r.code]||null).total:-1;
       return sortAsc?cv(a)-cv(b):cv(b)-cv(a);
     }
+    if(['csC','csA','csN','csS','csL','csI','csM'].includes(sortKey)){
+      const letter=sortKey.slice(2); // 'C','A',...
+      const lv=r=>r.vcp?(calcCANSLIM(r.vcp,r.fund||null,chipsMap[r.code]||null)[letter]===true?1:calcCANSLIM(r.vcp,r.fund||null,chipsMap[r.code]||null)[letter]===false?0:-1):-1;
+      return sortAsc?lv(a)-lv(b):lv(b)-lv(a);
+    }
     if(sortKey==='chips'){
       const chipsScore=r=>{const c=chipsMap[r.code];if(!c)return-1;const f=parseChipNum(c.foreignNet)||0,t=parseChipNum(c.trustNet)||0;return(f>0&&t>0)?3:(f>0)?2:(t>0)?1:0;};
       return sortAsc?chipsScore(a)-chipsScore(b):chipsScore(b)-chipsScore(a);
@@ -2280,7 +2285,7 @@ function renderCSCells(vcp,fund,chips){
     ?`${(fNet||0)>0?'外↑':'外↓'}${(tNet||0)>0?'投↑':'投↓'}`:na;
   const I=csCell(cs.I, iLine);
   const M=csCell(cs.M, vcp?(vcp.stage2?'Stage2':'非S2'):na);
-  return{seven:`<td>${C}</td><td>${A}</td><td>${N}</td><td>${S}</td><td>${L}</td><td>${I}</td><td>${M}</td>`,score:`<td>${csScoreBadge(cs.total)}</td>`};
+  return{seven:`<td class="cs-td">${C}</td><td class="cs-td">${A}</td><td class="cs-td">${N}</td><td class="cs-td">${S}</td><td class="cs-td">${L}</td><td class="cs-td">${I}</td><td class="cs-td">${M}</td>`,score:`<td>${csScoreBadge(cs.total)}</td>`};
 }
 function setCANSLIM(v,el){
   canslimMin=v;
@@ -2736,6 +2741,12 @@ async function lookupStock() {
           `${stale?'📅 ':''}上次掃描：<strong>${dateStr} ${timeStr}</strong>（${ageStr}）${stale?' · <span style="color:var(--purple);cursor:pointer" onclick="startScan()">重新掃描</span>':''}`;
         renderAll();
         cacheLoaded=true;
+        // 快取恢復後非同步載入籌碼（chips 不存在 vcpCache 裡）
+        (async()=>{
+          await loadTWSEDaily();
+          await fetchChips();
+          if(Object.keys(chipsMap).length>0) renderTable();
+        })();
       }
     }
   }catch(_){}
