@@ -2519,8 +2519,11 @@ async function lookupStock() {
     setTimeout(()=>startScan(),1200);
   }
 
-  // Auto-load AI sections（只自動跑 Trump + Clock，底層邏輯等使用者點）
-  setTimeout(()=>{loadTrump(true);loadClock(true);},600);
+  // Auto-load AI sections：先載入 twse_daily.json（取得新聞快取），再顯示
+  loadTWSEDaily().finally(()=>{
+    loadTrump(true);
+    loadClock(true);
+  });
 
   // Hotkey: Alt+R = 重新整理 AI 快訊（不清除 API key）
   document.addEventListener('keydown',e=>{
