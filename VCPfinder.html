@@ -1982,10 +1982,42 @@ const CS_DESC={
 function csDesc(k){return CS_DESC[k]||k;}
 function canslimBadge(vcp,fund,chips){
   const cs=calcCANSLIM(vcp,fund,chips);
-  const row=Object.entries({C:cs.C,A:cs.A,N:cs.N,S:cs.S,L:cs.L,I:cs.I,M:cs.M})
-    .map(([k,v])=>csLetterHTML(k,v)).join('');
+  const na='<span style="color:#6b7280">無資料</span>';
+  const rows=[
+    {k:'C',v:cs.C,lbl:'EPS成長',
+     data:fund?.earningsGrowth!=null?fmtPct2(fund.earningsGrowth):na,
+     crit:'需≥25%'},
+    {k:'A',v:cs.A,lbl:'ROE',
+     data:fund?.roe!=null?fmtROE(fund.roe):(fund?.operatingMargin!=null?`營益${fmtPct2(fund.operatingMargin)}`:na),
+     crit:'需≥15%'},
+    {k:'N',v:cs.N,lbl:'距高點',
+     data:vcp?`<span class="sig ${vcp.pctH<5?'sig-g':vcp.pctH<15?'sig-o':'sig-r'}">-${vcp.pctH}%</span>`:na,
+     crit:'需<5%'},
+    {k:'S',v:cs.S,lbl:'縮量整理',
+     data:vcp?(vcp.vRat!=null?`量比 <span class="sig ${vcp.vRat<0.7?'sig-g':vcp.vRat<0.85?'sig-o':'sig-r'}">${vcp.vRat}</span>`:'—')+(vcp.contractions>0?` · <span class="sig sig-g">${vcp.contractions}段收縮</span>`:''):na,
+     crit:'量比<0.85+收縮'},
+    {k:'L',v:cs.L,lbl:'VCP分數',
+     data:vcp?`<span class="sig ${vcp.score>=80?'sig-g':vcp.score>=70?'sig-o':'sig-r'}">${vcp.score}分</span>`:na,
+     crit:'需≥70'},
+    {k:'I',v:cs.I,lbl:'法人',
+     data:chips?`外${fmtChipN(chips.foreignNet)} 投${fmtChipN(chips.trustNet)}`:na,
+     crit:'外資/投信買超'},
+    {k:'M',v:cs.M,lbl:'趨勢',
+     data:vcp?`<span class="sig ${vcp.stage2?'sig-g':'sig-r'}">${vcp.stage2?'Stage2':'非Stage2'}</span>`:na,
+     crit:'Stage2上升'},
+  ];
+  const detail=rows.map(r=>{
+    const cls=r.v===true?'cs-y':r.v===false?'cs-n':'cs-u';
+    const sym=r.v===true?'✓':r.v===false?'✗':'?';
+    return`<div style="display:flex;align-items:center;gap:5px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.05)">
+      <span class="cs-l ${cls}" style="flex-shrink:0">${r.k}${sym}</span>
+      <span style="color:var(--text2);font-size:.58rem;min-width:44px;flex-shrink:0">${r.lbl}</span>
+      <span style="font-size:.65rem;flex:1">${r.data}</span>
+      <span style="color:#4b5563;font-size:.55rem;flex-shrink:0">${r.crit}</span>
+    </div>`;
+  }).join('');
   const cls=cs.total>=5?'sA':cs.total>=3?'sB':'sC';
-  return scoreBadge(`${cs.total}/7`,cls,`<div class="cs-row" style="margin:0;gap:3px">${row}</div><div style="font-size:.6rem;color:var(--text2);margin-top:4px;line-height:1.6">C=EPS成長≥25% · A=ROE≥15%<br>N=距高點&lt;5% · S=縮量整理<br>L=VCP≥70 · I=機構買超 · M=Stage2</div>`);
+  return scoreBadge(`${cs.total}/7`,cls,detail);
 }
 function setCANSLIM(v,el){
   canslimMin=v;
