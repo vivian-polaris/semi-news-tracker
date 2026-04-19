@@ -589,7 +589,7 @@ footer a:hover{text-decoration:underline}
   </div>
   <div class="filter-row" id="secRow">
     <span class="flabel">產業</span>
-    <span class="pill s-on" data-sec="ALL" onclick="setSec('ALL',this)">全部</span>
+    <span class="pill" data-sec="ALL" onclick="setSec('ALL',this)">全部</span>
   </div>
   <div class="filter-row">
     <span class="flabel">其他</span>
@@ -839,7 +839,8 @@ const STOCKS = [
 ];
 
 // ─── State ────────────────────────────────────────────────────────────────
-let allResults=[], scoreMin=60, pctMax=999, secFilter=new Set(['ALL']), exFilter='ALL';
+const DEFAULT_SECTORS=new Set(['IC設計','PCB','伺服器','光學','光電','其他電子','化學','化工','半導體','散熱','數位雲端','機械','精密機械','被動元件','記憶體','資訊服務','通信網路','連接器','電子','電子代工','電子通路','電子零組件','電機','電源','面板','工業自動化','工業電腦']);
+let allResults=[], scoreMin=60, pctMax=999, secFilter=new Set(DEFAULT_SECTORS), exFilter='ALL';
 let canslimMin=0;
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
@@ -2041,7 +2042,7 @@ function renderAll(){
     const secs=[...new Set(allResults.map(s=>s.sector))].filter(s=>s).sort();
     const secRow=document.getElementById('secRow');
     secs.forEach(s=>{
-      const p=document.createElement('span');p.className='pill';p.dataset.sec=s;
+      const p=document.createElement('span');p.className='pill'+(secFilter.has(s)?' s-on':'');p.dataset.sec=s;
       p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);
     });
   }
