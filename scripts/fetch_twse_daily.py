@@ -16,6 +16,7 @@ Data collected:
 
 import json, sys, time, datetime, re, xml.etree.ElementTree as ET
 import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 SESSION = requests.Session()
 SESSION.headers.update({'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'})
@@ -313,6 +314,77 @@ def fetch_news():
     print(f'  Total news items: {len(all_items)}')
     return all_items
 
+# ── 7. Stock Price OHLCV（批次抓取，存為靜態 JSON）──────────────────────────
+def fetch_single_stock(args):
+    code, ex = args
+    sym = f'{code}.{ex}'
+    for domain in ['query1', 'query2']:
+        url = f'https://{domain}.finance.yahoo.com/v8/finance/chart/{sym}?interval=1d&range=1y&includePrePost=false'
+        for attempt in range(2):
+            try:
+                r = SESSION.get(url, timeout=12)
+                if r.status_code == 429:
+                    time.sleep(2 ** attempt)
+                    continue
+                if not r.ok:
+                    break
+                j = r.json()
+                res = j.get('chart', {}).get('result', [None])[0]
+                if not res or not res.get('timestamp'):
+                    break
+                q = res['indicators']['quote'][0]
+                ts_list = res['timestamp']
+                closes  = q.get('close',  [])
+                highs   = q.get('high',   [])
+                lows    = q.get('low',    [])
+                volumes = q.get('volume', [])
+                rows = []
+                for i, ts in enumerate(ts_list):
+                    c = closes[i]  if i < len(closes)  else None
+                    if not c or c <= 0: continue
+                    h = highs[i]   if i < len(highs)   else c
+                    l = lows[i]    if i < len(lows)    else c
+                    v = volumes[i] if i < len(volumes) else 0
+                    rows.append((ts, round(float(c),2), round(float(h or c),2),
+                                     round(float(l or c),2), int(v or 0)))
+                if len(rows) < 30:
+                    break
+                rows.sort(key=lambda x: x[0], reverse=True)
+                rows = rows[:252]
+                name = (res.get('meta',{}).get('longName') or
+                        res.get('meta',{}).get('shortName') or '')[:15]
+                return code, {'n': name,
+                              'c': [r[1] for r in rows],
+                              'h': [r[2] for r in rows],
+                              'l': [r[3] for r in rows],
+                              'v': [r[4] for r in rows]}
+            except Exception:
+                if attempt == 0: time.sleep(0.5)
+    return code, None
+
+def fetch_all_prices(stock_list, existing_tse=None, existing_otc=None, max_workers=25):
+    tse_out = dict(existing_tse or {})
+    otc_out = dict(existing_otc or {})
+    total = len(stock_list)
+    done = success = 0
+    args = [(s['code'], s['ex']) for s in stock_list]
+    with ThreadPoolExecutor(max_workers=max_workers) as ex:
+        futures = {ex.submit(fetch_single_stock, a): a for a in args}
+        for fut in as_completed(futures):
+            code, data = fut.result()
+            done += 1
+            ex_type = futures[fut][1]
+            if data:
+                success += 1
+                if ex_type == 'TW':
+                    tse_out[code] = data
+                else:
+                    otc_out[code] = data
+            if done % 200 == 0:
+                print(f'  price progress: {done}/{total}，成功 {success}')
+    print(f'  price done: {success}/{total} 支成功，TSE={len(tse_out)}，OTC={len(otc_out)}')
+    return tse_out, otc_out
+
 def _flt(v):
     if v is None: return None
     try:
@@ -402,7 +474,40 @@ def main():
     yoy_count = sum(1 for v in income.values() if v.get('earningsGrowth') is not None)
     print(f'  YoY EPS growth computed: {yoy_count} stocks')
 
-    print('\n6. Financial News (RSS)...')
+    print('\n6. Stock Prices (OHLCV)...')
+    # 讀取舊的價格快取，失敗的股票保留舊資料
+    existing_tse_price, existing_otc_price = {}, {}
+    try:
+        with open('stocks_tse.json', encoding='utf-8') as f:
+            existing_tse_price = json.load(f).get('stocks', {})
+        print(f'  existing TSE price: {len(existing_tse_price)}')
+    except Exception: pass
+    try:
+        with open('stocks_otc.json', encoding='utf-8') as f:
+            existing_otc_price = json.load(f).get('stocks', {})
+        print(f'  existing OTC price: {len(existing_otc_price)}')
+    except Exception: pass
+
+    # 建立股票清單：TSE from bwibbu, OTC from otc_stocks
+    tse_list = [{'code': c, 'ex': 'TW'} for c in bwibbu.keys() if re.match(r'^\d{4,6}$', c)]
+    otc_list = [{'code': s['code'], 'ex': 'TWO'} for s in otc_stocks if re.match(r'^\d{4,6}$', s.get('code',''))]
+    all_stock_list = tse_list + otc_list
+    print(f'  stock list: TSE={len(tse_list)}, OTC={len(otc_list)}, total={len(all_stock_list)}')
+
+    tse_prices, otc_prices = fetch_all_prices(
+        all_stock_list,
+        existing_tse=existing_tse_price,
+        existing_otc=existing_otc_price,
+    )
+
+    with open('stocks_tse.json', 'w', encoding='utf-8') as f:
+        json.dump({'date': date_str, 'stocks': tse_prices}, f, ensure_ascii=False, separators=(',', ':'))
+    with open('stocks_otc.json', 'w', encoding='utf-8') as f:
+        json.dump({'date': date_str, 'stocks': otc_prices}, f, ensure_ascii=False, separators=(',', ':'))
+    print(f'  stocks_tse.json: {len(tse_prices)} stocks')
+    print(f'  stocks_otc.json: {len(otc_prices)} stocks')
+
+    print('\n7. Financial News (RSS)...')
     news = fetch_news()
     if len(news) < 3:
         old_news = existing.get('news', [])
