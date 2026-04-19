@@ -1124,7 +1124,7 @@ function buildSrcHtml(items){
     '📰 '+escH(label)+' ('+items.length+')</span></summary>'+
     '<div style="margin-top:5px">'+links+'</div></details>';
 }
-const AI_CACHE_TTL=4*60*60*1000; // 4 小時快取
+const AI_CACHE_TTL=2*60*60*1000; // 2 小時快取
 function getAICache(key){
   try{const c=JSON.parse(localStorage.getItem('ai_'+key)||'{}');if(c.ts&&Date.now()-c.ts<AI_CACHE_TTL)return c;}catch(_){}return null;
 }
@@ -1196,16 +1196,16 @@ async function loadTrump(useCache=false){
     }
   }
   b.className='news-body loading'; b.textContent='抓取最新新聞...'; t.textContent='';
-  // 優先用後端快取新聞（GitHub Actions 每天抓，不依賴 CORS proxy）
   let items=[];
-  const cachedNews=twseDailyMap?.news;
+  // useCache=false（手動刷新）時跳過後端快取，強制即時 RSS
+  const cachedNews=useCache?twseDailyMap?.news:null;
   if(cachedNews&&cachedNews.length>=5){
     const seen=new Set();
     items=cachedNews
       .map(x=>({title:x.title,link:x.link,dateStr:x.pubDate?new Date(x.pubDate).toLocaleDateString('zh-TW'):'近期',source:x.source||''}))
       .filter(x=>{if(seen.has(x.title))return false;seen.add(x.title);return true;})
       .slice(0,30);
-    t.textContent=`後端快取（${twseDailyMap.date||''}）· 點 ↻ 可強制更新`;
+    t.textContent=`後端快取（${twseDailyMap.date||''}）· 點 ↻ 強制更新`;
   } else {
     // 備援：直接從 Google News RSS 抓（需要 CORS proxy）
     const recentQ=new Date(Date.now()-5*24*60*60*1000).toISOString().slice(0,10);
