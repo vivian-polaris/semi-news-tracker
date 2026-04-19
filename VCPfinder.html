@@ -501,10 +501,9 @@ footer a:hover{text-decoration:underline}
 </div>
 
 <div class="scan-box">
-  <!-- 掃描按鈕 row（永遠顯示） -->
-  <div class="scan-row">
-    <button class="scan-btn" id="scanBtn" onclick="startScan()">開始掃描 VCP</button>
-    <button id="cancelBtn" onclick="cancelScan()" style="display:none;padding:11px 20px;background:var(--card);border:1.5px solid var(--red);border-radius:16px;color:var(--red);font-size:.85rem;font-weight:700;cursor:pointer">停止</button>
+  <!-- 掃描選項 row（首次掃描前顯示，掃描後收起） -->
+  <div class="scan-row" id="preScanRow">
+    <button class="scan-btn" onclick="startScan()" style="padding:9px 20px;font-size:.85rem">開始掃描 VCP</button>
     <button id="scanOptBtn" onclick="toggleScanOpts()" style="padding:10px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:16px;color:var(--text2);font-size:.82rem;cursor:pointer;transition:all .18s;white-space:nowrap">⚙️ 選項</button>
     <div class="scan-info" id="scanInfo"></div>
   </div>
@@ -533,36 +532,37 @@ footer a:hover{text-decoration:underline}
 
 <div class="err-box" id="errBox"></div>
 
-<!-- ── Summary ── -->
-<div class="sum-grid" id="sumGrid" style="display:none">
-  <div class="sum-card">
+<!-- ── Summary + Rescan Row ── -->
+<div id="sumGrid" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0">
+  <div class="sum-card" style="flex:1;min-width:80px;padding:8px 12px;text-align:center">
     <div class="sum-label">已掃描</div>
-    <div class="sum-val" id="sumScanned" style="color:var(--purple)">—</div>
-    <div class="sum-sub">支成功取得數據</div>
+    <div class="sum-val" id="sumScanned" style="color:var(--purple);font-size:1.3rem">—</div>
+    <div class="sum-sub">支</div>
   </div>
-  <div class="sum-card">
-    <div class="sum-label">VCP 候選 ≥60</div>
-    <div class="sum-val" id="sumVcp" style="color:var(--yellow)">—</div>
-    <div class="sum-sub">支符合條件</div>
+  <div class="sum-card" style="flex:1;min-width:80px;padding:8px 12px;text-align:center">
+    <div class="sum-label">VCP ≥60</div>
+    <div class="sum-val" id="sumVcp" style="color:var(--yellow);font-size:1.3rem">—</div>
+    <div class="sum-sub">支</div>
   </div>
-  <div class="sum-card">
-    <div class="sum-label">強力 VCP ≥80</div>
-    <div class="sum-val" id="sumStrong" style="color:var(--mint)">—</div>
-    <div class="sum-sub">支高分候選</div>
+  <div class="sum-card" style="flex:1;min-width:80px;padding:8px 12px;text-align:center">
+    <div class="sum-label">強力 ≥80</div>
+    <div class="sum-val" id="sumStrong" style="color:var(--mint);font-size:1.3rem">—</div>
+    <div class="sum-sub">支</div>
   </div>
-  <div class="sum-card">
-    <div class="sum-label">更新時間</div>
-    <div class="sum-val" id="sumTime" style="font-size:.85rem;color:var(--text)">—</div>
-    <div class="sum-sub">30 分鐘內免重新掃描</div>
+  <div class="sum-card" style="flex:1;min-width:80px;padding:8px 12px;text-align:center">
+    <div class="sum-label">時間</div>
+    <div class="sum-val" id="sumTime" style="font-size:.8rem;color:var(--text)">—</div>
   </div>
+  <button class="scan-btn" id="scanBtn" onclick="startScan()" style="flex-shrink:0;padding:9px 20px;font-size:.85rem">開始掃描 VCP</button>
+  <button id="cancelBtn" onclick="cancelScan()" style="display:none;flex-shrink:0;padding:9px 18px;background:var(--card);border:1.5px solid var(--red);border-radius:6px;color:var(--red);font-size:.82rem;font-weight:700;cursor:pointer">停止</button>
 </div>
 
 <!-- ── Filters ── -->
 <div class="filter-box" id="filterBox" style="display:none">
   <!-- mobile toggle header -->
-  <div class="filter-toggle-hd" id="filterToggleHd" onclick="toggleFilterBox()" style="display:none;align-items:center;justify-content:space-between;cursor:pointer;padding:2px 0 10px">
-    <span style="font-size:.82rem;font-weight:800;color:var(--text)">🔍 篩選條件</span>
-    <span id="filterToggleChevron" style="font-size:.75rem;color:var(--text2);transition:transform .25s">▼</span>
+  <div class="filter-toggle-hd" id="filterToggleHd" onclick="toggleFilterBox()" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:2px 0 8px">
+    <span style="font-size:.78rem;font-weight:700;color:var(--purple)">篩選條件</span>
+    <span id="filterToggleChevron" style="font-size:.72rem;color:var(--text2);transition:transform .25s">▼ 展開</span>
   </div>
   <div id="filterRowsWrap">
   <div class="filter-row" id="exRow">
@@ -575,8 +575,8 @@ footer a:hover{text-decoration:underline}
     <span class="flabel">VCP 分數</span>
     <span class="pill" onclick="setScore(0,this)">全部</span>
     <span class="pill" onclick="setScore(40,this)">≥ 40 VCP初步</span>
-    <span class="pill f-on" onclick="setScore(60,this)">≥ 60 候選 🌸</span>
-    <span class="pill" onclick="setScore(70,this)">≥ 70</span>
+    <span class="pill" onclick="setScore(60,this)">≥ 60 候選 🌸</span>
+    <span class="pill f-on" onclick="setScore(70,this)">≥ 70</span>
     <span class="pill" onclick="setScore(80,this)">≥ 80 強力 ⭐</span>
   </div>
   <div class="filter-row" id="pctRow">
@@ -603,17 +603,17 @@ footer a:hover{text-decoration:underline}
   </div>
   <div class="filter-row">
     <span class="flabel">基本面</span>
-    <span class="pill g-on" id="fundMinAll" onclick="setFundMin(0,this)">全部</span>
+    <span class="pill" id="fundMinAll" onclick="setFundMin(0,this)">全部</span>
     <span class="pill" id="fundMinHas" onclick="setFundMin(-1,this)">有資料</span>
-    <span class="pill" id="fundMin70" onclick="setFundMin(70,this)">僅優（≥70）</span>
+    <span class="pill g-on" id="fundMin70" onclick="setFundMin(70,this)">僅優（≥70）</span>
     <span class="pill" id="fundMin80" onclick="setFundMin(80,this)">≥ 80</span>
     <span class="pill" id="fundMin90" onclick="setFundMin(90,this)">≥ 90</span>
   </div>
   <div class="filter-row">
     <span class="flabel">CAN SLIM</span>
-    <span class="pill g-on" id="csMin0" onclick="setCANSLIM(0,this)">全部</span>
+    <span class="pill" id="csMin0" onclick="setCANSLIM(0,this)">全部</span>
     <span class="pill" id="csMin3" onclick="setCANSLIM(3,this)">≥ 3項</span>
-    <span class="pill" id="csMin4" onclick="setCANSLIM(4,this)">≥ 4項 🌸</span>
+    <span class="pill g-on" id="csMin4" onclick="setCANSLIM(4,this)">≥ 4項 🌸</span>
     <span class="pill" id="csMin5" onclick="setCANSLIM(5,this)">≥ 5項 ⭐</span>
     <span class="pill" id="csMin6" onclick="setCANSLIM(6,this)">≥ 6項</span>
   </div>
@@ -675,16 +675,15 @@ footer a:hover{text-decoration:underline}
     const wrap=document.getElementById('filterRowsWrap');
     const chev=document.getElementById('filterToggleChevron');
     const isOpen=wrap.classList.toggle('open');
-    if(chev) chev.style.transform=isOpen?'rotate(180deg)':'';
+    if(chev){chev.style.transform=isOpen?'rotate(180deg)':'';chev.textContent=isOpen?'▲ 收合':'▼ 展開';}
   }
-  // On desktop always show scan options and filter rows
+  // On desktop, show scan options panel only
   if(window.innerWidth>640){
     const p=document.getElementById('scanOptsPanel');
     if(p){p.style.maxHeight='600px';p.style.opacity='1';p.style.marginTop='12px';}
     const b=document.getElementById('scanOptBtn');
     if(b) b.style.display='none';
-    const fw=document.getElementById('filterRowsWrap');
-    if(fw){fw.style.maxHeight='none';fw.style.opacity='1';fw.style.overflow='visible';}
+    // filterRowsWrap stays collapsed by default on all devices; user toggles via header
   }
   function toggleScanOpts(){
     const p=document.getElementById('scanOptsPanel');
@@ -728,13 +727,13 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('canslim',this)">CANSLIM評分 ⇅</th>
       <th onclick="setSort('fund',this)">基本面 ⇅</th>
       <th onclick="setSort('chips',this)">籌碼(外資/投信) ⇅</th>
-      <th title="Current：EPS成長≥25%（無EPS時用月營收YoY代替）">C</th>
-      <th title="Annual ROE≥15%">A</th>
-      <th title="Near new high &lt;5%">N</th>
-      <th title="Supply tight 縮量整理">S</th>
-      <th title="Leader VCP≥70">L</th>
-      <th title="Institutional 法人買超">I</th>
-      <th title="Market Stage2">M</th>
+      <th title="Current：EPS成長≥25%（無EPS時用月營收YoY代替）" style="width:46px;min-width:46px;max-width:46px;text-align:center">C</th>
+      <th title="Annual ROE≥15%" style="width:46px;min-width:46px;max-width:46px;text-align:center">A</th>
+      <th title="Near new high &lt;5%" style="width:46px;min-width:46px;max-width:46px;text-align:center">N</th>
+      <th title="Supply tight 縮量整理" style="width:46px;min-width:46px;max-width:46px;text-align:center">S</th>
+      <th title="Leader VCP≥70" style="width:46px;min-width:46px;max-width:46px;text-align:center">L</th>
+      <th title="Institutional 法人買超" style="width:46px;min-width:46px;max-width:46px;text-align:center">I</th>
+      <th title="Market Stage2" style="width:46px;min-width:46px;max-width:46px;text-align:center">M</th>
       <th onclick="setSort('pct')" class="th-on">距高點 ⇅</th>
       <th>MA排列</th>
       <th>技術信號</th>
@@ -840,12 +839,12 @@ const STOCKS = [
 
 // ─── State ────────────────────────────────────────────────────────────────
 const DEFAULT_SECTORS=new Set(['IC設計','PCB','伺服器','光學','光電','其他電子','化學','化工','半導體','散熱','數位雲端','機械','精密機械','被動元件','記憶體','資訊服務','通信網路','連接器','電子','電子代工','電子通路','電子零組件','電機','電源','面板','工業自動化','工業電腦']);
-let allResults=[], scoreMin=60, pctMax=999, secFilter=new Set(DEFAULT_SECTORS), exFilter='ALL';
-let canslimMin=0;
+let allResults=[], scoreMin=70, pctMax=999, secFilter=new Set(DEFAULT_SECTORS), exFilter='ALL';
+let canslimMin=4;
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
 let hideDoubleShort=true;  // 預設排除雙賣
-let fundMin=0;
+let fundMin=70;
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
 let twseDailyMap={chips:{},monthRevenue:{},income:{}}; // pre-fetched by GitHub Actions
@@ -1860,22 +1859,40 @@ async function fetchFundamentals(sym){
   return null;
 }
 
-// ─── Fetch Institutional（優先直連 TWSE T86，備援 twse_daily.json）───────
+// ─── Fetch Institutional ─────────────────────────────────────────────────
+// 永遠優先讀 twse_daily.json（同源，GitHub Actions 每日更新，不受 CORS 限制）
+// T86 直連僅補充，有就加分，沒有也沒差
 async function fetchChips(){
   chipsMap={};
   const infoEl=document.getElementById('fetchApiStatus');
 
-  // ── 主要：直連 TWSE T86 官方 API（CORS proxy）──────────────────────────
-  const proxies=['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest=',''];
+  // ── 步驟1：直接從 twse_daily.json 抓 chips（同源無 CORS 問題）──────────
+  // 不依賴 twseDailyMap 是否已載入，直接 fetch 確保一定拿到
+  let jsonDate='';
+  try{
+    const src=twseDailyMap.chips&&Object.keys(twseDailyMap.chips).length>100
+      ? twseDailyMap   // 已載入就直接用
+      : await fetchTO('./twse_daily.json?c='+Date.now(),10000).then(r=>r.ok?r.json():null);
+    if(src?.chips&&Object.keys(src.chips).length>100){
+      Object.assign(chipsMap,src.chips);
+      jsonDate=src.date||'';
+    }
+  }catch(_){}
+
+  // ── 步驟2：嘗試 T86 補充（短 timeout，CORS proxy；成功則 override）──────
+  const proxies=['https://corsproxy.io/?','https://api.allorigins.win/raw?url='];
+  let t86ok=false;
+  outer:
   for(let back=0;back<7;back++){
     const dt=new Date();dt.setDate(dt.getDate()-back);
-    if(dt.getDay()===0||dt.getDay()===6) continue;  // skip weekends
+    if(dt.getDay()===0||dt.getDay()===6) continue;
     const yyyymmdd=dt.getFullYear()+String(dt.getMonth()+1).padStart(2,'0')+String(dt.getDate()).padStart(2,'0');
+    if(jsonDate&&yyyymmdd===jsonDate){break;} // JSON 已是最新日，不必 T86 重複
     const base=`https://www.twse.com.tw/rwd/zh/fund/T86?date=${yyyymmdd}&response=json`;
     for(const px of proxies){
       try{
         const url=px?px+encodeURIComponent(base):base;
-        const r=await fetchTO(url,12000);
+        const r=await fetchTO(url,5000);
         if(!r.ok)continue;
         const text=await r.text();
         if(!text||text.trim().startsWith('<')||text.includes('Rate limit'))continue;
@@ -1885,37 +1902,33 @@ async function fetchChips(){
         const fi=fields.findIndex(f=>(f.includes('外陸資')||f.includes('外資及陸資'))&&f.includes('買賣超')&&!f.includes('自營'));
         const ti=fields.findIndex(f=>f.includes('投信')&&f.includes('買賣超'));
         const di=fields.findIndex(f=>f.includes('自營商')&&f.includes('買賣超')&&!f.includes('自行')&&!f.includes('避險'));
-        const fIdx=fi>0?fi:4, tIdx=ti>0?ti:10, dIdx=di>0?di:11;
+        const fIdx=fi>0?fi:4,tIdx=ti>0?ti:10,dIdx=di>0?di:11;
+        let cnt=0;
         json.data.forEach(row=>{
           if(!row||row.length<Math.max(fIdx,tIdx,dIdx)+1)return;
           const code=(row[0]||'').trim();
           if(!code||!/^\d{4,6}$/.test(code))return;
           chipsMap[code]={foreignNet:parseChipNum(row[fIdx]),trustNet:parseChipNum(row[tIdx]),dealerNet:parseChipNum(row[dIdx])};
+          cnt++;
         });
-        if(Object.keys(chipsMap).length>10){
-          lsSet('chips_all',chipsMap);
-          if(infoEl) infoEl.textContent=`✅ 籌碼：TWSE T86 ${yyyymmdd}，${Object.keys(chipsMap).length} 支`;
-          return;
-        }
+        if(cnt>10){t86ok=true;break outer;}
       }catch(_){}
     }
   }
 
-  // ── 備援 1：twse_daily.json（GitHub Actions 每日預存）──────────────────
-  if(Object.keys(twseDailyMap.chips).length>10){
-    chipsMap=twseDailyMap.chips;
+  if(Object.keys(chipsMap).length>10){
     lsSet('chips_all',chipsMap);
-    if(infoEl) infoEl.textContent=`⚠️ 籌碼：T86 無法連線，改用 twse_daily.json（${twseDailyMap.date||''}，${Object.keys(chipsMap).length} 支）`;
+    if(infoEl) infoEl.textContent=`✅ 籌碼 ${jsonDate}：${Object.keys(chipsMap).length} 支${t86ok?' (T86 已補充)':''}`;
     return;
   }
 
-  // ── 備援 2：localStorage 舊快取 ─────────────────────────────────────────
+  // ── 最終備援：localStorage 舊快取 ───────────────────────────────────────
   const cached=lsGet('chips_all');
   if(cached?.data&&Object.keys(cached.data).length>100){
     chipsMap=cached.data;
-    if(infoEl) infoEl.textContent=`⚠️ 籌碼使用舊快取（${lsAgeStr(cached.ts)}），${Object.keys(chipsMap).length} 支`;
+    if(infoEl) infoEl.textContent=`⚠️ 籌碼舊快取（${lsAgeStr(cached.ts)}），${Object.keys(chipsMap).length} 支`;
   } else if(infoEl){
-    infoEl.textContent='⚠️ 籌碼資料無法取得，請稍後重試';
+    infoEl.textContent='⚠️ 籌碼無法載入';
   }
 }
 
@@ -1931,8 +1944,12 @@ async function startScan(){
   const pF=document.getElementById('progFill');
   const pT=document.getElementById('progText');
   const err=document.getElementById('errBox');
-  btn.disabled=true; btn.textContent='掃描中...';
-  cancelBtn.style.display='';
+  // 掃描開始：顯示 sumGrid（含 scanBtn/cancelBtn），隱藏首次掃描列
+  document.getElementById('sumGrid').style.display='flex';
+  const preRow=document.getElementById('preScanRow');
+  if(preRow) preRow.style.display='none';
+  if(btn){btn.disabled=true;btn.textContent='掃描中...';}
+  if(cancelBtn) cancelBtn.style.display='';
   pW.classList.add('show'); err.style.display='none';
   allResults=[];
   chipsMap={};
@@ -2065,9 +2082,13 @@ function parseChipNum(s){if(!s)return null;const n=parseInt(String(s).replace(/,
 function fmtChipN(n){if(n==null||isNaN(n))return'—';if(n===0)return'<span class="sig sig-n">持平</span>';const cls=n>0?'sig-g':'sig-r';const sign=n>0?'+':'';const abs=Math.abs(n);let d=abs>=10000?`${sign}${(n/10000).toFixed(1)}萬`:abs>=1000?`${sign}${(n/1000).toFixed(1)}千`:`${sign}${n}`;return`<span class="sig ${cls}">${d}</span>`;}
 
 function renderAll(){
-  document.getElementById('sumGrid').style.display='';
+  document.getElementById('sumGrid').style.display='flex';
   document.getElementById('filterBox').style.display='';
   document.getElementById('statsBar').style.display='';
+  const preRow=document.getElementById('preScanRow');
+  if(preRow) preRow.style.display='none';
+  const btn=document.getElementById('scanBtn');
+  if(btn&&!btn.disabled) btn.textContent='重新掃描';
   const wd=allResults.filter(r=>r.vcp);
   document.getElementById('sumScanned').textContent=wd.length;
   document.getElementById('sumVcp').textContent=wd.filter(r=>r.vcp.score>=60).length;
@@ -2647,6 +2668,26 @@ async function lookupStock() {
         <div class="sum-label">買入潛力</div>
         <div class="sum-val ${bCls}" style="font-size:1.6rem">${buyScore}</div>
         <div class="sum-sub">VCP 分數 / 100</div>
+        ${(()=>{
+          if(!vcpData.vcpPivot) return '';
+          const d=vcpData.distVcpPivot, vr=vcpData.vRat;
+          // 量能確認：vRat(5日/20日)，>1.2 為量增，<0.8 為縮量
+          const volUp=vr!=null&&vr>=1.2, volDown=vr!=null&&vr<0.8;
+          let lbl,col,sub;
+          if(d>=0&&d<=3&&volUp){lbl='📍 量增突破';col='#34d399';sub='在買點 量確認✅';}
+          else if(d>=0&&d<=3&&!volUp){lbl='📍 觸及買點';col='#fbbf24';sub='量能待確認';}
+          else if(d>-2&&d<0&&volDown){lbl='📍 縮量蓄勢';col='#60a5fa';sub='接近買點 量在萎縮';}
+          else if(d>-2&&d<0){lbl='📍 逼近買點';col='#fbbf24';sub=`差 ${Math.abs(d)}% 待突破`;}
+          else if(d>3&&d<=8){lbl='⚠️ 稍超買點';col='#fb923c';sub=`超 +${d}% 可等回測`;}
+          else if(d>8){lbl='🔴 追高風險';col='#f87171';sub=`超 +${d}%`;}
+          else{lbl='整理中';col='#6b7280';sub=`距高點 ${Math.abs(d)}%`;}
+          return `<div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--border)">
+            <div style="font-size:.78rem;font-weight:700;color:${col}">${lbl}</div>
+            <div style="font-size:.6rem;color:var(--text2);margin-top:2px">${sub}${vr!=null?` ｜量比${vr}`:''}
+            </div>
+            <div style="font-size:.58rem;color:var(--text2);margin-top:1px">pivot ${vcpData.vcpPivot} ｜ pp ${vcpData.pp??'—'}</div>
+          </div>`;
+        })()}
       </div>
       <div class="sum-card" style="padding:12px;text-align:center">
         <div class="sum-label">賣出壓力</div>
@@ -2654,7 +2695,7 @@ async function lookupStock() {
         <div class="sum-sub">超買訊號 / 100</div>
       </div>
     </div>
-    <div style="background:var(--tag);border-radius:10px;padding:10px 14px;font-size:.82rem;line-height:1.65;margin-bottom:8px">
+    <div style="background:var(--tag);border-radius:10px;padding:10px 14px;font-size:.82rem;line-height:1.65">
       <span style="color:var(--text2);font-size:.68rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase">一句評語　</span>
       <span style="color:var(--text)">${reason}</span>
       <div style="margin-top:6px;font-size:.68rem;color:var(--text2)">
@@ -2663,42 +2704,9 @@ async function lookupStock() {
         ｜ ATR比 <strong>${vcpData.atrRat ?? 'N/A'}</strong>
         ｜ 量比 <strong>${vcpData.vRat ?? 'N/A'}</strong>
         ${vcpData.rsi != null ? `｜ RSI <strong>${vcpData.rsi}</strong>` : ''}
+        ${vcpData.pp!=null?`｜ R1 <strong>${vcpData.ppR1}</strong> PP <strong>${vcpData.pp}</strong> S1 <strong>${vcpData.ppS1}</strong>`:''}
       </div>
-    </div>
-    ${vcpData.vcpPivot != null ? `
-    <div style="background:var(--card2);border:1px solid var(--border2);border-radius:10px;padding:12px 14px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-        <span style="font-size:.68rem;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:.06em">📍 Pivot Point 買點分析</span>
-        <span class="sig sig-${vcpData.pivotStatusCls}" style="font-size:.72rem">${vcpData.pivotStatus}</span>
-      </div>
-      <div style="font-size:.8rem;color:var(--text);margin-bottom:8px;line-height:1.6">${vcpData.pivotNote}</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px">
-        <div style="background:var(--tag);border-radius:6px;padding:7px 10px;text-align:center">
-          <div style="font-size:.58rem;color:var(--text2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px">突破買點</div>
-          <div style="font-size:.95rem;font-weight:700;color:${vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>=0&&vcpData.distVcpPivot<=8?'#34d399':vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>8?'#f87171':'#fbbf24'}">${vcpData.vcpPivot}</div>
-          <div style="font-size:.6rem;color:var(--text2);margin-top:1px">${vcpData.distVcpPivot!=null?(vcpData.distVcpPivot>=0?'+':'')+vcpData.distVcpPivot+'%':'—'}</div>
-        </div>
-        <div style="background:var(--tag);border-radius:6px;padding:7px 10px;text-align:center">
-          <div style="font-size:.58rem;color:var(--text2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px">樞軸 PP</div>
-          <div style="font-size:.95rem;font-weight:700;color:var(--sky)">${vcpData.pp ?? '—'}</div>
-          <div style="font-size:.6rem;color:var(--text2);margin-top:1px">${vcpData.pp!=null?((vcpData.price-vcpData.pp)/vcpData.pp*100).toFixed(1)+'%':'—'}</div>
-        </div>
-        <div style="background:var(--tag);border-radius:6px;padding:7px 10px;text-align:center">
-          <div style="font-size:.58rem;color:var(--text2);font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px">現價</div>
-          <div style="font-size:.95rem;font-weight:700;color:var(--text)">${vcpData.price}</div>
-          <div style="font-size:.6rem;color:var(--text2);margin-top:1px">最新收盤</div>
-        </div>
-      </div>
-      <div style="font-size:.68rem;color:var(--text2);line-height:1.9;border-top:1px solid var(--border);padding-top:7px">
-        壓力 <strong style="color:#f87171">R2 ${vcpData.ppR2??'—'}</strong>
-        ／<strong style="color:#fca5a5">R1 ${vcpData.ppR1??'—'}</strong>
-        　樞軸 <strong style="color:var(--sky)">PP ${vcpData.pp??'—'}</strong>
-        　支撐 <strong style="color:#86efac">S1 ${vcpData.ppS1??'—'}</strong>
-        ／<strong style="color:#4ade80">S2 ${vcpData.ppS2??'—'}</strong>
-        <span style="margin-left:6px;opacity:.55">（基於前一交易日 H/L/C）</span>
-      </div>
-    </div>` : ''}
-    `;
+    </div>`;
 }
 (function init(){
   localStorage.removeItem('deepseek_key'); // 移除已停用的 DeepSeek key
