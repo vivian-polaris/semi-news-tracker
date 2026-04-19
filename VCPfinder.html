@@ -376,6 +376,14 @@ footer a:hover{text-decoration:underline}
   /* market news/clock: single column stack on mobile */
   .two-col-row{grid-template-columns:1fr!important}
   .filter-toggle-hd{display:flex!important}
+  /* 手機：新聞與時鐘字體放大，移除多餘空間 */
+  .news-body{font-size:.9rem!important;line-height:1.75!important;word-break:break-word!important;overflow-wrap:break-word!important}
+  .inv-card.c-clock{padding:12px 12px!important}
+  #clockBody{font-size:.88rem!important;line-height:1.75!important;min-height:0!important}
+  #clockSvg{margin:0 auto 6px!important}
+  .clock-badge{font-size:.82rem!important}
+  .two-col-row>div{min-width:0}
+  .news-card,.inv-card{overflow:hidden}
   /* toggle border radius when open */
   .sec-body.open .news-card,.sec-body.open .inv-card{border-top-left-radius:0!important;border-top-right-radius:0!important;border-top:none!important}
   .sec-toggle{border-bottom-left-radius:0;border-bottom-right-radius:0;margin-bottom:0}
@@ -476,9 +484,9 @@ footer a:hover{text-decoration:underline}
     </div>
     <div class="sec-body" id="clockSecBody">
     <div class="inv-card c-clock" style="text-align:center;border-top-left-radius:0;border-top-right-radius:0;border-top:none">
-      <div class="inv-head" style="justify-content:center;gap:8px;margin-bottom:10px">
+      <div class="inv-head" style="justify-content:flex-end;gap:8px;margin-bottom:6px">
         <div class="inv-label lbl-clock hide-mobile" style="font-size:.85rem">美林投資時鐘</div>
-        <button class="inv-rf" onclick="loadClock()">↻</button>
+        <button class="inv-rf" onclick="loadClock()" style="margin-left:auto">↻ 刷新</button>
       </div>
       <div id="clockSvg" style="margin:0 auto 8px"></div>
       <div id="clockPhase" style="margin-bottom:10px">
@@ -1312,7 +1320,7 @@ function drawClock(activePhase){
     const[x1,y1]=pt(s,R),[x2,y2]=pt(e,R),[ix2,iy2]=pt(e,r),[ix1,iy1]=pt(s,r);
     return `<path d="M${x1} ${y1}A${R} ${R} 0 0 1 ${x2} ${y2}L${ix2} ${iy2}A${r} ${r} 0 0 0 ${ix1} ${iy1}Z" fill="${active?color:dim}" stroke="#e9d5ff" stroke-width="1.5"/>`;
   }
-  let s=`<svg viewBox="0 0 200 200" width="200" height="200" style="display:block;margin:0 auto">`;
+  let s=`<svg viewBox="0 0 200 200" width="200" height="200" style="display:block;margin:0 auto;max-width:100%;height:auto">`;
   phases.forEach(p=>{
     const on=(p.id===activePhase);
     s+=arc(p.start,p.end,on,p.color,p.dim);
