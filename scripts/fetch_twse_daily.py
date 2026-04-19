@@ -328,7 +328,7 @@ def _int(v):
 def _int2(v):
     if v is None: return None
     try:
-        i = int(str(v).replace(',', ''))
+        i = int(float(str(v).replace(',', '')))  # handle "149804135.00" style
         return i if i != 0 else None
     except: return None
 
@@ -382,6 +382,26 @@ def main():
             print(f'  ⚠️ 新資料不足（{len(income)}），保留舊資料（{len(old_inc)}）')
             income = old_inc
 
+    # 歷史季報輪替：quarter 改變時，把上一期存進 incomePrev，累積 YoY EPS 對比
+    existing_income = existing.get('income', {})
+    existing_qtr = next(iter(existing_income.values()), {}).get('quarter')
+    current_qtr  = next(iter(income.values()), {}).get('quarter')
+    if existing_qtr and current_qtr and existing_qtr != current_qtr:
+        income_prev = existing_income
+        print(f'  季報更新：{existing_qtr} → {current_qtr}，舊資料存入 incomePrev')
+    else:
+        income_prev = existing.get('incomePrev', {})
+
+    # 計算 YoY EPS 成長率（需同季對比）
+    for code, cur in income.items():
+        prev = income_prev.get(code)
+        if prev and prev.get('quarter') == cur.get('quarter') and prev.get('eps') and cur.get('eps'):
+            p_eps, c_eps = prev['eps'], cur['eps']
+            if p_eps != 0:
+                cur['earningsGrowth'] = round((c_eps - p_eps) / abs(p_eps), 4)
+    yoy_count = sum(1 for v in income.values() if v.get('earningsGrowth') is not None)
+    print(f'  YoY EPS growth computed: {yoy_count} stocks')
+
     print('\n6. Financial News (RSS)...')
     news = fetch_news()
     if len(news) < 3:
@@ -398,6 +418,7 @@ def main():
         'bwibbu':       bwibbu,
         'monthRevenue': month_revenue,
         'income':       income,
+        'incomePrev':   income_prev,
         'news':         news,
     }
 
