@@ -2395,14 +2395,13 @@ function renderTable(){
     const maDot=(ab,val,lbl)=>val!=null?`<span title="MA${lbl}: ${Math.round(val)}" style="display:inline-flex;align-items:center;gap:2px;margin-right:4px"><span style="width:7px;height:7px;border-radius:50%;background:${ab?'#059669':'#dc2626'};display:inline-block;flex-shrink:0"></span><span class="ma-mini">${lbl}</span></span>`:'';
     const maHTML=maDot(v.abM50,v.ma50,'50')+maDot(v.abM150,v.ma150,'150')+maDot(v.abM200,v.ma200,'200');
     const atrHTML=v.atrL!=='—'
-      ?`<span class="sig sig-${v.atrS}">${v.atrL}</span>${v.atrRat!=null?`<br><span style="font-size:.6rem;color:#9ca3af">${v.atrRat}</span>`:''}`
-      :'<span style="color:#d1d5db">—</span>';
+      ?`<span class="sig sig-${v.atrS}">${v.atrL}</span>${v.atrRat!=null?`&nbsp;<span style="font-size:.6rem;color:#9ca3af">${v.atrRat}</span>`:''}`
+      :'—';
     const volHTML=v.volL!=='—'
-      ?`<span class="sig sig-${v.volS}">${v.volL}</span>${v.vRat!=null?`<br><span style="font-size:.6rem;color:#9ca3af">${v.vRat}</span>`:''}`
-      :'<span style="color:#d1d5db">—</span>';
+      ?`<span class="sig sig-${v.volS}">${v.volL}</span>${v.vRat!=null?`&nbsp;<span style="font-size:.6rem;color:#9ca3af">${v.vRat}</span>`:''}`
+      :'—';
     const cHTML=v.contractions>0?`<br><span class="contr-b">${v.contractions}段收縮</span>`:'';
-    // Merged tech signal cell (ATR + volume)
-    const techHTML=`<div style="display:flex;flex-direction:column;gap:2px">${atrHTML}${volHTML}</div>`;
+    const techHTML=`${atrHTML}<br>${volHTML}`;
     // Fundamental score badge
     const fund=r.fund||{};
     const fg=calcFundGrade(fund);
@@ -2440,7 +2439,7 @@ function renderTable(){
       ${(()=>{const cs=renderCSCells(v,r.fund||null,chipsMap[r.code]||null);return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+cs.seven;})()}
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
       <td><div class="ma-row">${maHTML||'—'}</div></td>
-      <td>${techHTML}</td>
+      <td style="white-space:nowrap">${techHTML}</td>
     </tr>`;
   }).join('');
 }
