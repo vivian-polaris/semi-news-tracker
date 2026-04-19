@@ -717,12 +717,19 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('score')">VCP分數 ⇅</th>
       <th onclick="setSort('fund',this)">基本面 ⇅</th>
       <th onclick="setSort('chips',this)">籌碼(外資/投信) ⇅</th>
-      <th onclick="setSort('canslim',this)">CAN SLIM ⇅</th>
+      <th title="Current EPS成長≥25%">C</th>
+      <th title="Annual ROE≥15%">A</th>
+      <th title="Near new high &lt;5%">N</th>
+      <th title="Supply tight 縮量整理">S</th>
+      <th title="Leader VCP≥70">L</th>
+      <th title="Institutional 法人買超">I</th>
+      <th title="Market Stage2">M</th>
+      <th onclick="setSort('canslim',this)">CANSLIM評分 ⇅</th>
       <th>操作</th>
     </tr>
   </thead>
   <tbody id="tblBody">
-    <tr class="load-row"><td colspan="13">開啟自動掃描中...</td></tr>
+    <tr class="load-row"><td colspan="20">開啟自動掃描中...</td></tr>
   </tbody>
 </table>
 </div>
@@ -1745,7 +1752,7 @@ async function startScan(){
   document.getElementById('sumGrid').style.display='';
   document.getElementById('filterBox').style.display='';
   document.getElementById('statsBar').style.display='';
-  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="13"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
+  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="20"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
 
   // Get stock list based on selected source
   let stocks;
@@ -2014,6 +2021,36 @@ function canslimBadge(vcp,fund,chips){
   const cls=cs.total>=5?'sA':cs.total>=3?'sB':'sC';
   return scoreBadge(`${cs.total}/7`,cls,detail);
 }
+function csCell(val, line1, line2){
+  const c=val===true?'#34d399':val===false?'#f87171':'#6b7280';
+  const sym=val===true?'✓':val===false?'✗':'—';
+  return`<div style="text-align:center;line-height:1.4;min-width:36px">
+    <div style="font-size:.72rem;font-weight:800;color:${c}">${sym}</div>
+    <div style="font-size:.6rem;color:${val===true?'var(--text)':'var(--text2)'};white-space:nowrap">${line1||''}</div>
+    ${line2?`<div style="font-size:.55rem;color:var(--text2)">${line2}</div>`:''}
+  </div>`;
+}
+function csScoreBadge(total){
+  const cls=total>=5?'sA':total>=3?'sB':'sC';
+  const col=total>=5?'#34d399':total>=3?'#fbbf24':'#f87171';
+  return`<div style="text-align:center"><span class="score-badge ${cls}">${total}/7</span></div>`;
+}
+function renderCSCells(vcp,fund,chips){
+  const cs=calcCANSLIM(vcp,fund,chips);
+  const na='—';
+  const C=csCell(cs.C, fund?.earningsGrowth!=null?(((fund.earningsGrowth>=0?'+':'')+( fund.earningsGrowth*100).toFixed(0)+'%')):na);
+  const A=csCell(cs.A, fund?.roe!=null?((fund.roe*100).toFixed(0)+'%'):(fund?.operatingMargin!=null?((fund.operatingMargin*100).toFixed(0)+'%'):na));
+  const N=csCell(cs.N, vcp?('-'+vcp.pctH+'%'):na);
+  const S=csCell(cs.S, vcp&&vcp.vRat!=null?('×'+vcp.vRat):na, vcp&&vcp.contractions>0?vcp.contractions+'段':null);
+  const L=csCell(cs.L, vcp?(vcp.score+'分'):na);
+  const fNet=chips?parseChipNum(chips.foreignNet):null;
+  const tNet=chips?parseChipNum(chips.trustNet):null;
+  const iLine=fNet!=null||tNet!=null
+    ?`${(fNet||0)>0?'外↑':'外↓'}${(tNet||0)>0?'投↑':'投↓'}`:na;
+  const I=csCell(cs.I, iLine);
+  const M=csCell(cs.M, vcp?(vcp.stage2?'Stage2':'非S2'):na);
+  return`<td>${C}</td><td>${A}</td><td>${N}</td><td>${S}</td><td>${L}</td><td>${I}</td><td>${M}</td><td>${csScoreBadge(cs.total)}</td>`;
+}
 function setCANSLIM(v,el){
   canslimMin=v;
   ['csMin0','csMin3','csMin4','csMin5','csMin6'].forEach(id=>{
@@ -2064,8 +2101,8 @@ function renderTable(){
   document.getElementById('showN').textContent=sorted.length;
   document.getElementById('totalN').textContent=counted;
   const tbody=document.getElementById('tblBody');
-  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="13">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
-  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="13">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
+  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="20">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
+  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="20">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
   tbody.innerHTML=sorted.map(r=>{
     const v=r.vcp;
     const tv=`https://www.tradingview.com/chart/?symbol=TWSE%3A${r.code}`;
@@ -2076,7 +2113,7 @@ function renderTable(){
         <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
         <td class="tn">${r.name}</td>
         <td><span style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span>${r.sector?`<span class="tsec">${r.sector}</span>`:''}</td>
-        <td colspan="9" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
+        <td colspan="16" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
         <td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
       </tr>`;
     }
@@ -2135,7 +2172,7 @@ function renderTable(){
       </td>
       <td>${fundHTML}</td>
       <td>${chipsHTML}</td>
-      <td>${canslimBadge(v,r.fund||null,chipsMap[r.code]||null)}</td>
+      ${renderCSCells(v,r.fund||null,chipsMap[r.code]||null)}
       <td style="white-space:nowrap">${starEl}<a href="${tv}" target="_blank" class="tv-btn">TV</a></td>
     </tr>`;
   }).join('');
@@ -2448,7 +2485,7 @@ async function lookupStock() {
 
   // 無快取時才自動啟動掃描
   if(!cacheLoaded){
-    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="13"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
+    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="20"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
     setTimeout(()=>startScan(),1200);
   }
 
