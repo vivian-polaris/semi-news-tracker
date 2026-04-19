@@ -1211,11 +1211,11 @@ async function loadTrump(useCache=false){
     const recentQ=new Date(Date.now()-5*24*60*60*1000).toISOString().slice(0,10);
     const recentQ2=new Date(Date.now()-3*24*60*60*1000).toISOString().slice(0,10);
     const [a,b2,c,d,e,ff1,ff2,war1,war2,war3,bbc1,bbc2,ap1,ap2]=await Promise.all([
-      fetchRSS(`Trump tariff trade policy statement after:${recentQ}`).catch(()=>[]),
-      fetchRSS(`Federal Reserve interest rate inflation CPI GDP after:${recentQ}`).catch(()=>[]),
-      fetchRSS(`semiconductor TSMC Nvidia AMD earnings supply chain after:${recentQ}`).catch(()=>[]),
-      fetchRSS(`site:wsj.com stock market finance economy after:${recentQ}`).catch(()=>[]),
-      fetchRSS(`site:reuters.com finance stocks market after:${recentQ}`).catch(()=>[]),
+      fetchRSS(`Trump tariff trade war sanctions policy after:${recentQ}`).catch(()=>[]),
+      fetchRSS(`Federal Reserve interest rate decision inflation CPI after:${recentQ}`).catch(()=>[]),
+      fetchRSS(`US China trade tariff supply chain technology export after:${recentQ}`).catch(()=>[]),
+      fetchRSS(`site:wsj.com economy policy geopolitics after:${recentQ}`).catch(()=>[]),
+      fetchRSS(`site:reuters.com world economy geopolitics after:${recentQ}`).catch(()=>[]),
       fetchRSSUrl('https://www.forexfactory.com/rss.php?category=market_news').catch(()=>[]),
       fetchRSSUrl('https://www.forexfactory.com/rss.php').catch(()=>[]),
       fetchRSS(`Israel Iran war ceasefire attack strike after:${recentQ2}`).catch(()=>[]),
@@ -1253,23 +1253,27 @@ async function loadTrump(useCache=false){
   const sysNote='【輸出規則】純文字，禁止使用 markdown、代碼塊、星號、#號。';
   const newsList=items.map((x,i)=>`${i+1}. [${x.dateStr||'近期'}] ${x.title}`).join('\n');
   const prompt=`今天${today}。${sysNote}
-你是台股分析師。以下新聞來自 ForexFactory、WSJ（site:wsj.com）、Reuters 等中立財經媒體（最近 5 天）。
+你是台股分析師。以下新聞來自 BBC、AP、WSJ、Reuters 等國際財經媒體（最近 3 天）。
 只能使用下方清單的真實新聞，禁止補充訓練資料舊消息。
-從中挑出最會影響台灣股市的 10 條，依重要性排序，繁體中文，機構/公司名稱保留英文。
+從中挑出最會影響台灣股市的 10 條宏觀事件，依重要性排序，繁體中文，機構/公司名稱保留英文。
 
-【強制必選規則】若新聞清單中有以下主題，必須納入，不得遺漏：
-① 以色列-伊朗戰爭：打還是停？最新軍事行動、傷亡、談判進展
-② 川普最新表態：支持哪方？要打還是停火？制裁還是對話？
-③ 霍爾木茲海峽（Strait of Hormuz）：封鎖還是開放？油輪通行狀況
-④ 美國態度：出兵？制裁？外交斡旋？
-⑤ 伊朗態度：報復？讓步？核談判？
-以上若有新聞必須具體說明立場與數字，不得用模糊語句帶過。
+【嚴格禁止選入的廢話新聞】：
+❌ 個股漲跌（台積電漲X%、NVIDIA上漲）— 人人皆知，無需報
+❌ 已知結果（財報已公布的EPS）
+❌ 模糊語句（局勢緊張、持續關注、值得觀察、可能影響）
+
+【強制必選規則】若新聞清單中有以下主題，必須納入：
+① 以色列-伊朗：打還是停？最新軍事行動或談判
+② 川普表態：對伊朗/以色列態度，打還是停火？制裁？
+③ 霍爾木茲海峽：封鎖還是開放？油輪通行最新狀況
+④ 美國/伊朗外交：出兵？制裁？核談判？
+以上必須具體說明立場與數字。
 
 輸出格式（嚴格照此）：
-1. 【來源/事件】新聞要點 1 句（含具體數字）→ 影響台股族群/個股 → 預估漲跌±%
+1. 【BBC/AP/WSJ/Reuters·事件名】具體發生了什麼（含數字/國家/決策）→ 影響台股哪個族群 → 預估方向±%
 2～10. 同上
 
-每條必須有數字。禁止「局勢緊張」「持續關注」「值得觀察」「可能影響」等廢話。
+每條必須有具體數字或明確決策。
 
 新聞清單：
 ${newsList}`;
