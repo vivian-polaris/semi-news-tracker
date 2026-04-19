@@ -344,10 +344,11 @@ footer a:hover{text-decoration:underline}
 .sec-chevron.open{transform:rotate(180deg)}
 .sec-body{overflow:hidden;transition:max-height .3s ease,opacity .25s ease;max-height:0;opacity:0}
 .sec-body.open{max-height:2000px;opacity:1}
-/* On desktop, always show both open by default */
+/* Desktop: toggle visible, body collapsed by default (same as mobile) */
 @media(min-width:641px){
-  .sec-toggle{display:none}
-  .sec-body{max-height:none!important;opacity:1!important;overflow:visible!important}
+  .sec-body.open .news-card,.sec-body.open .inv-card{border-top-left-radius:0!important;border-top-right-radius:0!important;border-top:none!important}
+  .sec-toggle{border-bottom-left-radius:0;border-bottom-right-radius:0;margin-bottom:0}
+  .sec-toggle+.sec-body.open{margin-bottom:8px}
 }
 
 /* ── Mobile: hide all explanatory/descriptive text ── */
@@ -433,9 +434,6 @@ footer a:hover{text-decoration:underline}
 
   <!-- 左：市場震撼彈 -->
   <div>
-    <div class="inv-title-row hide-mobile">
-      <span class="inv-main-title">市場震撼彈</span>
-    </div>
     <!-- mobile toggle -->
     <div class="sec-toggle" onclick="toggleSec('trump')" id="trumpToggle">
       <div class="sec-toggle-left">
@@ -468,9 +466,6 @@ footer a:hover{text-decoration:underline}
 
   <!-- 右：投資人專區（美林時鐘） -->
   <div>
-    <div class="inv-title-row hide-mobile">
-      <span class="inv-main-title">投資人專區</span>
-    </div>
     <!-- mobile toggle -->
     <div class="sec-toggle" onclick="toggleSec('clock')" id="clockToggle">
       <div class="sec-toggle-left">
