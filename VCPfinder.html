@@ -361,7 +361,7 @@ footer a:hover{text-decoration:underline}
   .sum-sub,
   .scan-info,
   #scanSrcLabel,
-  #fetchApiStatus,
+  /*#fetchApiStatus hidden intentionally on mobile below*/
   .clock-sub,
   .stats-l,
   .prog-text,
@@ -531,7 +531,7 @@ footer a:hover{text-decoration:underline}
       <div id="importStatus" style="font-size:.7rem;color:var(--text2);margin-top:4px"></div>
     </div>
   </div>
-  <div id="fetchApiStatus" style="display:none"></div>
+  <div id="fetchApiStatus" style="font-size:.7rem;color:var(--text2);margin-top:6px;min-height:1em"></div>
   <div class="prog-wrap" id="progWrap">
     <div class="prog-bg"><div class="prog-fill" id="progFill"></div></div>
     <div class="prog-text" id="progText">準備中...</div>
@@ -1868,75 +1868,91 @@ async function fetchFundamentals(sym){
 }
 
 // ─── Fetch Institutional ─────────────────────────────────────────────────
-// 永遠優先讀 twse_daily.json（同源，GitHub Actions 每日更新，不受 CORS 限制）
-// T86 直連僅補充，有就加分，沒有也沒差
+function _setChipsInfo(msg){
+  const el=document.getElementById('fetchApiStatus');
+  if(el) el.textContent=msg;
+}
 async function fetchChips(){
   chipsMap={};
-  const infoEl=document.getElementById('fetchApiStatus');
+  _setChipsInfo('籌碼載入中...');
 
-  // ── 步驟1：直接從 twse_daily.json 抓 chips（同源無 CORS 問題）──────────
-  // 不依賴 twseDailyMap 是否已載入，直接 fetch 確保一定拿到
-  let jsonDate='';
+  // ── A. localStorage 快取（最快，零網路）─────────────────────────────────
   try{
-    const src=twseDailyMap.chips&&Object.keys(twseDailyMap.chips).length>100
-      ? twseDailyMap   // 已載入就直接用
-      : await fetchTO('./twse_daily.json?c='+Date.now(),10000).then(r=>r.ok?r.json():null);
-    if(src?.chips&&Object.keys(src.chips).length>100){
-      Object.assign(chipsMap,src.chips);
-      jsonDate=src.date||'';
+    const cc=lsGet('chips_all');
+    if(cc?.data&&Object.keys(cc.data).length>100){
+      Object.assign(chipsMap,cc.data);
+      _setChipsInfo(`籌碼快取 ${Object.keys(chipsMap).length} 支，背景刷新中...`);
     }
   }catch(_){}
 
-  // ── 步驟2：嘗試 T86 補充（短 timeout，CORS proxy；成功則 override）──────
+  // ── B. twse_daily.json（同源，最可靠）────────────────────────────────────
+  let jsonDate='';
+  try{
+    // 優先用已載入的 twseDailyMap，否則直接 fetch
+    let jd=null;
+    if(twseDailyMap?.chips&&Object.keys(twseDailyMap.chips).length>100){
+      jd=twseDailyMap;
+    } else {
+      _setChipsInfo('籌碼：載入 twse_daily.json...');
+      const resp=await fetch('./twse_daily.json?_='+Date.now());
+      if(resp.ok) jd=await resp.json();
+    }
+    if(jd?.chips&&Object.keys(jd.chips).length>100){
+      Object.assign(chipsMap,jd.chips); // JSON 覆蓋快取（更新）
+      jsonDate=jd.date||'';
+      lsSet('chips_all',chipsMap);
+      _setChipsInfo(`✅ 籌碼 ${jsonDate}，共 ${Object.keys(chipsMap).length} 支`);
+      return;
+    }
+  }catch(e){
+    _setChipsInfo('⚠️ twse_daily.json 載入失敗：'+e.message);
+  }
+
+  // ── C. T86 直連（CORS proxy，補充用）────────────────────────────────────
   const proxies=['https://corsproxy.io/?','https://api.allorigins.win/raw?url='];
-  let t86ok=false;
   outer:
   for(let back=0;back<7;back++){
     const dt=new Date();dt.setDate(dt.getDate()-back);
     if(dt.getDay()===0||dt.getDay()===6) continue;
     const yyyymmdd=dt.getFullYear()+String(dt.getMonth()+1).padStart(2,'0')+String(dt.getDate()).padStart(2,'0');
-    if(jsonDate&&yyyymmdd===jsonDate){break;} // JSON 已是最新日，不必 T86 重複
     const base=`https://www.twse.com.tw/rwd/zh/fund/T86?date=${yyyymmdd}&response=json`;
     for(const px of proxies){
       try{
-        const url=px?px+encodeURIComponent(base):base;
-        const r=await fetchTO(url,5000);
+        const r=await fetchTO(px+encodeURIComponent(base),5000);
         if(!r.ok)continue;
-        const text=await r.text();
-        if(!text||text.trim().startsWith('<')||text.includes('Rate limit'))continue;
-        const json=JSON.parse(text);
-        if(json.stat!=='OK'||!json.data?.length)continue;
-        const fields=json.fields||[];
+        const txt=await r.text();
+        if(!txt||txt.trim().startsWith('<')||txt.includes('Rate limit'))continue;
+        const j=JSON.parse(txt);
+        if(j.stat!=='OK'||!j.data?.length)continue;
+        const fields=j.fields||[];
         const fi=fields.findIndex(f=>(f.includes('外陸資')||f.includes('外資及陸資'))&&f.includes('買賣超')&&!f.includes('自營'));
         const ti=fields.findIndex(f=>f.includes('投信')&&f.includes('買賣超'));
         const di=fields.findIndex(f=>f.includes('自營商')&&f.includes('買賣超')&&!f.includes('自行')&&!f.includes('避險'));
         const fIdx=fi>0?fi:4,tIdx=ti>0?ti:10,dIdx=di>0?di:11;
         let cnt=0;
-        json.data.forEach(row=>{
+        j.data.forEach(row=>{
           if(!row||row.length<Math.max(fIdx,tIdx,dIdx)+1)return;
           const code=(row[0]||'').trim();
           if(!code||!/^\d{4,6}$/.test(code))return;
           chipsMap[code]={foreignNet:parseChipNum(row[fIdx]),trustNet:parseChipNum(row[tIdx]),dealerNet:parseChipNum(row[dIdx])};
           cnt++;
         });
-        if(cnt>10){t86ok=true;break outer;}
+        if(cnt>10){
+          lsSet('chips_all',chipsMap);
+          _setChipsInfo(`✅ 籌碼 T86 ${yyyymmdd}，共 ${Object.keys(chipsMap).length} 支`);
+          break outer;
+        }
       }catch(_){}
     }
   }
 
-  if(Object.keys(chipsMap).length>10){
+  // ── D. 結果回報 ──────────────────────────────────────────────────────────
+  const n=Object.keys(chipsMap).length;
+  if(n>10){
     lsSet('chips_all',chipsMap);
-    if(infoEl) infoEl.textContent=`✅ 籌碼 ${jsonDate}：${Object.keys(chipsMap).length} 支${t86ok?' (T86 已補充)':''}`;
-    return;
-  }
-
-  // ── 最終備援：localStorage 舊快取 ───────────────────────────────────────
-  const cached=lsGet('chips_all');
-  if(cached?.data&&Object.keys(cached.data).length>100){
-    chipsMap=cached.data;
-    if(infoEl) infoEl.textContent=`⚠️ 籌碼舊快取（${lsAgeStr(cached.ts)}），${Object.keys(chipsMap).length} 支`;
-  } else if(infoEl){
-    infoEl.textContent='⚠️ 籌碼無法載入';
+    _setChipsInfo(`✅ 籌碼 ${n} 支`);
+  } else {
+    _setChipsInfo('⚠️ 籌碼無法載入（JSON 及 T86 均失敗）');
   }
 }
 
@@ -2747,7 +2763,15 @@ async function lookupStock() {
           `${stale?'📅 ':''}上次掃描：<strong>${dateStr} ${timeStr}</strong>（${ageStr}）${stale?' · <span style="color:var(--purple);cursor:pointer" onclick="startScan()">重新掃描</span>':''}`;
         renderAll();
         cacheLoaded=true;
-        // 快取恢復後非同步載入籌碼（chips 不存在 vcpCache 裡）
+        // ① 立即從 chips_all localStorage 恢復（零網路，掃描後必有）
+        try{
+          const cc=lsGet('chips_all');
+          if(cc?.data&&Object.keys(cc.data).length>100){
+            chipsMap=cc.data;
+            renderTable();
+          }
+        }catch(_){}
+        // ② 背景非同步刷新（取最新籌碼），完成後再渲染
         (async()=>{
           await loadTWSEDaily();
           await fetchChips();
