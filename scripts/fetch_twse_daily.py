@@ -14,7 +14,7 @@ Data collected:
   - income   : {code -> eps/revenue/operatingIncome/netIncome/year/quarter} TSE+OTC
 """
 
-import json, sys, time, datetime, re
+import json, sys, time, datetime, re, xml.etree.ElementTree as ET
 import requests
 
 SESSION = requests.Session()
@@ -101,9 +101,22 @@ def fetch_bwibbu():
                 bwibbu[code] = {'pe': pe, 'pb': pb, 'divYield': dy}
         print(f'  TSE BWIBBU: {len(bwibbu)}')
 
-    # OTC: tpex_mainboard_daily_close_quotes (no PE/PB fields, skip BWIBBU for OTC)
-    # Note: tpex_mainboard_perday_quotation returns HTML, not JSON
-    print('  OTC BWIBBU: skipped (TPEX PE/PB API unavailable)')
+    # OTC: tpex_mainboard_daily_close_quotes 包含本益比
+    data_otc = get('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes')
+    if data_otc:
+        added_otc = 0
+        for r in data_otc:
+            code = str(r.get('SecuritiesCompanyCode') or '').strip()
+            pe   = _flt(r.get('PriceEarningRatio') or r.get('本益比'))
+            pb   = _flt(r.get('PriceBookRatio') or r.get('股價淨值比'))
+            dy   = _flt(r.get('DividendYield') or r.get('殖利率'))
+            if code and re.match(r'^\d{4,6}$', code):
+                if any(v is not None for v in [pe, pb, dy]) and code not in bwibbu:
+                    bwibbu[code] = {'pe': pe, 'pb': pb, 'divYield': dy}
+                    added_otc += 1
+        print(f'  OTC BWIBBU: +{added_otc}')
+    else:
+        print('  OTC BWIBBU: API failed')
 
     print(f'  Total BWIBBU: {len(bwibbu)}')
     return bwibbu
@@ -265,6 +278,41 @@ def fetch_income():
     return income
 
 
+# ── 6. Financial News (Google News RSS) ──────────────────────────────────────
+def fetch_news():
+    queries = [
+        'Trump tariff trade policy statement',
+        'Federal Reserve interest rate inflation CPI GDP',
+        'semiconductor TSMC Nvidia AMD earnings supply chain',
+        'Taiwan stock market economy',
+        'China economy real estate policy',
+    ]
+    all_items = []
+    seen = set()
+    for q in queries:
+        url = f'https://news.google.com/rss/search?q={requests.utils.quote(q)}&hl=en-US&gl=US&ceid=US:en'
+        try:
+            r = SESSION.get(url, timeout=20, headers={'Accept': 'application/rss+xml,application/xml,text/xml'})
+            r.raise_for_status()
+            root = ET.fromstring(r.content)
+            for item in root.findall('.//item')[:8]:
+                title = (item.findtext('title') or '').strip()
+                link  = (item.findtext('link') or '').strip()
+                pub   = (item.findtext('pubDate') or '').strip()
+                src   = ''
+                src_el = item.find('{https://news.google.com/rss}source')
+                if src_el is None:
+                    src_el = item.find('source')
+                if src_el is not None:
+                    src = src_el.text or ''
+                if title and title not in seen:
+                    seen.add(title)
+                    all_items.append({'title': title, 'link': link, 'pubDate': pub, 'source': src})
+        except Exception as e:
+            print(f'  [WARN] news RSS failed "{q[:35]}": {e}')
+    print(f'  Total news items: {len(all_items)}')
+    return all_items
+
 def _flt(v):
     if v is None: return None
     try:
@@ -334,6 +382,14 @@ def main():
             print(f'  ⚠️ 新資料不足（{len(income)}），保留舊資料（{len(old_inc)}）')
             income = old_inc
 
+    print('\n6. Financial News (RSS)...')
+    news = fetch_news()
+    if len(news) < 3:
+        old_news = existing.get('news', [])
+        if len(old_news) > len(news):
+            print(f'  ⚠️ 新聞抓取不足（{len(news)}），保留舊資料（{len(old_news)}筆）')
+            news = old_news
+
     output = {
         'date':         date_str,
         'sectors':      sectors,
@@ -342,6 +398,7 @@ def main():
         'bwibbu':       bwibbu,
         'monthRevenue': month_revenue,
         'income':       income,
+        'news':         news,
     }
 
     with open('twse_daily.json', 'w', encoding='utf-8') as f:
@@ -349,7 +406,7 @@ def main():
 
     print(f'\n✅ twse_daily.json written:')
     print(f'   sectors={len(sectors)}, otcStocks={len(otc_stocks)}, chips={len(chips)}, bwibbu={len(bwibbu)}')
-    print(f'   revenue={len(month_revenue)}, income={len(income)}')
+    print(f'   revenue={len(month_revenue)}, income={len(income)}, news={len(news)}')
 
 if __name__ == '__main__':
     main()
