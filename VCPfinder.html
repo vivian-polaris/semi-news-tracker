@@ -2694,36 +2694,27 @@ async function lookupStock() {
       ${stockInfo.sector ? `<span class="tsec">${escH(stockInfo.sector)}</span>` : ''}
       <a href="${tv}" target="_blank" class="tv-btn">TV</a>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
       <div class="sum-card" style="padding:12px;text-align:center">
         <div class="sum-label">買入潛力</div>
         <div class="sum-val ${bCls}" style="font-size:1.6rem">${buyScore}</div>
-        <div class="sum-sub">VCP 分數 / 100</div>
-        ${(()=>{
-          if(!vcpData.vcpPivot) return '';
-          const d=vcpData.distVcpPivot, vr=vcpData.vRat;
-          // 量能確認：vRat(5日/20日)，>1.2 為量增，<0.8 為縮量
-          const volUp=vr!=null&&vr>=1.2, volDown=vr!=null&&vr<0.8;
-          let lbl,col,sub;
-          if(d>=0&&d<=3&&volUp){lbl='📍 量增突破';col='#34d399';sub='在買點 量確認✅';}
-          else if(d>=0&&d<=3&&!volUp){lbl='📍 觸及買點';col='#fbbf24';sub='量能待確認';}
-          else if(d>-2&&d<0&&volDown){lbl='📍 縮量蓄勢';col='#60a5fa';sub='接近買點 量在萎縮';}
-          else if(d>-2&&d<0){lbl='📍 逼近買點';col='#fbbf24';sub=`差 ${Math.abs(d)}% 待突破`;}
-          else if(d>3&&d<=8){lbl='⚠️ 稍超買點';col='#fb923c';sub=`超 +${d}% 可等回測`;}
-          else if(d>8){lbl='🔴 追高風險';col='#f87171';sub=`超 +${d}%`;}
-          else{lbl='整理中';col='#6b7280';sub=`距高點 ${Math.abs(d)}%`;}
-          return `<div style="margin-top:8px;padding-top:7px;border-top:1px solid var(--border)">
-            <div style="font-size:.78rem;font-weight:700;color:${col}">${lbl}</div>
-            <div style="font-size:.6rem;color:var(--text2);margin-top:2px">${sub}${vr!=null?` ｜量比${vr}`:''}
-            </div>
-            <div style="font-size:.58rem;color:var(--text2);margin-top:1px">pivot ${vcpData.vcpPivot} ｜ pp ${vcpData.pp??'—'}</div>
-          </div>`;
-        })()}
+        <div class="sum-sub" style="display:block">VCP形態 / 100</div>
+        <div style="font-size:.58rem;color:var(--text2);margin-top:3px;line-height:1.4">收縮次數・ATR・Stage2<br>（與量無關）</div>
+      </div>
+      <div class="sum-card" style="padding:12px;text-align:center;border-top:3px solid ${vcpData.vcpPivot!=null&&vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>=0&&vcpData.distVcpPivot<=3?'#34d399':vcpData.vcpPivot!=null&&vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>3&&vcpData.distVcpPivot<=8?'#fbbf24':vcpData.vcpPivot!=null&&vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>8?'#f87171':'var(--border)'}">
+        <div class="sum-label">Pivot 位置</div>
+        <div style="font-size:1.5rem;font-weight:700;color:${vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>=0&&vcpData.distVcpPivot<=3?'#34d399':vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>=-2?'#fbbf24':'#9ca3af'}">
+          ${vcpData.distVcpPivot!=null?(vcpData.distVcpPivot>=0?'+':'')+vcpData.distVcpPivot+'%':'—'}
+        </div>
+        <div style="font-size:.62rem;color:var(--text2);margin-top:2px">${vcpData.vcpPivot!=null?`突破線 ${vcpData.vcpPivot}`:'資料不足'}</div>
+        <div style="font-size:.6rem;font-weight:700;margin-top:3px;color:${vcpData.pivotStatusCls==='g'?'#34d399':vcpData.pivotStatusCls==='o'?'#fbbf24':'#9ca3af'}">${vcpData.pivotStatus??'—'}</div>
+        <div style="font-size:.56rem;color:var(--text2);margin-top:2px;line-height:1.4">需放量突破才有效<br>0～+3% 最佳進場</div>
       </div>
       <div class="sum-card" style="padding:12px;text-align:center">
         <div class="sum-label">賣出壓力</div>
         <div class="sum-val ${sCls}" style="font-size:1.6rem">${sellScore}</div>
-        <div class="sum-sub">超買訊號 / 100</div>
+        <div class="sum-sub" style="display:block">超買信號 / 100</div>
+        <div style="font-size:.58rem;color:var(--text2);margin-top:3px;line-height:1.4">RSI・距高點<br>・短期漲幅</div>
       </div>
     </div>
     <div style="background:var(--tag);border-radius:10px;padding:10px 14px;font-size:.82rem;line-height:1.65">
