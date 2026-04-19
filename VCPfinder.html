@@ -848,6 +848,8 @@ let fundMin=0;
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
 let twseDailyMap={chips:{},monthRevenue:{},income:{}}; // pre-fetched by GitHub Actions
+let stockPriceMap={};   // pre-fetched OHLCV: code -> {n,c[],h[],l[],v[]}
+let stockPriceLoaded=false;
 
 // ─── Key helpers ──────────────────────────────────────────────────────────
 const getKey=()=>localStorage.getItem('groq_key')||'';
@@ -887,6 +889,24 @@ async function loadTWSEDaily(){
       // 把 bwibbu 合進 twseFundMap（覆蓋 BWIBBU_d 直連失敗的情況）
       if(d.bwibbu){Object.entries(d.bwibbu).forEach(([c,v])=>{if(!twseFundMap[c])twseFundMap[c]=v;});}
       if(infoEl) infoEl.textContent=`✅ 每日資料載入：籌碼 ${Object.keys(d.chips).length} 支、財報 ${Object.keys(d.income||{}).length} 支、産業 ${Object.keys(d.sectors||{}).length} 支（${d.date||''}）`;
+    }
+  }catch(_){}
+}
+async function loadStockPrices(){
+  if(stockPriceLoaded)return;
+  const v=new Date().toISOString().slice(0,10);
+  try{
+    const [r1,r2]=await Promise.all([
+      fetchTO(`./stocks_tse.json?v=${v}`,30000).catch(()=>null),
+      fetchTO(`./stocks_otc.json?v=${v}`,30000).catch(()=>null),
+    ]);
+    let count=0;
+    if(r1?.ok){const d=await r1.json();if(d.stocks){Object.assign(stockPriceMap,d.stocks);count+=Object.keys(d.stocks).length;}}
+    if(r2?.ok){const d=await r2.json();if(d.stocks){Object.assign(stockPriceMap,d.stocks);count+=Object.keys(d.stocks).length;}}
+    if(count>0){
+      stockPriceLoaded=true;
+      const el=document.getElementById('fetchApiStatus');
+      if(el) el.textContent=`✅ 股價快取：${count} 支（前一交易日）`;
     }
   }catch(_){}
 }
@@ -1658,6 +1678,17 @@ function lsAgeStr(ts){
 }
 function fetchTO(url,ms=9000,opts={}){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal,...opts}).finally(()=>clearTimeout(t));}
 async function fetchYahoo(sym){
+  // 優先：本地預存 OHLCV（方案 A，永遠有資料）
+  const code=sym.split('.')[0];
+  const pre=stockPriceMap[code];
+  if(pre?.c?.length>=55){
+    const arr=pre.c.map((c,i)=>({
+      close:c, high:pre.h?.[i]??c, low:pre.l?.[i]??c,
+      volume:pre.v?.[i]??0, date:new Date(Date.now()-i*86400000)
+    }));
+    arr._yahooName=pre.n||null;
+    return arr;
+  }
   const parseYahooJson=(json)=>{
     const r=json?.chart?.result?.[0];if(!r?.timestamp)return null;
     const q=r.indicators?.quote?.[0]??{};
@@ -1849,7 +1880,7 @@ async function startScan(){
 
   // 預載每日資料（twse_daily.json，GitHub Actions 每日更新）
   document.getElementById('progText').textContent='載入每日資料（twse_daily.json）...';
-  await loadTWSEDaily();
+  await Promise.all([loadTWSEDaily(), loadStockPrices()]);
   // Fetch institutional chips data once before scan
   document.getElementById('progText').textContent='取得籌碼資料（TWSE）...';
   await fetchChips();
@@ -2601,8 +2632,8 @@ async function lookupStock() {
     setTimeout(()=>startScan(),1200);
   }
 
-  // Auto-load AI sections：先載入 twse_daily.json（取得新聞快取），再顯示
-  loadTWSEDaily().finally(()=>{
+  // 頁面載入：同時載入所有靜態資料，完成後顯示新聞/時鐘
+  Promise.all([loadTWSEDaily(), loadStockPrices()]).finally(()=>{
     loadTrump(true);
     loadClock(true);
   });
