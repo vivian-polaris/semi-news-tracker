@@ -1189,9 +1189,18 @@ async function loadTrump(useCache=false){
       .slice(0,30);
   }
   if(!items.length){
-    b.className='news-body';
-    b.textContent='⚠️ 新聞無法取得（後端快取與 RSS 均失敗）。\n請稍後再試或點 ↻ 重試。';
-    t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    // 所有來源失敗 → 強制顯示任何舊的 AI 快取（無論多舊）
+    const stale=getAICache('trump2')||lsGet('trump_stale');
+    if(stale){
+      b.className='news-body';
+      const age=cacheAgeStr(stale.ts||Date.now());
+      const raw=stale.rawText||stale.text||stale.data||'';
+      b.textContent=`[舊資料・${age}，網路暫時無法更新，點 ↻ 重試]\n\n${raw}`;
+      t.textContent=`快取（${age}）`;
+    }else{
+      b.className='news-body';
+      b.textContent='⚠️ 新聞暫時無法取得，尚無快取資料。\n請點 ↻ 待網路恢復後重試。';
+    }
     return;
   }
   // 立即顯示新聞來源（不等 AI），讓用戶先看到出處
@@ -1225,7 +1234,7 @@ ${newsList}`;
     if(aiDiv){aiDiv.style.color='';aiDiv.style.fontStyle='';aiDiv.textContent=aiText;}
     else{b.className='news-body';b.innerHTML='<div id="tAI" style="white-space:pre-wrap">'+escH(aiText)+'</div>'+buildSrcHtml(items);}
   }
-  if(!aiText.startsWith('⚠️')&&!aiText.startsWith('❌')) setAICache('trump2',aiText,{rawText:aiText});
+  if(!aiText.startsWith('⚠️')&&!aiText.startsWith('❌')){setAICache('trump2',aiText,{rawText:aiText});lsSet('trump_stale',{text:aiText,ts:Date.now()});}
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
@@ -1377,8 +1386,22 @@ async function loadClock(useCache=false){
   // 移除第一行「象限：XXX」避免重複，其餘全文顯示
   const displayText=res.replace(/^象限[：:\s]*(復甦|過熱|滯脹|再膨脹)\s*/,'').trim();
   body.textContent=displayText||res;
-  if(!res.startsWith('⚠️')&&!res.startsWith('❌')) setAICache('clock',res);
-
+  if(!res.startsWith('⚠️')&&!res.startsWith('❌')){
+    setAICache('clock',res);lsSet('clock_stale',{text:res,ts:Date.now()});
+  } else {
+    // AI 失敗 → 顯示任何舊快取
+    const stale=lsGet('clock_stale');
+    if(stale?.data){
+      const age=lsAgeStr(stale.ts);
+      const sr=stale.data.text||stale.data;
+      let sp=null;for(const p of ['滯脹','再膨脹','過熱','復甦'])if(sr.includes(p)){sp=p;break;}
+      const cols={'復甦':'#10b981','過熱':'#f59e0b','滯脹':'#ef4444','再膨脹':'#8b5cf6'};
+      svgEl.innerHTML=drawClock(sp);
+      badge.textContent=(sp?`目前象限：${sp}`:'')+ `（舊資料・${age}）`;
+      badge.style.background=sp?cols[sp]:'var(--border)';
+      body.textContent=`[舊資料・${age}，AI 暫時無法更新]\n\n`+(sr.replace(/^象限[：:\s]*(復甦|過熱|滯脹|再膨脹)\s*/,'').trim());
+    }
+  }
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
@@ -1606,28 +1629,74 @@ const PROXIES=[
   'https://corsproxy.io/?',
   'https://api.allorigins.win/raw?url=',
   'https://api.codetabs.com/v1/proxy?quest=',
-  'https://corsproxy.io/?',  // retry corsproxy last
-  '',                          // direct (browser CORS 可能擋)
+  'https://thingproxy.freeboard.io/fetch/',
+  'https://corsproxy.io/?',
+  '',
 ];
+// ─── 通用 localStorage 快取（備援用）───────────────────────────────────────
+const _lsPrefix='vcp2_';
+function lsGet(key){
+  try{const v=JSON.parse(localStorage.getItem(_lsPrefix+key));return v||null;}catch{return null;}
+}
+function lsSet(key,data){
+  try{localStorage.setItem(_lsPrefix+key,JSON.stringify({data,ts:Date.now()}));}catch{
+    // localStorage 滿了，清掉最舊的再試
+    try{
+      const keys=Object.keys(localStorage).filter(k=>k.startsWith(_lsPrefix));
+      keys.sort((a,b)=>{
+        try{return JSON.parse(localStorage[a]).ts-JSON.parse(localStorage[b]).ts;}catch{return 0;}
+      });
+      keys.slice(0,Math.ceil(keys.length/2)).forEach(k=>localStorage.removeItem(k));
+      localStorage.setItem(_lsPrefix+key,JSON.stringify({data,ts:Date.now()}));
+    }catch{}
+  }
+}
+function lsAgeStr(ts){
+  if(!ts)return'';
+  const m=Math.round((Date.now()-ts)/60000);
+  return m<60?`${m}分前`:m<1440?`${Math.floor(m/60)}小時前`:`${Math.floor(m/1440)}天前`;
+}
 function fetchTO(url,ms=9000,opts={}){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal,...opts}).finally(()=>clearTimeout(t));}
 async function fetchYahoo(sym){
-  const base=`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2y&includePrePost=false`;
-  for(const px of PROXIES){
-    const url=px?px+encodeURIComponent(base):base;
-    try{
-      const res=await fetchTO(url);if(!res.ok)continue;
-      const json=await res.json();
-      const r=json?.chart?.result?.[0];if(!r?.timestamp)continue;
-      const q=r.indicators?.quote?.[0]??{};
-      const arr=r.timestamp.map((t,i)=>({
-        date:new Date(t*1000),open:q.open?.[i]??null,high:q.high?.[i]??null,
-        low:q.low?.[i]??null,close:q.close?.[i]??null,volume:q.volume?.[i]??null
-      })).filter(d=>d.close!==null&&d.close>0);
-      arr.reverse();
-      // 附帶公司中文名（Yahoo meta 欄位）
-      arr._yahooName=r.meta?.longName||r.meta?.shortName||null;
-      return arr;
-    }catch(_){}
+  const parseYahooJson=(json)=>{
+    const r=json?.chart?.result?.[0];if(!r?.timestamp)return null;
+    const q=r.indicators?.quote?.[0]??{};
+    const arr=r.timestamp.map((t,i)=>({
+      date:new Date(t*1000),open:q.open?.[i]??null,high:q.high?.[i]??null,
+      low:q.low?.[i]??null,close:q.close?.[i]??null,volume:q.volume?.[i]??null
+    })).filter(d=>d.close!==null&&d.close>0);
+    arr.reverse();
+    arr._yahooName=r.meta?.longName||r.meta?.shortName||null;
+    return arr.length>0?arr:null;
+  };
+  // 嘗試 v8（主）和 v8 query2（備）兩個 endpoint
+  const bases=[
+    `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2y&includePrePost=false`,
+    `https://query2.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2y&includePrePost=false`,
+    `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1y&includePrePost=false`,
+  ];
+  for(const base of bases){
+    for(const px of PROXIES){
+      const url=px?px+encodeURIComponent(base):base;
+      try{
+        const res=await fetchTO(url,10000);if(!res.ok)continue;
+        const json=await res.json();
+        const arr=parseYahooJson(json);
+        if(arr){
+          lsSet('yf_'+sym,{closes:arr.slice(0,60).map(d=>d.close),name:arr._yahooName,ts:Date.now()});
+          return arr;
+        }
+      }catch(_){}
+    }
+  }
+  // 最後備援：localStorage 快取（顯示舊資料）
+  const cached=lsGet('yf_'+sym);
+  if(cached?.data?.closes){
+    const fake=cached.data.closes.map((c,i)=>({close:c,high:c*1.01,low:c*0.99,open:c,volume:0,date:new Date(Date.now()-i*86400000)}));
+    fake._yahooName=cached.data.name||null;
+    fake._stale=true;
+    fake._staleAge=lsAgeStr(cached.ts);
+    return fake;
   }
   return null;
 }
@@ -1662,39 +1731,40 @@ async function fetchFundamentalsYahoo(sym){
 async function fetchFundamentals(sym){
   const stockId=sym.split('.')[0];
   const bwi=twseFundMap[stockId]||null;
-  // 1. 優先用 twse_daily.json（GitHub Actions 每日預取，同源無 CORS 問題）
+  // 1. twse_daily.json（最可靠）
   const inc=twseDailyMap.income?.[stockId];
   const mr=twseDailyMap.monthRevenue?.[stockId];
   if(inc||mr){
     const rev=inc?.revenue||0;
     const oi=inc?.operatingIncome||0;
-    return{
-      roe:null, // TWSE openapi 無 ROE，未來可補
-      grossMargin:null,
+    const result={
+      roe:null,grossMargin:null,
       operatingMargin:rev>0?+(oi/rev).toFixed(4):null,
       revenueGrowth:mr?.yoy!=null?(mr.yoy/100):null,
       earningsGrowth:inc?.earningsGrowth??null,
-      pe:bwi?.pe??null,
-      pb:bwi?.pb??null,
-      divYield:bwi?.divYield??null,
+      pe:bwi?.pe??null,pb:bwi?.pb??null,divYield:bwi?.divYield??null,
     };
+    lsSet('fund_'+stockId,result);
+    return result;
   }
-  // 2. 如果有 BWIBBU_d 估值資料，直接回傳（跳過常 429 的 Yahoo proxy）
+  // 2. BWIBBU 估值
   if(bwi?.pe!=null||bwi?.pb!=null||bwi?.divYield!=null){
-    return{roe:null,grossMargin:null,operatingMargin:null,earningsGrowth:null,revenueGrowth:null,
+    const result={roe:null,grossMargin:null,operatingMargin:null,earningsGrowth:null,revenueGrowth:null,
       pe:bwi.pe??null,pb:bwi.pb??null,divYield:bwi.divYield??null};
+    lsSet('fund_'+stockId,result);
+    return result;
   }
-  // 3. 最後備援：Yahoo Finance v7 quote（CORS proxy 不穩，可能失敗）
+  // 3. Yahoo Finance v7（備援）
   const yf=await fetchFundamentalsYahoo(sym);
   const merged={
-    roe:yf?.roe??null,
-    grossMargin:yf?.grossMargin??null,
-    operatingMargin:yf?.operatingMargin??null,
-    revenueGrowth:yf?.revenueGrowth??null,
-    earningsGrowth:yf?.earningsGrowth??null,
-    pe:null,pb:null,divYield:null,
+    roe:yf?.roe??null,grossMargin:yf?.grossMargin??null,
+    operatingMargin:yf?.operatingMargin??null,revenueGrowth:yf?.revenueGrowth??null,
+    earningsGrowth:yf?.earningsGrowth??null,pe:null,pb:null,divYield:null,
   };
-  if(Object.values(merged).some(v=>v!=null)) return merged;
+  if(Object.values(merged).some(v=>v!=null)){lsSet('fund_'+stockId,merged);return merged;}
+  // 4. localStorage 舊快取
+  const cached=lsGet('fund_'+stockId);
+  if(cached?.data){const d=cached.data;d._stale=true;d._staleAge=lsAgeStr(cached.ts);return d;}
   return null;
 }
 
@@ -1705,6 +1775,7 @@ async function fetchChips(){
   // ── 主要來源：GitHub Actions 預存的 twse_daily.json（同源，無 CORS 問題）──
   if(Object.keys(twseDailyMap.chips).length>10){
     chipsMap=twseDailyMap.chips;
+    lsSet('chips_all',chipsMap);
     if(infoEl) infoEl.textContent=`✅ 籌碼載入（twse_daily.json，${Object.keys(chipsMap).length} 支，${twseDailyMap.date||''}）`;
     return;
   }
@@ -1743,7 +1814,18 @@ async function fetchChips(){
       }catch(_){}
     }
   }
-  if(infoEl&&Object.keys(chipsMap).length===0) infoEl.textContent='⚠️ 籌碼資料無法取得（需 GitHub Actions 部署 twse_daily.json）';
+  if(Object.keys(chipsMap).length===0){
+    // 第四備援：localStorage 舊籌碼快取
+    const cached=lsGet('chips_all');
+    if(cached?.data&&Object.keys(cached.data).length>100){
+      chipsMap=cached.data;
+      if(infoEl) infoEl.textContent=`⚠️ 籌碼使用舊快取（${lsAgeStr(cached.ts)}），${Object.keys(chipsMap).length}支`;
+    } else if(infoEl){
+      infoEl.textContent='⚠️ 籌碼資料無法取得，請稍後重試';
+    }
+  } else {
+    lsSet('chips_all',chipsMap); // 成功時存快取
+  }
 }
 
 // ─── Scan ─────────────────────────────────────────────────────────────────
