@@ -1671,9 +1671,9 @@ async function fetchFundamentals(sym){
     return{
       roe:null, // TWSE openapi 無 ROE，未來可補
       grossMargin:null,
-      operatingMargin:rev>0?(oi/rev):null,
+      operatingMargin:rev>0?+(oi/rev).toFixed(4):null,
       revenueGrowth:mr?.yoy!=null?(mr.yoy/100):null,
-      earningsGrowth:null, // 需歷史季報對比，目前未存
+      earningsGrowth:inc?.earningsGrowth??null,
       pe:bwi?.pe??null,
       pb:bwi?.pb??null,
       divYield:bwi?.divYield??null,
