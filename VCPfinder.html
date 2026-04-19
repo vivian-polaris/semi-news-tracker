@@ -723,11 +723,9 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('name')">名稱</th>
       <th onclick="setSort('sector',this)">交易所／產業 ⇅</th>
       <th onclick="setSort('price')">現價 ⇅</th>
-      <th onclick="setSort('pct')" class="th-on">距高點 ⇅</th>
-      <th>MA排列</th>
-      <th>技術信號</th>
       <th>走勢</th>
       <th onclick="setSort('score')">VCP分數 ⇅</th>
+      <th onclick="setSort('canslim',this)">CANSLIM評分 ⇅</th>
       <th onclick="setSort('fund',this)">基本面 ⇅</th>
       <th onclick="setSort('chips',this)">籌碼(外資/投信) ⇅</th>
       <th title="Current：EPS成長≥25%（無EPS時用月營收YoY代替）">C</th>
@@ -737,7 +735,9 @@ footer a:hover{text-decoration:underline}
       <th title="Leader VCP≥70">L</th>
       <th title="Institutional 法人買超">I</th>
       <th title="Market Stage2">M</th>
-      <th onclick="setSort('canslim',this)">CANSLIM評分 ⇅</th>
+      <th onclick="setSort('pct')" class="th-on">距高點 ⇅</th>
+      <th>MA排列</th>
+      <th>技術信號</th>
     </tr>
   </thead>
   <tbody id="tblBody">
@@ -2218,7 +2218,7 @@ function renderCSCells(vcp,fund,chips){
     ?`${(fNet||0)>0?'外↑':'外↓'}${(tNet||0)>0?'投↑':'投↓'}`:na;
   const I=csCell(cs.I, iLine);
   const M=csCell(cs.M, vcp?(vcp.stage2?'Stage2':'非S2'):na);
-  return`<td>${C}</td><td>${A}</td><td>${N}</td><td>${S}</td><td>${L}</td><td>${I}</td><td>${M}</td><td>${csScoreBadge(cs.total)}</td>`;
+  return{seven:`<td>${C}</td><td>${A}</td><td>${N}</td><td>${S}</td><td>${L}</td><td>${I}</td><td>${M}</td>`,score:`<td>${csScoreBadge(cs.total)}</td>`};
 }
 function setCANSLIM(v,el){
   canslimMin=v;
@@ -2336,9 +2336,6 @@ function renderTable(){
       <td class="tn">${r.name}</td>
       <td><span style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span><span class="tsec">${r.sector}</span></td>
       <td class="tprice">NT$${fmtP(v.price)}</td>
-      <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
-      <td><div class="ma-row">${maHTML||'—'}</div></td>
-      <td>${techHTML}</td>
       <td class="spark-cell">${spk}</td>
       <td>
         <div class="scr-wrap">
@@ -2346,9 +2343,10 @@ function renderTable(){
           <span class="scr-num s${s}">${v.score}</span>
         </div>
       </td>
-      <td>${fundHTML}</td>
-      <td>${chipsHTML}</td>
-      ${renderCSCells(v,r.fund||null,chipsMap[r.code]||null)}
+      ${(()=>{const cs=renderCSCells(v,r.fund||null,chipsMap[r.code]||null);return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+cs.seven;})()}
+      <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
+      <td><div class="ma-row">${maHTML||'—'}</div></td>
+      <td>${techHTML}</td>
     </tr>`;
   }).join('');
 }
