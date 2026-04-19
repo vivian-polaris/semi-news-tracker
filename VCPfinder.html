@@ -1759,6 +1759,29 @@ async function fetchFundamentalsYahoo(sym){
   return null;
 }
 
+// 快速版基本面：只讀本地資料（掃描迴圈用，不打 Yahoo Finance）
+function quickFund(sym){
+  const stockId=sym.split('.')[0];
+  const bwi=twseFundMap[stockId]||null;
+  const inc=twseDailyMap.income?.[stockId];
+  const mr=twseDailyMap.monthRevenue?.[stockId];
+  if(inc||mr){
+    const rev=inc?.revenue||0;
+    const oi=inc?.operatingIncome||0;
+    return{
+      roe:null,grossMargin:null,
+      operatingMargin:rev>0?+(oi/rev).toFixed(4):null,
+      revenueGrowth:mr?.yoy!=null?(mr.yoy/100):null,
+      earningsGrowth:inc?.earningsGrowth??null,
+      pe:bwi?.pe??null,pb:bwi?.pb??null,divYield:bwi?.divYield??null,
+    };
+  }
+  if(bwi?.pe!=null||bwi?.pb!=null||bwi?.divYield!=null){
+    return{roe:null,grossMargin:null,operatingMargin:null,earningsGrowth:null,
+      revenueGrowth:null,pe:bwi.pe??null,pb:bwi.pb??null,divYield:bwi.divYield??null};
+  }
+  return null;
+}
 async function fetchFundamentals(sym){
   const stockId=sym.split('.')[0];
   const bwi=twseFundMap[stockId]||null;
@@ -1924,8 +1947,10 @@ async function startScan(){
   secRow.querySelectorAll('[data-sec]:not([data-sec="ALL"])').forEach(p=>p.remove());
   secs.forEach(s=>{const p=document.createElement('span');p.className='pill';p.dataset.sec=s;p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);});
 
-  const BATCH=scanSrc==='preset'?4:6;
-  const DELAY=scanSrc==='preset'?350:250;
+  // 有預載股價時縮短 delay（不需要等 Yahoo），無預載時保留原本延遲避免 rate limit
+  const hasPreload=Object.keys(stockPriceMap).length>100;
+  const BATCH=scanSrc==='preset'?4:(hasPreload?10:6);
+  const DELAY=scanSrc==='preset'?(hasPreload?50:350):(hasPreload?30:250);
   const startTime=Date.now();
 
   for(let i=0;i<total;i+=BATCH){
@@ -1942,7 +1967,8 @@ async function startScan(){
       if(data?._yahooName&&(s.name===s.code||!s.name||s.name.length<2)){
         s.name=data._yahooName;
       }
-      allResults.push({...s,sym,vcp,fund:null,noData:!data,closes:data?data.slice(0,60).map(d=>d.close):null});
+      const fund=quickFund(sym);  // 即時，讀本地 twseDailyMap
+      allResults.push({...s,sym,vcp,fund,noData:!data,closes:data?data.slice(0,60).map(d=>d.close):null});
       done++;
     }));
     // Update progress
@@ -1967,21 +1993,21 @@ async function startScan(){
   scanning=false; btn.disabled=false;
   btn.textContent='重新掃描';
   cancelBtn.style.display='none';
-  // 第二階段：背景補抓財報（不阻塞 VCP 結果顯示）
-  const fundCandidates=allResults.filter(r=>r.vcp&&r.vcp.score>=40&&!r.noData);
+  // 第二階段：只補 Yahoo Finance（針對 twseDailyMap 裡沒有資料的股票）
+  const fundCandidates=allResults.filter(r=>r.vcp&&r.vcp.score>=40&&!r.noData&&!r.fund);
   if(fundCandidates.length>0&&!scanCancelled){
     (async()=>{
-      pT.textContent=`第二階段：補抓基本面（${fundCandidates.length} 支候選，Yahoo Finance）...`;
+      pT.textContent=`補抓基本面（${fundCandidates.length} 支無本地資料，嘗試 Yahoo）...`;
       for(let i=0;i<fundCandidates.length;i+=3){
         if(scanCancelled)break;
         await Promise.all(fundCandidates.slice(i,i+3).map(async r=>{
           const fund=await fetchFundamentals(r.sym).catch(()=>null);
           if(fund!=null){r.fund=fund;renderTable();}
         }));
-        await new Promise(res=>setTimeout(res,200));
+        await new Promise(res=>setTimeout(res,300));
       }
       let fundGot=allResults.filter(r=>r.fund&&Object.values(r.fund).some(v=>v!=null)).length;
-      pT.textContent=`✅ 基本面完成 · ${fundGot}/${fundCandidates.length} 支取得資料`;
+      pT.textContent=`✅ 完成 · 基本面 ${fundGot} 支`;
     })();
   }
   pT.textContent=scanCancelled
