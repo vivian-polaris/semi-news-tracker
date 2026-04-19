@@ -146,10 +146,11 @@ details>summary::-webkit-details-marker,details>summary::marker{display:none;con
 .sum-val{font-size:1.7rem;font-weight:700;letter-spacing:-.02em}
 .sum-sub{font-size:.64rem;color:var(--text2);margin-top:2px}
 @media(max-width:640px){
-  .sum-grid{grid-template-columns:repeat(4,1fr);gap:5px}
-  .sum-card{padding:8px 6px;border-radius:6px}
-  .sum-label{font-size:.52rem;letter-spacing:.02em;margin-bottom:2px}
-  .sum-val{font-size:1.2rem}
+  .sum-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  #sumGrid .sum-card{flex:0 0 calc(50% - 4px);min-width:0}
+  .sum-card{padding:10px 12px;border-radius:6px}
+  .sum-label{font-size:.62rem;letter-spacing:.04em;margin-bottom:3px}
+  .sum-val{font-size:1.5rem}
   .sum-sub{display:none}
 }
 
@@ -541,23 +542,23 @@ footer a:hover{text-decoration:underline}
 <div class="err-box" id="errBox"></div>
 
 <!-- ── Summary + Rescan Row ── -->
-<div id="sumGrid" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0">
-  <div class="sum-card" style="flex:1;min-width:80px;padding:8px 12px;text-align:center">
+<div id="sumGrid" style="display:none;align-items:center;gap:6px;margin:8px 0">
+  <div class="sum-card" style="flex:1;min-width:0;padding:6px 8px;text-align:center">
     <div class="sum-label">已掃描</div>
     <div class="sum-val" id="sumScanned" style="color:var(--purple);font-size:1.3rem">—</div>
     <div class="sum-sub">支</div>
   </div>
-  <div class="sum-card" style="flex:1;min-width:80px;padding:8px 12px;text-align:center">
+  <div class="sum-card" style="flex:1;min-width:0;padding:6px 8px;text-align:center">
     <div class="sum-label">VCP ≥60</div>
     <div class="sum-val" id="sumVcp" style="color:var(--yellow);font-size:1.3rem">—</div>
     <div class="sum-sub">支</div>
   </div>
-  <div class="sum-card" style="flex:1;min-width:80px;padding:8px 12px;text-align:center">
+  <div class="sum-card" style="flex:1;min-width:0;padding:6px 8px;text-align:center">
     <div class="sum-label">強力 ≥80</div>
     <div class="sum-val" id="sumStrong" style="color:var(--mint);font-size:1.3rem">—</div>
     <div class="sum-sub">支</div>
   </div>
-  <div class="sum-card" style="flex:1;min-width:80px;padding:8px 12px;text-align:center">
+  <div class="sum-card" style="flex:1;min-width:0;padding:6px 8px;text-align:center">
     <div class="sum-label">時間</div>
     <div class="sum-val" id="sumTime" style="font-size:.8rem;color:var(--text)">—</div>
   </div>
