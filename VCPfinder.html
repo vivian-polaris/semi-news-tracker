@@ -1611,7 +1611,7 @@ const PROXIES=[
 ];
 function fetchTO(url,ms=9000,opts={}){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal,...opts}).finally(()=>clearTimeout(t));}
 async function fetchYahoo(sym){
-  const base=`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1y&includePrePost=false`;
+  const base=`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2y&includePrePost=false`;
   for(const px of PROXIES){
     const url=px?px+encodeURIComponent(base):base;
     try{
@@ -2404,7 +2404,7 @@ async function lookupStock() {
       if (data) stockInfo = { ...stockInfo, ex: 'TWO' };
     }
     if (!data || data.length < 55) {
-      res.innerHTML = '<span style="color:#f87171">無法取得股價資料，請確認代號是否正確</span>';
+      res.innerHTML = `<span style="color:#f87171">無法取得 ${code} 的股價資料。<br><span style="font-size:.75rem">可能原因：Yahoo Finance 週末/假日流量限制，請平日市場時段再試一次。</span></span>`;
       return;
     }
     if (data._yahooName && (!stockInfo.name || stockInfo.name === code)) stockInfo.name = data._yahooName;
@@ -2412,7 +2412,7 @@ async function lookupStock() {
   }
 
   if (!vcpData) {
-    res.innerHTML = '<span style="color:#f87171">資料不足（需至少55天），無法計算 VCP 指標</span>';
+    res.innerHTML = '<span style="color:#f87171">資料不足（需至少55個交易日），無法計算 VCP 指標。<br><span style="font-size:.75rem">可能是新上市股或 Yahoo Finance 當下資料不完整，請稍後再試。</span></span>';
     return;
   }
 
