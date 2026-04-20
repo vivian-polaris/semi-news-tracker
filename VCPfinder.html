@@ -1065,7 +1065,7 @@ function parseRSSXml(xml){
     const pubRaw=(m[0].match(/<pubDate>(.*?)<\/pubDate>/))?.[1]||'';
     const dateStr=pubRaw?new Date(pubRaw).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
     const link=(m[0].match(/<link><!\[CDATA\[(.*?)\]\]><\/link>/)||m[0].match(/<link>(https?:\/\/[^<]+)<\/link>/)||m[0].match(/<guid[^>]*>(https?:\/\/[^<]+)<\/guid>/))?.[1]||'';
-    return {title:title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'),dateStr,link};
+    return {title:title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'),dateStr,pubRaw,link};
   }).filter(x=>x.title);
 }
 async function fetchRSSUrl(directUrl){
@@ -1101,8 +1101,9 @@ function buildSrcHtml(items){
   if(!items||!items.length)return'';
   const ABBR={'wsj.com':'WSJ','reuters.com':'Reuters','bloomberg.com':'BBG','ft.com':'FT',
     'cnbc.com':'CNBC','forexfactory.com':'FF','nikkei.com':'Nikkei','marketwatch.com':'MW',
-    'barrons.com':'Barron\'s','apnews.com':'AP','bbc.com':'BBC','seeking alpha.com':'SA',
-    'finance.yahoo.com':'Yahoo Fin','economist.com':'Economist','wsj':'WSJ'};
+    'barrons.com':'Barron\'s','apnews.com':'AP','bbc.com':'BBC','bbc.co.uk':'BBC',
+    'cnn.com':'CNN','nbcnews.com':'NBC','nbcnews.com':'NBC','foxbusiness.com':'FoxBiz',
+    'seeking alpha.com':'SA','finance.yahoo.com':'Yahoo Fin','economist.com':'Economist','wsj':'WSJ'};
   function srcAbbr(url){
     try{const h=new URL(url).hostname.replace(/^www\./,'');
       for(const[k,v]of Object.entries(ABBR)){if(h===k||h.endsWith('.'+k))return v;}
@@ -1208,9 +1209,9 @@ async function loadTrump(useCache=false){
     t.textContent=`後端快取（${twseDailyMap.date||''}）· 點 ↻ 強制更新`;
   } else {
     // 備援：直接從 Google News RSS 抓（需要 CORS proxy）
-    const recentQ=new Date(Date.now()-5*24*60*60*1000).toISOString().slice(0,10);
-    const recentQ2=new Date(Date.now()-3*24*60*60*1000).toISOString().slice(0,10);
-    const [a,b2,c,d,e,ff1,ff2,war1,war2,war3,bbc1,bbc2,ap1,ap2]=await Promise.all([
+    const recentQ=new Date(Date.now()-1*24*60*60*1000).toISOString().slice(0,10);
+    const recentQ2=new Date(Date.now()-1*24*60*60*1000).toISOString().slice(0,10);
+    const [a,b2,c,d,e,ff1,ff2,war1,war2,war3,bbc1,bbc2,ap1,ap2,cnn1,cnn2,nbc1,reu1,reu2]=await Promise.all([
       fetchRSS(`Trump tariff trade war sanctions policy after:${recentQ}`).catch(()=>[]),
       fetchRSS(`Federal Reserve interest rate decision inflation CPI after:${recentQ}`).catch(()=>[]),
       fetchRSS(`US China trade tariff supply chain technology export after:${recentQ}`).catch(()=>[]),
@@ -1225,11 +1226,23 @@ async function loadTrump(useCache=false){
       fetchRSSUrl('https://feeds.bbci.co.uk/news/business/rss.xml').catch(()=>[]),
       fetchRSSUrl('https://feeds.apnews.com/rss/apf-topnews').catch(()=>[]),
       fetchRSSUrl('https://feeds.apnews.com/rss/apf-business').catch(()=>[]),
+      fetchRSSUrl('https://rss.cnn.com/rss/money_latest.rss').catch(()=>[]),
+      fetchRSS(`site:cnn.com economy trade policy tariff after:${recentQ}`).catch(()=>[]),
+      fetchRSSUrl('https://feeds.nbcnews.com/nbcnews/public/business').catch(()=>[]),
+      fetchRSSUrl('https://feeds.reuters.com/reuters/businessNews').catch(()=>[]),
+      fetchRSSUrl('https://feeds.reuters.com/reuters/topNews').catch(()=>[]),
     ]);
+    // 過濾掉超過 36 小時的舊聞
+    const cutoff=Date.now()-36*60*60*1000;
+    function isRecent(x){
+      if(!x.dateStr) return true;
+      try{const d=new Date(x.pubRaw||x.dateStr);return isNaN(d)?true:d.getTime()>cutoff;}catch(_){return true;}
+    }
     const seen=new Set();
-    items=[...a,...b2,...c,...d,...e,...ff1,...ff2,...war1,...war2,...war3,...bbc1,...bbc2,...ap1,...ap2]
-      .filter(x=>{if(seen.has(x.title))return false;seen.add(x.title);return true;})
-      .slice(0,50);
+    const allItems=[...a,...b2,...c,...d,...e,...ff1,...ff2,...war1,...war2,...war3,...bbc1,...bbc2,...ap1,...ap2,...cnn1,...cnn2,...nbc1,...reu1,...reu2];
+    // 先嘗試只用近 36 小時的，不夠就放寬到全部
+    const recentItems=allItems.filter(x=>{if(seen.has(x.title))return false;seen.add(x.title);return true;});
+    items=recentItems.slice(0,60);
   }
   if(!items.length){
     // 所有來源失敗 → 強制顯示任何舊的 AI 快取（無論多舊）
@@ -1253,27 +1266,29 @@ async function loadTrump(useCache=false){
   const sysNote='【輸出規則】純文字，禁止使用 markdown、代碼塊、星號、#號。';
   const newsList=items.map((x,i)=>`${i+1}. [${x.dateStr||'近期'}] ${x.title}`).join('\n');
   const prompt=`今天${today}。${sysNote}
-你是台股分析師。以下新聞來自 BBC、AP、WSJ、Reuters 等國際財經媒體（最近 3 天）。
-只能使用下方清單的真實新聞，禁止補充訓練資料舊消息。
-從中挑出最會影響台灣股市的 10 條宏觀事件，依重要性排序，繁體中文，機構/公司名稱保留英文。
+你是台股分析師。以下新聞來自 CNN、BBC、NBC、AP、WSJ、Reuters 等國際財經媒體（過去 24 小時内）。
+只能使用下方清單的真實新聞，禁止補充訓練資料舊消息。禁止引用 24 小時前的舊聞。
+從中挑出最會影響台灣股市隔天開盤的 10 條宏觀事件，依重要性排序，繁體中文，機構/公司名稱保留英文。
 
 【嚴格禁止選入的廢話新聞】：
 ❌ 個股漲跌（台積電漲X%、NVIDIA上漲）— 人人皆知，無需報
 ❌ 已知結果（財報已公布的EPS）
 ❌ 模糊語句（局勢緊張、持續關注、值得觀察、可能影響）
+❌ 超過 24 小時的舊消息
 
 【強制必選規則】若新聞清單中有以下主題，必須納入：
 ① 以色列-伊朗：打還是停？最新軍事行動或談判
 ② 川普表態：對伊朗/以色列態度，打還是停火？制裁？
 ③ 霍爾木茲海峽：封鎖還是開放？油輪通行最新狀況
 ④ 美國/伊朗外交：出兵？制裁？核談判？
+⑤ Fed/美股/美元重大動向：升降息、非農、CPI 等數據
 以上必須具體說明立場與數字。
 
 輸出格式（嚴格照此）：
-1. 【BBC/AP/WSJ/Reuters·事件名】具體發生了什麼（含數字/國家/決策）→ 影響台股哪個族群 → 預估方向±%
+1. 【CNN/BBC/NBC/AP/WSJ/Reuters·事件名】具體發生了什麼（含數字/國家/決策）→ 影響台股哪個族群 → 預估方向±%
 2～10. 同上
 
-每條必須有具體數字或明確決策。
+每條必須有具體數字或明確決策。若新聞清單内容不足 10 條宏觀事件，只輸出能找到的真實數量，禁止捏造。
 
 新聞清單：
 ${newsList}`;
