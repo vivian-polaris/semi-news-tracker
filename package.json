@@ -1,0 +1,28 @@
+{
+  "name": "vivian-edge",
+  "version": "1.0.0",
+  "description": "VCP Finder - 股票 VCP 型態掃描工具",
+  "scripts": {
+    "deploy": "wrangler pages deploy .",
+    "dev": "wrangler pages dev ."
+  },
+  "devDependencies": {
+    "wrangler": "^4.77.0"
+  },
+  "project-docs": {
+    "_comment": "⛔ 所有 AI 開發前必須先閱讀 AI_CONTEXT.md。文件缺失時先問人再動手。",
+    "ai_context": "AI_CONTEXT.md",
+    "claude": "CLAUDE.md",
+    "spec": "SPEC.md",
+    "status": "STATUS.md",
+    "roadmap": "ROADMAP.md",
+    "readme": "README.md"
+  },
+  "ai-onboarding": {
+    "context_file": "AI_CONTEXT.md",
+    "required_reading": ["SPEC.md", "STATUS.md", "ROADMAP.md", "package.json"],
+    "core_project_docs": ["SPEC.md", "STATUS.md", "ROADMAP.md", "README.md"],
+    "language": "zh-TW",
+    "claude_specific": "CLAUDE.md"
+  }
+}
