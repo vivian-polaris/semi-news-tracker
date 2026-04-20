@@ -1783,6 +1783,53 @@ function lsAgeStr(ts){
   return m<60?`${m}分前`:m<1440?`${Math.floor(m/60)}小時前`:`${Math.floor(m/1440)}天前`;
 }
 function fetchTO(url,ms=9000,opts={}){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);return fetch(url,{signal:c.signal,...opts}).finally(()=>clearTimeout(t));}
+// ── 盤中即時價格 ────────────────────────────────────────────────────────────
+function isTradingHours(){
+  const now=new Date();
+  const day=now.getUTCDay(); // 0=Sun,6=Sat
+  if(day===0||day===6) return false;
+  const min=now.getUTCHours()*60+now.getUTCMinutes();
+  // 台灣市場 09:00–13:30 CST = 01:00–05:30 UTC
+  return min>=60&&min<=330;
+}
+const _liveQCache=new Map(); // sym -> {price, ts}
+const LIVE_Q_TTL=3*60*1000; // 3 分鐘快取（盤中價格每 3 分鐘刷新）
+
+async function fetchLiveQuoteBatch(syms){
+  const joined=syms.join(',');
+  const base=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(joined)}&_t=${Date.now()}`;
+  for(const px of ['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest=']){
+    try{
+      const r=await fetchTO(px+encodeURIComponent(base),8000);
+      if(!r.ok) continue;
+      const j=await r.json();
+      const results=j?.quoteResponse?.result||[];
+      let got=0;
+      results.forEach(q=>{
+        if(q?.regularMarketPrice>0&&q?.symbol){
+          _liveQCache.set(q.symbol,{price:q.regularMarketPrice,ts:Date.now()});
+          got++;
+        }
+      });
+      if(got>0) return;
+    }catch(_){}
+  }
+}
+
+async function prefetchLivePrices(stocks){
+  if(!isTradingHours()) return;
+  const now=Date.now();
+  const syms=stocks
+    .map(s=>`${s.code}.${s.ex==='TWO'?'TWO':'TW'}`)
+    .filter(sym=>{const c=_liveQCache.get(sym);return !c||now-c.ts>LIVE_Q_TTL;});
+  if(!syms.length) return;
+  // 每批 20 個，5 批並行
+  const batches=[];
+  for(let i=0;i<syms.length;i+=20) batches.push(syms.slice(i,i+20));
+  for(let i=0;i<batches.length;i+=5)
+    await Promise.all(batches.slice(i,i+5).map(b=>fetchLiveQuoteBatch(b).catch(()=>{})));
+}
+
 async function fetchYahoo(sym){
   // 優先：本地預存 OHLCV（方案 A，永遠有資料）
   const code=sym.split('.')[0];
@@ -1790,9 +1837,18 @@ async function fetchYahoo(sym){
   if(pre?.c?.length>=55){
     const arr=pre.c.map((c,i)=>({
       close:c, high:pre.h?.[i]??c, low:pre.l?.[i]??c,
-      volume:pre.v?.[i]??0, date:new Date(Date.now()-i*86400000)
+      volume:pre.v?.[i]??0, date:new Date(Date.now()-(i+1)*86400000)
     }));
     arr._yahooName=pre.n||null;
+    // 盤中：把即時價格插入 index 0（今日即時價）
+    if(isTradingHours()){
+      const cached=_liveQCache.get(sym);
+      const livePrice=cached&&Date.now()-cached.ts<LIVE_Q_TTL?cached.price:null;
+      if(livePrice){
+        arr.unshift({close:livePrice,high:livePrice,low:livePrice,open:livePrice,volume:0,date:new Date()});
+        arr._livePrice=true;
+      }
+    }
     return arr;
   }
   const parseYahooJson=(json)=>{
@@ -2085,6 +2141,12 @@ async function startScan(){
   const secRow=document.getElementById('secRow');
   secRow.querySelectorAll('[data-sec]:not([data-sec="ALL"])').forEach(p=>p.remove());
   secs.forEach(s=>{const p=document.createElement('span');p.className='pill';p.dataset.sec=s;p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);});
+
+  // 盤中：批次預抓即時價格（讓 fetchYahoo 可以用 live price 取代靜態收盤價）
+  if(isTradingHours()){
+    document.getElementById('progText').textContent='盤中模式：抓取即時價格...';
+    await prefetchLivePrices(stocks).catch(()=>{});
+  }
 
   // 有預載股價時縮短 delay（不需要等 Yahoo），無預載時保留原本延遲避免 rate limit
   const hasPreload=Object.keys(stockPriceMap).length>100;
