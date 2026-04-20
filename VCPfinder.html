@@ -1133,28 +1133,26 @@ function buildSrcHtml(items){
   const ABBR={'wsj.com':'WSJ','reuters.com':'Reuters','bloomberg.com':'BBG','ft.com':'FT',
     'cnbc.com':'CNBC','forexfactory.com':'FF','nikkei.com':'Nikkei','marketwatch.com':'MW',
     'barrons.com':'Barron\'s','apnews.com':'AP','bbc.com':'BBC','bbc.co.uk':'BBC',
-    'cnn.com':'CNN','nbcnews.com':'NBC','nbcnews.com':'NBC','foxbusiness.com':'FoxBiz',
-    'seeking alpha.com':'SA','finance.yahoo.com':'Yahoo Fin','economist.com':'Economist','wsj':'WSJ'};
+    'cnn.com':'CNN','nbcnews.com':'NBC','foxbusiness.com':'FoxBiz',
+    'finance.yahoo.com':'Yahoo Fin','economist.com':'Economist'};
   function srcAbbr(url){
     try{const h=new URL(url).hostname.replace(/^www\./,'');
       for(const[k,v]of Object.entries(ABBR)){if(h===k||h.endsWith('.'+k))return v;}
       return h.split('.')[0].toUpperCase();
     }catch(_){return'';}
   }
-  const seen=new Set(),names=[];
-  items.forEach(x=>{if(x.link){const a=srcAbbr(x.link);if(a&&!seen.has(a)){seen.add(a);names.push(a);}}});
-  const label=names.slice(0,4).join(' · ')+(names.length>4?' …':'');
-  const links=items.slice(0,15).map((x,i)=>
-    x.link?'<a class="src-link" href="'+safeUrl(x.link)+'" target="_blank" rel="noopener">'+
-      (i+1)+'. ['+escH(x.dateStr||'近期')+'] '+escH(x.title)+'</a>'
-    :'<span class="src-link" style="color:var(--text2)">'+
-      (i+1)+'. ['+escH(x.dateStr||'近期')+'] '+escH(x.title)+'</span>'
-  ).join('');
-  return '<details style="margin-top:8px;border-top:1px solid var(--border);padding-top:6px">'+
-    '<summary style="cursor:pointer;list-style:none;outline:none">'+
-    '<span style="font-size:.68rem;color:var(--purple);text-decoration:underline dotted;letter-spacing:.02em">'+
-    '📰 '+escH(label)+' ('+items.length+')</span></summary>'+
-    '<div style="margin-top:5px">'+links+'</div></details>';
+  // 直接展開顯示，不隱藏在 <details>
+  const links=items.slice(0,20).map(x=>{
+    const src=x.link?srcAbbr(x.link):'';
+    const srcBadge=src?`<span style="font-size:.6rem;font-weight:700;color:var(--purple);margin-right:4px;opacity:.8">[${escH(src)}]</span>`:'';
+    const time=x.dateStr?`<span style="font-size:.58rem;color:var(--text2);margin-left:4px">${escH(x.dateStr)}</span>`:'';
+    return x.link
+      ?`<a class="src-link" href="${safeUrl(x.link)}" target="_blank" rel="noopener">${srcBadge}${escH(x.title)}${time}</a>`
+      :`<span class="src-link" style="color:var(--text2)">${srcBadge}${escH(x.title)}${time}</span>`;
+  }).join('');
+  return `<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+    <div style="font-size:.6rem;font-weight:700;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">📰 原文來源（點擊直接開啟）</div>
+    ${links}</div>`;
 }
 const AI_CACHE_TTL=2*60*60*1000; // 2 小時快取
 function getAICache(key){
@@ -1296,7 +1294,7 @@ async function loadTrump(useCache=false){
       const raw=c.rawText||c.text||'';
       const cachedSrc=c.srcItems||[];
       if(window.innerWidth<=640 && raw && buildTrumpSwiper(raw,b,cachedSrc)){}
-      else b.innerHTML=renderNewsWithLinks(raw,cachedSrc);
+      else b.innerHTML=`<div style="white-space:pre-wrap">${escH(raw)}</div>`+buildSrcHtml(cachedSrc);
       t.textContent='快取（'+cacheAgeStr(c.ts)+'）・點 ↻ 強制更新';return;
     }
   }
@@ -1404,11 +1402,12 @@ ${newsList}`;
   const aiDiv=document.getElementById('tAI');
   const isErr=aiText.startsWith('⚠️')||aiText.startsWith('❌');
   if(window.innerWidth<=640 && !isErr && buildTrumpSwiper(aiText,b,items)){
-    // swiper built with links
+    // swiper built (mobile)
   } else {
-    const html=isErr?`<div style="white-space:pre-wrap">${escH(aiText)}</div>`:renderNewsWithLinks(aiText,items);
-    if(aiDiv){aiDiv.outerHTML=html;}
-    else{b.className='news-body';b.innerHTML=html;}
+    const aiHtml=`<div style="white-space:pre-wrap">${escH(aiText)}</div>`;
+    const srcHtml=isErr?'':buildSrcHtml(items);
+    if(aiDiv){aiDiv.style.color='';aiDiv.style.fontStyle='';aiDiv.outerHTML=aiHtml+srcHtml;}
+    else{b.className='news-body';b.innerHTML=aiHtml+srcHtml;}
   }
   if(!aiText.startsWith('⚠️')&&!aiText.startsWith('❌')){setAICache('trump2',aiText,{rawText:aiText,srcItems:items.slice(0,30)});lsSet('trump_stale',{text:aiText,ts:Date.now()});}
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
