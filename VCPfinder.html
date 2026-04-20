@@ -328,6 +328,13 @@ footer a:hover{text-decoration:underline}
 /* ── Sparkline ── */
 .spark-cell{white-space:nowrap;padding:5px 9px!important}
 
+/* ── News item links ── */
+.news-item-link{display:block;color:var(--text);text-decoration:none;padding:5px 0;border-bottom:1px solid rgba(45,55,72,.5);white-space:pre-wrap;line-height:1.75;font-size:.8rem;transition:color .15s}
+.news-item-link:hover{color:var(--purple)}
+.news-item-link::after{content:' ↗';font-size:.65rem;color:var(--purple);opacity:.7}
+.news-item-plain{padding:5px 0;border-bottom:1px solid rgba(45,55,72,.5);white-space:pre-wrap;line-height:1.75;font-size:.8rem}
+.news-item-link:last-child,.news-item-plain:last-child{border-bottom:none}
+
 /* ── Mobile news swiper ── */
 @media(max-width:640px){
   .trump-swiper{overflow:hidden;-webkit-overflow-scrolling:touch}
@@ -1137,9 +1144,69 @@ function cacheAgeStr(ts){
   return m<60?`${m} 分鐘前`:`${Math.floor(m/60)} 小時前`;
 }
 
+// ── 新聞來源 URL 縮寫（與 buildSrcHtml 共用）──────────────────────────────
+function getSrcAbbrFromUrl(url){
+  try{
+    const h=new URL(url).hostname.replace(/^www\./,'');
+    const ABBR={'wsj.com':'WSJ','reuters.com':'Reuters','bloomberg.com':'BBG','ft.com':'FT',
+      'cnbc.com':'CNBC','apnews.com':'AP','bbc.com':'BBC','bbc.co.uk':'BBC',
+      'cnn.com':'CNN','nbcnews.com':'NBC','forexfactory.com':'FF','nikkei.com':'Nikkei',
+      'marketwatch.com':'MW','economist.com':'Economist'};
+    for(const[k,v]of Object.entries(ABBR)){if(h===k||h.endsWith('.'+k))return v;}
+    return h.split('.')[0].toUpperCase();
+  }catch(_){return'';}
+}
+
+// ── AI 新聞文字 → 每條帶原文連結的 HTML ────────────────────────────────────
+function renderNewsWithLinks(aiText, srcItems){
+  // 建立 source縮寫 → items 對應表
+  const srcMap={};
+  (srcItems||[]).forEach(item=>{
+    if(!item.link)return;
+    const s=getSrcAbbrFromUrl(item.link);
+    if(s){if(!srcMap[s])srcMap[s]=[];srcMap[s].push(item);}
+  });
+  // 解析編號段落
+  const paras=[];
+  let cur='';
+  aiText.split('\n').forEach(line=>{
+    if(/^\d+[\.、．]/.test(line.trim())){if(cur.trim())paras.push(cur.trim());cur=line;}
+    else{cur+='\n'+line;}
+  });
+  if(cur.trim())paras.push(cur.trim());
+  if(!paras.length)return`<div style="white-space:pre-wrap">${escH(aiText)}</div>`;
+  const usedLinks=new Set();
+  function findLink(lineText){
+    // 從【SOURCE·...】抓來源縮寫
+    const m=lineText.match(/【([^·・】\s]+)/);
+    const hint=m?.[1]?.trim();
+    if(hint&&srcMap[hint]){
+      for(const item of srcMap[hint]){
+        if(item.link&&!usedLinks.has(item.link)){usedLinks.add(item.link);return item.link;}
+      }
+    }
+    // 備援：關鍵詞比對標題
+    const words=lineText.replace(/[【】·→・━]/g,' ').split(/\s+/).filter(w=>w.length>2).slice(0,6);
+    let best=null,bestScore=0;
+    (srcItems||[]).forEach(item=>{
+      if(!item.link||usedLinks.has(item.link))return;
+      const score=words.filter(w=>item.title.toLowerCase().includes(w.toLowerCase())).length;
+      if(score>bestScore){bestScore=score;best=item;}
+    });
+    if(best&&bestScore>=2){usedLinks.add(best.link);return best.link;}
+    return null;
+  }
+  return paras.map(p=>{
+    const link=findLink(p);
+    return link
+      ?`<a class="news-item-link" href="${safeUrl(link)}" target="_blank" rel="noopener">${escH(p)}</a>`
+      :`<div class="news-item-plain">${escH(p)}</div>`;
+  }).join('');
+}
+
 // ── Mobile news swiper ──────────────────────────────────────────────────────
 let _tIdx=0, _tTotal=0;
-function buildTrumpSwiper(rawText, container){
+function buildTrumpSwiper(rawText, container, srcItems){
   // Parse numbered items (1. 2. … or 1、2、)
   const items=[];
   let cur='';
@@ -1151,11 +1218,23 @@ function buildTrumpSwiper(rawText, container){
   });
   if(cur.trim()) items.push(cur.trim());
   if(items.length<2) return false;
+  // 預先計算每條的連結
+  const links=srcItems?items.map(item=>{
+    const m=item.match(/【([^·・】\s]+)/);
+    const hint=m?.[1]?.trim();
+    if(hint){
+      const srcMap={};
+      (srcItems||[]).forEach(x=>{if(!x.link)return;const s=getSrcAbbrFromUrl(x.link);if(s){if(!srcMap[s])srcMap[s]=[];srcMap[s].push(x);}});
+      if(srcMap[hint]&&srcMap[hint][0]?.link) return srcMap[hint][0].link;
+    }
+    return null;
+  }):items.map(()=>null);
   _tIdx=0; _tTotal=items.length;
   const cards=items.map((item,i)=>`
     <div class="trump-card">
       <div class="trump-card-num">第 ${i+1} 條 / 共 ${_tTotal}</div>
       <div class="trump-card-text">${escH(item)}</div>
+      ${links[i]?`<a href="${safeUrl(links[i])}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;font-size:.72rem;color:var(--purple);text-decoration:none;border:1px solid var(--purple);border-radius:6px;padding:2px 10px">↗ 原文連結</a>`:''}
     </div>`).join('');
   const dots=items.map((_,i)=>`<div class="trump-dot${i===0?' on':''}" id="td${i}"></div>`).join('');
   container.innerHTML=`
@@ -1191,8 +1270,9 @@ async function loadTrump(useCache=false){
     if(c){
       b.className='news-body';
       const raw=c.rawText||c.text||'';
-      if(window.innerWidth<=640 && raw && buildTrumpSwiper(raw,b)){}
-      else b.textContent=raw;
+      const cachedSrc=c.srcItems||[];
+      if(window.innerWidth<=640 && raw && buildTrumpSwiper(raw,b,cachedSrc)){}
+      else b.innerHTML=renderNewsWithLinks(raw,cachedSrc);
       t.textContent='快取（'+cacheAgeStr(c.ts)+'）・點 ↻ 強制更新';return;
     }
   }
@@ -1298,13 +1378,15 @@ ${newsList}`;
   ]);
   const aiText=stripMd(res);
   const aiDiv=document.getElementById('tAI');
-  if(window.innerWidth<=640 && !aiText.startsWith('⚠️') && !aiText.startsWith('❌') && buildTrumpSwiper(aiText,b)){
-    // swiper built, nothing else needed
+  const isErr=aiText.startsWith('⚠️')||aiText.startsWith('❌');
+  if(window.innerWidth<=640 && !isErr && buildTrumpSwiper(aiText,b,items)){
+    // swiper built with links
   } else {
-    if(aiDiv){aiDiv.style.color='';aiDiv.style.fontStyle='';aiDiv.textContent=aiText;}
-    else{b.className='news-body';b.innerHTML='<div id="tAI" style="white-space:pre-wrap">'+escH(aiText)+'</div>'+buildSrcHtml(items);}
+    const html=isErr?`<div style="white-space:pre-wrap">${escH(aiText)}</div>`:renderNewsWithLinks(aiText,items);
+    if(aiDiv){aiDiv.outerHTML=html;}
+    else{b.className='news-body';b.innerHTML=html;}
   }
-  if(!aiText.startsWith('⚠️')&&!aiText.startsWith('❌')){setAICache('trump2',aiText,{rawText:aiText});lsSet('trump_stale',{text:aiText,ts:Date.now()});}
+  if(!aiText.startsWith('⚠️')&&!aiText.startsWith('❌')){setAICache('trump2',aiText,{rawText:aiText,srcItems:items.slice(0,30)});lsSet('trump_stale',{text:aiText,ts:Date.now()});}
   t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
