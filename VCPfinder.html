@@ -2262,7 +2262,7 @@ async function startScan(){
 
   // 預載每日資料（twse_daily.json，GitHub Actions 每日更新）
   document.getElementById('progText').textContent='載入每日資料（twse_daily.json）...';
-  await Promise.all([loadTWSEDaily(), loadStockPrices()]);
+  await Promise.all([loadTWSEDaily(), loadStockPrices(), loadMarginData().catch(()=>{})]);
   // Fetch institutional chips data once before scan
   document.getElementById('progText').textContent='取得籌碼資料（TWSE）...';
   await fetchChips();
