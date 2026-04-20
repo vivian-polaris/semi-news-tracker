@@ -913,42 +913,23 @@ async function loadTWSEDaily(){
       twseDailyMap=d;
       // 把 bwibbu 合進 twseFundMap（覆蓋 BWIBBU_d 直連失敗的情況）
       if(d.bwibbu){Object.entries(d.bwibbu).forEach(([c,v])=>{if(!twseFundMap[c])twseFundMap[c]=v;});}
+      // 融資餘額
+      if(d.margin){loadMarginFromDaily();}
       if(infoEl) infoEl.textContent=`✅ 每日資料載入：籌碼 ${Object.keys(d.chips).length} 支、財報 ${Object.keys(d.income||{}).length} 支、産業 ${Object.keys(d.sectors||{}).length} 支（${d.date||''}）`;
     }
   }catch(_){}
 }
-// ─── 融資餘額（MI_MARGN）────────────────────────────────────────────────────
-let _marginLoaded=0; // timestamp of last load
-async function loadMarginData(){
-  const now=Date.now();
-  const ttl=isTradingHours()?15*60*1000:24*60*60*1000;
-  if(_marginLoaded&&now-_marginLoaded<ttl) return;
-  const base='https://openapi.twse.com.tw/v1/marginTrading/MI_MARGN';
-  const attempts=[
-    base,
-    'https://corsproxy.io/?'+encodeURIComponent(base),
-    'https://api.allorigins.win/raw?url='+encodeURIComponent(base),
-    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(base),
-  ];
-  for(const url of attempts){
-    try{
-      const r=await fetchTO(url,14000);
-      if(!r.ok) continue;
-      const d=await r.json();
-      if(!Array.isArray(d)||!d.length) continue;
-      let count=0;
-      d.forEach(row=>{
-        const code=String(row['股票代號']||'').trim();
-        if(!code) return;
-        const today=parseInt(String(row['融資今日餘額']||'').replace(/,/g,''))||0;
-        const prev=parseInt(String(row['融資前日餘額']||'').replace(/,/g,''))||0;
-        marginMap[code]={today,prev,change:today-prev};
-        count++;
-      });
-      if(count>0){_marginLoaded=now;return;}
-    }catch(_){}
-  }
+// ─── 融資餘額：從 twse_daily.json 讀取（GitHub Actions 收盤後更新）──────────
+// TWSE MI_MARGN API 沒有 CORS headers，瀏覽器無法直接呼叫，改由後端抓取
+function loadMarginFromDaily(){
+  const m=twseDailyMap?.margin;
+  if(!m||Object.keys(m).length===0) return;
+  Object.entries(m).forEach(([code,v])=>{
+    marginMap[code]={today:v.today||0,prev:v.prev||0,change:v.change||0};
+  });
 }
+// 保留空的 async 函數讓掃描流程不出錯
+async function loadMarginData(){loadMarginFromDaily();}
 async function loadStockPrices(){
   if(stockPriceLoaded)return;
   const v=new Date().toISOString().slice(0,10);

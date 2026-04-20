@@ -314,37 +314,90 @@ def fetch_income():
 
 
 # ── 6. Financial News (Google News RSS) ──────────────────────────────────────
+def fetch_margin():
+    """融資融券餘額 MI_MARGN → {code: {today, prev, change}}"""
+    margin = {}
+    data = get('https://openapi.twse.com.tw/v1/marginTrading/MI_MARGN')
+    if data:
+        for row in data:
+            code = str(row.get('股票代號') or '').strip()
+            if not code:
+                continue
+            def parse_num(v):
+                try:
+                    return int(str(v or '').replace(',', ''))
+                except:
+                    return 0
+            today = parse_num(row.get('融資今日餘額'))
+            prev  = parse_num(row.get('融資前日餘額'))
+            margin[code] = {'today': today, 'prev': prev, 'change': today - prev}
+        print(f'  margin: {len(margin)} stocks from MI_MARGN')
+    else:
+        print('  [WARN] MI_MARGN fetch failed')
+    return margin
+
+
 def fetch_news():
+    # Google News RSS 查詢（宏觀事件，不抓個股漲跌）
     queries = [
-        'Trump tariff trade policy statement',
-        'Federal Reserve interest rate inflation CPI GDP',
-        'semiconductor TSMC Nvidia AMD earnings supply chain',
-        'Taiwan stock market economy',
-        'China economy real estate policy',
+        'Israel Iran war ceasefire attack strike military',
+        'Trump Iran Israel diplomacy sanctions statement',
+        'Strait of Hormuz oil blockade tanker',
+        'Trump tariff trade war sanctions policy',
+        'Federal Reserve interest rate inflation CPI decision',
+        'US China trade technology export ban',
+        'Taiwan economy geopolitics supply chain',
+        'oil price energy OPEC war impact',
+    ]
+    # 直接 RSS 來源（伺服器端無 CORS 問題）
+    direct_feeds = [
+        'https://feeds.bbci.co.uk/news/world/rss.xml',
+        'https://feeds.bbci.co.uk/news/business/rss.xml',
+        'https://feeds.apnews.com/rss/apf-topnews',
+        'https://feeds.apnews.com/rss/apf-business',
     ]
     all_items = []
     seen = set()
+
+    def parse_feed(content, source_name=''):
+        items = []
+        try:
+            root = ET.fromstring(content)
+            for item in root.findall('.//item')[:10]:
+                title = (item.findtext('title') or '').strip()
+                link  = (item.findtext('link') or '').strip()
+                pub   = (item.findtext('pubDate') or '').strip()
+                src_el = item.find('{https://news.google.com/rss}source') or item.find('source')
+                src = (src_el.text if src_el is not None else '') or source_name
+                if title and title not in seen:
+                    seen.add(title)
+                    items.append({'title': title, 'link': link, 'pubDate': pub, 'source': src})
+        except Exception as e:
+            print(f'  [WARN] parse failed: {e}')
+        return items
+
+    # 直接 RSS
+    for feed_url in direct_feeds:
+        try:
+            r = SESSION.get(feed_url, timeout=20, headers={'Accept': 'application/rss+xml,application/xml,text/xml'})
+            r.raise_for_status()
+            name = 'BBC' if 'bbc' in feed_url else 'AP'
+            all_items.extend(parse_feed(r.content, name))
+            print(f'  {name} RSS: +{len(all_items)} items')
+        except Exception as e:
+            print(f'  [WARN] direct RSS failed {feed_url[:50]}: {e}')
+
+    # Google News 查詢
     for q in queries:
         url = f'https://news.google.com/rss/search?q={requests.utils.quote(q)}&hl=en-US&gl=US&ceid=US:en'
         try:
             r = SESSION.get(url, timeout=20, headers={'Accept': 'application/rss+xml,application/xml,text/xml'})
             r.raise_for_status()
-            root = ET.fromstring(r.content)
-            for item in root.findall('.//item')[:8]:
-                title = (item.findtext('title') or '').strip()
-                link  = (item.findtext('link') or '').strip()
-                pub   = (item.findtext('pubDate') or '').strip()
-                src   = ''
-                src_el = item.find('{https://news.google.com/rss}source')
-                if src_el is None:
-                    src_el = item.find('source')
-                if src_el is not None:
-                    src = src_el.text or ''
-                if title and title not in seen:
-                    seen.add(title)
-                    all_items.append({'title': title, 'link': link, 'pubDate': pub, 'source': src})
+            new_items = parse_feed(r.content)
+            all_items.extend(new_items)
         except Exception as e:
             print(f'  [WARN] news RSS failed "{q[:35]}": {e}')
+
     print(f'  Total news items: {len(all_items)}')
     return all_items
 
@@ -548,7 +601,10 @@ def main():
     print(f'  stocks_tse.json: {len(tse_prices)} stocks')
     print(f'  stocks_otc.json: {len(otc_prices)} stocks')
 
-    print('\n7. Financial News (RSS)...')
+    print('\n7. Margin Trading (MI_MARGN)...')
+    margin = fetch_margin()
+
+    print('\n8. Financial News (RSS)...')
     news = fetch_news()
     if len(news) < 3:
         old_news = existing.get('news', [])
@@ -565,6 +621,7 @@ def main():
         'monthRevenue': month_revenue,
         'income':       income,
         'incomePrev':   income_prev,
+        'margin':       margin,
         'news':         news,
     }
 
