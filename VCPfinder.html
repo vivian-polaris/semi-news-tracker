@@ -906,7 +906,7 @@ function autoSaveGroq(v){
 async function loadTWSEDaily(){
   const infoEl=document.getElementById('fetchApiStatus');
   try{
-    const r=await fetchTO('./twse_daily.json?v='+new Date().toISOString().slice(0,10),8000);
+    const r=await fetchTO('./twse_daily.json?v='+new Date().toISOString().slice(0,13),8000);
     if(!r.ok)return;
     const d=await r.json();
     if(d.date){
@@ -932,7 +932,7 @@ function loadMarginFromDaily(){
 async function loadMarginData(){loadMarginFromDaily();}
 async function loadStockPrices(){
   if(stockPriceLoaded)return;
-  const v=new Date().toISOString().slice(0,10);
+  const v=new Date().toISOString().slice(0,13);
   try{
     const [r1,r2]=await Promise.all([
       fetchTO(`./stocks_tse.json?v=${v}`,30000).catch(()=>null),
