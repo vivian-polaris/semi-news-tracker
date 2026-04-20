@@ -749,6 +749,7 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('canslim',this)">CANSLIM評分 ⇅</th>
       <th onclick="setSort('fund',this)">基本面 ⇅</th>
       <th onclick="setSort('chips',this)">籌碼(外資/投信) ⇅</th>
+      <th onclick="setSort('margin',this)" title="融資今日餘額變化（千股），盤中即時・收盤固定">融資增減 ⇅</th>
       <th onclick="setSort('csC',this)" title="Current：EPS/營收成長≥25%" style="width:46px;min-width:46px;max-width:46px;text-align:center;cursor:pointer">C ⇅</th>
       <th onclick="setSort('csA',this)" title="Annual ROE≥15%" style="width:46px;min-width:46px;max-width:46px;text-align:center;cursor:pointer">A ⇅</th>
       <th onclick="setSort('csN',this)" title="Near new high &lt;5%" style="width:46px;min-width:46px;max-width:46px;text-align:center;cursor:pointer">N ⇅</th>
@@ -869,6 +870,7 @@ let hideDoubleShort=true;  // 預設排除雙賣
 let fundMin=70;
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
+let marginMap={}; // code -> {today, prev, change} 融資餘額（千股）
 let twseDailyMap={chips:{},monthRevenue:{},income:{}}; // pre-fetched by GitHub Actions
 let stockPriceMap={};   // pre-fetched OHLCV: code -> {n,c[],h[],l[],v[]}
 let stockPriceLoaded=false;
@@ -912,6 +914,28 @@ async function loadTWSEDaily(){
       if(d.bwibbu){Object.entries(d.bwibbu).forEach(([c,v])=>{if(!twseFundMap[c])twseFundMap[c]=v;});}
       if(infoEl) infoEl.textContent=`✅ 每日資料載入：籌碼 ${Object.keys(d.chips).length} 支、財報 ${Object.keys(d.income||{}).length} 支、産業 ${Object.keys(d.sectors||{}).length} 支（${d.date||''}）`;
     }
+  }catch(_){}
+}
+// ─── 融資餘額（MI_MARGN）────────────────────────────────────────────────────
+let _marginLoaded=0; // timestamp of last load
+async function loadMarginData(){
+  const now=Date.now();
+  const ttl=isTradingHours()?15*60*1000:24*60*60*1000; // 盤中15分鐘，盤後24小時
+  if(_marginLoaded&&now-_marginLoaded<ttl) return;
+  try{
+    // TWSE openapi 有 CORS header，可直接抓
+    const r=await fetchTO('https://openapi.twse.com.tw/v1/marginTrading/MI_MARGN',12000);
+    if(!r.ok) return;
+    const d=await r.json();
+    if(!Array.isArray(d)||!d.length) return;
+    d.forEach(row=>{
+      const code=String(row['股票代號']||'').trim();
+      if(!code) return;
+      const today=parseInt(row['融資今日餘額'])||0;
+      const prev=parseInt(row['融資前日餘額'])||0;
+      marginMap[code]={today,prev,change:today-prev};
+    });
+    _marginLoaded=now;
   }catch(_){}
 }
 async function loadStockPrices(){
@@ -2224,10 +2248,16 @@ async function startScan(){
   secRow.querySelectorAll('[data-sec]:not([data-sec="ALL"])').forEach(p=>p.remove());
   secs.forEach(s=>{const p=document.createElement('span');p.className='pill';p.dataset.sec=s;p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);});
 
-  // 盤中：批次預抓即時價格（讓 fetchYahoo 可以用 live price 取代靜態收盤價）
+  // 盤中：批次預抓即時價格 + 融資餘額
   if(isTradingHours()){
-    document.getElementById('progText').textContent='盤中模式：抓取即時價格...';
-    await prefetchLivePrices(stocks).catch(()=>{});
+    document.getElementById('progText').textContent='盤中模式：抓取即時價格與融資資料...';
+    await Promise.all([
+      prefetchLivePrices(stocks).catch(()=>{}),
+      loadMarginData().catch(()=>{}),
+    ]);
+  } else {
+    // 盤後也載入融資（顯示收盤後的最終數字）
+    loadMarginData().catch(()=>{});
   }
 
   // 有預載股價時縮短 delay（不需要等 Yahoo），無預載時保留原本延遲避免 rate limit
@@ -2389,6 +2419,10 @@ function getSorted(list){
     if(sortKey==='chips'){
       const chipsScore=r=>{const c=chipsMap[r.code];if(!c)return-1;const f=parseChipNum(c.foreignNet)||0,t=parseChipNum(c.trustNet)||0;return(f>0&&t>0)?3:(f>0)?2:(t>0)?1:0;};
       return sortAsc?chipsScore(a)-chipsScore(b):chipsScore(b)-chipsScore(a);
+    }
+    if(sortKey==='margin'){
+      const mg=r=>marginMap[r.code]?.change??-Infinity;
+      return sortAsc?mg(a)-mg(b):mg(b)-mg(a);
     }
     return 0;
   });
@@ -2637,7 +2671,19 @@ function renderTable(){
         <span class="scr-num s${s}">${v.score}</span>
         <div class="scr-bg" style="width:36px;margin:3px auto 0"><div class="scr-fill f${s}" style="width:${v.score}%"></div></div>
       </td>
-      ${(()=>{const cs=renderCSCells(v,r.fund||null,chipsMap[r.code]||null);return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+cs.seven;})()}
+      ${(()=>{
+        const cs=renderCSCells(v,r.fund||null,chipsMap[r.code]||null);
+        const mg=marginMap[r.code];
+        const mgCell=(()=>{
+          if(!mg) return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
+          const ch=mg.change;
+          const cls=ch>0?'color:#34d399':ch<0?'color:#f87171':'color:var(--text2)';
+          const sign=ch>0?'+':'';
+          const pct=mg.prev>0?` (${ch>0?'+':''}${((ch/mg.prev)*100).toFixed(1)}%)`:'';
+          return `<td style="text-align:center;white-space:nowrap;font-size:.76rem;font-weight:600;${cls}">${sign}${ch.toLocaleString()}<span style="font-size:.6rem;color:var(--text2);font-weight:400">${pct}</span></td>`;
+        })();
+        return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+mgCell+cs.seven;
+      })()}
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
       <td><div class="ma-row">${maHTML||'—'}</div></td>
       <td style="white-space:nowrap">${techHTML}</td>
