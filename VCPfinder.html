@@ -921,23 +921,33 @@ async function loadTWSEDaily(){
 let _marginLoaded=0; // timestamp of last load
 async function loadMarginData(){
   const now=Date.now();
-  const ttl=isTradingHours()?15*60*1000:24*60*60*1000; // 盤中15分鐘，盤後24小時
+  const ttl=isTradingHours()?15*60*1000:24*60*60*1000;
   if(_marginLoaded&&now-_marginLoaded<ttl) return;
-  try{
-    // TWSE openapi 有 CORS header，可直接抓
-    const r=await fetchTO('https://openapi.twse.com.tw/v1/marginTrading/MI_MARGN',12000);
-    if(!r.ok) return;
-    const d=await r.json();
-    if(!Array.isArray(d)||!d.length) return;
-    d.forEach(row=>{
-      const code=String(row['股票代號']||'').trim();
-      if(!code) return;
-      const today=parseInt(row['融資今日餘額'])||0;
-      const prev=parseInt(row['融資前日餘額'])||0;
-      marginMap[code]={today,prev,change:today-prev};
-    });
-    _marginLoaded=now;
-  }catch(_){}
+  const base='https://openapi.twse.com.tw/v1/marginTrading/MI_MARGN';
+  const attempts=[
+    base,
+    'https://corsproxy.io/?'+encodeURIComponent(base),
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(base),
+    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(base),
+  ];
+  for(const url of attempts){
+    try{
+      const r=await fetchTO(url,14000);
+      if(!r.ok) continue;
+      const d=await r.json();
+      if(!Array.isArray(d)||!d.length) continue;
+      let count=0;
+      d.forEach(row=>{
+        const code=String(row['股票代號']||'').trim();
+        if(!code) return;
+        const today=parseInt(String(row['融資今日餘額']||'').replace(/,/g,''))||0;
+        const prev=parseInt(String(row['融資前日餘額']||'').replace(/,/g,''))||0;
+        marginMap[code]={today,prev,change:today-prev};
+        count++;
+      });
+      if(count>0){_marginLoaded=now;return;}
+    }catch(_){}
+  }
 }
 async function loadStockPrices(){
   if(stockPriceLoaded)return;
@@ -1328,38 +1338,44 @@ async function loadTrump(useCache=false){
     // 備援：直接從 Google News RSS 抓（需要 CORS proxy）
     const recentQ=new Date(Date.now()-1*24*60*60*1000).toISOString().slice(0,10);
     const recentQ2=new Date(Date.now()-1*24*60*60*1000).toISOString().slice(0,10);
-    const [a,b2,c,d,e,ff1,ff2,war1,war2,war3,bbc1,bbc2,ap1,ap2,cnn1,cnn2,nbc1,reu1,reu2]=await Promise.all([
+    const [a,b2,c,d,e,ff1,ff2,war1,war2,war3,bbc1,ap1,cnn1,nbc1,reu1,reu2]=await Promise.all([
       fetchRSS(`Trump tariff trade war sanctions policy after:${recentQ}`).catch(()=>[]),
       fetchRSS(`Federal Reserve interest rate decision inflation CPI after:${recentQ}`).catch(()=>[]),
       fetchRSS(`US China trade tariff supply chain technology export after:${recentQ}`).catch(()=>[]),
-      fetchRSS(`site:wsj.com economy policy geopolitics after:${recentQ}`).catch(()=>[]),
-      fetchRSS(`site:reuters.com world economy geopolitics after:${recentQ}`).catch(()=>[]),
+      fetchRSS(`site:wsj.com economy markets finance after:${recentQ}`).catch(()=>[]),
+      fetchRSS(`site:reuters.com economy markets finance after:${recentQ}`).catch(()=>[]),
       fetchRSSUrl('https://www.forexfactory.com/rss.php?category=market_news').catch(()=>[]),
-      fetchRSSUrl('https://www.forexfactory.com/rss.php').catch(()=>[]),
-      fetchRSS(`Israel Iran war ceasefire attack strike after:${recentQ2}`).catch(()=>[]),
-      fetchRSS(`Strait of Hormuz oil tanker blockade Iran after:${recentQ2}`).catch(()=>[]),
-      fetchRSS(`Trump Iran Israel US military diplomacy after:${recentQ2}`).catch(()=>[]),
-      fetchRSSUrl('https://feeds.bbci.co.uk/news/world/rss.xml').catch(()=>[]),
-      fetchRSSUrl('https://feeds.bbci.co.uk/news/business/rss.xml').catch(()=>[]),
-      fetchRSSUrl('https://feeds.apnews.com/rss/apf-topnews').catch(()=>[]),
-      fetchRSSUrl('https://feeds.apnews.com/rss/apf-business').catch(()=>[]),
+      fetchRSS(`stock market S&P Nasdaq earnings economy after:${recentQ}`).catch(()=>[]),
+      fetchRSS(`Israel Iran oil war ceasefire Hormuz after:${recentQ2}`).catch(()=>[]),
+      fetchRSS(`OPEC oil price energy supply after:${recentQ2}`).catch(()=>[]),
+      fetchRSS(`Trump Iran sanction nuclear deal after:${recentQ2}`).catch(()=>[]),
+      fetchRSSUrl('https://feeds.bbci.co.uk/news/business/rss.xml').catch(()=>[]),  // BBC Business only
+      fetchRSSUrl('https://feeds.apnews.com/rss/apf-business').catch(()=>[]),       // AP Business only
       fetchRSSUrl('https://rss.cnn.com/rss/money_latest.rss').catch(()=>[]),
-      fetchRSS(`site:cnn.com economy trade policy tariff after:${recentQ}`).catch(()=>[]),
       fetchRSSUrl('https://feeds.nbcnews.com/nbcnews/public/business').catch(()=>[]),
       fetchRSSUrl('https://feeds.reuters.com/reuters/businessNews').catch(()=>[]),
-      fetchRSSUrl('https://feeds.reuters.com/reuters/topNews').catch(()=>[]),
+      fetchRSS(`semiconductor chip AI tech stock market after:${recentQ}`).catch(()=>[]),
     ]);
-    // 過濾掉超過 36 小時的舊聞
-    const cutoff=Date.now()-36*60*60*1000;
-    function isRecent(x){
-      if(!x.dateStr) return true;
-      try{const d=new Date(x.pubRaw||x.dateStr);return isNaN(d)?true:d.getTime()>cutoff;}catch(_){return true;}
+    // 財經關鍵字篩選：過濾掉跟金融無關的新聞
+    const FIN_KW=['tariff','trade','rate','inflation','GDP','PMI','market','stock','economy','economic',
+      'Fed','dollar','oil','recession','bank','earnings','semiconductor','tech','bond','yield',
+      'export','import','OPEC','energy','china','trump','taiwan','supply chain','currency',
+      'nasdaq','s&p','dow','fiscal','monetary','interest','crypto','bitcoin','gold','copper',
+      'Iran','Israel','Hormuz','sanction','geopolit','war','ceasefire'];
+    function isFinancial(title){
+      const t=title.toLowerCase();
+      return FIN_KW.some(k=>t.includes(k));
     }
     const seen=new Set();
-    const allItems=[...a,...b2,...c,...d,...e,...ff1,...ff2,...war1,...war2,...war3,...bbc1,...bbc2,...ap1,...ap2,...cnn1,...cnn2,...nbc1,...reu1,...reu2];
-    // 先嘗試只用近 36 小時的，不夠就放寬到全部
-    const recentItems=allItems.filter(x=>{if(seen.has(x.title))return false;seen.add(x.title);return true;});
-    items=recentItems.slice(0,60);
+    const allItems=[...a,...b2,...c,...d,...e,...ff1,...ff2,...war1,...war2,...war3,...bbc1,...ap1,...cnn1,...nbc1,...reu1,...reu2];
+    items=allItems
+      .filter(x=>{
+        if(!x.title||!isFinancial(x.title))return false; // 過濾非財經
+        if(seen.has(x.title))return false;
+        seen.add(x.title);
+        return true;
+      })
+      .slice(0,60);
   }
   if(!items.length){
     // 所有來源失敗 → 強制顯示任何舊的 AI 快取（無論多舊）
@@ -1447,12 +1463,42 @@ ${newsList}`;
         :`<div style="padding:8px 0;border-bottom:1px solid var(--border)">${inner}</div>`;
     }).join('');
     if(window.innerWidth<=640){
-      // Mobile：swiper
-      const rawForSwiper=selected.map((s,i)=>`${i+1}. [${s.item.link?srcBadge(s.item.link):'?'}] ${s.item.title}\n→ ${s.analysis}`).join('\n');
-      if(buildTrumpSwiper(rawForSwiper,b,selected.map(s=>s.item))) {
-        // swiper built
-      } else {
-        b.innerHTML=html;
+      // Mobile：直接建 swiper，字體夠大，每卡有來源連結
+      _tIdx=0; _tTotal=selected.length;
+      const mCards=selected.map((s,i)=>{
+        const src=s.item.link?srcBadge(s.item.link):'';
+        const srcBadgeEl=src?`<span style="font-size:.72rem;font-weight:800;color:var(--purple)">[${escH(src)}]</span> `:'';
+        const linkBtn=s.item.link
+          ?`<a href="${safeUrl(s.item.link)}" target="_blank" rel="noopener"
+              style="display:inline-block;margin-top:10px;padding:6px 16px;font-size:.82rem;font-weight:700;
+                     color:var(--purple);border:1.5px solid var(--purple);border-radius:8px;text-decoration:none">
+              ↗ 原文連結
+            </a>`
+          :'';
+        return `<div class="trump-card">
+          <div class="trump-card-num">第 ${i+1} 條 / 共 ${_tTotal}</div>
+          <div class="trump-card-text" style="font-size:1rem;line-height:1.7">
+            ${srcBadgeEl}${escH(s.item.title)}
+          </div>
+          <div style="font-size:.88rem;color:var(--mint);margin-top:8px;line-height:1.6">→ ${escH(s.analysis)}</div>
+          ${s.item.dateStr?`<div style="font-size:.68rem;color:var(--text2);margin-top:4px">${escH(s.item.dateStr)}</div>`:''}
+          ${linkBtn}
+        </div>`;
+      }).join('');
+      const dots=selected.map((_,i)=>`<div class="trump-dot${i===0?' on':''}" id="td${i}"></div>`).join('');
+      b.innerHTML=`<div class="trump-swiper" id="trumpSwiperWrap">
+        <div class="trump-track" id="trumpTrack">${mCards}</div>
+        <div class="trump-nav">
+          <button class="trump-nav-btn" onclick="trumpGo(-1)">‹</button>
+          <div class="trump-dots">${dots}</div>
+          <button class="trump-nav-btn" onclick="trumpGo(1)">›</button>
+        </div>
+      </div>`;
+      const wrap=document.getElementById('trumpSwiperWrap');
+      let sx=0;
+      if(wrap){
+        wrap.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;},{passive:true});
+        wrap.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>40)trumpGo(dx<0?1:-1);},{passive:true});
       }
     } else {
       b.innerHTML=html;
