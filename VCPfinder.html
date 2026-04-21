@@ -749,7 +749,7 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('canslim',this)">CANSLIM評分 ⇅</th>
       <th onclick="setSort('fund',this)">基本面 ⇅</th>
       <th onclick="setSort('chips',this)">籌碼(外資/投信) ⇅</th>
-      <th onclick="setSort('pivot',this)" title="VCP突破買點：近15根K線最高點。突破買點=剛過高點≤3%；逼近買點=距高點≤2%">買點 ⇅</th>
+      <th onclick="setSort('pivot',this)" title="VCP突破買點：近30根K線最高點（排除今天）。突破+放量=剛過高點≤3%且量>1.3倍均量；突破待量=突破但量不足">買點 ⇅</th>
       <th onclick="setSort('margin',this)" title="融資今日餘額變化（千股），盤中即時・收盤固定">融資增減 ⇅</th>
       <th onclick="setSort('csC',this)" title="Current：EPS/營收成長≥25%" style="width:46px;min-width:46px;max-width:46px;text-align:center;cursor:pointer">C ⇅</th>
       <th onclick="setSort('csA',this)" title="Annual ROE≥15%" style="width:46px;min-width:46px;max-width:46px;text-align:center;cursor:pointer">A ⇅</th>
@@ -1922,17 +1922,21 @@ function calcVCP(data){
   const ppS1 =pp ? +(2*pp-prevD.high).toFixed(2)          : null;
   const ppS2 =pp ? +(pp-(prevD.high-prevD.low)).toFixed(2) : null;
 
-  // VCP Breakout Pivot：近 15 根 K 線最高點（突破買點）
-  const vcpPivotLookback=Math.min(15,data.length-1);
-  const recentHighArr=data.slice(0,vcpPivotLookback).map(d=>d.high).filter(v=>v!=null&&isFinite(v));
+  // VCP Breakout Pivot：近 30 根 K 線最高點（排除今天，避免自我參考）
+  const vcpPivotLookback=Math.min(30,data.length-1);
+  const recentHighArr=data.slice(1,vcpPivotLookback+1).map(d=>d.high).filter(v=>v!=null&&isFinite(v));
   const vcpPivot=recentHighArr.length>0 ? +Math.max(...recentHighArr).toFixed(2) : null;
   const distVcpPivot=vcpPivot&&price>0 ? +((price-vcpPivot)/vcpPivot*100).toFixed(1) : null;
 
   let pivotStatus='—',pivotStatusCls='n',pivotNote='資料不足';
   if(distVcpPivot!==null){
     if(distVcpPivot>0&&distVcpPivot<=3){
-      pivotStatus='突破買點';pivotStatusCls='g';
-      pivotNote=`剛突破近期高點 ${vcpPivot}，漲幅 +${distVcpPivot}%，仍在最佳買進區間`;
+      const hasVol=volumes[0]&&v20&&volumes[0]>v20*1.3;
+      pivotStatus=hasVol?'突破+放量':'突破待量';
+      pivotStatusCls=hasVol?'g':'o';
+      pivotNote=hasVol
+        ?`剛突破近期高點 ${vcpPivot}，漲幅 +${distVcpPivot}%，且有放量確認`
+        :`剛突破近期高點 ${vcpPivot}，漲幅 +${distVcpPivot}%，但成交量未明顯放大，需確認`;
     }else if(distVcpPivot>3&&distVcpPivot<=8){
       pivotStatus='稍超買點';pivotStatusCls='o';
       pivotNote=`突破後已漲 +${distVcpPivot}%，稍超最佳進場點，可等回測`;
