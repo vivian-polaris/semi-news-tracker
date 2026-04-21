@@ -562,6 +562,15 @@ footer a:hover{text-decoration:underline}
   </div>
 </div>
 
+<!-- ── 隔日沖候選名單 ── -->
+<div id="dtListWrap" style="display:none;background:var(--card);border:1.5px solid var(--mint);border-radius:10px;padding:14px 18px;margin-bottom:14px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div style="font-size:.78rem;font-weight:800;color:var(--mint);letter-spacing:.05em">隔日沖候選名單 <span id="dtListCount" style="font-size:.68rem;font-weight:400;color:var(--text2)"></span></div>
+    <div style="font-size:.62rem;color:var(--text2)">掃描後自動更新・需對照 Checklist 逐項確認</div>
+  </div>
+  <div id="dtListBody"></div>
+</div>
+
 <!-- ── VCP 掃描 ── -->
 <div class="scan-section-title">
   VCP 掃描
@@ -2994,6 +3003,71 @@ function renderTable(){
       <td style="white-space:nowrap">${techHTML}</td>
     </tr>`;
   }).join('');
+
+  // ── 隔日沖候選名單更新 ──────────────────────────────────────────────────
+  (()=>{
+    const wrap=document.getElementById('dtListWrap');
+    const body=document.getElementById('dtListBody');
+    const cnt=document.getElementById('dtListCount');
+    if(!wrap||!body||!allResults.length)return;
+
+    // 計算每支股票的隔日沖分數
+    const dtCalc=r=>{
+      const v=r.vcp,f=r.fund;
+      if(!v||v.vcpPivot==null||v.distVcpPivot==null)return-1;
+      let s=0;
+      if(v.pivotStatus==='突破+放量'){s+=40;}
+      else if(v.pivotStatus==='突破待量'){s+=20;}
+      else if(v.distVcpPivot>=-2&&v.distVcpPivot<0){s+=10;}
+      else return-1;
+      if(v.distVcpPivot>=0&&v.distVcpPivot<=2)s+=20;
+      if(v.score>=80)s+=20;else if(v.score>=70)s+=10;
+      if(f?.pe>0&&f?.pb>0){const g=v.price*Math.sqrt(22.5/(f.pe*f.pb));if(g>v.price)s+=10;}
+      const mg=marginMap[r.code];if(mg?.change>0)s+=10;
+      return s;
+    };
+
+    const candidates=allResults
+      .map(r=>({r,s:dtCalc(r)}))
+      .filter(x=>x.s>=50)
+      .sort((a,b)=>b.s-a.s)
+      .slice(0,10);
+
+    if(!candidates.length){wrap.style.display='none';return;}
+    wrap.style.display='block';
+    cnt.textContent=`（${candidates.length} 支）`;
+
+    body.innerHTML=`<table style="width:100%;border-collapse:collapse;font-size:.78rem">
+      <thead><tr style="border-bottom:1px solid var(--border);color:var(--text2);font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em">
+        <th style="padding:4px 8px;text-align:left">#</th>
+        <th style="padding:4px 8px;text-align:left">代號</th>
+        <th style="padding:4px 8px;text-align:left">名稱</th>
+        <th style="padding:4px 8px;text-align:right">現價</th>
+        <th style="padding:4px 8px;text-align:right">買點</th>
+        <th style="padding:4px 8px;text-align:right">停損</th>
+        <th style="padding:4px 8px;text-align:center">進場訊號</th>
+        <th style="padding:4px 8px;text-align:center">隔日沖分</th>
+      </tr></thead>
+      <tbody>${candidates.map(({r,s},i)=>{
+        const v=r.vcp;
+        const stop=v.vcpPivot?+(v.vcpPivot*0.92).toFixed(1):null;
+        const sigCol=v.pivotStatus==='突破+放量'?'#34d399':'#fbbf24';
+        const scoreCol=s>=70?'#34d399':s>=50?'#fbbf24':'#9ca3af';
+        const tv=`https://www.tradingview.com/chart/?symbol=TWSE%3A${r.code}`;
+        return `<tr style="border-bottom:1px solid rgba(45,55,72,.4);transition:background .1s" onmouseover="this.style.background='rgba(79,126,247,.06)'" onmouseout="this.style.background=''">
+          <td style="padding:8px 8px;color:var(--text2);font-weight:700">${i+1}</td>
+          <td style="padding:8px 8px"><a href="${tv}" target="_blank" style="color:var(--purple);font-weight:700;text-decoration:none">${escH(r.code)}</a></td>
+          <td style="padding:8px 8px;font-weight:600">${escH(r.name)}</td>
+          <td style="padding:8px 8px;text-align:right;font-weight:600">$${v.price}</td>
+          <td style="padding:8px 8px;text-align:right;color:var(--text2)">$${v.vcpPivot||'—'}</td>
+          <td style="padding:8px 8px;text-align:right;color:#f87171">${stop?'$'+stop:'—'}</td>
+          <td style="padding:8px 8px;text-align:center;font-size:.7rem;font-weight:800;color:${sigCol}">${escH(v.pivotStatus||'—')}</td>
+          <td style="padding:8px 8px;text-align:center;font-weight:800;color:${scoreCol}">${s}分</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+    <div style="margin-top:8px;font-size:.64rem;color:var(--text2);line-height:1.6">⚠ 候選名單僅供參考，進場前務必逐項對照上方 Checklist，並確認大盤當日狀況。</div>`;
+  })();
 }
 
 // ─── Filter Controls ──────────────────────────────────────────────────────
