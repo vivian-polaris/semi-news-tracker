@@ -1291,11 +1291,16 @@ async function loadTrump(useCache=false){
         b.innerHTML='';
         const ABBR2={'wsj.com':'WSJ','reuters.com':'Reuters','bloomberg.com':'BBG','ft.com':'FT','cnbc.com':'CNBC','apnews.com':'AP','bbc.com':'BBC','bbc.co.uk':'BBC','cnn.com':'CNN','nbcnews.com':'NBC'};
         function sb2(url){try{const h=new URL(url).hostname.replace(/^www\./,'');for(const[k,v]of Object.entries(ABBR2)){if(h===k||h.endsWith('.'+k))return v;}return h.split('.')[0].toUpperCase();}catch(_){return'';}}
-        b.innerHTML=c.selected.map((s,i)=>{
+        const _di=a=>{const up=a.includes('↑'),dn=a.includes('↓');return up?{l:'↑ 正面',c:'#34d399'}:dn?{l:'↓ 注意',c:'#f87171'}:{l:'→ 中性',c:'#9ca3af'};};
+        const _ca=a=>a.replace(/\s*[↑↓→][^\n]*$/,'').trim()||a;
+        const _hdr=`<div style="display:grid;grid-template-columns:22px 1fr 58px;padding:4px 8px 5px;border-bottom:1px solid var(--border);font-size:.58rem;color:var(--text2);font-weight:700;letter-spacing:.07em;text-transform:uppercase"><div>#</div><div>新聞重點・台股影響</div><div style="text-align:center">方向</div></div>`;
+        b.innerHTML=_hdr+c.selected.map((s,i)=>{
           const item=s.item,analysis=s.analysis,src=item.link?sb2(item.link):'';
-          const srcEl=src?`<span style="font-size:.6rem;font-weight:700;color:var(--purple);margin-right:5px">[${escH(src)}]</span>`:'';
-          const inner=`<div style="display:flex;flex-direction:column;gap:2px"><div style="font-size:.62rem;font-weight:800;color:var(--red)">第 ${i+1} 條</div><div>${srcEl}<span style="font-size:.8rem;line-height:1.55">${escH(item.title)}</span></div><div style="font-size:.76rem;color:var(--mint)">→ ${escH(analysis)}</div>${item.dateStr?`<div style="font-size:.58rem;color:var(--text2)">${escH(item.dateStr)}</div>`:''}</div>`;
-          return item.link?`<a href="${safeUrl(item.link)}" target="_blank" rel="noopener" class="news-item-link" style="display:block;padding:8px 0;border-bottom:1px solid var(--border);text-decoration:none;color:inherit">${inner}</a>`:`<div style="padding:8px 0;border-bottom:1px solid var(--border)">${inner}</div>`;
+          const srcEl=src?` <span style="font-size:.58rem;color:var(--purple)">[${escH(src)}]</span>`:'';
+          const dir=_di(analysis);const mainText=_ca(analysis);
+          const sub=item.title?`<div style="font-size:.62rem;color:var(--text2);margin-top:2px;line-height:1.3">${escH(item.title.length>65?item.title.slice(0,65)+'…':item.title)}</div>`:'';
+          const inner=`<div style="display:grid;grid-template-columns:22px 1fr 58px;align-items:center;padding:8px 8px;border-bottom:1px solid rgba(45,55,72,.4)"><div style="font-size:.68rem;font-weight:800;color:var(--text2)">${i+1}</div><div><div style="font-size:.83rem;font-weight:600;line-height:1.45;color:var(--text)">${escH(mainText)}${srcEl}</div>${sub}</div><div style="text-align:center;font-size:.7rem;font-weight:700;color:${dir.c};white-space:nowrap">${escH(dir.l)}</div></div>`;
+          return item.link?`<a href="${safeUrl(item.link)}" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;transition:background .12s" onmouseover="this.style.background='rgba(79,126,247,.07)'" onmouseout="this.style.background=''">${inner}</a>`:`<div>${inner}</div>`;
         }).join('');
       } else {
         const raw=c.rawText||c.text||'';
@@ -1429,19 +1434,24 @@ ${newsList}`;
         return h.split('.')[0].toUpperCase();
       }catch(_){return'';}
     }
-    const html=selected.map((s,i)=>{
+    const dirInfo=a=>{const up=a.includes('↑'),dn=a.includes('↓');return up?{l:'↑ 正面',c:'#34d399'}:dn?{l:'↓ 注意',c:'#f87171'}:{l:'→ 中性',c:'#9ca3af'};};
+    const cleanA=a=>a.replace(/\s*[↑↓→][^\n]*$/,'').trim()||a;
+    const hdr=`<div style="display:grid;grid-template-columns:22px 1fr 58px;padding:4px 8px 5px;border-bottom:1px solid var(--border);font-size:.58rem;color:var(--text2);font-weight:700;letter-spacing:.07em;text-transform:uppercase"><div>#</div><div>新聞重點・台股影響</div><div style="text-align:center">方向</div></div>`;
+    const html=hdr+selected.map((s,i)=>{
       const {item,analysis}=s;
       const src=item.link?srcBadge(item.link):'';
-      const srcEl=src?`<span style="font-size:.6rem;font-weight:700;color:var(--purple);margin-right:5px">[${escH(src)}]</span>`:'';
-      const inner=`<div style="display:flex;flex-direction:column;gap:2px">
-        <div style="font-size:.62rem;font-weight:800;color:var(--red);letter-spacing:.04em">第 ${i+1} 條</div>
-        <div>${srcEl}<span style="font-size:.8rem;line-height:1.55">${escH(item.title)}</span></div>
-        <div style="font-size:.76rem;color:var(--mint);margin-top:1px">→ ${escH(analysis)}</div>
-        ${item.dateStr?`<div style="font-size:.58rem;color:var(--text2)">${escH(item.dateStr)}</div>`:''}
+      const srcEl=src?` <span style="font-size:.58rem;color:var(--purple)">[${escH(src)}]</span>`:'';
+      const dir=dirInfo(analysis);
+      const mainText=cleanA(analysis);
+      const sub=item.title?`<div style="font-size:.62rem;color:var(--text2);margin-top:2px;line-height:1.3">${escH(item.title.length>65?item.title.slice(0,65)+'…':item.title)}</div>`:'';
+      const inner=`<div style="display:grid;grid-template-columns:22px 1fr 58px;align-items:center;padding:8px 8px;border-bottom:1px solid rgba(45,55,72,.4)">
+        <div style="font-size:.68rem;font-weight:800;color:var(--text2)">${i+1}</div>
+        <div><div style="font-size:.83rem;font-weight:600;line-height:1.45;color:var(--text)">${escH(mainText)}${srcEl}</div>${sub}</div>
+        <div style="text-align:center;font-size:.7rem;font-weight:700;color:${dir.c};white-space:nowrap">${escH(dir.l)}</div>
       </div>`;
       return item.link
-        ?`<a href="${safeUrl(item.link)}" target="_blank" rel="noopener" class="news-item-link" style="display:block;padding:8px 0;border-bottom:1px solid var(--border);text-decoration:none;color:inherit">${inner}</a>`
-        :`<div style="padding:8px 0;border-bottom:1px solid var(--border)">${inner}</div>`;
+        ?`<a href="${safeUrl(item.link)}" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;transition:background .12s" onmouseover="this.style.background='rgba(79,126,247,.07)'" onmouseout="this.style.background=''">${inner}</a>`
+        :`<div>${inner}</div>`;
     }).join('');
     if(window.innerWidth<=640){
       // Mobile：直接建 swiper，字體夠大，每卡有來源連結
