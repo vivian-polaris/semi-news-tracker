@@ -529,7 +529,7 @@ footer a:hover{text-decoration:underline}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px">
       <label style="display:flex;align-items:flex-start;gap:8px;font-size:.76rem;color:var(--text);cursor:pointer">
         <input type="checkbox" style="margin-top:2px;accent-color:var(--mint)">
-        <span><strong style="color:var(--mint)">進場訊號 = 立即買進</strong><br><span style="font-size:.65rem;color:var(--text2)">必須突破+放量，缺一不可</span></span>
+        <span><strong style="color:var(--mint)">進場訊號 = 回踩地量買點</strong><br><span style="font-size:.65rem;color:var(--text2)">突破後拉回+地量，不追突破當下</span></span>
       </label>
       <label style="display:flex;align-items:flex-start;gap:8px;font-size:.76rem;color:var(--text);cursor:pointer">
         <input type="checkbox" style="margin-top:2px;accent-color:var(--mint)">
@@ -2062,6 +2062,22 @@ function calcVCP(data){
     }
   }
 
+  // ── 突破後回踩地量偵測（核心買點邏輯）──────────────────────────────────────
+  // 條件：近10天內曾突破 vcpPivot（high > pivot），現在回踩，今日量 < 均量50%
+  let pbBuy=null;
+  if(vcpPivot&&distVcpPivot!=null&&distVcpPivot<3&&distVcpPivot>=-15){
+    const recentBrk=data.slice(1,11).some(d=>d.high&&d.high>vcpPivot);
+    if(recentBrk){
+      const todayVol=volumes[0];
+      const todayRatio=(todayVol&&v20&&v20>0)?+(todayVol/v20).toFixed(2):null;
+      if(todayRatio!=null&&todayRatio<0.5){
+        const isFloor=todayRatio<0.3;
+        const nearPivot=distVcpPivot>=-7;
+        pbBuy={volRatio:todayRatio,isFloor,dist:distVcpPivot,strong:isFloor&&nearPivot};
+      }
+    }
+  }
+
   return{
     score:Math.min(Math.round(score),100),price,
     ma50:ma50?+ma50.toFixed(2):null,
@@ -2077,7 +2093,7 @@ function calcVCP(data){
     ma20:ma20?+ma20.toFixed(2):null,
     maFlatL,maFlatS,leftMountain,fin,
     pp,ppR1,ppR2,ppS1,ppS2,
-    vcpPivot,distVcpPivot,pivotStatus,pivotStatusCls,pivotNote
+    vcpPivot,distVcpPivot,pivotStatus,pivotStatusCls,pivotNote,pbBuy
   };
 }
 
@@ -2667,13 +2683,13 @@ function getSorted(list){
         const v=r.vcp,f=r.fund;
         if(!v||v.vcpPivot==null||v.distVcpPivot==null)return-1;
         let s=0;
-        if(v.pivotStatus==='突破+放量'){s+=40;}
-        else if(v.pivotStatus==='突破待量'){s+=20;}
-        else if(v.distVcpPivot>=-2&&v.distVcpPivot<0){s+=10;}
-        else return-1;
-        if(v.distVcpPivot>=0&&v.distVcpPivot<=2)s+=20;
+        if(v.pbBuy?.strong){s+=60;}       // 突破後回踩地量：最高分
+        else if(v.pbBuy){s+=40;}           // 突破後回踩縮量
+        else return-1;                     // 其他情況不適合隔日沖
         if(v.score>=80)s+=20;else if(v.score>=70)s+=10;
         if(f?.pe>0&&f?.pb>0){const g=v.price*Math.sqrt(22.5/(f.pe*f.pb));if(g>v.price)s+=10;}
+        const mg=marginMap[r.code];if(mg?.change>0)s+=10;
+        if(v.fin?.isExhaustion)s+=10;
         return s;
       };
       return sortAsc?dtScore(a)-dtScore(b):dtScore(b)-dtScore(a);
@@ -2956,30 +2972,30 @@ function renderTable(){
             <div style="font-size:.6rem;color:${distCol}">${dist}</div>
           </td>`;
         })();
-        // 進場訊號欄
+        // 進場訊號欄（核心邏輯：突破後回踩地量才是買點）
         const signalCell=(()=>{
-          const d=v.distVcpPivot,pivot=v.vcpPivot,price=v.price;
+          const d=v.distVcpPivot,pivot=v.vcpPivot,pb=v.pbBuy;
           if(pivot==null||d==null) return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
-          const hasVol=v.pivotStatus==='突破+放量';
           let label,col,bg,note;
-          if(d>=0&&d<=3&&hasVol){
-            label='立即買進';col='#fff';bg='rgba(5,150,105,.35)';
-            note=`已突破 $${pivot}，有放量確認，現在是最佳進場窗口`;
-          }else if(d>=0&&d<=3){
-            label='謹慎進場';col='#fbbf24';bg='rgba(202,138,4,.18)';
-            note=`已突破 $${pivot}，但量能不足，可少量進場觀察量能是否跟上`;
-          }else if(d<0&&d>=-5){
-            label=`等突破 $${pivot}`;col='#60a5fa';bg='rgba(37,99,235,.15)';
-            note=`整理中，尚未突破 $${pivot}，突破當天放量才買`;
-          }else if(d<-5){
-            label=`等突破 $${pivot}`;col='#9ca3af';bg='rgba(113,113,122,.12)';
-            note=`距突破點 ${Math.abs(d)}%，繼續等整理形態成熟`;
+          // 最高優先：突破後回踩地量
+          if(pb?.strong){
+            label='回踩地量買點';col='#fff';bg='rgba(5,150,105,.45)';
+            note=`突破後拉回 ${Math.abs(pb.dist)}%，量比 ${pb.volRatio}（地量<30%均量），最佳進場時機`;
+          }else if(pb){
+            label='回踩縮量留意';col='#fbbf24';bg='rgba(202,138,4,.2)';
+            note=`突破後拉回 ${Math.abs(pb.dist)}%，量比 ${pb.volRatio}（縮量<50%均量），等量再縮確認`;
           }else if(d>3&&d<=8){
-            label='過熱勿追';col='#f97316';bg='rgba(249,115,22,.15)';
-            note=`突破後已漲 +${d}%，追高風險高，等回踩 $${pivot} 附近再考慮`;
+            label='等回踩';col='#f97316';bg='rgba(249,115,22,.15)';
+            note=`突破後漲 +${d}%，等回踩至買點 $${pivot} 附近，量縮再進場`;
+          }else if(d>8){
+            label='過熱別追';col='#f87171';bg='rgba(220,38,38,.18)';
+            note=`超買點 +${d}%，過熱，等大幅回踩再評估`;
+          }else if(d>=0&&d<=3){
+            label='剛突破觀察';col='#9ca3af';bg='rgba(113,113,122,.15)';
+            note=`剛突破 $${pivot}，等回踩縮量後再買，不追突破當下`;
           }else{
-            label='別碰';col='#f87171';bg='rgba(220,38,38,.18)';
-            note=`已超買點 +${d}%，過熱，等大幅回測再重新評估`;
+            label=`等突破 $${pivot}`;col='#60a5fa';bg='rgba(37,99,235,.12)';
+            note=`尚未突破，等放量突破後再等回踩買點`;
           }
           return `<td style="text-align:center;white-space:nowrap;min-width:90px" title="${escH(note)}">
             <div style="display:inline-block;padding:3px 8px;border-radius:5px;background:${bg};font-size:.72rem;font-weight:800;color:${col}">${escH(label)}</div>
@@ -2990,11 +3006,11 @@ function renderTable(){
           const pivot=v.vcpPivot,price=v.price,d=v.distVcpPivot;
           if(!pivot) return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
           const stop=+(pivot*0.92).toFixed(1);
-          const hasEntered=d!=null&&d>=0; // 只有已突破（進場後）才適用停損判斷
+          // 停損適用：已突破 OR 回踩買點（均有明確進場依據）
+          const hasEntered=d!=null&&(d>=0||v.pbBuy!=null);
           if(!hasEntered){
-            return `<td style="text-align:center;white-space:nowrap" title="尚未突破買點，停損線供進場後參考">
-              <div style="font-size:.68rem;color:var(--text2)">進場後停損</div>
-              <div style="font-size:.78rem;font-weight:600;color:var(--text2)">$${stop}</div>
+            return `<td style="text-align:center;white-space:nowrap" title="等突破後再設停損">
+              <div style="font-size:.68rem;color:var(--text2)">—</div>
             </td>`;
           }
           const breached=price<stop;
@@ -3025,14 +3041,13 @@ function renderTable(){
           if(!v.vcpPivot||v.distVcpPivot==null)
             return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
           let s=0;
-          if(v.pivotStatus==='突破+放量'){s+=40;}
-          else if(v.pivotStatus==='突破待量'){s+=20;}
-          else if(v.distVcpPivot>=-2&&v.distVcpPivot<0){s+=10;}
+          if(v.pbBuy?.strong){s+=60;}
+          else if(v.pbBuy){s+=40;}
           else{return '<td style="text-align:center;padding:8px 4px"><div style="font-size:.68rem;color:var(--text2)">不適合</div></td>';}
-          if(v.distVcpPivot>=0&&v.distVcpPivot<=2)s+=20;
           if(v.score>=80)s+=20;else if(v.score>=70)s+=10;
           if(f?.pe>0&&f?.pb>0){const g=v.price*Math.sqrt(22.5/(f.pe*f.pb));if(g>v.price)s+=10;}
           const mg=marginMap[r.code];if(mg?.change>0)s+=10;
+          if(v.fin?.isExhaustion)s+=10;
           const label=s>=70?'強力推薦':s>=50?'可考慮':s>=30?'謹慎':'—';
           const col=s>=70?'#34d399':s>=50?'#fbbf24':'#9ca3af';
           return `<td style="text-align:center;white-space:nowrap;min-width:72px">
@@ -3075,14 +3090,13 @@ function renderTable(){
       const v=r.vcp,f=r.fund;
       if(!v||v.vcpPivot==null||v.distVcpPivot==null)return-1;
       let s=0;
-      if(v.pivotStatus==='突破+放量'){s+=40;}
-      else if(v.pivotStatus==='突破待量'){s+=20;}
-      else if(v.distVcpPivot>=-2&&v.distVcpPivot<0){s+=10;}
+      if(v.pbBuy?.strong){s+=60;}
+      else if(v.pbBuy){s+=40;}
       else return-1;
-      if(v.distVcpPivot>=0&&v.distVcpPivot<=2)s+=20;
       if(v.score>=80)s+=20;else if(v.score>=70)s+=10;
       if(f?.pe>0&&f?.pb>0){const g=v.price*Math.sqrt(22.5/(f.pe*f.pb));if(g>v.price)s+=10;}
       const mg=marginMap[r.code];if(mg?.change>0)s+=10;
+      if(v.fin?.isExhaustion)s+=10;
       return s;
     };
 
