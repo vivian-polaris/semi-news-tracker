@@ -750,6 +750,7 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('fund',this)">基本面 ⇅</th>
       <th onclick="setSort('chips',this)">籌碼(外資/投信) ⇅</th>
       <th onclick="setSort('pivot',this)" title="VCP突破買點：近30根K線最高點（排除今天）。突破+放量=剛過高點≤3%且量>1.3倍均量；突破待量=突破但量不足">買點 ⇅</th>
+      <th onclick="setSort('graham',this)" title="葛拉漢合理價 = 現價 × √(22.5 ÷ (PE × PB))。來源：台灣證交所 BWIBBU 官方數據。低估=綠・高估=紅">合理價 ⇅</th>
       <th onclick="setSort('margin',this)" title="融資今日餘額變化（千股），盤中即時・收盤固定">融資增減 ⇅</th>
       <th onclick="setSort('csC',this)" title="Current：EPS/營收成長≥25%" style="width:46px;min-width:46px;max-width:46px;text-align:center;cursor:pointer">C ⇅</th>
       <th onclick="setSort('csA',this)" title="Annual ROE≥15%" style="width:46px;min-width:46px;max-width:46px;text-align:center;cursor:pointer">A ⇅</th>
@@ -2550,6 +2551,10 @@ function getSorted(list){
       const pivotScore=r=>{const s=r.vcp?.pivotStatusCls;return s==='g'?4:s==='o'?3:s==='n'?2:s==='r'?1:0;};
       return sortAsc?pivotScore(a)-pivotScore(b):pivotScore(b)-pivotScore(a);
     }
+    if(sortKey==='graham'){
+      const gv=r=>{const f=r.fund,v=r.vcp;if(!f||!v||!f.pe||!f.pb||f.pe<=0||f.pb<=0)return-Infinity;return v.price*Math.sqrt(22.5/(f.pe*f.pb));};
+      return sortAsc?gv(a)-gv(b):gv(b)-gv(a);
+    }
     if(sortKey==='margin'){
       const mg=r=>marginMap[r.code]?.change??-Infinity;
       return sortAsc?mg(a)-mg(b):mg(b)-mg(a);
@@ -2824,7 +2829,22 @@ function renderTable(){
             <div style="font-size:.6rem;color:${distCol}">${dist}</div>
           </td>`;
         })();
-        return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+pivotCell+mgCell+cs.seven;
+        // 葛拉漢合理價欄
+        const grahamCell=(()=>{
+          const f=r.fund,vcp=r.vcp;
+          if(!f||!vcp||!f.pe||!f.pb||f.pe<=0||f.pb<=0||!vcp.price)
+            return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
+          const g=+(vcp.price*Math.sqrt(22.5/(f.pe*f.pb))).toFixed(1);
+          const diff=+((g-vcp.price)/vcp.price*100).toFixed(1);
+          const under=diff>0;
+          const col=under?'#34d399':'#f87171';
+          const label=under?`↑ 低估 +${diff}%`:`↓ 高估 ${diff}%`;
+          return `<td style="text-align:center;white-space:nowrap;min-width:80px" title="葛拉漢合理價 = 現價×√(22.5÷(PE×PB))。PE=${f.pe?.toFixed(1)} PB=${f.pb?.toFixed(2)}">
+            <div style="font-size:.78rem;font-weight:700;color:var(--text)">$${g}</div>
+            <div style="font-size:.62rem;font-weight:700;color:${col}">${label}</div>
+          </td>`;
+        })();
+        return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+pivotCell+grahamCell+mgCell+cs.seven;
       })()}
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
       <td><div class="ma-row">${maHTML||'—'}</div></td>
