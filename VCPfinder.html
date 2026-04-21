@@ -806,7 +806,6 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('chips',this)">籌碼(外資/投信) ⇅</th>
       <th onclick="setSort('pivot',this)" title="VCP突破買點：近30根K線最高點（排除今天）。突破+放量=剛過高點≤3%且量>1.3倍均量；突破待量=突破但量不足">買點 ⇅</th>
       <th onclick="setSort('signal',this)" title="進場訊號：根據現價與突破位置判斷。立即買進=剛突破+放量；等突破=尚未突破；過熱勿追=突破過久；別碰=追高風險">進場訊號 ⇅</th>
-      <th onclick="setSort('stoploss',this)" title="建議停損線 = 突破買點 × 92%（下跌8%停損，VCP標準）。若現價已低於停損線則標紅警示">停損線 ⇅</th>
       <th onclick="setSort('graham',this)" title="葛拉漢合理價 = 現價 × √(22.5 ÷ (PE × PB))。來源：台灣證交所 BWIBBU 官方數據。低估=綠・高估=紅">合理價 ⇅</th>
       <th onclick="setSort('fin',this)" title="Rising Fin: 4-6 strong up days near limit, then low-volume pullback. Buy during exhaustion dip, not at breakout.">上升鰭型 ⇅</th>
       <th onclick="setSort('daytrade',this)" title="隔日沖適合度：突破+放量40分、距買點≤2%加20分、VCP分數加20分、葛拉漢低估加10分、融資正向加10分。70+強力推薦">隔日沖 ⇅</th>
@@ -824,7 +823,7 @@ footer a:hover{text-decoration:underline}
     </tr>
   </thead>
   <tbody id="tblBody">
-    <tr class="load-row"><td colspan="23">開啟自動掃描中...</td></tr>
+    <tr class="load-row"><td colspan="22">開啟自動掃描中...</td></tr>
   </tbody>
 </table>
 </div>
@@ -1935,10 +1934,10 @@ function detectRisingFin(data){
       const d=data[j],prev=data[j+1];
       if(!d||!prev||!d.close||!prev.close)break;
       const gain=(d.close-prev.close)/prev.close*100;
-      if(gain>=4){count++;totalGain+=gain;if(gain>=8)hasLimit=true;if(d.volume)runVols.push(d.volume);}
+      if(gain>=3){count++;totalGain+=gain;if(gain>=8)hasLimit=true;if(d.volume)runVols.push(d.volume);}
       else break;
     }
-    if(count>=4){best={endDay,count,totalGain:+totalGain.toFixed(1),hasLimit,runVols};break;}
+    if(count>=3){best={endDay,count,totalGain:+totalGain.toFixed(1),hasLimit,runVols};break;}
   }
   if(!best)return null;
   // Check pullback from streak high
@@ -1946,7 +1945,7 @@ function detectRisingFin(data){
   const price=data[0]?.close;
   if(!streakHigh||!price)return null;
   const pullback=(streakHigh-price)/streakHigh*100;
-  if(pullback<2||pullback>20)return null;
+  if(pullback<1||pullback>25)return null;
   // Check exhaustion volume (current vol < 40% of run avg vol)
   const avgRunVol=best.runVols.length?best.runVols.reduce((a,b)=>a+b,0)/best.runVols.length:null;
   const recentVol=data[0]?.volume||data[1]?.volume;
@@ -2454,7 +2453,7 @@ async function startScan(){
   document.getElementById('sumGrid').style.display='';
   document.getElementById('filterBox').style.display='';
   document.getElementById('statsBar').style.display='';
-  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="23"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
+  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="22"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
 
   // Get stock list based on selected source
   let stocks;
@@ -2669,12 +2668,7 @@ function getSorted(list){
     if(sortKey==='signal'){
       const sv=r=>{const d=r.vcp?.distVcpPivot;if(d==null)return 0;if(d>=0&&d<=3)return 4;if(d<0&&d>=-5)return 3;if(d>3&&d<=8)return 2;if(d>8)return 1;return 0;};
       return sortAsc?sv(a)-sv(b):sv(b)-sv(a);
-    }
-    if(sortKey==='stoploss'){
-      const sv=r=>{const v=r.vcp;if(!v?.vcpPivot)return Infinity;return v.price-(v.vcpPivot*0.92);};
-      return sortAsc?sv(a)-sv(b):sv(b)-sv(a);
-    }
-    if(sortKey==='fin'){
+    }if(sortKey==='fin'){
       const fv=r=>r.vcp?.fin?.finScore??-1;
       return sortAsc?fv(a)-fv(b):fv(b)-fv(a);
     }
@@ -2887,8 +2881,8 @@ function renderTable(){
   document.getElementById('showN').textContent=sorted.length;
   document.getElementById('totalN').textContent=counted;
   const tbody=document.getElementById('tblBody');
-  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="23">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
-  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="23">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
+  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="22">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
+  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="22">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
   tbody.innerHTML=sorted.map(r=>{
     const v=r.vcp;
     const tv=`https://www.tradingview.com/chart/?symbol=TWSE%3A${r.code}`;
@@ -3001,60 +2995,6 @@ function renderTable(){
             <div style="display:inline-block;padding:3px 8px;border-radius:5px;background:${bg};font-size:.72rem;font-weight:800;color:${col}">${escH(label)}</div>
           </td>`;
         })();
-        // 停損線欄（停損線只在突破後才有意義）
-        const stopCell=(()=>{
-          const pivot=v.vcpPivot,price=v.price,d=v.distVcpPivot;
-          if(!pivot) return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
-          const stop=+(pivot*0.92).toFixed(1);
-          // 停損適用：已突破 OR 回踩買點（均有明確進場依據）
-          const hasEntered=d!=null&&(d>=0||v.pbBuy!=null);
-          if(!hasEntered){
-            return `<td style="text-align:center;white-space:nowrap" title="等突破後再設停損">
-              <div style="font-size:.68rem;color:var(--text2)">—</div>
-            </td>`;
-          }
-          const breached=price<stop;
-          const col=breached?'#f87171':'#9ca3af';
-          return `<td style="text-align:center;white-space:nowrap" title="VCP標準停損：突破買點 $${pivot} × 92% = $${stop}。${breached?'現價已低於停損線，建議出場':'現價在停損線之上'}">
-            <div style="font-size:.68rem;color:var(--text2)">${breached?'已跌破停損':'停損線'}</div>
-            <div style="font-size:.78rem;font-weight:700;color:${col}">$${stop}</div>
-            ${breached?`<div style="font-size:.6rem;color:#f87171;font-weight:700">⚠ 出場</div>`:`<div style="font-size:.6rem;color:var(--text2)">距 ${((price-stop)/price*100).toFixed(1)}%</div>`}
-          </td>`;
-        })();
-
-        // Rising Fin cell
-        const finCell=(()=>{
-          const fin=v.fin;
-          if(!fin)return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
-          const col=fin.finScore>=80?'#34d399':fin.finScore>=60?'#fbbf24':'#9ca3af';
-          const volLbl=fin.isExhaustion?'窒息量':fin.isShrink?'縮量':'量未縮';
-          const volCol=fin.isExhaustion?'#34d399':fin.isShrink?'#fbbf24':'#9ca3af';
-          return `<td style="text-align:center;white-space:nowrap;min-width:80px"
-            title="飆漲${fin.streakDays}天(+${fin.totalGain}%)→回跌${fin.pullback}%，量比${fin.volRatio??'—'}">
-            <div style="font-size:.72rem;font-weight:800;color:${col}">${fin.finScore>=80?'強烈買點':fin.finScore>=60?'留意買點':'形成中'}</div>
-            <div style="font-size:.6rem;color:${volCol}">${volLbl} · 跌${fin.pullback}%</div>
-          </td>`;
-        })();
-        // 隔日沖適合度欄
-        const daytradeCell=(()=>{
-          const f=r.fund;
-          if(!v.vcpPivot||v.distVcpPivot==null)
-            return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
-          let s=0;
-          if(v.pbBuy?.strong){s+=60;}
-          else if(v.pbBuy){s+=40;}
-          else{return '<td style="text-align:center;padding:8px 4px"><div style="font-size:.68rem;color:var(--text2)">不適合</div></td>';}
-          if(v.score>=80)s+=20;else if(v.score>=70)s+=10;
-          if(f?.pe>0&&f?.pb>0){const g=v.price*Math.sqrt(22.5/(f.pe*f.pb));if(g>v.price)s+=10;}
-          const mg=marginMap[r.code];if(mg?.change>0)s+=10;
-          if(v.fin?.isExhaustion)s+=10;
-          const label=s>=70?'強力推薦':s>=50?'可考慮':s>=30?'謹慎':'—';
-          const col=s>=70?'#34d399':s>=50?'#fbbf24':'#9ca3af';
-          return `<td style="text-align:center;white-space:nowrap;min-width:72px">
-            <div style="font-size:.72rem;font-weight:800;color:${col}">${label}</div>
-            <div style="font-size:.6rem;color:var(--text2)">${s}分</div>
-          </td>`;
-        })();
         // 葛拉漢合理價欄
         const grahamCell=(()=>{
           const f=r.fund,vcp=r.vcp;
@@ -3070,7 +3010,7 @@ function renderTable(){
             <div style="font-size:.62rem;font-weight:700;color:${col}">${label}</div>
           </td>`;
         })();
-        return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+pivotCell+signalCell+stopCell+grahamCell+finCell+daytradeCell+mgCell+cs.seven;
+        return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+pivotCell+signalCell+grahamCell+finCell+daytradeCell+mgCell+cs.seven;
       })()}
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
       <td><div class="ma-row">${maHTML||'—'}</div></td>
@@ -3476,7 +3416,7 @@ async function lookupStock() {
 
   // 無快取時才自動啟動掃描
   if(!cacheLoaded){
-    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="23"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
+    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="22"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
     setTimeout(()=>startScan(),1200);
   }
 
