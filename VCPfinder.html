@@ -808,6 +808,7 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('signal',this)" title="進場訊號：根據現價與突破位置判斷。立即買進=剛突破+放量；等突破=尚未突破；過熱勿追=突破過久；別碰=追高風險">進場訊號 ⇅</th>
       <th onclick="setSort('stoploss',this)" title="建議停損線 = 突破買點 × 92%（下跌8%停損，VCP標準）。若現價已低於停損線則標紅警示">停損線 ⇅</th>
       <th onclick="setSort('graham',this)" title="葛拉漢合理價 = 現價 × √(22.5 ÷ (PE × PB))。來源：台灣證交所 BWIBBU 官方數據。低估=綠・高估=紅">合理價 ⇅</th>
+      <th onclick="setSort('fin',this)" title="Rising Fin: 4-6 strong up days near limit, then low-volume pullback. Buy during exhaustion dip, not at breakout.">上升鰭型 ⇅</th>
       <th onclick="setSort('daytrade',this)" title="隔日沖適合度：突破+放量40分、距買點≤2%加20分、VCP分數加20分、葛拉漢低估加10分、融資正向加10分。70+強力推薦">隔日沖 ⇅</th>
       <th onclick="setSort('margin',this)" title="融資今日餘額變化（千股），盤中即時・收盤固定">融資增減 ⇅</th>
       <th onclick="setSort('csC',this)" title="Current：EPS/營收成長≥25%" style="width:46px;min-width:46px;max-width:46px;text-align:center;cursor:pointer">C ⇅</th>
@@ -823,7 +824,7 @@ footer a:hover{text-decoration:underline}
     </tr>
   </thead>
   <tbody id="tblBody">
-    <tr class="load-row"><td colspan="22">開啟自動掃描中...</td></tr>
+    <tr class="load-row"><td colspan="23">開啟自動掃描中...</td></tr>
   </tbody>
 </table>
 </div>
@@ -1922,8 +1923,48 @@ function calcATR(data,n){
   }
   return c>0?s/c:null;
 }
+
+// Rising Fin pattern: 4-6 strong up days (approaching limit) then low-volume pullback
+function detectRisingFin(data){
+  if(!data||data.length<12)return null;
+  // Find streak of 4-6 strong up days ending 1-8 days ago
+  let best=null;
+  for(let endDay=1;endDay<=8;endDay++){
+    let count=0,totalGain=0,hasLimit=false,runVols=[];
+    for(let j=endDay;j<endDay+8&&j<data.length-1;j++){
+      const d=data[j],prev=data[j+1];
+      if(!d||!prev||!d.close||!prev.close)break;
+      const gain=(d.close-prev.close)/prev.close*100;
+      if(gain>=4){count++;totalGain+=gain;if(gain>=8)hasLimit=true;if(d.volume)runVols.push(d.volume);}
+      else break;
+    }
+    if(count>=4){best={endDay,count,totalGain:+totalGain.toFixed(1),hasLimit,runVols};break;}
+  }
+  if(!best)return null;
+  // Check pullback from streak high
+  const streakHigh=data[best.endDay]?.close;
+  const price=data[0]?.close;
+  if(!streakHigh||!price)return null;
+  const pullback=(streakHigh-price)/streakHigh*100;
+  if(pullback<2||pullback>20)return null;
+  // Check exhaustion volume (current vol < 40% of run avg vol)
+  const avgRunVol=best.runVols.length?best.runVols.reduce((a,b)=>a+b,0)/best.runVols.length:null;
+  const recentVol=data[0]?.volume||data[1]?.volume;
+  const volRatio=(avgRunVol&&recentVol)?+(recentVol/avgRunVol).toFixed(2):null;
+  const isExhaustion=volRatio!=null&&volRatio<0.4;
+  const isShrink=volRatio!=null&&volRatio<0.6;
+  // Score
+  let score=0;
+  score+=best.count>=5?40:30;
+  score+=best.hasLimit?20:10;
+  score+=isExhaustion?30:isShrink?15:0;
+  score+=pullback>=3&&pullback<=10?10:0;
+  return{streakDays:best.count,hasLimit:best.hasLimit,totalGain:best.totalGain,
+    pullback:+pullback.toFixed(1),volRatio,isExhaustion,isShrink,finScore:score};
+}
 function calcVCP(data){
   if(!data||data.length<55)return null;
+  const fin=detectRisingFin(data);
   const closes=data.map(d=>d.close),highs=data.map(d=>d.high);
   const volumes=data.map(d=>d.volume);
   const price=closes[0];
@@ -2034,7 +2075,7 @@ function calcVCP(data){
     ma5:ma5?+ma5.toFixed(2):null,
     ma10:ma10?+ma10.toFixed(2):null,
     ma20:ma20?+ma20.toFixed(2):null,
-    maFlatL,maFlatS,leftMountain,
+    maFlatL,maFlatS,leftMountain,fin,
     pp,ppR1,ppR2,ppS1,ppS2,
     vcpPivot,distVcpPivot,pivotStatus,pivotStatusCls,pivotNote
   };
@@ -2397,7 +2438,7 @@ async function startScan(){
   document.getElementById('sumGrid').style.display='';
   document.getElementById('filterBox').style.display='';
   document.getElementById('statsBar').style.display='';
-  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="22"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
+  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="23"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
 
   // Get stock list based on selected source
   let stocks;
@@ -2617,6 +2658,10 @@ function getSorted(list){
       const sv=r=>{const v=r.vcp;if(!v?.vcpPivot)return Infinity;return v.price-(v.vcpPivot*0.92);};
       return sortAsc?sv(a)-sv(b):sv(b)-sv(a);
     }
+    if(sortKey==='fin'){
+      const fv=r=>r.vcp?.fin?.finScore??-1;
+      return sortAsc?fv(a)-fv(b):fv(b)-fv(a);
+    }
     if(sortKey==='daytrade'){
       const dtScore=r=>{
         const v=r.vcp,f=r.fund;
@@ -2826,8 +2871,8 @@ function renderTable(){
   document.getElementById('showN').textContent=sorted.length;
   document.getElementById('totalN').textContent=counted;
   const tbody=document.getElementById('tblBody');
-  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="22">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
-  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="22">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
+  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="23">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
+  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="23">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
   tbody.innerHTML=sorted.map(r=>{
     const v=r.vcp;
     const tv=`https://www.tradingview.com/chart/?symbol=TWSE%3A${r.code}`;
@@ -2960,6 +3005,20 @@ function renderTable(){
             ${breached?`<div style="font-size:.6rem;color:#f87171;font-weight:700">⚠ 出場</div>`:`<div style="font-size:.6rem;color:var(--text2)">距 ${((price-stop)/price*100).toFixed(1)}%</div>`}
           </td>`;
         })();
+
+        // Rising Fin cell
+        const finCell=(()=>{
+          const fin=v.fin;
+          if(!fin)return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
+          const col=fin.finScore>=80?'#34d399':fin.finScore>=60?'#fbbf24':'#9ca3af';
+          const volLbl=fin.isExhaustion?'窒息量':fin.isShrink?'縮量':'量未縮';
+          const volCol=fin.isExhaustion?'#34d399':fin.isShrink?'#fbbf24':'#9ca3af';
+          return `<td style="text-align:center;white-space:nowrap;min-width:80px"
+            title="飆漲${fin.streakDays}天(+${fin.totalGain}%)→回跌${fin.pullback}%，量比${fin.volRatio??'—'}">
+            <div style="font-size:.72rem;font-weight:800;color:${col}">${fin.finScore>=80?'強烈買點':fin.finScore>=60?'留意買點':'形成中'}</div>
+            <div style="font-size:.6rem;color:${volCol}">${volLbl} · 跌${fin.pullback}%</div>
+          </td>`;
+        })();
         // 隔日沖適合度欄
         const daytradeCell=(()=>{
           const f=r.fund;
@@ -2996,7 +3055,7 @@ function renderTable(){
             <div style="font-size:.62rem;font-weight:700;color:${col}">${label}</div>
           </td>`;
         })();
-        return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+pivotCell+signalCell+stopCell+grahamCell+daytradeCell+mgCell+cs.seven;
+        return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+pivotCell+signalCell+stopCell+grahamCell+finCell+daytradeCell+mgCell+cs.seven;
       })()}
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
       <td><div class="ma-row">${maHTML||'—'}</div></td>
@@ -3403,7 +3462,7 @@ async function lookupStock() {
 
   // 無快取時才自動啟動掃描
   if(!cacheLoaded){
-    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="22"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
+    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="23"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
     setTimeout(()=>startScan(),1200);
   }
 
