@@ -750,6 +750,8 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('fund',this)">基本面 ⇅</th>
       <th onclick="setSort('chips',this)">籌碼(外資/投信) ⇅</th>
       <th onclick="setSort('pivot',this)" title="VCP突破買點：近30根K線最高點（排除今天）。突破+放量=剛過高點≤3%且量>1.3倍均量；突破待量=突破但量不足">買點 ⇅</th>
+      <th onclick="setSort('signal',this)" title="進場訊號：根據現價與突破位置判斷。立即買進=剛突破+放量；等突破=尚未突破；過熱勿追=突破過久；別碰=追高風險">進場訊號 ⇅</th>
+      <th onclick="setSort('stoploss',this)" title="建議停損線 = 突破買點 × 92%（下跌8%停損，VCP標準）。若現價已低於停損線則標紅警示">停損線 ⇅</th>
       <th onclick="setSort('graham',this)" title="葛拉漢合理價 = 現價 × √(22.5 ÷ (PE × PB))。來源：台灣證交所 BWIBBU 官方數據。低估=綠・高估=紅">合理價 ⇅</th>
       <th onclick="setSort('margin',this)" title="融資今日餘額變化（千股），盤中即時・收盤固定">融資增減 ⇅</th>
       <th onclick="setSort('csC',this)" title="Current：EPS/營收成長≥25%" style="width:46px;min-width:46px;max-width:46px;text-align:center;cursor:pointer">C ⇅</th>
@@ -2551,6 +2553,14 @@ function getSorted(list){
       const pivotScore=r=>{const s=r.vcp?.pivotStatusCls;return s==='g'?4:s==='o'?3:s==='n'?2:s==='r'?1:0;};
       return sortAsc?pivotScore(a)-pivotScore(b):pivotScore(b)-pivotScore(a);
     }
+    if(sortKey==='signal'){
+      const sv=r=>{const d=r.vcp?.distVcpPivot;if(d==null)return 0;if(d>=0&&d<=3)return 4;if(d<0&&d>=-5)return 3;if(d>3&&d<=8)return 2;if(d>8)return 1;return 0;};
+      return sortAsc?sv(a)-sv(b):sv(b)-sv(a);
+    }
+    if(sortKey==='stoploss'){
+      const sv=r=>{const v=r.vcp;if(!v?.vcpPivot)return Infinity;return v.price-(v.vcpPivot*0.92);};
+      return sortAsc?sv(a)-sv(b):sv(b)-sv(a);
+    }
     if(sortKey==='graham'){
       const gv=r=>{const f=r.fund,v=r.vcp;if(!f||!v||!f.pe||!f.pb||f.pe<=0||f.pb<=0)return-Infinity;return v.price*Math.sqrt(22.5/(f.pe*f.pb));};
       return sortAsc?gv(a)-gv(b):gv(b)-gv(a);
@@ -2829,6 +2839,49 @@ function renderTable(){
             <div style="font-size:.6rem;color:${distCol}">${dist}</div>
           </td>`;
         })();
+        // 進場訊號欄
+        const signalCell=(()=>{
+          const d=v.distVcpPivot,pivot=v.vcpPivot,price=v.price;
+          if(pivot==null||d==null) return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
+          const hasVol=v.pivotStatus==='突破+放量';
+          let label,col,bg,note;
+          if(d>=0&&d<=3&&hasVol){
+            label='立即買進';col='#fff';bg='rgba(5,150,105,.35)';
+            note=`已突破 $${pivot}，有放量確認，現在是最佳進場窗口`;
+          }else if(d>=0&&d<=3){
+            label='謹慎進場';col='#fbbf24';bg='rgba(202,138,4,.18)';
+            note=`已突破 $${pivot}，但量能不足，可少量進場觀察量能是否跟上`;
+          }else if(d<0&&d>=-5){
+            label=`等突破 $${pivot}`;col='#60a5fa';bg='rgba(37,99,235,.15)';
+            note=`整理中，尚未突破 $${pivot}，突破當天放量才買`;
+          }else if(d<-5){
+            label=`等突破 $${pivot}`;col='#9ca3af';bg='rgba(113,113,122,.12)';
+            note=`距突破點 ${Math.abs(d)}%，繼續等整理形態成熟`;
+          }else if(d>3&&d<=8){
+            label='過熱勿追';col='#f97316';bg='rgba(249,115,22,.15)';
+            note=`突破後已漲 +${d}%，追高風險高，等回踩 $${pivot} 附近再考慮`;
+          }else{
+            label='別碰';col='#f87171';bg='rgba(220,38,38,.18)';
+            note=`已超買點 +${d}%，過熱，等大幅回測再重新評估`;
+          }
+          return `<td style="text-align:center;white-space:nowrap;min-width:90px" title="${escH(note)}">
+            <div style="display:inline-block;padding:3px 8px;border-radius:5px;background:${bg};font-size:.72rem;font-weight:800;color:${col}">${escH(label)}</div>
+          </td>`;
+        })();
+        // 停損線欄
+        const stopCell=(()=>{
+          const pivot=v.vcpPivot,price=v.price;
+          if(!pivot) return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
+          const stop=+(pivot*0.92).toFixed(1);
+          const breached=price<stop;
+          const col=breached?'#f87171':'#9ca3af';
+          const label=breached?'已跌破停損':'停損';
+          return `<td style="text-align:center;white-space:nowrap" title="VCP標準停損：突破買點 $${pivot} × 92% = $${stop}。${breached?'現價已低於停損線，建議出場':'現價在停損線之上'}">
+            <div style="font-size:.68rem;color:var(--text2)">${label}</div>
+            <div style="font-size:.78rem;font-weight:700;color:${col}">$${stop}</div>
+            ${breached?`<div style="font-size:.6rem;color:#f87171;font-weight:700">⚠ 出場</div>`:`<div style="font-size:.6rem;color:var(--text2)">${price>stop?`距 ${((price-stop)/price*100).toFixed(1)}%`:'—'}</div>`}
+          </td>`;
+        })();
         // 葛拉漢合理價欄
         const grahamCell=(()=>{
           const f=r.fund,vcp=r.vcp;
@@ -2844,7 +2897,7 @@ function renderTable(){
             <div style="font-size:.62rem;font-weight:700;color:${col}">${label}</div>
           </td>`;
         })();
-        return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+pivotCell+grahamCell+mgCell+cs.seven;
+        return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+pivotCell+signalCell+stopCell+grahamCell+mgCell+cs.seven;
       })()}
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
       <td><div class="ma-row">${maHTML||'—'}</div></td>
