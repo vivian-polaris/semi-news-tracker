@@ -1859,6 +1859,9 @@ function calcVCP(data){
   const volumes=data.map(d=>d.volume);
   const price=closes[0];
   if(!price||price<=0)return null;
+  const ma5=sma(closes,5);
+  const ma10=sma(closes,10);
+  const ma20=sma(closes,20);
   const ma50=sma(closes,50);
   const ma150=data.length>=150?sma(closes,150):null;
   const ma200=data.length>=200?sma(closes,200):null;
@@ -1891,6 +1894,25 @@ function calcVCP(data){
   const rsi=calcRSI(closes,14);
   const contractions=countContractions(closes);
   if(contractions>=3)score+=8;else if(contractions>=2)score+=4;
+
+  // ── 5/10/20 MA 糾纏走平（VCP 整理必要條件）
+  let maFlatL='—',maFlatS='n';
+  if(ma5&&ma10&&ma20&&ma20>0){
+    const maSpread=(Math.max(ma5,ma10,ma20)-Math.min(ma5,ma10,ma20))/ma20*100;
+    if(maSpread<3){score+=20;maFlatL='強糾纏';maFlatS='g';}
+    else if(maSpread<6){score+=10;maFlatL='糾纏中';maFlatS='o';}
+    else{score-=10;maFlatL='未糾纏';maFlatS='r';}
+  }
+
+  // ── 左邊大山檢查（整理前有爆量長紅 → 非純 VCP 扣分）
+  let leftMountain=false;
+  const leftData=data.slice(15,Math.min(60,data.length));
+  for(const d of leftData){
+    if(!d.open||!d.close||!d.high||!d.low)continue;
+    const bodyPct=Math.abs(d.close-d.open)/((d.high+d.low)/2)*100;
+    if(bodyPct>6&&d.close>d.open){leftMountain=true;break;}
+  }
+  if(leftMountain)score-=15;
 
   // ── Pivot Point 計算 ──────────────────────────────────────────────
   const prevD=data[1];
@@ -1936,6 +1958,10 @@ function calcVCP(data){
     atrL,atrS,atrRat:atrRat?+atrRat.toFixed(3):null,
     volL,volS,vRat:vRat?+vRat.toFixed(2):null,
     rsi,contractions,
+    ma5:ma5?+ma5.toFixed(2):null,
+    ma10:ma10?+ma10.toFixed(2):null,
+    ma20:ma20?+ma20.toFixed(2):null,
+    maFlatL,maFlatS,leftMountain,
     pp,ppR1,ppR2,ppS1,ppS2,
     vcpPivot,distVcpPivot,pivotStatus,pivotStatusCls,pivotNote
   };
