@@ -767,7 +767,7 @@ footer a:hover{text-decoration:underline}
     </tr>
   </thead>
   <tbody id="tblBody">
-    <tr class="load-row"><td colspan="19">開啟自動掃描中...</td></tr>
+    <tr class="load-row"><td colspan="21">開啟自動掃描中...</td></tr>
   </tbody>
 </table>
 </div>
@@ -2341,7 +2341,7 @@ async function startScan(){
   document.getElementById('sumGrid').style.display='';
   document.getElementById('filterBox').style.display='';
   document.getElementById('statsBar').style.display='';
-  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="19"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
+  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="21"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
 
   // Get stock list based on selected source
   let stocks;
@@ -2754,8 +2754,8 @@ function renderTable(){
   document.getElementById('showN').textContent=sorted.length;
   document.getElementById('totalN').textContent=counted;
   const tbody=document.getElementById('tblBody');
-  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="19">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
-  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="19">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
+  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="21">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
+  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="21">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
   tbody.innerHTML=sorted.map(r=>{
     const v=r.vcp;
     const tv=`https://www.tradingview.com/chart/?symbol=TWSE%3A${r.code}`;
@@ -2868,18 +2868,24 @@ function renderTable(){
             <div style="display:inline-block;padding:3px 8px;border-radius:5px;background:${bg};font-size:.72rem;font-weight:800;color:${col}">${escH(label)}</div>
           </td>`;
         })();
-        // 停損線欄
+        // 停損線欄（停損線只在突破後才有意義）
         const stopCell=(()=>{
-          const pivot=v.vcpPivot,price=v.price;
+          const pivot=v.vcpPivot,price=v.price,d=v.distVcpPivot;
           if(!pivot) return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
           const stop=+(pivot*0.92).toFixed(1);
+          const hasEntered=d!=null&&d>=0; // 只有已突破（進場後）才適用停損判斷
+          if(!hasEntered){
+            return `<td style="text-align:center;white-space:nowrap" title="尚未突破買點，停損線供進場後參考">
+              <div style="font-size:.68rem;color:var(--text2)">進場後停損</div>
+              <div style="font-size:.78rem;font-weight:600;color:var(--text2)">$${stop}</div>
+            </td>`;
+          }
           const breached=price<stop;
           const col=breached?'#f87171':'#9ca3af';
-          const label=breached?'已跌破停損':'停損';
           return `<td style="text-align:center;white-space:nowrap" title="VCP標準停損：突破買點 $${pivot} × 92% = $${stop}。${breached?'現價已低於停損線，建議出場':'現價在停損線之上'}">
-            <div style="font-size:.68rem;color:var(--text2)">${label}</div>
+            <div style="font-size:.68rem;color:var(--text2)">${breached?'已跌破停損':'停損線'}</div>
             <div style="font-size:.78rem;font-weight:700;color:${col}">$${stop}</div>
-            ${breached?`<div style="font-size:.6rem;color:#f87171;font-weight:700">⚠ 出場</div>`:`<div style="font-size:.6rem;color:var(--text2)">${price>stop?`距 ${((price-stop)/price*100).toFixed(1)}%`:'—'}</div>`}
+            ${breached?`<div style="font-size:.6rem;color:#f87171;font-weight:700">⚠ 出場</div>`:`<div style="font-size:.6rem;color:var(--text2)">距 ${((price-stop)/price*100).toFixed(1)}%</div>`}
           </td>`;
         })();
         // 葛拉漢合理價欄
@@ -3239,7 +3245,7 @@ async function lookupStock() {
 
   // 無快取時才自動啟動掃描
   if(!cacheLoaded){
-    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="19"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
+    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="21"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
     setTimeout(()=>startScan(),1200);
   }
 
