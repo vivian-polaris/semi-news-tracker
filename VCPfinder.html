@@ -680,7 +680,7 @@ footer a:hover{text-decoration:underline}
   </div>
   <div class="filter-row">
     <span class="flabel">籌碼</span>
-    <span class="pill g-on" id="hideDoubleShortPill" onclick="toggleHideDoubleShort(this)">排除雙賣</span>
+    <span class="pill" id="hideDoubleShortPill" onclick="toggleHideDoubleShort(this)">排除雙賣</span>
   </div>
   <div class="filter-row">
     <span class="flabel">基本面</span>
@@ -930,7 +930,7 @@ let allResults=[], scoreMin=40, pctMax=999, secFilter=new Set(['ALL']), exFilter
 let canslimMin=0;
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
-let hideDoubleShort=true;  // 預設排除雙賣
+let hideDoubleShort=false;  // 預設不排除雙賣
 let fundMin=0;
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
@@ -1784,7 +1784,7 @@ async function fetchJsonCORS(targetUrl, label){
     const tag=i===0?'直連':`Proxy${i}`;
     if(infoEl) infoEl.textContent=`取得 ${label} 中（${tag}）...`;
     try{
-      const r=await fetchTO(u,7000); // 7秒 timeout，4個proxy最多 28秒
+      const r=await fetchTO(u,3000); // 3秒 timeout，4個proxy最多 12秒
       if(!r.ok) continue;
       const text=await r.text();
       if(!text||text.trim().startsWith('<')) continue;
