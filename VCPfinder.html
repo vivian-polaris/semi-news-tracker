@@ -680,17 +680,17 @@ footer a:hover{text-decoration:underline}
   </div>
   <div class="filter-row">
     <span class="flabel">基本面</span>
-    <span class="pill" id="fundMinAll" onclick="setFundMin(0,this)">全部</span>
+    <span class="pill g-on" id="fundMinAll" onclick="setFundMin(0,this)">全部</span>
     <span class="pill" id="fundMinHas" onclick="setFundMin(-1,this)">有資料</span>
-    <span class="pill g-on" id="fundMin70" onclick="setFundMin(70,this)">僅優（≥70）</span>
+    <span class="pill" id="fundMin70" onclick="setFundMin(70,this)">僅優（≥70）</span>
     <span class="pill" id="fundMin80" onclick="setFundMin(80,this)">≥ 80</span>
     <span class="pill" id="fundMin90" onclick="setFundMin(90,this)">≥ 90</span>
   </div>
   <div class="filter-row">
     <span class="flabel">CAN SLIM</span>
-    <span class="pill" id="csMin0" onclick="setCANSLIM(0,this)">全部</span>
+    <span class="pill g-on" id="csMin0" onclick="setCANSLIM(0,this)">全部</span>
     <span class="pill" id="csMin3" onclick="setCANSLIM(3,this)">≥ 3項</span>
-    <span class="pill g-on" id="csMin4" onclick="setCANSLIM(4,this)">≥ 4項 🌸</span>
+    <span class="pill" id="csMin4" onclick="setCANSLIM(4,this)">≥ 4項 🌸</span>
     <span class="pill" id="csMin5" onclick="setCANSLIM(5,this)">≥ 5項 ⭐</span>
     <span class="pill" id="csMin6" onclick="setCANSLIM(6,this)">≥ 6項</span>
   </div>
@@ -923,11 +923,11 @@ const STOCKS = [
 // ─── State ────────────────────────────────────────────────────────────────
 const DEFAULT_SECTORS=new Set(['IC設計','PCB','伺服器','光學','光電','其他電子','化學','化工','半導體','散熱','數位雲端','機械','精密機械','被動元件','記憶體','資訊服務','通信網路','連接器','電子','電子代工','電子通路','電子零組件','電機','電源','面板','工業自動化','工業電腦']);
 let allResults=[], scoreMin=70, pctMax=999, secFilter=new Set(['ALL']), exFilter='ALL';
-let canslimMin=4;
+let canslimMin=0;
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
 let hideDoubleShort=true;  // 預設排除雙賣
-let fundMin=70;
+let fundMin=0;
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
 let marginMap={}; // code -> {today, prev, change} 融資餘額（千股）
@@ -3449,6 +3449,40 @@ async function lookupStock() {
 const _style=document.createElement('style');
 _style.textContent='@keyframes fadeOut{0%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateY(10px)}}';
 document.head.appendChild(_style);
+</script>
+<script>
+(() => {
+  const patchLookupStock = () => {
+    const orig = window.lookupStock;
+    if (typeof orig !== 'function') return;
+    const src = String(orig);
+    if (!src.includes('twseDailyMap.otcStocks') || src.includes('twseDailyMap.tseStocks')) return;
+    const otcBlock =
+      /if\s*\(\s*!inStocks\s*&&\s*twseDailyMap\.otcStocks\s*\)\s*\{[\s\S]*?if\s*\(\s*found\s*\)\s*inStocks\s*=\s*\{[\s\S]*?ex\s*:\s*['"]TWO['"][\s\S]*?\}\s*;?\s*\}/;
+    const tseBlock = [
+      "    // Search TSE stocks list from twse_daily.json",
+      "    if(!inStocks && twseDailyMap.tseStocks){",
+      "      const found=twseDailyMap.tseStocks.find(s=>s.code===raw||(raw.length>=2&&s.name&&s.name.includes(raw)));",
+      "      if(found) inStocks={code:found.code,name:found.name,sector:twseDailyMap.sectors?.[found.code]||'',ex:'TW'};",
+      "    }"
+    ].join('\n');
+    const patched = src.replace(otcBlock, (m) => `${m}\n${tseBlock}`);
+    if (patched !== src) window.lookupStock = (0, eval)(`(${patched})`);
+  };
+
+  patchLookupStock();
+
+  const hideChecklist = () => {
+    const el = document.getElementById('dtChecklist');
+    if (el) el.style.display = 'none';
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hideChecklist, { once: true });
+  } else {
+    hideChecklist();
+  }
+})();
 </script>
 </body>
 </html>
