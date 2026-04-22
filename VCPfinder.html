@@ -2146,7 +2146,7 @@ async function fetchLiveQuoteBatch(syms){
   const base=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(joined)}&_t=${Date.now()}`;
   for(const px of ['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest=']){
     try{
-      const r=await fetchTO(px+encodeURIComponent(base),8000);
+      const r=await fetchTO(px+encodeURIComponent(base),4000);
       if(!r.ok) continue;
       const j=await r.json();
       const results=j?.quoteResponse?.result||[];
@@ -2488,13 +2488,11 @@ async function startScan(){
   secRow.querySelectorAll('[data-sec]:not([data-sec="ALL"])').forEach(p=>p.remove());
   secs.forEach(s=>{const p=document.createElement('span');p.className='pill';p.dataset.sec=s;p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);});
 
-  // 盤中：批次預抓即時價格 + 融資餘額
+  // 盤中：融資餘額 await，即時價格背景抓（不阻塞掃描）
   if(isTradingHours()){
-    document.getElementById('progText').textContent='盤中模式：抓取即時價格與融資資料...';
-    await Promise.all([
-      prefetchLivePrices(stocks).catch(()=>{}),
-      loadMarginData().catch(()=>{}),
-    ]);
+    document.getElementById('progText').textContent='盤中模式：載入融資資料...';
+    await loadMarginData().catch(()=>{});
+    prefetchLivePrices(stocks).catch(()=>{}); // 背景執行，不 await
   } else {
     // 盤後也載入融資（顯示收盤後的最終數字）
     loadMarginData().catch(()=>{});
