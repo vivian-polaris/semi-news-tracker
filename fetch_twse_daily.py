@@ -464,6 +464,8 @@ def main():
     print('\n1. Sectors...')
     sectors = fetch_sectors()
 
+    print('\n1c. TSE stock list...')
+    tse_stocks = fetch_tse_stocks()
     print('\n1b. OTC stock list...')
     otc_stocks = fetch_otc_stocks()
 
@@ -579,6 +581,7 @@ def main():
         'date':         date_str,
         'sectors':      sectors,
         'otcStocks':    otc_stocks,
+        'tseStocks':    tse_stocks,
         'tseStocks':    tse_stocks,
         'chips':        chips,
         'bwibbu':       bwibbu,
