@@ -522,7 +522,7 @@ footer a:hover{text-decoration:underline}
     <div style="font-size:.78rem;font-weight:800;color:var(--mint);letter-spacing:.05em">隔日沖買入 Checklist</div>
     <div style="font-size:.62rem;color:var(--text2)">點擊展開／收合</div>
   </div>
-  <div id="dtChecklist">
+  <div id="dtChecklist" style="display:none">
     <div style="font-size:.72rem;color:var(--text2);margin-bottom:10px;line-height:1.6">
       掃描後，依「隔日沖」欄排序，找到<strong style="color:var(--mint)">強力推薦</strong>的股票，逐項核對以下 7 點再決定買入：
     </div>
@@ -3252,6 +3252,11 @@ async function lookupStock() {
     if(!inStocks && twseDailyMap.otcStocks){
       const found=twseDailyMap.otcStocks.find(s=>s.code===raw||(raw.length>=2&&s.name&&s.name.includes(raw)));
       if(found) inStocks={code:found.code,name:found.name,sector:'',ex:'TWO'};
+    }
+    // Search TSE stocks list from twse_daily.json
+    if(!inStocks && twseDailyMap.tseStocks){
+      const found=twseDailyMap.tseStocks.find(s=>s.code===raw||(raw.length>=2&&s.name&&s.name.includes(raw)));
+      if(found) inStocks={code:found.code,name:found.name,sector:twseDailyMap.sectors?.[found.code]||'',ex:'TW'};
     }
     // If still not found by name, fetch full TSE list once
     if(!inStocks && !/^\d{4,6}$/.test(raw)){
