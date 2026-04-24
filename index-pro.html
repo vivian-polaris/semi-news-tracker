@@ -1315,7 +1315,7 @@ async function askAI(){
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        prompt:'你是半導體/科技/金融產業分析師。請用繁體中文回答，300字內，重點數字要標清楚：'+q,
+        prompt:'Answer in Traditional Chinese (繁體中文), max 300 words, highlight key numbers. You are a semiconductor/tech/finance analyst. Question: '+q,
         useSearch:true
       }),
       signal:AbortSignal.timeout(30000)
