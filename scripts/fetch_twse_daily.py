@@ -87,6 +87,21 @@ def fetch_otc_stocks():
     return otc
 
 # ── 2. BWIBBU (PE / PB / DividendYield) ──────────────────────────────────────
+def fetch_tse_stocks():
+    """Returns [{code, name}] for all TSE stocks with Chinese names."""
+    tse = []
+    data = get('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL')
+    if data:
+        for r in data:
+            code = str(r.get('Code') or r.get('code') or '').strip()
+            name = str(r.get('Name') or r.get('name') or code).strip()
+            if re.match(r'^\d{4}$', code):
+                tse.append({'code': code, 'name': name})
+        print(f'  TSE stocks: {len(tse)}')
+    else:
+        print('  TSE stocks: API failed')
+    return tse
+
 def fetch_bwibbu():
     bwibbu = {}
 
@@ -502,6 +517,7 @@ def main():
     sectors = fetch_sectors()
 
     print('\n1b. OTC stock list...')
+    tse_stocks = fetch_tse_stocks()
     otc_stocks = fetch_otc_stocks()
 
     print('\n2. BWIBBU (PE/PB/DY)...')
@@ -615,7 +631,7 @@ def main():
     output = {
         'date':         date_str,
         'sectors':      sectors,
-        'tseStocks':    [{'code': code, 'name': info['n']} for code, info in tse_prices.items()],
+        'tseStocks':    tse_stocks or [{'code': code, 'name': info['n']} for code, info in tse_prices.items()],
         'otcStocks':    otc_stocks,
         'chips':        chips,
         'bwibbu':       bwibbu,
