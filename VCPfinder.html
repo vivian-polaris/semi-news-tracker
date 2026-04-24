@@ -3036,6 +3036,16 @@ function renderTable(){
             <div style="font-size:.62rem;font-weight:700;color:${col}">${label}</div>
           </td>`;
         })();
+        const finCell=(()=>{
+          const fin=v.fin;
+          if(!fin) return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
+          const cls=fin.isExhaustion?'sig-g':fin.isShrink?'sig-o':'sig-r';
+          const lbl=fin.isExhaustion?'竭盡量':fin.isShrink?'縮量中':'量未縮';
+          return `<td style="text-align:center;white-space:nowrap" title="上升鰭型：${fin.streakDays}天漲幅${fin.totalGain}%，拉回${fin.pullback}%，量比${fin.volRatio??'—'}">
+            <span class="sig ${cls}" style="font-size:.72rem">${lbl}</span>
+            <div style="font-size:.6rem;color:var(--text2)">${fin.streakDays}天 ${fin.pullback}%拉回</div>
+          </td>`;
+        })();
         return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+pivotCell+signalCell+grahamCell+finCell+daytradeCell+mgCell+cs.seven;
       })()}
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
