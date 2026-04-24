@@ -158,21 +158,8 @@ header p{color:rgba(255,255,255,.65);font-size:.78rem;margin-top:4px;text-shadow
 .rfbtn:disabled{opacity:.5;cursor:not-allowed}
 
 footer{text-align:center;padding:16px 0;color:var(--text2);font-size:.68rem;border-top:1px solid var(--border);margin-top:16px}
-/* API Key 設定 */
+/* Header position */
 header{position:relative}
-.key-btn{position:absolute;top:14px;right:16px;background:rgba(13,17,23,.75);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:rgba(255,255,255,.8);cursor:pointer;font-size:.72rem;padding:4px 10px;transition:all .2s;backdrop-filter:blur(8px)}
-.key-btn:hover{border-color:rgba(255,255,255,.5);color:#fff}
-.key-panel{display:none;background:var(--card);border:1px solid var(--accent2);border-radius:10px;padding:14px 16px;margin:8px 0 4px;font-size:.82rem}
-.key-panel.show{display:block}
-.key-panel p{color:var(--text2);font-size:.75rem;margin-bottom:8px;line-height:1.6}
-.key-panel a{color:var(--accent2)}
-.key-row{display:flex;gap:8px;align-items:center}
-.key-input{flex:1;padding:7px 10px;background:var(--tag);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:.82rem;outline:none}
-.key-input:focus{border-color:var(--accent2)}
-.key-save{padding:7px 16px;background:var(--accent2);border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:.82rem;font-weight:600;white-space:nowrap}
-.key-status{font-size:.72rem;margin-top:6px}
-.key-status.ok{color:var(--green)}
-.key-status.no{color:var(--orange)}
 
 </style>
 </head>
@@ -180,19 +167,7 @@ header{position:relative}
 <div class="wrap">
   <header>
     <h1>Vivian Edge <span style="font-weight:400;font-size:.75em;opacity:.85">· 半導體情報</span></h1>
-    <button class="key-btn" onclick="toggleKeyPanel()">⚙️ AI 設定</button>
   </header>
-  <div class="key-panel" id="keyPanel">
-    <p>AI 功能需要 <strong>Gemini API Key</strong>（完全免費，有聯網搜尋，台灣可用）<br>
-    ① 開 <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> → 用 Google 帳號登入<br>
-    ② 點「Create API Key」→ 複製（<code>AIza...</code> 開頭）→ 貼下方</p>
-    <div class="key-row">
-      <input class="key-input" id="keyInput" type="password" placeholder="AIza...">
-      <button class="key-save" onclick="saveKey()">儲存</button>
-      <button class="key-save" style="background:var(--red)" onclick="clearKey()">清除</button>
-    </div>
-    <div class="key-status" id="keyStatus"></div>
-  </div>
 
 
   <div class="srch-wrap">
@@ -1327,35 +1302,29 @@ function toggleView(){
 // ================================================================
 // Search input
 // ================================================================
+const AI_WORKER='https://semi-news-ai.vivian-polaris.workers.dev';
+
 async function askAI(){
   const q=document.getElementById('si').value.trim();
   if(!q){alert('請先輸入關鍵字');return;}
-  const key=getKey();
-  if(!key){
-    document.getElementById('keyPanel').classList.add('show');
-    document.getElementById('aipanel').className='ai-panel show';
-    document.getElementById('aipanel').innerHTML='<span class="ai-lbl">⚙️ 請設定 AI Key</span>請點上方「AI 設定」輸入免費 Gemini Key（aistudio.google.com/apikey）';
-    return;
-  }
   const panel=document.getElementById('aipanel');
   panel.className='ai-panel show';
   panel.innerHTML='<span class="ai-lbl">🔍 AI 聯網搜尋中...</span><div class="ai-loading">正在查詢最新資料，請稍候...</div>';
   try{
-    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
+    const r=await fetch(AI_WORKER,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        contents:[{parts:[{text:'你是半導體/科技/金融產業分析師。請用繁體中文回答，300字內，重點數字要標清楚：'+q}]}],
-        tools:[{google_search:{}}]
+        prompt:'你是半導體/科技/金融產業分析師。請用繁體中文回答，300字內，重點數字要標清楚：'+q,
+        useSearch:true
       }),
       signal:AbortSignal.timeout(30000)
     });
     if(!r.ok){
       const e=await r.json().catch(()=>({}));
       const msg=e.error?.message||r.status;
-      if(r.status===400&&msg.includes('API_KEY')) {panel.innerHTML='<span class="ai-lbl">🤖 AI</span>⚠️ Gemini Key 錯誤，請重新設定';return;}
       if(r.status===429){panel.innerHTML='<span class="ai-lbl">🤖 AI</span>⚠️ 超過每分鐘限額，請稍候 30 秒再試';return;}
-      panel.innerHTML=`<span class="ai-lbl">🤖 AI</span>⚠️ 錯誤：${esc(msg)}`;return;
+      panel.innerHTML=`<span class="ai-lbl">🤖 AI</span>⚠️ 錯誤：${esc(String(msg))}`;return;
     }
     const j=await r.json();
     const text=j.candidates?.[0]?.content?.parts?.[0]?.text||'';
@@ -1369,54 +1338,20 @@ async function askAI(){
   }
 }
 
-function getKey(){ return localStorage.getItem('gemini_key')||''; }
-function toggleKeyPanel(){
-  const p=document.getElementById('keyPanel');
-  p.classList.toggle('show');
-  if(p.classList.contains('show')){
-    document.getElementById('keyInput').value=getKey();
-    updateKeyStatus();
-  }
-}
-function updateKeyStatus(){
-  const s=document.getElementById('keyStatus');
-  if(!s) return;
-  const k=getKey();
-  s.className='key-status '+(k?'ok':'no');
-  s.textContent=k?'✅ Gemini Key 已設定，AI 聯網功能啟用中':'⚠️ 尚未設定 Key — 請點上方連結申請（免費 30 秒完成）';
-}
-function saveKey(){
-  const k=document.getElementById('keyInput').value.trim();
-  if(!k){alert('請輸入 API Key');return;}
-  localStorage.setItem('gemini_key',k);
-  updateKeyStatus();
-  document.getElementById('keyPanel').classList.remove('show');
-}
-function clearKey(){
-  localStorage.removeItem('gemini_key');
-  document.getElementById('keyInput').value='';
-  updateKeyStatus();
-}
 
 async function callAI(prompt){
-  const key=getKey();
-  if(!key) return '🔑 請點右上角「AI 設定」輸入免費 Gemini Key（aistudio.google.com/apikey）';
   try{
-    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
+    const r=await fetch(AI_WORKER,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        contents:[{parts:[{text:prompt}]}],
-        generationConfig:{maxOutputTokens:500,temperature:0.4}
-      }),
+      body:JSON.stringify({prompt,useSearch:false}),
       signal:AbortSignal.timeout(25000)
     });
     if(!r.ok){
       const e=await r.json().catch(()=>({}));
       const msg=e.error?.message||r.status;
-      if(r.status===400) return '⚠️ Gemini Key 錯誤，請重新設定';
       if(r.status===429) return '⚠️ 超過每分鐘限額，請稍候 30 秒再點 ↻ 重整';
-      return `⚠️ Gemini 錯誤：${msg}`;
+      return `⚠️ AI 錯誤：${msg}`;
     }
     const j=await r.json();
     const text=j.candidates?.[0]?.content?.parts?.[0]?.text||'';
