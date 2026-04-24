@@ -655,8 +655,8 @@ footer a:hover{text-decoration:underline}
   </div>
   <div class="filter-row" id="scoreRow">
     <span class="flabel">VCP 分數</span>
-    <span class="pill" onclick="setScore(0,this)">全部</span>
-    <span class="pill f-on" onclick="setScore(40,this)">≥ 40 VCP初步</span>
+    <span class="pill f-on" onclick="setScore(0,this)">全部</span>
+    <span class="pill" onclick="setScore(40,this)">≥ 40 VCP初步</span>
     <span class="pill" onclick="setScore(60,this)">≥ 60 候選 🌸</span>
     <span class="pill" onclick="setScore(70,this)">≥ 70</span>
     <span class="pill" onclick="setScore(80,this)">≥ 80 強力 ⭐</span>
@@ -927,7 +927,7 @@ const STOCKS = [
 
 // ─── State ────────────────────────────────────────────────────────────────
 const DEFAULT_SECTORS=new Set(['IC設計','PCB','伺服器','光學','光電','其他電子','化學','化工','半導體','散熱','數位雲端','機械','精密機械','被動元件','記憶體','資訊服務','通信網路','連接器','電子','電子代工','電子通路','電子零組件','電機','電源','面板','工業自動化','工業電腦']);
-let allResults=[], scoreMin=40, pctMax=999, secFilter=new Set(['ALL']), exFilter='ALL';
+let allResults=[], scoreMin=0, pctMax=999, secFilter=new Set(['ALL']), exFilter='ALL';
 let canslimMin=0;
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
