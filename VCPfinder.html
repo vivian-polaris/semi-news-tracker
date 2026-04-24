@@ -1850,23 +1850,31 @@ async function fetchAllTWStocks(includeTSE=true, includeOTC=true){
 
   if(includeTSE){
     if(pT) pT.textContent='第 1 步：取得上市股票清單...';
-    const data=await fetchJsonCORS(
-      'https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL',
-      '上市 TSE'
-    );
-    if(data){
-      data.forEach(s=>{
-        const code=(s.Code||s.code||'').trim();
-        const name=(s.Name||s.name||code).trim();
-        if(/^\d{4}$/.test(code))
-          results.push({code,name,sector:sectorMap.get(code)||twseInfoMap.get(code)||'',ex:'TW'});
+    if(twseDailyMap.tseStocks&&twseDailyMap.tseStocks.length>100){
+      twseDailyMap.tseStocks.forEach(s=>{
+        if(/^\d{4}$/.test(s.code)&&!results.find(r=>r.code===s.code))
+          results.push({code:s.code,name:s.name,sector:sectorMap.get(s.code)||twseInfoMap.get(s.code)||'',ex:'TW'});
       });
-      if(infoEl) infoEl.textContent=`✅ 上市：${results.length} 支`;
+      if(infoEl) infoEl.textContent=`✅ 上市 ${results.length} 支（每日快取）`;
     } else {
-      if(infoEl) infoEl.textContent='⚠️ 上市 API 全部失敗，改用內建清單';
-      DEFAULT_STOCKS.filter(s=>s.ex==='TW').forEach(s=>{
-        if(!results.find(r=>r.code===s.code)) results.push(s);
-      });
+      const data=await fetchJsonCORS(
+        'https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL',
+        '上市 TSE'
+      );
+      if(data){
+        data.forEach(s=>{
+          const code=(s.Code||s.code||'').trim();
+          const name=(s.Name||s.name||code).trim();
+          if(/^\d{4}$/.test(code))
+            results.push({code,name,sector:sectorMap.get(code)||twseInfoMap.get(code)||'',ex:'TW'});
+        });
+        if(infoEl) infoEl.textContent=`✅ 上市：${results.length} 支`;
+      } else {
+        if(infoEl) infoEl.textContent='⚠️ 上市 API 全部失敗，改用內建清單';
+        DEFAULT_STOCKS.filter(s=>s.ex==='TW').forEach(s=>{
+          if(!results.find(r=>r.code===s.code)) results.push(s);
+        });
+      }
     }
   }
 

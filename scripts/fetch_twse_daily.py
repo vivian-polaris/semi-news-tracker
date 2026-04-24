@@ -615,6 +615,7 @@ def main():
     output = {
         'date':         date_str,
         'sectors':      sectors,
+        'tseStocks':    [{'code': code, 'name': info['n']} for code, info in tse_prices.items()],
         'otcStocks':    otc_stocks,
         'chips':        chips,
         'bwibbu':       bwibbu,
