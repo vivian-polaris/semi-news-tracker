@@ -183,11 +183,11 @@ header{position:relative}
     <button class="key-btn" onclick="toggleKeyPanel()">⚙️ AI 設定</button>
   </header>
   <div class="key-panel" id="keyPanel">
-    <p>AI 摘要功能需要 <strong>Groq API Key</strong>（完全免費，無信用卡，台灣可用）<br>
-    ① 開 <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a> → 用 Google 帳號登入<br>
-    ② 點「Create API Key」→ 複製（<code>gsk_...</code> 開頭）→ 貼下方</p>
+    <p>AI 功能需要 <strong>Gemini API Key</strong>（完全免費，有聯網搜尋，台灣可用）<br>
+    ① 開 <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> → 用 Google 帳號登入<br>
+    ② 點「Create API Key」→ 複製（<code>AIza...</code> 開頭）→ 貼下方</p>
     <div class="key-row">
-      <input class="key-input" id="keyInput" type="password" placeholder="gsk_...">
+      <input class="key-input" id="keyInput" type="password" placeholder="AIza...">
       <button class="key-save" onclick="saveKey()">儲存</button>
       <button class="key-save" style="background:var(--red)" onclick="clearKey()">清除</button>
     </div>
@@ -1330,26 +1330,46 @@ function toggleView(){
 async function askAI(){
   const q=document.getElementById('si').value.trim();
   if(!q){alert('請先輸入關鍵字');return;}
+  const key=getKey();
+  if(!key){
+    document.getElementById('keyPanel').classList.add('show');
+    document.getElementById('aipanel').className='ai-panel show';
+    document.getElementById('aipanel').innerHTML='<span class="ai-lbl">⚙️ 請設定 AI Key</span>請點上方「AI 設定」輸入免費 Gemini Key（aistudio.google.com/apikey）';
+    return;
+  }
   const panel=document.getElementById('aipanel');
   panel.className='ai-panel show';
-  panel.innerHTML='<span class="ai-lbl">AI 回答中...</span><div class="ai-loading">思考中，請稍候...</div>';
+  panel.innerHTML='<span class="ai-lbl">🔍 AI 聯網搜尋中...</span><div class="ai-loading">正在查詢最新資料，請稍候...</div>';
   try{
-    const r=await fetch('https://text.pollinations.ai/',{
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        messages:[{role:'user',content:'你是半導體產業分析師。請用繁體中文簡潔回答，200字內：'+q}],
-        model:'openai'
-      })
+        contents:[{parts:[{text:'你是半導體/科技/金融產業分析師。請用繁體中文回答，300字內，重點數字要標清楚：'+q}]}],
+        tools:[{google_search:{}}]
+      }),
+      signal:AbortSignal.timeout(30000)
     });
-    const text=await r.text();
-    panel.innerHTML='<span class="ai-lbl">🤖 AI 摘要</span>'+esc(text);
+    if(!r.ok){
+      const e=await r.json().catch(()=>({}));
+      const msg=e.error?.message||r.status;
+      if(r.status===400&&msg.includes('API_KEY')) {panel.innerHTML='<span class="ai-lbl">🤖 AI</span>⚠️ Gemini Key 錯誤，請重新設定';return;}
+      if(r.status===429){panel.innerHTML='<span class="ai-lbl">🤖 AI</span>⚠️ 超過每分鐘限額，請稍候 30 秒再試';return;}
+      panel.innerHTML=`<span class="ai-lbl">🤖 AI</span>⚠️ 錯誤：${esc(msg)}`;return;
+    }
+    const j=await r.json();
+    const text=j.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    if(text.trim().length>5){
+      panel.innerHTML='<span class="ai-lbl">🌐 AI 聯網回答</span>'+esc(text);
+    } else {
+      panel.innerHTML='<span class="ai-lbl">🤖 AI</span>⚠️ AI 回覆為空，請換個問法再試';
+    }
   }catch(e){
-    panel.innerHTML='<span class="ai-lbl">🤖 AI</span>服務暫時無法使用，請稍後再試。';
+    panel.innerHTML=`<span class="ai-lbl">🤖 AI</span>⚠️ 網路連線問題（${esc(e.message)}），請稍後再試`;
   }
 }
 
-function getKey(){ return localStorage.getItem('groq_key')||''; }
+function getKey(){ return localStorage.getItem('gemini_key')||''; }
 function toggleKeyPanel(){
   const p=document.getElementById('keyPanel');
   p.classList.toggle('show');
@@ -1363,45 +1383,43 @@ function updateKeyStatus(){
   if(!s) return;
   const k=getKey();
   s.className='key-status '+(k?'ok':'no');
-  s.textContent=k?'✅ Groq Key 已設定，AI 功能啟用中':'⚠️ 尚未設定 Key — 請點上方連結申請（免費 30 秒完成）';
+  s.textContent=k?'✅ Gemini Key 已設定，AI 聯網功能啟用中':'⚠️ 尚未設定 Key — 請點上方連結申請（免費 30 秒完成）';
 }
 function saveKey(){
   const k=document.getElementById('keyInput').value.trim();
   if(!k){alert('請輸入 API Key');return;}
-  localStorage.setItem('groq_key',k);
+  localStorage.setItem('gemini_key',k);
   updateKeyStatus();
   document.getElementById('keyPanel').classList.remove('show');
 }
 function clearKey(){
-  localStorage.removeItem('groq_key');
+  localStorage.removeItem('gemini_key');
   document.getElementById('keyInput').value='';
   updateKeyStatus();
 }
 
 async function callAI(prompt){
   const key=getKey();
-  if(!key) return '請點右上角「AI 設定」輸入免費 Groq Key（console.groq.com/keys）';
+  if(!key) return '🔑 請點右上角「AI 設定」輸入免費 Gemini Key（aistudio.google.com/apikey）';
   try{
-    const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        messages:[{role:'user',content:prompt}],
-        model:'llama-3.3-70b-versatile',
-        max_tokens:500,
-        temperature:0.7
+        contents:[{parts:[{text:prompt}]}],
+        generationConfig:{maxOutputTokens:500,temperature:0.4}
       }),
       signal:AbortSignal.timeout(25000)
     });
     if(!r.ok){
       const e=await r.json().catch(()=>({}));
       const msg=e.error?.message||r.status;
-      if(r.status===401) return '⚠️ Groq Key 錯誤，請重新設定';
+      if(r.status===400) return '⚠️ Gemini Key 錯誤，請重新設定';
       if(r.status===429) return '⚠️ 超過每分鐘限額，請稍候 30 秒再點 ↻ 重整';
-      return `⚠️ Groq 錯誤：${msg}`;
+      return `⚠️ Gemini 錯誤：${msg}`;
     }
     const j=await r.json();
-    const text=j.choices?.[0]?.message?.content||'';
+    const text=j.candidates?.[0]?.content?.parts?.[0]?.text||'';
     if(text.trim().length>10) return text.trim();
     return '⚠️ AI 回覆為空，請點 ↻ 重整';
   }catch(e){
