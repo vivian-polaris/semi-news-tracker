@@ -637,6 +637,7 @@ footer a:hover{text-decoration:underline}
   <button class="scan-btn" id="scanBtn" onclick="startScan()" style="flex-shrink:0;padding:9px 20px;font-size:.85rem">開始掃描 VCP</button>
   <button id="cancelBtn" onclick="cancelScan()" style="display:none;flex-shrink:0;padding:9px 18px;background:var(--card);border:1.5px solid var(--red);border-radius:6px;color:var(--red);font-size:.82rem;font-weight:700;cursor:pointer">停止</button>
 </div>
+<div id="scanCacheNote" style="display:none;font-size:.72rem;color:var(--text2);margin:-2px 0 6px;padding-left:2px"></div>
 
 <!-- ── Filters ── -->
 <div class="filter-box" id="filterBox" style="display:none">
@@ -2445,6 +2446,8 @@ async function startScan(){
   allResults=[];
   chipsMap={};
   twseFundMap={};
+  const cNoteEl=document.getElementById('scanCacheNote');
+  if(cNoteEl) cNoteEl.style.display='none';
 
   // 預載每日資料（twse_daily.json，GitHub Actions 每日更新）
   document.getElementById('progText').textContent='載入每日資料（twse_daily.json）...';
@@ -2884,7 +2887,20 @@ function renderTable(){
   document.getElementById('totalN').textContent=counted;
   const tbody=document.getElementById('tblBody');
   if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="22">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
-  if(!sorted.length){tbody.innerHTML='<tr class="empty-row"><td colspan="22">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';return;}
+  if(!sorted.length){
+    if(scanning){
+      tbody.innerHTML='<tr class="load-row"><td colspan="22"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
+    } else {
+      const hasVcp=allResults.filter(r=>r.vcp).length;
+      const passMin=allResults.filter(r=>r.vcp&&r.vcp.score>=scoreMin).length;
+      if(hasVcp>0&&passMin===0&&scoreMin>=40){
+        tbody.innerHTML=`<tr class="empty-row"><td colspan="22">⚠️ 目前市場整體偏弱，${hasVcp} 支股票 VCP 分數均低於 ${scoreMin} 分<br><span style="font-size:.75rem;color:var(--text2)">台股受外部衝擊，多數股票尚未形成 VCP 型態</span><br><button onclick="document.querySelector('#scoreRow .pill').click()" style="margin-top:6px;padding:4px 14px;background:var(--purple);border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:.82rem">顯示全部股票（忽略分數）</button></td></tr>`;
+      } else {
+        tbody.innerHTML='<tr class="empty-row"><td colspan="22">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';
+      }
+    }
+    return;
+  }
   tbody.innerHTML=sorted.map(r=>{
     const v=r.vcp;
     const tv=`https://www.tradingview.com/chart/?symbol=TWSE%3A${r.code}`;
@@ -3402,6 +3418,8 @@ async function lookupStock() {
         document.getElementById('scanInfo').innerHTML=
           `${stale?'📅 ':''}上次掃描：<strong>${dateStr} ${timeStr}</strong>（${ageStr}）${stale?' · <span style="color:var(--purple);cursor:pointer" onclick="startScan()">重新掃描</span>':''}`;
         renderAll();
+        const cNote=document.getElementById('scanCacheNote');
+        if(cNote){cNote.innerHTML=`📅 上次掃描：${dateStr} ${timeStr}（${ageStr}）· <span style="cursor:pointer;color:var(--purple)" onclick="startScan()">重新掃描</span>`;cNote.style.display='';}
         cacheLoaded=true;
         // ① 立即從 chips_all localStorage 恢復（零網路，掃描後必有）
         try{
