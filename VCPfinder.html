@@ -3036,6 +3036,17 @@ function renderTable(){
             <div style="font-size:.62rem;font-weight:700;color:${col}">${label}</div>
           </td>`;
         })();
+        const daytradeCell=(()=>{
+          const v2=v;
+          if(!v2||!v2.pbBuy) return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
+          const strong=v2.pbBuy.strong;
+          const cls=strong?'sig-g':'sig-o';
+          const lbl=strong?'強買點':'回踩中';
+          const note=strong?`突破回踩地量（量比${v2.pbBuy.volRatio}），強買點`:`突破後回踩縮量（量比${v2.pbBuy.volRatio}）`;
+          return `<td style="text-align:center;white-space:nowrap" title="${note}">
+            <span class="sig ${cls}" style="font-size:.72rem">${lbl}</span>
+          </td>`;
+        })();
         const finCell=(()=>{
           const fin=v.fin;
           if(!fin) return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
