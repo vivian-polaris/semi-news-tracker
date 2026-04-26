@@ -3503,9 +3503,31 @@ async function lookupStock() {
         let updated=0;
         allResults.forEach(r=>{
           const pre=stockPriceMap[r.code];
-          if(pre?.c?.length>0 && r.vcp && r.vcp.price!==pre.c[0]){
-            r.vcp.price=pre.c[0];updated++;
-          }
+          if(!pre?.c?.length||!r.vcp) return;
+          // 更新現價
+          if(r.vcp.price!==pre.c[0]){r.vcp.price=pre.c[0];updated++;}
+          // 重算 pbBuy（修正舊快取 pbBuy 永遠 null 的 bug）
+          const highs=pre.h||pre.c;
+          const vols=pre.v||[];
+          const vcpLookback=Math.min(30,highs.length-1);
+          const recentHArr=highs.slice(1,vcpLookback+1).filter(v=>v!=null&&isFinite(v));
+          const vcpPivotNew=recentHArr.length>0?+Math.max(...recentHArr).toFixed(2):null;
+          const distNew=vcpPivotNew&&pre.c[0]>0?+((pre.c[0]-vcpPivotNew)/vcpPivotNew*100).toFixed(1):null;
+          if(vcpPivotNew&&distNew!=null&&distNew<3&&distNew>=-15){
+            const earlyH=highs.slice(11,Math.min(31,highs.length)).filter(v=>v!=null&&isFinite(v));
+            const earlyPivot=earlyH.length>0?Math.max(...earlyH):null;
+            const recentBrk=earlyPivot!=null&&highs.slice(1,11).some(h=>h&&h>earlyPivot);
+            if(recentBrk){
+              const v20valid=vols.slice(0,20).filter(v=>v>0);
+              const v20avg=v20valid.length>0?v20valid.reduce((a,b)=>a+b,0)/v20valid.length:null;
+              const todayRatio=(vols[0]&&v20avg&&v20avg>0)?+(vols[0]/v20avg).toFixed(2):null;
+              if(todayRatio!=null&&todayRatio<0.5){
+                const isFloor=todayRatio<0.3;
+                r.vcp.pbBuy={volRatio:todayRatio,isFloor,dist:distNew,strong:isFloor&&distNew>=-7};
+                updated++;
+              } else {r.vcp.pbBuy=null;}
+            } else {r.vcp.pbBuy=null;}
+          } else {r.vcp.pbBuy=null;}
         });
         if(updated>0) renderTable();
       }
