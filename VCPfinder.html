@@ -1210,7 +1210,7 @@ function buildSrcHtml(items){
     <div style="font-size:.6rem;font-weight:700;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">📰 原文來源（點擊直接開啟）</div>
     ${links}</div>`;
 }
-const AI_CACHE_TTL=2*60*60*1000; // 2 小時快取
+const AI_CACHE_TTL=12*60*60*1000; // 12 小時快取
 function getAICache(key){
   try{const c=JSON.parse(localStorage.getItem('ai_'+key)||'{}');if(c.ts&&Date.now()-c.ts<AI_CACHE_TTL)return c;}catch(_){}return null;
 }
@@ -1428,19 +1428,30 @@ async function loadTrump(useCache=false){
       .slice(0,60);
   }
   if(!items.length){
-    // 所有來源失敗 → 強制顯示任何舊的 AI 快取（無論多舊）
-    const stale=getAICache('trump2')||lsGet('trump_stale');
-    if(stale){
-      b.className='news-body';
-      const age=cacheAgeStr(stale.ts||Date.now());
-      const raw=stale.rawText||stale.text||stale.data||'';
-      b.textContent=`[舊資料・${age}，網路暫時無法更新，點 ↻ 重試]\n\n${raw}`;
-      t.textContent=`快取（${age}）`;
-    }else{
-      b.className='news-body';
-      b.textContent='⚠️ 新聞暫時無法取得，尚無快取資料。\n請點 ↻ 待網路恢復後重試。';
+    // RSS/CORS 失敗 → 先嘗試後端 twse_daily.json（GitHub Actions 每日定時更新）
+    if(twseDailyMap?.news?.length>=5){
+      const seen=new Set();
+      items=twseDailyMap.news
+        .map(x=>({title:x.title,link:x.link,dateStr:x.pubDate?new Date(x.pubDate).toLocaleDateString('zh-TW'):'近期',source:x.source||''}))
+        .filter(x=>{if(seen.has(x.title))return false;seen.add(x.title);return true;})
+        .slice(0,30);
+      // fall through to AI processing below
+    } else {
+      // 後端也沒資料 → 只顯示 12 小時內的 AI 快取，超過就提示重試
+      const stale=getAICache('trump2')||lsGet('trump_stale');
+      const staleAge=stale?.ts?Date.now()-stale.ts:Infinity;
+      if(stale&&staleAge<12*60*60*1000){
+        b.className='news-body';
+        const age=cacheAgeStr(stale.ts);
+        const raw=stale.rawText||stale.text||stale.data||'';
+        b.textContent=`[快取・${age}，RSS 暫時受限，點 ↻ 重試]\n\n${raw}`;
+        t.textContent=`快取（${age}）`;
+      }else{
+        b.className='news-body';
+        b.textContent='⚠️ 新聞暫時無法取得，請點 ↻ 重試。';
+      }
+      return;
     }
-    return;
   }
   // 先顯示真實 RSS 來源（不等 AI）
   b.className='news-body';
@@ -2075,10 +2086,13 @@ function calcVCP(data){
   }
 
   // ── 突破後回踩地量偵測（核心買點邏輯）──────────────────────────────────────
-  // 條件：近10天內曾突破 vcpPivot（high > pivot），現在回踩，今日量 < 均量50%
+  // 條件：近10天內突破 11-30天前高點（earlyPivot），現在回踩，今日量 < 均量50%
+  // 注意：不能用 vcpPivot（= max of last 30 days）作為基準，因 last10 ⊆ last30，永遠不成立
   let pbBuy=null;
   if(vcpPivot&&distVcpPivot!=null&&distVcpPivot<3&&distVcpPivot>=-15){
-    const recentBrk=data.slice(1,11).some(d=>d.high&&d.high>vcpPivot);
+    const earlyHighArr=data.slice(11,Math.min(31,data.length)).map(d=>d.high).filter(v=>v!=null&&isFinite(v));
+    const earlyPivot=earlyHighArr.length>0?Math.max(...earlyHighArr):null;
+    const recentBrk=earlyPivot!=null&&data.slice(1,11).some(d=>d.high&&d.high>earlyPivot);
     if(recentBrk){
       const todayVol=volumes[0];
       const todayRatio=(todayVol&&v20&&v20>0)?+(todayVol/v20).toFixed(2):null;
