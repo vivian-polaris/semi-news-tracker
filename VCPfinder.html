@@ -3430,12 +3430,13 @@ async function lookupStock() {
   updateKeyStatus();
 
   // Restore cache — always show cached results regardless of age; only auto-scan if no cache at all
-  let cacheLoaded=false;
+  let cacheLoaded=false, cacheTs=0;
   try{
     const raw=localStorage.getItem('vcpCache');
     if(raw){
       const{results,ts}=JSON.parse(raw);
       if(results&&results.length>0){
+        cacheTs=ts||0;
         allResults=results;
         document.getElementById('scanBtn').textContent='重新掃描';
         const age=(Date.now()-ts)/60000;
@@ -3479,13 +3480,20 @@ async function lookupStock() {
     loadTrump(true);
     loadClock(true);
     // 用最新 stocks_tse/otc.json 更新快取結果的現價（修正舊快取顯示舊股價的問題）
+    // 只在快取是前一天或更早時才更新（避免覆蓋今日盤中掃描的即時股價）
     if(cacheLoaded && stockPriceLoaded && allResults.length>0){
-      let updated=0;
-      allResults.forEach(r=>{
-        const pre=stockPriceMap[r.code];
-        if(pre?.c?.length>0 && r.vcp){r.vcp.price=pre.c[0];updated++;}
-      });
-      if(updated>0) renderTable();
+      const cacheDayTW=new Date((cacheTs||0)+8*3600000).toISOString().slice(0,10);
+      const todayTW=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+      if(cacheDayTW<todayTW){
+        let updated=0;
+        allResults.forEach(r=>{
+          const pre=stockPriceMap[r.code];
+          if(pre?.c?.length>0 && r.vcp && r.vcp.price!==pre.c[0]){
+            r.vcp.price=pre.c[0];updated++;
+          }
+        });
+        if(updated>0) renderTable();
+      }
     }
   });
 
