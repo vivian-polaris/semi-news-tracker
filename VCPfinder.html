@@ -3480,11 +3480,12 @@ async function lookupStock() {
     loadTrump(true);
     loadClock(true);
     // 用最新 stocks_tse/otc.json 更新快取結果的現價（修正舊快取顯示舊股價的問題）
-    // 只在快取是前一天或更早時才更新（避免覆蓋今日盤中掃描的即時股價）
+    // 更新條件：快取是前一天或更早（舊快取），OR 今天盤後/盤前（非盤中）
+    // 唯一不更新：快取是今天 AND 現在是盤中 → 保留即時掃描的盤中現價
     if(cacheLoaded && stockPriceLoaded && allResults.length>0){
       const cacheDayTW=new Date((cacheTs||0)+8*3600000).toISOString().slice(0,10);
       const todayTW=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
-      if(cacheDayTW<todayTW){
+      if(cacheDayTW<todayTW || !isTradingHours()){
         let updated=0;
         allResults.forEach(r=>{
           const pre=stockPriceMap[r.code];
