@@ -3531,6 +3531,28 @@ async function lookupStock() {
         });
         if(updated>0) renderTable();
       }
+      // 背景補抓：對快取中沒有基本面的 VCP 候選股，自動從 Yahoo Finance 補資料
+      // 只取 VCP≥40 且無本地基本面的股票，限 40 支避免 rate limit
+      if(cacheLoaded&&!scanning){
+        const missing=allResults
+          .filter(r=>r.vcp&&r.vcp.score>=40&&!r.noData&&!r.fund)
+          .sort((a,b)=>b.vcp.score-a.vcp.score)
+          .slice(0,40);
+        if(missing.length>0){
+          (async()=>{
+            for(let i=0;i<missing.length;i+=3){
+              if(scanning)break;
+              await Promise.all(missing.slice(i,i+3).map(async r=>{
+                const fund=await fetchFundamentals(r.sym).catch(()=>null);
+                if(fund!=null){r.fund=fund;}
+              }));
+              await new Promise(res=>setTimeout(res,450));
+              if(i>0&&i%9===0) renderTable();
+            }
+            renderTable();
+          })();
+        }
+      }
     }
   });
 
