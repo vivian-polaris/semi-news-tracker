@@ -3478,6 +3478,15 @@ async function lookupStock() {
   Promise.all([loadTWSEDaily(), loadStockPrices()]).finally(()=>{
     loadTrump(true);
     loadClock(true);
+    // 用最新 stocks_tse/otc.json 更新快取結果的現價（修正舊快取顯示舊股價的問題）
+    if(cacheLoaded && stockPriceLoaded && allResults.length>0){
+      let updated=0;
+      allResults.forEach(r=>{
+        const pre=stockPriceMap[r.code];
+        if(pre?.c?.length>0 && r.vcp){r.vcp.price=pre.c[0];updated++;}
+      });
+      if(updated>0) renderTable();
+    }
   });
 
   // Hotkey: Alt+R = 重新整理 AI 快訊（不清除 API key）

@@ -117,22 +117,8 @@ def fetch_bwibbu():
                 bwibbu[code] = {'pe': pe, 'pb': pb, 'divYield': dy}
         print(f'  TSE BWIBBU: {len(bwibbu)}')
 
-    # OTC: tpex_mainboard_daily_close_quotes 包含本益比
-    data_otc = get('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes')
-    if data_otc:
-        added_otc = 0
-        for r in data_otc:
-            code = str(r.get('SecuritiesCompanyCode') or '').strip()
-            pe   = _flt(r.get('PriceEarningRatio') or r.get('本益比'))
-            pb   = _flt(r.get('PriceBookRatio') or r.get('股價淨值比'))
-            dy   = _flt(r.get('DividendYield') or r.get('殖利率'))
-            if code and re.match(r'^\d{4,6}$', code):
-                if any(v is not None for v in [pe, pb, dy]) and code not in bwibbu:
-                    bwibbu[code] = {'pe': pe, 'pb': pb, 'divYield': dy}
-                    added_otc += 1
-        print(f'  OTC BWIBBU: +{added_otc}')
-    else:
-        print('  OTC BWIBBU: API failed')
+    # OTC PE/PB: TPEX openapi 目前無可靠的 PE/PB 欄位，跳過以節省時間
+    print(f'  OTC BWIBBU: skipped (TPEX API has no PE/PB fields)')
 
     print(f'  Total BWIBBU: {len(bwibbu)}')
     return bwibbu
@@ -239,29 +225,9 @@ def fetch_month_revenue():
             if added > 100:
                 break
 
-    # OTC monthly revenue
-    for mo_delta in range(3):
-        dt = today.replace(day=1) - datetime.timedelta(days=mo_delta * 28)
-        year_tw = dt.year - 1911
-        month   = dt.month
-        url_json = f'https://openapi.twse.com.tw/v1/opendata/t187ap05_L?yearmonth={year_tw}{month:02d}&market=OTC'
-        data = get(url_json)
-        if not data:
-            # try TPEX
-            url2 = f'https://www.tpex.org.tw/openapi/v1/mopsfin_t187ap05_L?yearmonth={year_tw}{month:02d}'
-            data = get(url2)
-        if data and isinstance(data, list) and len(data) > 20:
-            added = 0
-            for r in data:
-                code = str(r.get('公司代號') or r.get('股票代號') or r.get('SecuritiesCompanyCode') or '').strip()
-                cur  = _flt(r.get('營業收入-當月營收') or r.get('當月營收') or r.get('revenue'))
-                yoy  = _flt(r.get('營業收入-去年同月增減(%)') or r.get('上年同月增減(%)') or r.get('yoy'))
-                if code and cur is not None and code not in rev:
-                    rev[code] = {'current': int(cur) if cur else 0, 'yoy': round(yoy, 2) if yoy is not None else None}
-                    added += 1
-            print(f'  OTC revenue ({year_tw}/{month:02d}): +{added}')
-            if added > 20:
-                break
+    # OTC monthly revenue: TPEX openapi 無法使用（返回 HTML），TWSE t187ap05_L ?market=OTC 參數無效
+    # t187ap05_L 無參數版本已包含少數高市值上櫃公司，其餘上櫃股票基本面由前端 Yahoo Finance 補抓
+    print(f'  OTC revenue: skipped (TPEX API unavailable)')
 
     print(f'  Total revenue: {len(rev)}')
     return rev
