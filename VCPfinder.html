@@ -222,10 +222,19 @@ thead th:nth-child(11),tbody td:nth-child(11){min-width:96px}
 .chips-lbl{color:var(--text2);flex-shrink:0}
 
 /* ── Table cell styles ── */
-.tc{font-weight:700;color:var(--purple);font-size:.86rem;white-space:nowrap}
+.tc{font-weight:700;color:var(--purple);font-size:.86rem;white-space:nowrap;
+  position:sticky;left:0;z-index:2;background:var(--card);min-width:72px;max-width:72px;width:72px}
 .tc a{color:inherit;text-decoration:none}
 .tc a:hover{text-decoration:underline}
-.tn{color:var(--text);font-weight:600;white-space:nowrap}
+.tn{color:var(--text);font-weight:600;white-space:nowrap;
+  position:sticky;left:72px;z-index:2;background:var(--card);min-width:80px;max-width:100px}
+/* sticky header cells for 代號 and 名稱 */
+thead th:nth-child(1){position:sticky;left:0;z-index:3;background:var(--card2);min-width:72px;max-width:72px;width:72px}
+thead th:nth-child(2){position:sticky;left:72px;z-index:3;background:var(--card2);min-width:80px}
+/* shadow on sticky name col to show scroll */
+tbody td.tn,thead th:nth-child(2){box-shadow:4px 0 6px -2px rgba(0,0,0,.35)}
+/* row hover: keep sticky cells readable */
+tbody tr:hover td.tc,tbody tr:hover td.tn{background:var(--card2)}
 .tsec{display:inline-block;padding:1px 6px;border-radius:3px;font-size:.63rem;font-weight:600;background:rgba(85,115,235,.1);color:var(--purple);border:1px solid rgba(85,115,235,.2);white-space:nowrap}
 .tprice{font-weight:600;font-size:.88rem;color:var(--text)}
 
