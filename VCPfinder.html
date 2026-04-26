@@ -2962,8 +2962,9 @@ function renderTable(){
       fund.pb!=null?`<div class="fund-row"><span class="fund-lbl">P/B</span><span>${fund.pb.toFixed(2)}x</span></div>`:'',
       fund.divYield!=null?`<div class="fund-row"><span class="fund-lbl">殖利率</span><span>${fund.divYield.toFixed(2)}%</span></div>`:'',
     ].filter(Boolean).join('');
-    const fundLabel=fg?(fg.score!=null?`${fg.label} ${fg.score}`:fg.label):null;
-    const fundHTML=scoreBadge(fundLabel,fg?.cls||'sN',fundDetail||'<span style="color:#9ca3af">無財報資料</span>');
+    const fundLabel=fg?(fg.score!=null?`${fg.label} ${fg.score}`:fg.label):(r.ex==='TWO'?'上櫃':null);
+    const fundTip=fundDetail||(r.ex==='TWO'?'<span style="color:#9ca3af">上櫃股財報需掃描後由 Yahoo Finance 補抓</span>':'<span style="color:#9ca3af">無財報資料</span>');
+    const fundHTML=scoreBadge(fundLabel,fg?.cls||'sN',fundTip);
     // Chips badge
     const chips=chipsMap[r.code];
     const cl=chipsLabel(chips);
@@ -2971,7 +2972,8 @@ function renderTable(){
       `<div class="chips-row"><span class="chips-lbl">外資</span>${fmtChipN(chips.foreignNet)}</div>`,
       `<div class="chips-row"><span class="chips-lbl">投信</span>${fmtChipN(chips.trustNet)}</div>`,
     ].join(''):'';
-    const chipsHTML=scoreBadge(cl?.label||null,cl?.cls||'sN',chipsDetail||'<span style="color:#9ca3af">—</span>');
+    const chipsNoDataLabel=r.ex==='TWO'?'上櫃':'無資料';
+    const chipsHTML=scoreBadge(cl?.label||chipsNoDataLabel,cl?.cls||'sN',chipsDetail||`<span style="color:#9ca3af">${r.ex==='TWO'?'上櫃股籌碼載入中':'T86 無此股資料'}</span>`);
     const spk=sparkline(r.closes||null);
     return `<tr>
       <td class="tc"><a href="${tv}" target="_blank" title="在 TradingView 開啟">${r.code}</a><br>${starEl}</td>
@@ -2987,7 +2989,7 @@ function renderTable(){
         const cs=renderCSCells(v,r.fund||null,chipsMap[r.code]||null);
         const mg=marginMap[r.code];
         const mgCell=(()=>{
-          if(!mg) return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
+          if(!mg) return `<td style="text-align:center;color:var(--text2);font-size:.65rem">${r.ex==='TWO'?'上櫃':'無資料'}</td>`;
           const ch=mg.change;
           const cls=ch>0?'color:#34d399':ch<0?'color:#f87171':'color:var(--text2)';
           const sign=ch>0?'+':'';
@@ -3038,8 +3040,10 @@ function renderTable(){
         // 葛拉漢合理價欄
         const grahamCell=(()=>{
           const f=r.fund,vcp=r.vcp;
-          if(!f||!vcp||!f.pe||!f.pb||f.pe<=0||f.pb<=0||!vcp.price)
-            return '<td style="text-align:center;color:var(--text2);font-size:.7rem">—</td>';
+          if(!f||!vcp||!f.pe||!f.pb||f.pe<=0||f.pb<=0||!vcp.price){
+            const why=!f?(r.ex==='TWO'?'上櫃':'無財報'):'缺PE/PB';
+            return `<td style="text-align:center;color:var(--text2);font-size:.65rem">${why}</td>`;
+          }
           const g=+(vcp.price*Math.sqrt(22.5/(f.pe*f.pb))).toFixed(1);
           const diff=+((g-vcp.price)/vcp.price*100).toFixed(1);
           const under=diff>0;
