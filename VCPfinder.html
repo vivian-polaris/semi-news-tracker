@@ -2011,7 +2011,7 @@ function calcVCP(data){
   const pctH=h52>0?((h52-price)/h52)*100:999;
   const atr10=calcATR(data,10),atr20=calcATR(data,20);
   const atrRat=(atr10&&atr20&&atr20>0)?atr10/atr20:null;
-  const v5=sma(volumes.slice(0,5),5),v20=sma(volumes.slice(0,20),20);
+  const v5=sma(volumes.slice(0,5),5),v10=sma(volumes.slice(0,10),10),v20=sma(volumes.slice(0,20),20);
   const vRat=(v5&&v20&&v20>0)?v5/v20:null;
   let score=0;
   const abM200=ma200!=null&&price>ma200;
@@ -2121,7 +2121,7 @@ function calcVCP(data){
     h52:+h52.toFixed(2),pctH:+pctH.toFixed(1),
     abM50,abM150,abM200,perfOrd:perf,stage2:abM50&&abM150&&abM200,
     atrL,atrS,atrRat:atrRat?+atrRat.toFixed(3):null,
-    volL,volS,vRat:vRat?+vRat.toFixed(2):null,
+    volL,volS,vRat:vRat?+vRat.toFixed(2):null,v10:v10?+v10.toFixed(0):null,
     rsi,contractions,
     ma5:ma5?+ma5.toFixed(2):null,
     ma10:ma10?+ma10.toFixed(2):null,
@@ -2667,6 +2667,11 @@ function getFiltered(){
     if(canslimMin>0&&r.vcp){
       const cs=calcCANSLIM(r.vcp,r.fund||null,chipsMap[r.code]||null);
       if(cs.total<canslimMin)return false;
+    }
+    // 10日均量門檻：股價≥50需>1000張，股價<50需>3000張（1張=1000股）
+    if(r.vcp.v10!=null){
+      const volThreshold=r.vcp.price>=50?1000000:3000000;
+      if(r.vcp.v10<volThreshold)return false;
     }
     return true;
   });
