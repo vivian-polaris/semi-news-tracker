@@ -146,14 +146,17 @@ details>summary::-webkit-details-marker,details>summary::marker{display:none;con
 .sum-val{font-size:1.7rem;font-weight:700;letter-spacing:-.02em}
 .sum-sub{font-size:.64rem;color:var(--text2);margin-top:2px}
 @media(max-width:640px){
-  .sum-grid{grid-template-columns:repeat(2,1fr);gap:8px}
-  #sumGrid .sum-card{flex:1 1 0;min-width:0;padding:5px 4px!important}
-  #sumGrid .sum-label{font-size:.52rem;letter-spacing:0;margin-bottom:1px}
-  #sumGrid .sum-val{font-size:1.1rem}
+  .sum-grid{grid-template-columns:repeat(2,1fr);gap:6px}
+  /* 掃描統計列：4 格橫排，數字縮小 */
+  #sumGrid{flex-wrap:wrap;gap:4px}
+  #sumGrid .sum-card{flex:1 1 0;min-width:0;padding:4px 3px!important}
+  #sumGrid .sum-label{font-size:.48rem;letter-spacing:0;margin-bottom:0}
+  #sumGrid .sum-val{font-size:.88rem!important}
   #sumGrid .sum-sub{display:none}
-  .sum-card{padding:10px 12px;border-radius:6px}
-  .sum-label{font-size:.62rem;letter-spacing:.04em;margin-bottom:3px}
-  .sum-val{font-size:1.5rem}
+  #sumGrid .scan-btn,#sumGrid #cancelBtn{width:100%;margin-top:4px}
+  .sum-card{padding:8px 10px;border-radius:6px}
+  .sum-label{font-size:.58rem;letter-spacing:.02em;margin-bottom:2px}
+  .sum-val{font-size:1.2rem}
   .sum-sub{display:none}
 }
 
@@ -417,11 +420,26 @@ footer a:hover{text-decoration:underline}
   .trump-swiper,.trump-track{padding:0!important}
   .trump-dots{margin-top:6px!important;gap:4px!important}
   /* 手機：凍結欄縮到剛好文字寬度 */
-  .tc{min-width:50px!important;max-width:50px!important;width:50px!important;font-size:.72rem!important;padding:5px 4px!important}
-  .tn{min-width:55px!important;max-width:72px!important;left:50px!important;font-size:.72rem!important;padding:5px 4px!important;overflow:hidden;text-overflow:ellipsis}
-  thead th:nth-child(1){min-width:50px!important;max-width:50px!important;width:50px!important;font-size:.72rem!important;padding:5px 4px!important}
-  thead th:nth-child(2){min-width:55px!important;left:50px!important;font-size:.72rem!important;padding:5px 4px!important}
-  .star-btn{font-size:.78rem!important}
+  .tc{min-width:48px!important;max-width:48px!important;width:48px!important;font-size:.68rem!important;padding:4px 3px!important}
+  .tn{min-width:52px!important;max-width:64px!important;left:48px!important;font-size:.68rem!important;padding:4px 3px!important;overflow:hidden;text-overflow:ellipsis}
+  thead th:nth-child(1){min-width:48px!important;max-width:48px!important;width:48px!important;font-size:.65rem!important;padding:4px 3px!important}
+  thead th:nth-child(2){min-width:52px!important;left:48px!important;font-size:.65rem!important;padding:4px 3px!important}
+  /* 主表格：所有欄位縮到剛好文字寬，無多餘空白 */
+  .tbl-wrap table th,.tbl-wrap table td{font-size:.62rem!important;padding:3px 4px!important;white-space:nowrap}
+  .tbl-wrap table{table-layout:auto}
+  .tprice{font-size:.68rem!important}
+  .tsec{font-size:.55rem!important;padding:1px 3px!important}
+  .scr-num{font-size:.72rem!important}
+  .star-btn{font-size:.7rem!important;padding:0 2px 0 0!important}
+  .sig{font-size:.6rem!important;padding:1px 4px!important}
+  .pct-b{font-size:.62rem!important;padding:1px 4px!important}
+  .ma-mini{font-size:.5rem!important}
+  .spark-cell{padding:2px 3px!important}
+  .tsec.tag{margin-top:1px!important}
+  /* 隔日沖候選名單：overflow 滾動 + 緊湊字體 */
+  #dtListWrap{padding:8px 10px!important;overflow-x:auto!important}
+  #dtListBody table{font-size:.68rem!important;min-width:480px}
+  #dtListBody th,#dtListBody td{padding:4px 6px!important;white-space:nowrap}
   .two-col-row>div{min-width:0}
   .news-card,.inv-card{overflow:hidden}
   /* toggle border radius when open */
