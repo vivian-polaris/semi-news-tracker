@@ -2667,10 +2667,8 @@ function getFiltered(){
       if(cs.total<canslimMin)return false;
     }
     // 10日均量門檻：股價≥50需>1000張，股價<50需>3000張（1張=1000股）
-    if(r.vcp.v10!=null){
-      const volThreshold=r.vcp.price>=50?1000000:3000000;
-      if(r.vcp.v10<volThreshold)return false;
-    }
+    // 用 >0 而非 !=null，確保舊快取（v10===undefined）也被過濾
+    {const vt=r.vcp.v10>0?r.vcp.v10:0,pt=r.vcp.price;if(vt<(pt>=50?1000000:3000000))return false;}
     return true;
   });
 }
@@ -3081,12 +3079,9 @@ function renderTable(){
       .map(r=>({r,s:dtCalc(r)}))
       .filter(x=>{
         if(x.s<50)return false;
-        // 10日均量門檻（同主表條件）
-        const v10=x.r.vcp?.v10,price=x.r.vcp?.price;
-        if(v10!=null&&price!=null){
-          const threshold=price>=50?1000000:3000000;
-          if(v10<threshold)return false;
-        }
+        // 10日均量門檻（同主表條件，用 >0 確保舊快取 undefined 也被擋）
+        const vt=x.r.vcp?.v10>0?x.r.vcp.v10:0,pt=x.r.vcp?.price||0;
+        if(vt<(pt>=50?1000000:3000000))return false;
         return true;
       })
       .sort((a,b)=>b.s-a.s)
@@ -3491,9 +3486,14 @@ async function lookupStock() {
           if(!pre?.c?.length||!r.vcp) return;
           // 更新現價
           if(r.vcp.price!==pre.c[0]){r.vcp.price=pre.c[0];updated++;}
+          // 補算舊快取缺少的 v10
+          const vols=pre.v||[];
+          if(!(r.vcp.v10>0)&&vols.length>=8){
+            const v10arr=vols.slice(0,10).filter(x=>x>0&&isFinite(x));
+            if(v10arr.length>=8){r.vcp.v10=Math.round(v10arr.reduce((a,b)=>a+b,0)/v10arr.length);updated++;}
+          }
           // 重算 pbBuy（修正舊快取 pbBuy 永遠 null 的 bug）
           const highs=pre.h||pre.c;
-          const vols=pre.v||[];
           const vcpLookback=Math.min(30,highs.length-1);
           const recentHArr=highs.slice(1,vcpLookback+1).filter(v=>v!=null&&isFinite(v));
           const vcpPivotNew=recentHArr.length>0?+Math.max(...recentHArr).toFixed(2):null;
@@ -3540,6 +3540,24 @@ async function lookupStock() {
       }
     }
   });
+
+  // 盤中每 3 分鐘輪詢即時價格，更新 allResults 並重渲染
+  setInterval(async()=>{
+    if(!isTradingHours()||!allResults.length||scanning)return;
+    const syms=allResults.filter(r=>r.vcp).map(r=>`${r.code}.${r.ex==='TWO'?'TWO':'TW'}`);
+    if(!syms.length)return;
+    await fetchLiveQuoteBatch(syms);
+    let updated=0;
+    allResults.forEach(r=>{
+      if(!r.vcp)return;
+      const sym=`${r.code}.${r.ex==='TWO'?'TWO':'TW'}`;
+      const cached=_liveQCache.get(sym);
+      if(cached&&Date.now()-cached.ts<LIVE_Q_TTL*2&&r.vcp.price!==cached.price){
+        r.vcp.price=cached.price;updated++;
+      }
+    });
+    if(updated>0)renderTable();
+  },3*60*1000);
 
   // Hotkey: Alt+R = 重新整理 AI 快訊（不清除 API key）
   document.addEventListener('keydown',e=>{
