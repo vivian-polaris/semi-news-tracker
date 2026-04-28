@@ -437,8 +437,7 @@ footer a:hover{text-decoration:underline}
   .spark-cell{padding:2px 3px!important}
   .tsec.tag{margin-top:1px!important}
   /* 產業欄：隱藏上市/上櫃文字，標題允許換行 */
-  .ex-label{display:none!important}
-  .th-sector{white-space:pre!important;text-align:center}
+  .ex-label{font-size:.5rem!important;margin-bottom:0!important}
   /* 隔日沖候選名單：overflow 滾動 + 緊湊字體 */
   #dtListWrap{padding:8px 10px!important;overflow-x:auto!important}
   #dtListBody table{font-size:.68rem!important;min-width:480px}
@@ -845,7 +844,7 @@ footer a:hover{text-decoration:underline}
     <tr>
       <th onclick="setSort('code')">代號 ⇅</th>
       <th onclick="setSort('name')">名稱</th>
-      <th onclick="setSort('sector',this)" class="th-sector">交易所<br>產業 ⇅</th>
+      <th onclick="setSort('sector',this)"><span style="display:block;white-space:nowrap">交易所</span><span style="white-space:nowrap">產業 ⇅</span></th>
       <th onclick="setSort('price')">現價 ⇅</th>
       <th>走勢</th>
       <th onclick="setSort('score')">VCP ⇅</th>
