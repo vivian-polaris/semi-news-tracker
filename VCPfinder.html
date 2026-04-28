@@ -664,11 +664,11 @@ footer a:hover{text-decoration:underline}
   </div>
   <div class="filter-row" id="scoreRow">
     <span class="flabel">VCP 分數</span>
-    <span class="pill f-on" onclick="setScore(0,this)">全部</span>
+    <span class="pill" onclick="setScore(0,this)">全部</span>
     <span class="pill" onclick="setScore(40,this)">≥ 40 VCP初步</span>
     <span class="pill" onclick="setScore(60,this)">≥ 60 候選 🌸</span>
     <span class="pill" onclick="setScore(70,this)">≥ 70</span>
-    <span class="pill" onclick="setScore(80,this)">≥ 80 強力 ⭐</span>
+    <span class="pill f-on" onclick="setScore(80,this)">≥ 80 強力 ⭐</span>
   </div>
   <div class="filter-row" id="pctRow">
     <span class="flabel">距高點</span>
@@ -680,7 +680,7 @@ footer a:hover{text-decoration:underline}
   </div>
   <div class="filter-row" id="secRow">
     <span class="flabel">產業</span>
-    <span class="pill s-on" data-sec="ALL" onclick="setSec('ALL',this)">全部</span>
+    <span class="pill" data-sec="ALL" onclick="setSec('ALL',this)">全部</span>
   </div>
   <div class="filter-row">
     <span class="flabel">其他</span>
@@ -690,7 +690,7 @@ footer a:hover{text-decoration:underline}
   </div>
   <div class="filter-row">
     <span class="flabel">籌碼</span>
-    <span class="pill" id="hideDoubleShortPill" onclick="toggleHideDoubleShort(this)">排除雙賣</span>
+    <span class="pill g-on" id="hideDoubleShortPill" onclick="toggleHideDoubleShort(this)">排除雙賣</span>
   </div>
   <div class="filter-row">
     <span class="flabel">基本面</span>
@@ -702,9 +702,9 @@ footer a:hover{text-decoration:underline}
   </div>
   <div class="filter-row">
     <span class="flabel">CAN SLIM</span>
-    <span class="pill g-on" id="csMin0" onclick="setCANSLIM(0,this)">全部</span>
+    <span class="pill" id="csMin0" onclick="setCANSLIM(0,this)">全部</span>
     <span class="pill" id="csMin3" onclick="setCANSLIM(3,this)">≥ 3項</span>
-    <span class="pill" id="csMin4" onclick="setCANSLIM(4,this)">≥ 4項 🌸</span>
+    <span class="pill g-on" id="csMin4" onclick="setCANSLIM(4,this)">≥ 4項 🌸</span>
     <span class="pill" id="csMin5" onclick="setCANSLIM(5,this)">≥ 5項 ⭐</span>
     <span class="pill" id="csMin6" onclick="setCANSLIM(6,this)">≥ 6項</span>
   </div>
@@ -935,12 +935,12 @@ const STOCKS = [
 ];
 
 // ─── State ────────────────────────────────────────────────────────────────
-const DEFAULT_SECTORS=new Set(['IC設計','PCB','伺服器','光學','光電','其他電子','化學','化工','半導體','散熱','數位雲端','機械','精密機械','被動元件','記憶體','資訊服務','通信網路','連接器','電子','電子代工','電子通路','電子零組件','電機','電源','面板','工業自動化','工業電腦']);
-let allResults=[], scoreMin=0, pctMax=999, secFilter=new Set(['ALL']), exFilter='ALL';
-let canslimMin=0;
+const DEFAULT_SEC_FILTER=new Set(['IC設計','PCB','伺服器','其他電子','化學','化工','半導體','散熱','數位雲端','油電燃氣','精密機械','被動元件','記憶體','資訊服務','通信網路','連接器','電子','電子代工','電子通路','電子零組件','電機','電源','電腦','面板']);
+let allResults=[], scoreMin=80, pctMax=999, secFilter=new Set([...DEFAULT_SEC_FILTER]), exFilter='ALL';
+let canslimMin=4;
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
-let hideDoubleShort=false;  // 預設不排除雙賣
+let hideDoubleShort=true;
 let fundMin=0;
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
@@ -2524,7 +2524,7 @@ async function startScan(){
   const secs=[...new Set(stocks.map(s=>s.sector))].filter(s=>s).sort();
   const secRow=document.getElementById('secRow');
   secRow.querySelectorAll('[data-sec]:not([data-sec="ALL"])').forEach(p=>p.remove());
-  secs.forEach(s=>{const p=document.createElement('span');p.className='pill';p.dataset.sec=s;p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);});
+  secs.forEach(s=>{const p=document.createElement('span');p.className='pill'+(secFilter.has('ALL')||secFilter.has(s)?' s-on':'');p.dataset.sec=s;p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);});
 
   // 盤中：融資餘額 await，即時價格背景抓（不阻塞掃描）
   if(isTradingHours()){
