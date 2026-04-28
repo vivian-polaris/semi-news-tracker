@@ -934,6 +934,7 @@ const STOCKS = [
 
 // ─── State ────────────────────────────────────────────────────────────────
 const DEFAULT_SEC_FILTER=new Set(['IC設計','PCB','伺服器','其他電子','化學','化工','半導體','散熱','數位雲端','油電燃氣','精密機械','被動元件','記憶體','資訊服務','通信網路','連接器','電子','電子代工','電子通路','電子零組件','電機','電源','電腦','面板']);
+const CACHE_VER=4; // 每次改篩選邏輯就加 1，自動讓舊快取失效
 let allResults=[], scoreMin=80, pctMax=999, secFilter=new Set([...DEFAULT_SEC_FILTER]), exFilter='ALL';
 let canslimMin=4;
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
@@ -2602,7 +2603,7 @@ async function startScan(){
     :`✅ 完成！共 ${done-failed} 支成功，VCP候選 ${vcpFound} 支，無數據 ${failed} 支`;
   if(!scanCancelled&&failed>total*0.5){err.style.display='';err.textContent=`⚠️ 超過半數無法取得數據（${failed}/${total}），可能是 CORS 限制或網路問題。建議掛 VPN 或改用 TradingView/FinLab。`;}
   renderAll();
-  try{localStorage.setItem('vcpCache',JSON.stringify({results:allResults,ts:Date.now()}));}catch(_){}
+  try{localStorage.setItem('vcpCache',JSON.stringify({results:allResults,ts:Date.now(),ver:CACHE_VER}));}catch(_){}
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────
@@ -3417,13 +3418,17 @@ async function lookupStock() {
   loadKeysFromHash();
   updateKeyStatus();
 
-  // Restore cache — always show cached results regardless of age; only auto-scan if no cache at all
+  // Restore cache — auto-invalidate if version mismatch; always show cached results otherwise
   let cacheLoaded=false, cacheTs=0;
   try{
     const raw=localStorage.getItem('vcpCache');
     if(raw){
-      const{results,ts}=JSON.parse(raw);
-      if(results&&results.length>0){
+      const parsed=JSON.parse(raw);
+      const{results,ts,ver}=parsed;
+      // 版本不符 → 清除舊快取，下面 if(!cacheLoaded) 會自動重新掃描
+      if(ver!==CACHE_VER){
+        localStorage.removeItem('vcpCache');
+      } else if(results&&results.length>0){
         cacheTs=ts||0;
         allResults=results;
         document.getElementById('scanBtn').textContent='重新掃描';
@@ -3432,12 +3437,12 @@ async function lookupStock() {
         const dateStr=dt.toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',weekday:'short'});
         const timeStr=dt.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
         const ageStr=age>=1440?`${Math.round(age/1440)}天前`:age>=60?`${Math.round(age/60)}小時前`:`${Math.round(age)}分鐘前`;
-        const stale=age>360; // >6小時標注為舊資料
+        const stale=age>60; // >1小時就算舊，提示重新掃描
         document.getElementById('scanInfo').innerHTML=
-          `${stale?'📅 ':''}上次掃描：<strong>${dateStr} ${timeStr}</strong>（${ageStr}）${stale?' · <span style="color:var(--purple);cursor:pointer" onclick="startScan()">重新掃描</span>':''}`;
+          `⚠️ 顯示快取結果（${ageStr}）— 篩選條件是即時的，但股票資料來自上次掃描。<span style="color:var(--purple);cursor:pointer;margin-left:6px" onclick="startScan()">立即重新掃描</span>`;
         renderAll();
         const cNote=document.getElementById('scanCacheNote');
-        if(cNote){cNote.innerHTML=`📅 上次掃描：${dateStr} ${timeStr}（${ageStr}）· <span style="cursor:pointer;color:var(--purple)" onclick="startScan()">重新掃描</span>`;cNote.style.display='';}
+        if(cNote){cNote.innerHTML=`⚠️ 快取：${dateStr} ${timeStr}（${ageStr}）· <span style="cursor:pointer;color:var(--purple)" onclick="startScan()">重新掃描</span>`;cNote.style.display='';}
         cacheLoaded=true;
         // ① 立即從 chips_all localStorage 恢復（零網路，掃描後必有）
         try{
