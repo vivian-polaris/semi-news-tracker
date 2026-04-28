@@ -399,16 +399,29 @@ footer a:hover{text-decoration:underline}
   /* market news/clock: single column stack on mobile */
   .two-col-row{grid-template-columns:1fr!important}
   .filter-toggle-hd{display:flex!important}
-  /* 手機：新聞與時鐘字體放大，移除多餘空間 */
-  .news-card{padding:8px 10px!important;min-height:0!important}
-  .news-head{margin-bottom:6px!important}
-  .news-body{font-size:1rem!important;line-height:1.55!important;word-break:break-word!important;overflow-wrap:break-word!important}
-  .news-item-link,.news-item-plain{font-size:.95rem!important;line-height:1.55!important}
-  .trump-card-text{font-size:.95rem!important;line-height:1.55!important}
-  .inv-card.c-clock{padding:12px 12px!important}
-  #clockBody{font-size:.88rem!important;line-height:1.75!important;min-height:0!important}
-  #clockSvg{margin:0 auto 6px!important}
-  .clock-badge{font-size:.82rem!important}
+  /* 手機：新聞與時鐘緊湊排版 */
+  .news-card{padding:6px 10px!important;min-height:0!important}
+  .news-head{margin-bottom:4px!important}
+  .news-body{font-size:.78rem!important;line-height:1.45!important;word-break:break-word!important;overflow-wrap:break-word!important}
+  .news-item-link,.news-item-plain{font-size:.76rem!important;line-height:1.45!important}
+  .trump-card-text{font-size:.76rem!important;line-height:1.45!important}
+  .inv-card.c-clock{padding:8px 10px!important}
+  #clockBody{font-size:.76rem!important;line-height:1.45!important;padding:8px 10px!important;min-height:0!important;margin-top:0!important}
+  #clockSvg{margin:0 auto 4px!important}
+  .clock-badge{font-size:.76rem!important;padding:3px 12px!important}
+  #clockPhase{margin-bottom:6px!important}
+  .trump-card{padding:2px 0 6px!important}
+  .trump-card-num{margin-bottom:3px!important;font-size:.6rem!important}
+  .trump-card-text{font-size:.76rem!important;line-height:1.45!important}
+  .trump-card-analysis{font-size:.72rem!important;margin-top:5px!important;line-height:1.4!important}
+  .trump-swiper,.trump-track{padding:0!important}
+  .trump-dots{margin-top:6px!important;gap:4px!important}
+  /* 手機：凍結欄縮到剛好文字寬度 */
+  .tc{min-width:50px!important;max-width:50px!important;width:50px!important;font-size:.72rem!important;padding:5px 4px!important}
+  .tn{min-width:55px!important;max-width:72px!important;left:50px!important;font-size:.72rem!important;padding:5px 4px!important;overflow:hidden;text-overflow:ellipsis}
+  thead th:nth-child(1){min-width:50px!important;max-width:50px!important;width:50px!important;font-size:.72rem!important;padding:5px 4px!important}
+  thead th:nth-child(2){min-width:55px!important;left:50px!important;font-size:.72rem!important;padding:5px 4px!important}
+  .star-btn{font-size:.78rem!important}
   .two-col-row>div{min-width:0}
   .news-card,.inv-card{overflow:hidden}
   /* toggle border radius when open */
@@ -1554,7 +1567,7 @@ ${newsList}`;
           <div class="trump-card-text" style="font-size:1rem;line-height:1.7">
             ${srcBadgeEl}${escH(s.item.title)}
           </div>
-          <div style="font-size:.88rem;color:var(--mint);margin-top:8px;line-height:1.6">→ ${escH(s.analysis)}</div>
+          <div class="trump-card-analysis" style="font-size:.88rem;color:var(--mint);margin-top:8px;line-height:1.6">→ ${escH(s.analysis)}</div>
           ${s.item.dateStr?`<div style="font-size:.68rem;color:var(--text2);margin-top:4px">${escH(s.item.dateStr)}</div>`:''}
           ${linkBtn}
         </div>`;
