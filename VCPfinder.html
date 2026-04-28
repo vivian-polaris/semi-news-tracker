@@ -3075,15 +3075,9 @@ function renderTable(){
       return s;
     };
 
-    const candidates=allResults
+    const candidates=getFiltered()
       .map(r=>({r,s:dtCalc(r)}))
-      .filter(x=>{
-        if(x.s<50)return false;
-        // 10日均量門檻（同主表條件，用 >0 確保舊快取 undefined 也被擋）
-        const vt=x.r.vcp?.v10>0?x.r.vcp.v10:0,pt=x.r.vcp?.price||0;
-        if(vt<(pt>=50?1000000:3000000))return false;
-        return true;
-      })
+      .filter(x=>x.s>=50)
       .sort((a,b)=>b.s-a.s)
       .slice(0,10);
 
