@@ -436,6 +436,9 @@ footer a:hover{text-decoration:underline}
   .ma-mini{font-size:.5rem!important}
   .spark-cell{padding:2px 3px!important}
   .tsec.tag{margin-top:1px!important}
+  /* 產業欄：隱藏上市/上櫃文字，標題允許換行 */
+  .ex-label{display:none!important}
+  .th-sector{white-space:normal!important;min-width:0!important;text-align:center}
   /* 隔日沖候選名單：overflow 滾動 + 緊湊字體 */
   #dtListWrap{padding:8px 10px!important;overflow-x:auto!important}
   #dtListBody table{font-size:.68rem!important;min-width:480px}
@@ -842,7 +845,7 @@ footer a:hover{text-decoration:underline}
     <tr>
       <th onclick="setSort('code')">代號 ⇅</th>
       <th onclick="setSort('name')">名稱</th>
-      <th onclick="setSort('sector',this)">交易所／產業 ⇅</th>
+      <th onclick="setSort('sector',this)" class="th-sector">交易所<br>產業 ⇅</th>
       <th onclick="setSort('price')">現價 ⇅</th>
       <th>走勢</th>
       <th onclick="setSort('score')">VCP分數 ⇅</th>
@@ -2955,7 +2958,7 @@ function renderTable(){
       return `<tr style="opacity:.45">
         <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
         <td class="tn">${r.name}</td>
-        <td><span style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span>${r.sector?`<span class="tsec">${r.sector}</span>`:''}</td>
+        <td><span class="ex-label" style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span>${r.sector?`<span class="tsec">${r.sector}</span>`:''}</td>
         <td colspan="17" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
       </tr>`;
     }
@@ -3001,7 +3004,7 @@ function renderTable(){
     return `<tr>
       <td class="tc"><a href="${tv}" target="_blank" title="在 TradingView 開啟">${r.code}</a><br>${starEl}</td>
       <td class="tn">${r.name}</td>
-      <td><span style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span><span class="tsec">${r.sector}</span></td>
+      <td><span class="ex-label" style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span><span class="tsec">${r.sector}</span></td>
       <td class="tprice">NT$${fmtP(v.price)}</td>
       <td class="spark-cell">${spk}</td>
       <td style="text-align:center;white-space:nowrap">
