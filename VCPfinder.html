@@ -3372,6 +3372,14 @@ function renderTable(){
       if(f?.pe>0&&f?.pb>0){const g=v.price*Math.sqrt(22.5/(f.pe*f.pb));if(g>v.price)s+=10;}
       const mg=marginMap[r.code];if(mg?.change>0)s+=10;
       if(v.fin?.isExhaustion)s+=10;
+      const ch=chipsMap[r.code];
+      const fNet=ch?parseChipNum(ch.foreignNet)??0:null;
+      const tNet=ch?parseChipNum(ch.trustNet)??0:null;
+      if(fNet!==null&&tNet!==null){
+        if(fNet<0&&tNet<0)return-1;
+        if(fNet>0&&tNet>0)s+=20;
+        else if(fNet>0||tNet>0)s+=10;
+      }
       return s;
     };
 
@@ -3394,6 +3402,7 @@ function renderTable(){
         <th style="padding:4px 8px;text-align:right">買點</th>
         <th style="padding:4px 8px;text-align:right">停損</th>
         <th style="padding:4px 8px;text-align:center">進場訊號</th>
+        <th style="padding:4px 8px;text-align:center">籌碼</th>
         <th style="padding:4px 8px;text-align:center">隔日沖分</th>
       </tr></thead>
       <tbody>${candidates.map(({r,s},i)=>{
@@ -3402,6 +3411,11 @@ function renderTable(){
         const sigCol=v.pivotStatusCls==='g'?'#34d399':v.pivotStatusCls==='r'?'#f87171':'#fbbf24';
         const scoreCol=s>=70?'#34d399':s>=50?'#fbbf24':'#9ca3af';
         const tv=`https://www.tradingview.com/chart/?symbol=${r.ex==='TWO'?'TPEX':'TWSE'}%3A${r.code}`;
+        const dtCh=chipsMap[r.code];
+        const dtF=dtCh?parseChipNum(dtCh.foreignNet)??0:null;
+        const dtT=dtCh?parseChipNum(dtCh.trustNet)??0:null;
+        const dtChipTxt=dtF===null?'—':dtF>0&&dtT>0?'外＋投✅':dtF>0?'外資買':dtT>0?'投信買':dtF<0&&dtT<0?'雙賣⚠':'持平';
+        const dtChipCol=dtF===null?'#9ca3af':dtF>0&&dtT>0?'#34d399':dtF>0||dtT>0?'#fbbf24':dtF<0&&dtT<0?'#f87171':'#9ca3af';
         return `<tr style="border-bottom:1px solid rgba(45,55,72,.4);transition:background .1s" onmouseover="this.style.background='rgba(79,126,247,.06)'" onmouseout="this.style.background=''">
           <td style="padding:8px 8px;color:var(--text2);font-weight:700">${i+1}</td>
           <td style="padding:8px 8px"><a href="${tv}" target="_blank" style="color:var(--purple);font-weight:700;text-decoration:none">${escH(r.code)}</a></td>
@@ -3410,6 +3424,7 @@ function renderTable(){
           <td style="padding:8px 8px;text-align:right;color:var(--text2)">$${v.vcpPivot||'—'}</td>
           <td style="padding:8px 8px;text-align:right;color:#f87171">${stop?'$'+stop:'—'}</td>
           <td style="padding:8px 8px;text-align:center;font-size:.7rem;font-weight:800;color:${v.pbBuy?.strong?'#34d399':'#fbbf24'}">${v.pbBuy?.strong?'✅ 買：回踩地量':'⏳ 不買：等量再縮'}</td>
+          <td style="padding:8px 8px;text-align:center;font-size:.68rem;font-weight:800;color:${dtChipCol}">${dtChipTxt}</td>
           <td style="padding:8px 8px;text-align:center;font-weight:800;color:${scoreCol}">${s}分</td>
         </tr>`;
       }).join('')}</tbody>
@@ -3700,6 +3715,13 @@ async function lookupStock() {
 
   const buyScore = vcpData.score;
 
+  const lkChips = chipsMap[stockInfo.code] || null;
+  const lkF = lkChips ? parseChipNum(lkChips.foreignNet) ?? 0 : null;
+  const lkT = lkChips ? parseChipNum(lkChips.trustNet) ?? 0 : null;
+  const lkBothBuy  = lkF !== null && lkF > 0 && lkT !== null && lkT > 0;
+  const lkOneBuy   = lkF !== null && lkT !== null && (lkF > 0 || lkT > 0) && !lkBothBuy;
+  const lkBothSell = lkF !== null && lkF < 0 && lkT !== null && lkT < 0;
+
   let sellPts = 0;
   if (vcpData.pctH < 3)       sellPts += 45;
   else if (vcpData.pctH < 7)  sellPts += 28;
@@ -3735,14 +3757,30 @@ async function lookupStock() {
   // ── 各股快查進場訊號 ────────────────────────────────────────────────────────
   let actionLabel,actionColor,actionBg,actionNote;
   if(vcpData.pbBuy?.strong){
-    actionLabel='✅ 現在買';actionColor='#fff';actionBg='rgba(5,150,105,.55)';
-    actionNote=`回踩地量（量比 ${vcpData.pbBuy.volRatio}），距買點 ${Math.abs(vcpData.pbBuy.dist)}%。停損：進場價 −5%`;
+    if(lkBothBuy){
+      actionLabel='🟢 強烈建議買入';actionColor='#34d399';actionBg='rgba(5,150,105,.45)';
+      actionNote=`回踩地量（量比 ${vcpData.pbBuy.volRatio}）＋外資＆投信同時買超。停損：進場價 −5%`;
+    }else if(lkOneBuy){
+      actionLabel='✅ 建議買入';actionColor='#fff';actionBg='rgba(5,150,105,.55)';
+      actionNote=`回踩地量（量比 ${vcpData.pbBuy.volRatio}）＋${lkF>0?'外資':'投信'}買超支撐。停損：進場價 −5%`;
+    }else if(lkBothSell){
+      actionLabel='⚠️ 暫緩：籌碼偏空';actionColor='#fbbf24';actionBg='rgba(202,138,4,.2)';
+      actionNote=`技術面回踩地量（量比 ${vcpData.pbBuy.volRatio}），但外資＆投信雙賣超，等籌碼轉向再進`;
+    }else{
+      actionLabel='✅ 現在買';actionColor='#fff';actionBg='rgba(5,150,105,.55)';
+      actionNote=`回踩地量（量比 ${vcpData.pbBuy.volRatio}），距買點 ${Math.abs(vcpData.pbBuy.dist)}%。停損：進場價 −5%`;
+    }
   }else if(vcpData.pbBuy){
     actionLabel='⏳ 不買：等量再縮';actionColor='#fbbf24';actionBg='rgba(202,138,4,.15)';
     actionNote=`突破後回踩中，量比 ${vcpData.pbBuy.volRatio}（縮但未到地量<30%均量）。明日量縮更多再買`;
   }else if(vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>8||sellScore>=65){
-    actionLabel='🔴 現在賣';actionColor='#f87171';actionBg='rgba(220,38,38,.18)';
-    actionNote=vcpData.distVcpPivot>8?`已超突破點 +${vcpData.distVcpPivot}%，過熱。若持有考慮獲利了結`:`賣出壓力 ${sellScore}分，RSI/距高點顯示超買，若持有考慮減碼`;
+    if(lkBothSell){
+      actionLabel='🔴 建議賣出';actionColor='#f87171';actionBg='rgba(220,38,38,.22)';
+      actionNote=`外資＆投信雙賣超＋${vcpData.distVcpPivot>8?`超突破點+${vcpData.distVcpPivot}%過熱`:`賣出壓力${sellScore}分超買`}，建議減碼`;
+    }else{
+      actionLabel='🔴 現在賣';actionColor='#f87171';actionBg='rgba(220,38,38,.18)';
+      actionNote=vcpData.distVcpPivot>8?`已超突破點 +${vcpData.distVcpPivot}%，過熱。若持有考慮獲利了結`:`賣出壓力 ${sellScore}分，RSI/距高點顯示超買，若持有考慮減碼`;
+    }
   }else if(vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>=0&&vcpData.distVcpPivot<=3){
     actionLabel='⏳ 不買：等回踩縮量';actionColor='#9ca3af';actionBg='rgba(113,113,122,.15)';
     actionNote=`剛突破 $${vcpData.vcpPivot}，不追當下。等小幅回踩 + 地量再買`;
@@ -3801,6 +3839,8 @@ async function lookupStock() {
         ｜ 量比 <strong>${vcpData.vRat ?? 'N/A'}</strong>
         ${vcpData.rsi != null ? `｜ RSI <strong>${vcpData.rsi}</strong>` : ''}
         ${vcpData.pp!=null?`｜ R1 <strong>${vcpData.ppR1}</strong> PP <strong>${vcpData.pp}</strong> S1 <strong>${vcpData.ppS1}</strong>`:''}
+        ${lkF!==null?`｜ 外資 <strong style="color:${lkF>0?'#34d399':'#f87171'}">${lkF>0?'+':''}${lkF}千股</strong>`:''}
+        ${lkT!==null?`｜ 投信 <strong style="color:${lkT>0?'#34d399':'#f87171'}">${lkT>0?'+':''}${lkT}千股</strong>`:''}
       </div>
     </div>`;
 }
