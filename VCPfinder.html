@@ -875,6 +875,8 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('signal',this)" title="進場訊號：✅買=回踩地量，現在可買。⏳不買=條件未到位，繼續等。🚫不買=過熱或尚未突破。操作流程：等放量突破→等回踩縮量（地量）→才買。">訊號 ⇅</th>
       <th onclick="setSort('graham',this)" title="葛拉漢合理價 = 現價 × √(22.5 ÷ (PE × PB))。來源：台灣證交所 BWIBBU 官方數據。低估=綠・高估=紅">估值 ⇅</th>
       <th onclick="setSort('margin',this)" title="融資今日餘額變化（千股），盤中即時・收盤固定">融資 ⇅</th>
+      <th title="2026年除息日（TWSE TWT49U），距今≤14天標紅">除息日</th>
+      <th title="2026年法說會：點擊連結至公開資訊觀測站查詢該股法說會">法說會</th>
       <th onclick="setSort('csC',this)" title="Current：EPS/營收成長≥25%" style="width:28px;min-width:28px;max-width:28px;text-align:center;cursor:pointer">C ⇅</th>
       <th onclick="setSort('csA',this)" title="Annual ROE≥15%" style="width:28px;min-width:28px;max-width:28px;text-align:center;cursor:pointer">A ⇅</th>
       <th onclick="setSort('csN',this)" title="Near new high &lt;5%" style="width:28px;min-width:28px;max-width:28px;text-align:center;cursor:pointer">N ⇅</th>
@@ -888,7 +890,7 @@ footer a:hover{text-decoration:underline}
     </tr>
   </thead>
   <tbody id="tblBody">
-    <tr class="load-row"><td colspan="20">開啟自動掃描中...</td></tr>
+    <tr class="load-row"><td colspan="22">開啟自動掃描中...</td></tr>
   </tbody>
 </table>
 </div>
@@ -989,6 +991,8 @@ const STOCKS = [
 const DEFAULT_SEC_FILTER=new Set(['IC設計','PCB','伺服器','其他電子','化學','化工','半導體','散熱','數位雲端','油電燃氣','精密機械','被動元件','記憶體','資訊服務','通信網路','連接器','電子','電子代工','電子通路','電子零組件','電機','電源','電腦','面板']);
 const CACHE_VER=4; // 每次改篩選邏輯就加 1，自動讓舊快取失效
 let allResults=[], scoreMin=80, pctMax=999, secFilter=new Set([...DEFAULT_SEC_FILTER]), exFilter='ALL', signalFilter='ALL';
+const exDivMap2026={};  // code -> "MM/DD" 除息日
+const confMap2026={};   // code -> MOPS URL
 let canslimMin=4;
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
@@ -1055,6 +1059,36 @@ function loadMarginFromDaily(){
 }
 // 保留空的 async 函數讓掃描流程不出錯
 async function loadMarginData(){loadMarginFromDaily();}
+
+// ── 2026 除息日載入（TWSE TWT49U）───────────────────────────────────────────
+async function loadExDiv2026(){
+  const cacheKey='exDiv2026';
+  const cached=lsGet(cacheKey);
+  if(cached?.data&&Date.now()-(cached.ts||0)<12*3600*1000){Object.assign(exDivMap2026,cached.data);return;}
+  const url='https://www.twse.com.tw/rwd/zh/exRight/TWT49U?response=json&year=2026&month=&type=';
+  const proxies=[url,'https://corsproxy.io/?'+encodeURIComponent(url),'https://api.allorigins.win/raw?url='+encodeURIComponent(url)];
+  for(const u of proxies){
+    try{
+      const r=await fetchTO(u,6000);
+      if(!r.ok)continue;
+      const text=await r.text();
+      if(!text||text.trim().startsWith('<'))continue;
+      const j=JSON.parse(text);
+      if(j?.stat==='OK'&&Array.isArray(j.data)){
+        j.data.forEach(row=>{
+          const code=String(row[0]||'').trim();
+          const dateRaw=String(row[2]||'').trim(); // 民國 "115/07/20"
+          if(!code||!dateRaw)return;
+          const parts=dateRaw.split('/');
+          if(parts.length===3) exDivMap2026[code]=`${parts[1]}/${parts[2]}`;
+        });
+        lsSet(cacheKey,{data:{...exDivMap2026},ts:Date.now()});
+        break;
+      }
+    }catch(_){}
+  }
+}
+
 async function loadStockPrices(){
   if(stockPriceLoaded)return;
   const v=new Date().toISOString().slice(0,13);
@@ -2559,7 +2593,7 @@ async function startScan(){
   document.getElementById('sumGrid').style.display='';
   document.getElementById('filterBox').style.display='';
   document.getElementById('statsBar').style.display='';
-  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="20"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
+  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="22"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
 
   // Get stock list based on selected source
   let stocks;
@@ -2972,17 +3006,17 @@ function renderTable(){
   document.getElementById('showN').textContent=sorted.length;
   document.getElementById('totalN').textContent=counted;
   const tbody=document.getElementById('tblBody');
-  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="20">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
+  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="22">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
   if(!sorted.length){
     if(scanning){
-      tbody.innerHTML='<tr class="load-row"><td colspan="20"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
+      tbody.innerHTML='<tr class="load-row"><td colspan="22"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
     } else {
       const hasVcp=allResults.filter(r=>r.vcp).length;
       const passMin=allResults.filter(r=>r.vcp&&r.vcp.score>=scoreMin).length;
       if(hasVcp>0&&passMin===0&&scoreMin>=40){
-        tbody.innerHTML=`<tr class="empty-row"><td colspan="20">⚠️ 目前市場整體偏弱，${hasVcp} 支股票 VCP 分數均低於 ${scoreMin} 分<br><span style="font-size:.75rem;color:var(--text2)">台股受外部衝擊，多數股票尚未形成 VCP 型態</span><br><button onclick="document.querySelector('#scoreRow .pill').click()" style="margin-top:6px;padding:4px 14px;background:var(--purple);border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:.82rem">顯示全部股票（忽略分數）</button></td></tr>`;
+        tbody.innerHTML=`<tr class="empty-row"><td colspan="22">⚠️ 目前市場整體偏弱，${hasVcp} 支股票 VCP 分數均低於 ${scoreMin} 分<br><span style="font-size:.75rem;color:var(--text2)">台股受外部衝擊，多數股票尚未形成 VCP 型態</span><br><button onclick="document.querySelector('#scoreRow .pill').click()" style="margin-top:6px;padding:4px 14px;background:var(--purple);border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:.82rem">顯示全部股票（忽略分數）</button></td></tr>`;
       } else {
-        tbody.innerHTML='<tr class="empty-row"><td colspan="20">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';
+        tbody.innerHTML='<tr class="empty-row"><td colspan="22">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';
       }
     }
     return;
@@ -3118,7 +3152,29 @@ function renderTable(){
             <div style="font-size:.62rem;font-weight:700;color:${col}">${label}</div>
           </td>`;
         })();
-        return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+pivotCell+signalCell+grahamCell+mgCell+cs.seven;
+        // ── 除息日欄 ────────────────────────────────────────────────────────
+        const exDivCell=(()=>{
+          const mmdd=exDivMap2026[r.code];
+          if(!mmdd) return '<td style="text-align:center;color:var(--text2);font-size:.65rem">—</td>';
+          const [mm,dd]=mmdd.split('/');
+          const today=new Date();
+          const exDate=new Date(2026,parseInt(mm)-1,parseInt(dd));
+          const daysLeft=Math.round((exDate-today)/86400000);
+          const col=daysLeft<=7?'#f87171':daysLeft<=14?'#fbbf24':'#34d399';
+          const note=daysLeft>=0?`距今 ${daysLeft} 天`:'已過';
+          return `<td style="text-align:center;white-space:nowrap" title="除息日 2026/${mmdd}・${note}">
+            <div style="font-size:.72rem;font-weight:700;color:${col}">${mmdd}</div>
+            <div style="font-size:.58rem;color:var(--text2)">${daysLeft>=0?daysLeft+'天後':'已過'}</div>
+          </td>`;
+        })();
+        // ── 法說會欄 ────────────────────────────────────────────────────────
+        const confCell=(()=>{
+          const mopsUrl=`https://mops.twse.com.tw/mops/web/t100sb21?step=1&year=&month=&co_id=${r.code}&type1=&OK=%E6%9F%A5%E8%A9%A2`;
+          return `<td style="text-align:center">
+            <a href="${mopsUrl}" target="_blank" style="font-size:.65rem;color:var(--purple);text-decoration:none;background:rgba(99,102,241,.12);padding:2px 6px;border-radius:4px;white-space:nowrap">查詢↗</a>
+          </td>`;
+        })();
+        return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+pivotCell+signalCell+grahamCell+mgCell+exDivCell+confCell+cs.seven;
       })()}
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
       <td><div class="ma-row">${maHTML||'—'}</div></td>
@@ -3505,12 +3561,41 @@ async function lookupStock() {
   const sCls = sellScore >= 60 ? 'sA' : sellScore >= 40 ? 'sB' : 'sC';
   const tv = `https://www.tradingview.com/chart/?symbol=${stockInfo.ex==='TWO'?'TPEX':'TWSE'}%3A${stockInfo.code}`;
 
+  // ── 各股快查進場訊號 ────────────────────────────────────────────────────────
+  let actionLabel,actionColor,actionBg,actionNote;
+  if(vcpData.pbBuy?.strong){
+    actionLabel='✅ 現在買';actionColor='#fff';actionBg='rgba(5,150,105,.55)';
+    actionNote=`回踩地量（量比 ${vcpData.pbBuy.volRatio}），距買點 ${Math.abs(vcpData.pbBuy.dist)}%。停損：進場價 −5%`;
+  }else if(vcpData.pbBuy){
+    actionLabel='⏳ 不買：等量再縮';actionColor='#fbbf24';actionBg='rgba(202,138,4,.15)';
+    actionNote=`突破後回踩中，量比 ${vcpData.pbBuy.volRatio}（縮但未到地量<30%均量）。明日量縮更多再買`;
+  }else if(vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>8||sellScore>=65){
+    actionLabel='🔴 現在賣';actionColor='#f87171';actionBg='rgba(220,38,38,.18)';
+    actionNote=vcpData.distVcpPivot>8?`已超突破點 +${vcpData.distVcpPivot}%，過熱。若持有考慮獲利了結`:`賣出壓力 ${sellScore}分，RSI/距高點顯示超買，若持有考慮減碼`;
+  }else if(vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>=0&&vcpData.distVcpPivot<=3){
+    actionLabel='⏳ 不買：等回踩縮量';actionColor='#9ca3af';actionBg='rgba(113,113,122,.15)';
+    actionNote=`剛突破 $${vcpData.vcpPivot}，不追當下。等小幅回踩 + 地量再買`;
+  }else if(vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>3&&vcpData.distVcpPivot<=8){
+    actionLabel='⏳ 不買：等拉回';actionColor='#f97316';actionBg='rgba(249,115,22,.15)';
+    actionNote=`突破後已漲 +${vcpData.distVcpPivot}%，追高風險大。等拉回至 $${vcpData.vcpPivot} 附近再評估`;
+  }else if(vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>=-2&&vcpData.distVcpPivot<0){
+    actionLabel='🚫 不買：等突破';actionColor='#60a5fa';actionBg='rgba(37,99,235,.12)';
+    actionNote=`距突破點 $${vcpData.vcpPivot} 僅差 ${Math.abs(vcpData.distVcpPivot)}%。①等放量突破 ②突破後等回踩縮量 ③才買`;
+  }else{
+    actionLabel='🚫 不買：整理中';actionColor='#9ca3af';actionBg='rgba(75,85,99,.15)';
+    actionNote=vcpData.vcpPivot?`距突破點 $${vcpData.vcpPivot} 尚差 ${Math.abs(vcpData.distVcpPivot??0)}%，形態未成熟`:'技術形態不符 VCP 條件';
+  }
+
   res.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
       <span class="tc" style="font-size:1rem">${stockInfo.code}</span>
       <span class="tn" style="font-size:.95rem">${escH(stockInfo.name)}</span>
       ${stockInfo.sector ? `<span class="tsec">${escH(stockInfo.sector)}</span>` : ''}
       <a href="${tv}" target="_blank" class="tv-btn">TV</a>
+    </div>
+    <div style="text-align:center;padding:10px 16px;border-radius:8px;background:${actionBg};margin-bottom:10px;border:1.5px solid ${actionColor}40">
+      <div style="font-size:1.15rem;font-weight:800;color:${actionColor}">${actionLabel}</div>
+      <div style="font-size:.7rem;color:var(--text2);margin-top:4px">${escH(actionNote)}</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
       <div class="sum-card" style="padding:12px;text-align:center">
@@ -3603,11 +3688,12 @@ async function lookupStock() {
 
   // 無快取時才自動啟動掃描
   if(!cacheLoaded){
-    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="20"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
+    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="22"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
     setTimeout(()=>startScan(),1200);
   }
 
   // 頁面載入：同時載入所有靜態資料，完成後顯示新聞/時鐘
+  loadExDiv2026().catch(()=>{});
   Promise.all([loadTWSEDaily(), loadStockPrices()]).finally(()=>{
     loadTrump(true);
     loadClock(true);
