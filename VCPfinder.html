@@ -778,6 +778,16 @@ footer a:hover{text-decoration:underline}
     <span style="color:var(--mint)">≥ 5 項</span> 視為強力 CAN SLIM 候選，<span style="color:var(--orange)">3–4 項</span> 為中等，&lt; 3 項建議觀望。<br>
     <span style="color:var(--text2);font-size:.72rem">注意：C / A 項目來自 Yahoo Finance，週末或假日可能無最新財報資料。</span>
   </div>
+  <div class="note" style="margin-top:8px;border-left:3px solid var(--mint)">
+    <strong style="color:var(--mint)">訊號欄說明 — 每個訊號代表什麼、應該做什麼</strong><br><br>
+    <strong style="color:#34d399">✅ 買：回踩地量</strong> — 股票在突破買點後拉回，且今日成交量縮至均量 30% 以下（地量）。<strong>現在可買入。</strong>停損設進場價 −5%。<br><br>
+    <strong style="color:#fbbf24">⏳ 不買：等量再縮</strong> — 突破後正在回踩，量有縮但尚未到地量（目前約均量 30–50%）。<strong>今日不買，等明日量繼續萎縮至地量再進場。</strong><br><br>
+    <strong style="color:#9ca3af">⏳ 不買：等量縮回踩</strong> — 剛剛突破買點（0–3% 內），突破當下不追。<strong>等股價小幅回踩 + 縮量後再買。</strong><br><br>
+    <strong style="color:#f97316">⏳ 不買：等回踩</strong> — 突破後已漲 3–8%，此時追高停損空間不足。<strong>等拉回至買點附近 + 縮量再進場。</strong><br><br>
+    <strong style="color:#f87171">🚫 不買：過熱</strong> — 已超突破點 8% 以上，風險極高。<strong>不碰，等大幅回踩後重新評估。</strong><br><br>
+    <strong style="color:#60a5fa">🚫 不買：等突破 $XXX</strong> — 尚未突破近期高點 $XXX。<strong>操作流程：①等放量突破 $XXX → ②突破後不追，等 1–3 日回踩 → ③量縮至地量才買。</strong><br><br>
+    <span style="color:var(--text2);font-size:.7rem">提示：滑鼠移到訊號標籤上方，可看到含具體數字的詳細說明。</span>
+  </div>
   <div class="note" style="margin-top:8px">
     <strong>掃描說明：</strong>只顯示 VCP 候選股，掃描中即時更新。全台灣掃描約 <strong>8–15 分鐘</strong>。<br>
     <strong>VCP 理論：</strong>出自 Mark Minervini《超級績效》· 僅供研究參考，不構成投資建議。<br>
@@ -855,7 +865,7 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('canslim',this)">CANSLIM ⇅</th>
       <th onclick="setSort('fund',this)">基本面 ⇅</th>
       <th onclick="setSort('chips',this)">籌碼 ⇅</th>
-      <th onclick="setSort('pivot',this)" title="VCP突破買點：近30根K線最高點（排除今天）。突破+放量=剛過高點≤3%且量>1.3倍均量；突破待量=突破但量不足">買點 ⇅</th>
+      <th onclick="setSort('pivot',this)" title="買點位置：股價與近30日高點的關係。整理中→不買（等突破）。即將突破→不買（設警示）。突破→等回踩縮量才買。過熱→不買。操作訊號看右邊「訊號」欄。">買點 ⇅</th>
       <th onclick="setSort('signal',this)" title="進場訊號：✅買=回踩地量，現在可買。⏳不買=條件未到位，繼續等。🚫不買=過熱或尚未突破。操作流程：等放量突破→等回踩縮量（地量）→才買。">訊號 ⇅</th>
       <th onclick="setSort('graham',this)" title="葛拉漢合理價 = 現價 × √(22.5 ÷ (PE × PB))。來源：台灣證交所 BWIBBU 官方數據。低估=綠・高估=紅">估值 ⇅</th>
       <th onclick="setSort('margin',this)" title="融資今日餘額變化（千股），盤中即時・收盤固定">融資 ⇅</th>
@@ -2111,23 +2121,23 @@ function calcVCP(data){
   if(distVcpPivot!==null){
     if(distVcpPivot>0&&distVcpPivot<=3){
       const hasVol=volumes[0]&&v20&&volumes[0]>v20*1.3;
-      pivotStatus=hasVol?'突破+放量':'突破待量';
+      pivotStatus=hasVol?'突破放量→等回踩':'突破→等縮量回踩';
       pivotStatusCls=hasVol?'g':'o';
       pivotNote=hasVol
-        ?`剛突破近期高點 ${vcpPivot}，漲幅 +${distVcpPivot}%，且有放量確認`
-        :`剛突破近期高點 ${vcpPivot}，漲幅 +${distVcpPivot}%，但成交量未明顯放大，需確認`;
+        ?`剛突破 $${vcpPivot}，放量確認（+${distVcpPivot}%）。【不追當下】等回踩縮量再買。`
+        :`剛突破 $${vcpPivot}（+${distVcpPivot}%），量未放大。【不追】等回踩且量縮至地量再買。`;
     }else if(distVcpPivot>3&&distVcpPivot<=8){
-      pivotStatus='稍超買點';pivotStatusCls='o';
-      pivotNote=`突破後已漲 +${distVcpPivot}%，稍超最佳進場點，可等回測`;
+      pivotStatus='超買→不買等踩';pivotStatusCls='o';
+      pivotNote=`突破後已漲 +${distVcpPivot}%，追高停損空間不足。【不買】等拉回至 $${vcpPivot} 附近再評估。`;
     }else if(distVcpPivot>8){
-      pivotStatus='追高風險';pivotStatusCls='r';
-      pivotNote=`已超買點 +${distVcpPivot}%，追高風險偏高，等待回測確認`;
+      pivotStatus='過熱→不買';pivotStatusCls='r';
+      pivotNote=`已超突破點 +${distVcpPivot}%，嚴重過熱。【不買】等大幅回踩後重新評估。`;
     }else if(distVcpPivot<0&&distVcpPivot>=-2){
-      pivotStatus='逼近買點';pivotStatusCls='o';
-      pivotNote=`距近期高點 ${vcpPivot} 僅差 ${Math.abs(distVcpPivot)}%，可設定警示等突破`;
+      pivotStatus='即將突破→待觀察';pivotStatusCls='o';
+      pivotNote=`距突破點 $${vcpPivot} 僅差 ${Math.abs(distVcpPivot)}%。【不買】設警示等放量突破，突破後再等回踩縮量才買。`;
     }else{
-      pivotStatus='整理中';pivotStatusCls='n';
-      pivotNote=`距近期高點 ${vcpPivot} 尚差 ${Math.abs(distVcpPivot)}%，等待形態成熟突破`;
+      pivotStatus='整理中→不買';pivotStatusCls='n';
+      pivotNote=`距突破點 $${vcpPivot} 尚差 ${Math.abs(distVcpPivot)}%，形態尚未成熟。【不買】等突破後回踩縮量才買。`;
     }
   }
 
@@ -3153,7 +3163,7 @@ function renderTable(){
       <tbody>${candidates.map(({r,s},i)=>{
         const v=r.vcp;
         const stop=v.vcpPivot?+(v.vcpPivot*0.92).toFixed(1):null;
-        const sigCol=v.pivotStatus==='突破+放量'?'#34d399':'#fbbf24';
+        const sigCol=v.pivotStatusCls==='g'?'#34d399':v.pivotStatusCls==='r'?'#f87171':'#fbbf24';
         const scoreCol=s>=70?'#34d399':s>=50?'#fbbf24':'#9ca3af';
         const tv=`https://www.tradingview.com/chart/?symbol=TWSE%3A${r.code}`;
         return `<tr style="border-bottom:1px solid rgba(45,55,72,.4);transition:background .1s" onmouseover="this.style.background='rgba(79,126,247,.06)'" onmouseout="this.style.background=''">
@@ -3163,7 +3173,7 @@ function renderTable(){
           <td style="padding:8px 8px;text-align:right;font-weight:600">$${v.price}</td>
           <td style="padding:8px 8px;text-align:right;color:var(--text2)">$${v.vcpPivot||'—'}</td>
           <td style="padding:8px 8px;text-align:right;color:#f87171">${stop?'$'+stop:'—'}</td>
-          <td style="padding:8px 8px;text-align:center;font-size:.7rem;font-weight:800;color:${sigCol}">${escH(v.pivotStatus||'—')}</td>
+          <td style="padding:8px 8px;text-align:center;font-size:.7rem;font-weight:800;color:${v.pbBuy?.strong?'#34d399':'#fbbf24'}">${v.pbBuy?.strong?'✅ 買：回踩地量':'⏳ 不買：等量再縮'}</td>
           <td style="padding:8px 8px;text-align:center;font-weight:800;color:${scoreCol}">${s}分</td>
         </tr>`;
       }).join('')}</tbody>
