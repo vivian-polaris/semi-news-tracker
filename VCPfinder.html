@@ -613,7 +613,10 @@ footer a:hover{text-decoration:underline}
 <div id="dtListWrap" style="display:none;background:var(--card);border:1.5px solid var(--mint);border-radius:10px;padding:14px 18px;margin-bottom:14px">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
     <div style="font-size:.78rem;font-weight:800;color:var(--mint);letter-spacing:.05em">隔日沖候選名單 <span id="dtListCount" style="font-size:.68rem;font-weight:400;color:var(--text2)"></span></div>
-    <div style="font-size:.62rem;color:var(--text2)">掃描後自動更新・需對照 Checklist 逐項確認</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="dtDataNote" style="font-size:.6rem;color:var(--text2)"></span>
+      <button id="dtRefreshBtn" onclick="refreshDtList()" style="padding:3px 10px;font-size:.62rem;font-weight:700;background:rgba(16,185,129,.15);border:1px solid var(--mint);border-radius:5px;color:var(--mint);cursor:pointer">↻ 更新現價</button>
+    </div>
   </div>
   <div id="dtListBody"></div>
 </div>
@@ -3166,7 +3169,63 @@ function renderTable(){
       }).join('')}</tbody>
     </table>
     <div style="margin-top:8px;font-size:.64rem;color:var(--text2);line-height:1.6">⚠ 候選名單僅供參考，進場前務必逐項對照上方 Checklist，並確認大盤當日狀況。</div>`;
+    // 更新資料來源說明
+    const note=document.getElementById('dtDataNote');
+    if(note){
+      const live=isTradingHours();
+      note.innerHTML=live
+        ?'<span style="color:#fbbf24">⚡ 現價盤中即時</span>・<span style="color:#9ca3af">量能用昨收計算</span>'
+        :'<span style="color:#9ca3af">現價＋量能均為昨日收盤資料</span>';
+    }
   })();
+}
+
+// ── 隔日沖名單：快速更新現價並重算 pbBuy ──────────────────────────────────
+async function refreshDtList(){
+  if(!allResults.length){alert('請先執行 VCP 掃描');return;}
+  const btn=document.getElementById('dtRefreshBtn');
+  if(btn){btn.textContent='更新中…';btn.disabled=true;}
+  // 1. 抓最新現價（盤中用 Yahoo 即時，盤後用 stocks json）
+  if(isTradingHours()){
+    const syms=allResults.filter(r=>r.vcp).map(r=>`${r.code}.${r.ex==='TWO'?'TWO':'TW'}`);
+    const batches=[];for(let i=0;i<syms.length;i+=20)batches.push(syms.slice(i,i+20));
+    for(const b of batches) await fetchLiveQuoteBatch(b).catch(()=>{});
+    // 把即時價格寫入 vcp.price
+    allResults.forEach(r=>{
+      if(!r.vcp)return;
+      const sym=`${r.code}.${r.ex==='TWO'?'TWO':'TW'}`;
+      const cached=_liveQCache.get(sym);
+      if(cached&&Date.now()-cached.ts<LIVE_Q_TTL*2) r.vcp.price=cached.price;
+    });
+  }
+  // 2. 用 stockPriceMap 重算 pbBuy（量能仍為昨收，盤中量無法即時取得）
+  allResults.forEach(r=>{
+    if(!r.vcp)return;
+    const pre=stockPriceMap[r.code];
+    if(!pre?.c?.length)return;
+    const highs=pre.h||pre.c,vols=pre.v||[];
+    const vcpLookback=Math.min(30,highs.length-1);
+    const recentHArr=highs.slice(1,vcpLookback+1).filter(v=>v!=null&&isFinite(v));
+    const vcpPivotNew=recentHArr.length>0?+Math.max(...recentHArr).toFixed(2):null;
+    const price=r.vcp.price||pre.c[0];
+    const distNew=vcpPivotNew&&price>0?+((price-vcpPivotNew)/vcpPivotNew*100).toFixed(1):null;
+    if(vcpPivotNew&&distNew!=null&&distNew<3&&distNew>=-15){
+      const earlyH=highs.slice(11,Math.min(31,highs.length)).filter(v=>v!=null&&isFinite(v));
+      const earlyPivot=earlyH.length>0?Math.max(...earlyH):null;
+      const recentBrk=earlyPivot!=null&&highs.slice(1,11).some(h=>h&&h>earlyPivot);
+      if(recentBrk){
+        const v20v=vols.slice(0,20).filter(v=>v>0);
+        const v20avg=v20v.length?v20v.reduce((a,b)=>a+b,0)/v20v.length:null;
+        const todayRatio=(vols[0]&&v20avg)?+(vols[0]/v20avg).toFixed(2):null;
+        if(todayRatio!=null&&todayRatio<0.5){
+          const isFloor=todayRatio<0.3;
+          r.vcp.pbBuy={volRatio:todayRatio,isFloor,dist:distNew,strong:isFloor&&distNew>=-7};
+        }else{r.vcp.pbBuy=null;}
+      }else{r.vcp.pbBuy=null;}
+    }else{r.vcp.pbBuy=null;}
+  });
+  renderTable();
+  if(btn){btn.textContent='↻ 更新現價';btn.disabled=false;}
 }
 
 // ─── Filter Controls ──────────────────────────────────────────────────────
