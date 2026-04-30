@@ -2041,6 +2041,7 @@ function calcVCP(data){
   const ma150=data.length>=150?sma(closes,150):null;
   const ma200=data.length>=200?sma(closes,200):null;
   const h52=Math.max(...highs.slice(0,Math.min(252,highs.length)).filter(v=>v!=null&&isFinite(v)));
+  const lo52=Math.min(...data.slice(0,Math.min(252,data.length)).map(d=>d.low).filter(v=>v!=null&&isFinite(v)));
   const pctH=h52>0?((h52-price)/h52)*100:999;
   const atr10=calcATR(data,10),atr20=calcATR(data,20);
   const atrRat=(atr10&&atr20&&atr20>0)?atr10/atr20:null;
@@ -2146,6 +2147,21 @@ function calcVCP(data){
     }
   }
 
+  // ── 先前升幅檢查（VCP 核心前提：52週低點→近期樞紐須有≥30%漲幅）────────────
+  // 無此升幅代表股票只是橫盤低波動，非真正VCP整理
+  const gainFrom52Low=(lo52>0&&vcpPivot>0)?(vcpPivot-lo52)/lo52*100:0;
+  let priorRunL='—';
+  if(gainFrom52Low<20){score-=35;priorRunL='先前升幅不足';}
+  else if(gainFrom52Low<30){score-=20;priorRunL='先前升幅偏低';}
+  else if(gainFrom52Low>=60){score+=5;priorRunL='先前強勢';}
+  else{priorRunL=`+${gainFrom52Low.toFixed(0)}%`;}
+
+  // ── 1年績效檢查：股價需高於1年前，確認Stage 2動能 ────────────────────────
+  const price1YAgo=closes[Math.min(252,closes.length-1)];
+  const gain1Y=price1YAgo>0?(price-price1YAgo)/price1YAgo*100:0;
+  if(gain1Y<-5){score-=20;}   // 1年下跌超5%，非Stage 2
+  else if(gain1Y<5){score-=10;} // 1年幾乎沒漲，動能不足
+
   return{
     score:Math.min(Math.round(score),100),price,
     ma50:ma50?+ma50.toFixed(2):null,
@@ -2155,7 +2171,7 @@ function calcVCP(data){
     abM50,abM150,abM200,perfOrd:perf,stage2:abM50&&abM150&&abM200,
     atrL,atrS,atrRat:atrRat?+atrRat.toFixed(3):null,
     volL,volS,vRat:vRat?+vRat.toFixed(2):null,v10:v10?+v10.toFixed(0):null,
-    rsi,contractions,
+    rsi,contractions,gainFrom52Low:+gainFrom52Low.toFixed(1),gain1Y:+gain1Y.toFixed(1),priorRunL,
     ma5:ma5?+ma5.toFixed(2):null,
     ma10:ma10?+ma10.toFixed(2):null,
     ma20:ma20?+ma20.toFixed(2):null,
