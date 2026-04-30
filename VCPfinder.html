@@ -853,7 +853,7 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('fund',this)">基本面 ⇅</th>
       <th onclick="setSort('chips',this)">籌碼 ⇅</th>
       <th onclick="setSort('pivot',this)" title="VCP突破買點：近30根K線最高點（排除今天）。突破+放量=剛過高點≤3%且量>1.3倍均量；突破待量=突破但量不足">買點 ⇅</th>
-      <th onclick="setSort('signal',this)" title="進場訊號：根據現價與突破位置判斷。立即買進=剛突破+放量；等突破=尚未突破；過熱勿追=突破過久；別碰=追高風險">訊號 ⇅</th>
+      <th onclick="setSort('signal',this)" title="進場訊號：✅買=回踩地量，現在可買。⏳不買=條件未到位，繼續等。🚫不買=過熱或尚未突破。操作流程：等放量突破→等回踩縮量（地量）→才買。">訊號 ⇅</th>
       <th onclick="setSort('graham',this)" title="葛拉漢合理價 = 現價 × √(22.5 ÷ (PE × PB))。來源：台灣證交所 BWIBBU 官方數據。低估=綠・高估=紅">估值 ⇅</th>
       <th onclick="setSort('margin',this)" title="融資今日餘額變化（千股），盤中即時・收盤固定">融資 ⇅</th>
       <th onclick="setSort('csC',this)" title="Current：EPS/營收成長≥25%" style="width:28px;min-width:28px;max-width:28px;text-align:center;cursor:pointer">C ⇅</th>
@@ -3057,23 +3057,23 @@ function renderTable(){
           let label,col,bg,note;
           // 最高優先：突破後回踩地量
           if(pb?.strong){
-            label='回踩地量買點';col='#fff';bg='rgba(5,150,105,.45)';
-            note=`突破後拉回 ${Math.abs(pb.dist)}%，量比 ${pb.volRatio}（地量<30%均量），最佳進場時機`;
+            label='✅ 買：回踩地量';col='#fff';bg='rgba(5,150,105,.55)';
+            note=`【買入訊號】突破後拉回 ${Math.abs(pb.dist)}%，量比 ${pb.volRatio}（地量<30%均量）。進場：現價買入。停損：進場價 −5%。`;
           }else if(pb){
-            label='回踩縮量留意';col='#fbbf24';bg='rgba(202,138,4,.2)';
-            note=`突破後拉回 ${Math.abs(pb.dist)}%，量比 ${pb.volRatio}（縮量<50%均量），等量再縮確認`;
+            label='⏳ 不買：等量再縮';col='#fbbf24';bg='rgba(202,138,4,.2)';
+            note=`【尚未買入】突破後拉回 ${Math.abs(pb.dist)}%，量比 ${pb.volRatio}（縮量但未到地量<30%均量）。等明日量繼續萎縮至地量才買。`;
           }else if(d>3&&d<=8){
-            label='等回踩';col='#f97316';bg='rgba(249,115,22,.15)';
-            note=`突破後漲 +${d}%，等回踩至買點 $${pivot} 附近，量縮再進場`;
+            label='⏳ 不買：等回踩';col='#f97316';bg='rgba(249,115,22,.15)';
+            note=`【尚未買入】突破後已漲 +${d}%，此時追高風險大。等股價回踩至 $${pivot} 附近，且縮量時才買。`;
           }else if(d>8){
-            label='過熱別追';col='#f87171';bg='rgba(220,38,38,.18)';
-            note=`超買點 +${d}%，過熱，等大幅回踩再評估`;
+            label='🚫 不買：過熱';col='#f87171';bg='rgba(220,38,38,.18)';
+            note=`【不買】已超突破點 +${d}%，過熱，此時買入停損空間不足。等大幅回踩至 $${pivot} 附近再重新評估。`;
           }else if(d>=0&&d<=3){
-            label='剛突破觀察';col='#9ca3af';bg='rgba(113,113,122,.15)';
-            note=`剛突破 $${pivot}，等回踩縮量後再買，不追突破當下`;
+            label='⏳ 不買：等量縮回踩';col='#9ca3af';bg='rgba(113,113,122,.15)';
+            note=`【尚未買入】剛突破 $${pivot}，突破當下不追。等股價小幅回踩 + 成交量萎縮（地量），再買。`;
           }else{
-            label=`等突破 $${pivot}`;col='#60a5fa';bg='rgba(37,99,235,.12)';
-            note=`尚未突破，等放量突破後再等回踩買點`;
+            label=`🚫 不買：等突破 $${pivot}`;col='#60a5fa';bg='rgba(37,99,235,.12)';
+            note=`【不買】現價尚未突破 $${pivot}。操作流程：①等放量突破 $${pivot} ②突破後不追，等1–3日回踩 ③回踩縮量（地量）才買。`;
           }
           return `<td style="text-align:center;white-space:nowrap;min-width:90px" title="${escH(note)}">
             <div style="display:inline-block;padding:3px 8px;border-radius:5px;background:${bg};font-size:.72rem;font-weight:800;color:${col}">${escH(label)}</div>
