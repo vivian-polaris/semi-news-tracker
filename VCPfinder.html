@@ -3267,10 +3267,24 @@ function renderTable(){
     const sellCount=document.getElementById('sellPtCount');
     if(!wrap||!allResults.length){if(wrap)wrap.style.display='none';return;}
 
-    // 買點：回踩地量（pbBuy.strong），從全部掃描結果取，不受現有 filter 限制
+    // 買點：回踩地量（pbBuy.strong）
+    // 必須同時：VCP≥60（有紮實整理形態）+ Stage2（上升趨勢）+ pbBuy.strong
+    // 「最穩最可能獲利」複合分：
+    //   VCP形態品質(40%) + 量縮程度(30%) + 距突破點遠近(20%) + 先前升幅(10%)
+    const buyStability=r=>{
+      const v=r.vcp;
+      const pb=v.pbBuy;
+      const vcpScore=(v.score||0)*0.4;
+      const volScore=pb?.volRatio!=null?(1-Math.min(pb.volRatio,1))*30:0;
+      const distRaw=Math.abs(v.distVcpPivot||0);
+      const distScore=Math.max(0,(7-distRaw))*2.5; // 距離0最佳→+17.5，距離7→0
+      const gain=v.gainFrom52Low||0;
+      const gainScore=gain>=60?10:gain>=40?7:gain>=30?4:0;
+      return vcpScore+volScore+distScore+gainScore;
+    };
     const buyList=allResults
-      .filter(r=>r.vcp?.pbBuy?.strong)
-      .sort((a,b)=>(b.vcp.score||0)-(a.vcp.score||0))
+      .filter(r=>r.vcp?.pbBuy?.strong && r.vcp.score>=60 && r.vcp.stage2===true)
+      .sort((a,b)=>buyStability(b)-buyStability(a))
       .slice(0,15);
 
     // 賣點：
@@ -3322,7 +3336,7 @@ function renderTable(){
     if(buyBody){
       if(buyList.length){
         buyBody.innerHTML=buyList.map(r=>rowHtml(r,true)).join('')+
-          `<div style="margin-top:6px;font-size:.6rem;color:var(--text2)">停損設進場價 −5%・突破點 $pivot 以下立即出</div>`;
+          `<div style="margin-top:6px;font-size:.6rem;color:var(--text2)">停損設進場價 −5%・跌破突破點 −8% 立即出場</div>`;
       }else{
         buyBody.innerHTML='<div style="color:var(--text2);font-size:.68rem;padding:8px 0">目前無符合買點的股票</div>';
       }
@@ -3361,7 +3375,7 @@ function renderTable(){
       return s;
     };
 
-    const candidates=getFiltered()
+    const candidates=allResults
       .map(r=>({r,s:dtCalc(r)}))
       .filter(x=>x.s>=50)
       .sort((a,b)=>b.s-a.s)
@@ -3384,10 +3398,10 @@ function renderTable(){
       </tr></thead>
       <tbody>${candidates.map(({r,s},i)=>{
         const v=r.vcp;
-        const stop=v.vcpPivot?+(v.vcpPivot*0.92).toFixed(1):null;
+        const stop=v.price?+(v.price*0.95).toFixed(1):null;
         const sigCol=v.pivotStatusCls==='g'?'#34d399':v.pivotStatusCls==='r'?'#f87171':'#fbbf24';
         const scoreCol=s>=70?'#34d399':s>=50?'#fbbf24':'#9ca3af';
-        const tv=`https://www.tradingview.com/chart/?symbol=TWSE%3A${r.code}`;
+        const tv=`https://www.tradingview.com/chart/?symbol=${r.ex==='TWO'?'TPEX':'TWSE'}%3A${r.code}`;
         return `<tr style="border-bottom:1px solid rgba(45,55,72,.4);transition:background .1s" onmouseover="this.style.background='rgba(79,126,247,.06)'" onmouseout="this.style.background=''">
           <td style="padding:8px 8px;color:var(--text2);font-weight:700">${i+1}</td>
           <td style="padding:8px 8px"><a href="${tv}" target="_blank" style="color:var(--purple);font-weight:700;text-decoration:none">${escH(r.code)}</a></td>
