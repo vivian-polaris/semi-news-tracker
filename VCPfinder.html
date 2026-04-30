@@ -621,6 +621,35 @@ footer a:hover{text-decoration:underline}
   <div id="dtListBody"></div>
 </div>
 
+<!-- ── 今日買賣點面板 ── -->
+<div id="actionPanelWrap" style="display:none;margin-bottom:14px">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+
+    <!-- 今日買點 -->
+    <div style="background:var(--card);border:1.5px solid #059669;border-radius:10px;padding:12px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:.78rem;font-weight:800;color:#34d399;letter-spacing:.05em">
+          ✅ 今日買點 <span id="buyPtCount" style="font-size:.65rem;font-weight:400;color:var(--text2)"></span>
+        </div>
+        <div style="font-size:.58rem;color:var(--text2)">回踩地量・現在可買</div>
+      </div>
+      <div id="buyPtBody" style="font-size:.72rem"></div>
+    </div>
+
+    <!-- 今日賣點 -->
+    <div style="background:var(--card);border:1.5px solid #dc2626;border-radius:10px;padding:12px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:.78rem;font-weight:800;color:#f87171;letter-spacing:.05em">
+          🔴 今日賣點 <span id="sellPtCount" style="font-size:.65rem;font-weight:400;color:var(--text2)"></span>
+        </div>
+        <div style="font-size:.58rem;color:var(--text2)">超漲獲利了結 / 跌破停損必出場</div>
+      </div>
+      <div id="sellPtBody" style="font-size:.72rem"></div>
+    </div>
+
+  </div>
+</div>
+
 <!-- ── VCP 掃描 ── -->
 <div class="scan-section-title">
   VCP 掃描
@@ -3228,6 +3257,87 @@ function renderTable(){
       <td style="white-space:nowrap">${techHTML}</td>
     </tr>`;
   }).join('');
+
+  // ── 今日買賣點面板更新 ─────────────────────────────────────────────────────
+  (()=>{
+    const wrap=document.getElementById('actionPanelWrap');
+    const buyBody=document.getElementById('buyPtBody');
+    const sellBody=document.getElementById('sellPtBody');
+    const buyCount=document.getElementById('buyPtCount');
+    const sellCount=document.getElementById('sellPtCount');
+    if(!wrap||!allResults.length){if(wrap)wrap.style.display='none';return;}
+
+    // 買點：回踩地量（pbBuy.strong），從全部掃描結果取，不受現有 filter 限制
+    const buyList=allResults
+      .filter(r=>r.vcp?.pbBuy?.strong)
+      .sort((a,b)=>(b.vcp.score||0)-(a.vcp.score||0))
+      .slice(0,15);
+
+    // 賣點：
+    //   超漲獲利了結：distVcpPivot > 20%（突破後漲幅已大，不宜繼續持有）
+    //   跌破停損線：distVcpPivot < -8%（VCP 形態失敗，必須出場）
+    const sellList=allResults
+      .filter(r=>{
+        const d=r.vcp?.distVcpPivot;
+        if(d==null)return false;
+        return d>20||d<-8;
+      })
+      .sort((a,b)=>{
+        const da=a.vcp.distVcpPivot,db=b.vcp.distVcpPivot;
+        // 跌破停損（負值）優先排前面，其次超漲最多的排前面
+        if(da<-8&&db>20)return -1;
+        if(db<-8&&da>20)return 1;
+        if(da<0&&db<0)return da-db;
+        return db-da;
+      })
+      .slice(0,15);
+
+    if(!buyList.length&&!sellList.length){wrap.style.display='none';return;}
+    wrap.style.display='block';
+
+    const rowHtml=(r,isBuy)=>{
+      const v=r.vcp;
+      const tv=`https://www.tradingview.com/chart/?symbol=${r.ex==='TWO'?'TPEX':'TWSE'}%3A${r.code}`;
+      const d=v.distVcpPivot;
+      let tag,tagCol;
+      if(isBuy){
+        tag=`量比${v.pbBuy.volRatio}`;tagCol='#34d399';
+      }else if(d>20){
+        tag=`+${d}%超漲`;tagCol='#f97316';
+      }else{
+        tag=`${d}%停損`;tagCol='#f87171';
+      }
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(45,55,72,.3)">
+        <div>
+          <a href="${tv}" target="_blank" style="font-weight:700;color:var(--purple);text-decoration:none">${escH(r.code)}</a>
+          <span style="color:var(--text);margin-left:4px">${escH(r.name)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="color:var(--text2)">$${v.price}</span>
+          <span style="font-size:.65rem;font-weight:700;color:${tagCol};background:${tagCol}22;padding:1px 6px;border-radius:4px">${tag}</span>
+        </div>
+      </div>`;
+    };
+
+    if(buyBody){
+      if(buyList.length){
+        buyBody.innerHTML=buyList.map(r=>rowHtml(r,true)).join('')+
+          `<div style="margin-top:6px;font-size:.6rem;color:var(--text2)">停損設進場價 −5%・突破點 $pivot 以下立即出</div>`;
+      }else{
+        buyBody.innerHTML='<div style="color:var(--text2);font-size:.68rem;padding:8px 0">目前無符合買點的股票</div>';
+      }
+      if(buyCount)buyCount.textContent=buyList.length?`（${buyList.length} 支）`:'';
+    }
+    if(sellBody){
+      if(sellList.length){
+        sellBody.innerHTML=sellList.map(r=>rowHtml(r,false)).join('')+
+          `<div style="margin-top:6px;font-size:.6rem;color:var(--text2)">超漲>20%：獲利了結・跌破停損：今日收盤前必出場</div>`;
+      }else{
+        sellBody.innerHTML='<div style="color:var(--text2);font-size:.68rem;padding:8px 0">目前無需緊急出場的股票</div>';
+      }
+      if(sellCount)sellCount.textContent=sellList.length?`（${sellList.length} 支）`:'';
+    }
+  })();
 
   // ── 隔日沖候選名單更新 ──────────────────────────────────────────────────
   (()=>{
