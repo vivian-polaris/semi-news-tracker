@@ -745,6 +745,12 @@ footer a:hover{text-decoration:underline}
     <span class="pill" id="csMin5" onclick="setCANSLIM(5,this)">≥ 5項 ⭐</span>
     <span class="pill" id="csMin6" onclick="setCANSLIM(6,this)">≥ 6項</span>
   </div>
+  <div class="filter-row" id="signalRow">
+    <span class="flabel">訊號</span>
+    <span class="pill f-on" onclick="setSignal('ALL',this)">全部</span>
+    <span class="pill" onclick="setSignal('BUY',this)" style="border-color:#059669;color:#34d399">✅ 現在買</span>
+    <span class="pill" onclick="setSignal('SELL',this)" style="border-color:#dc2626;color:#f87171">🔴 現在賣</span>
+  </div>
   </div><!-- /filterRowsWrap -->
 </div>
 
@@ -982,7 +988,7 @@ const STOCKS = [
 // ─── State ────────────────────────────────────────────────────────────────
 const DEFAULT_SEC_FILTER=new Set(['IC設計','PCB','伺服器','其他電子','化學','化工','半導體','散熱','數位雲端','油電燃氣','精密機械','被動元件','記憶體','資訊服務','通信網路','連接器','電子','電子代工','電子通路','電子零組件','電機','電源','電腦','面板']);
 const CACHE_VER=4; // 每次改篩選邏輯就加 1，自動讓舊快取失效
-let allResults=[], scoreMin=80, pctMax=999, secFilter=new Set([...DEFAULT_SEC_FILTER]), exFilter='ALL';
+let allResults=[], scoreMin=80, pctMax=999, secFilter=new Set([...DEFAULT_SEC_FILTER]), exFilter='ALL', signalFilter='ALL';
 let canslimMin=4;
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
@@ -2733,6 +2739,9 @@ function getFiltered(){
     // 10日均量門檻：股價≥50需>1000張，股價<50需>3000張（1張=1000股）
     // 用 >0 而非 !=null，確保舊快取（v10===undefined）也被過濾
     {const vt=r.vcp.v10>0?r.vcp.v10:0,pt=r.vcp.price;if(vt<(pt>=50?1000000:3000000))return false;}
+    // 訊號 filter
+    if(signalFilter==='BUY'&&!r.vcp.pbBuy?.strong)return false;
+    if(signalFilter==='SELL'&&!(r.vcp.distVcpPivot>8))return false;
     return true;
   });
 }
@@ -3239,6 +3248,17 @@ async function refreshDtList(){
 }
 
 // ─── Filter Controls ──────────────────────────────────────────────────────
+function setSignal(v,el){
+  signalFilter=v;
+  document.getElementById('signalRow').querySelectorAll('.pill').forEach(p=>p.classList.remove('f-on'));
+  el.classList.add('f-on');
+  // 現在買/賣 自動放寬 VCP 分數門檻，避免 0 結果
+  if(v==='BUY'&&scoreMin>60){
+    scoreMin=60;
+    document.getElementById('scoreRow').querySelectorAll('.pill').forEach(p=>p.classList.remove('f-on'));
+  }
+  renderTable();
+}
 function setScore(v,el){
   scoreMin=v;
   document.getElementById('scoreRow').querySelectorAll('.pill').forEach(p=>p.classList.remove('f-on'));
