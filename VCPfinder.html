@@ -750,6 +750,7 @@ footer a:hover{text-decoration:underline}
     <span class="pill f-on" onclick="setSignal('ALL',this)">全部</span>
     <span class="pill" onclick="setSignal('BUY',this)" style="border-color:#059669;color:#34d399">✅ 現在買</span>
     <span class="pill" onclick="setSignal('SELL',this)" style="border-color:#dc2626;color:#f87171">🔴 現在賣</span>
+    <span class="pill" id="confTmrPill" onclick="setSignal('CONF_TOMORROW',this)" style="border-color:#a78bfa;color:#a78bfa" title="明天有法說會的 VCP 候選股（資料來源：MOPS，頁面載入時自動抓取）">📋 明天法說會</span>
   </div>
   </div><!-- /filterRowsWrap -->
 </div>
@@ -876,7 +877,7 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('graham',this)" title="葛拉漢合理價 = 現價 × √(22.5 ÷ (PE × PB))。來源：台灣證交所 BWIBBU 官方數據。低估=綠・高估=紅">估值 ⇅</th>
       <th onclick="setSort('margin',this)" title="融資今日餘額變化（千股），盤中即時・收盤固定">融資 ⇅</th>
       <th title="2026年除息日（TWSE TWT49U），距今≤14天標紅">除息日</th>
-      <th title="2026年法說會：點擊連結至公開資訊觀測站查詢該股法說會">法說會</th>
+
       <th onclick="setSort('csC',this)" title="Current：EPS/營收成長≥25%" style="width:28px;min-width:28px;max-width:28px;text-align:center;cursor:pointer">C ⇅</th>
       <th onclick="setSort('csA',this)" title="Annual ROE≥15%" style="width:28px;min-width:28px;max-width:28px;text-align:center;cursor:pointer">A ⇅</th>
       <th onclick="setSort('csN',this)" title="Near new high &lt;5%" style="width:28px;min-width:28px;max-width:28px;text-align:center;cursor:pointer">N ⇅</th>
@@ -890,7 +891,7 @@ footer a:hover{text-decoration:underline}
     </tr>
   </thead>
   <tbody id="tblBody">
-    <tr class="load-row"><td colspan="22">開啟自動掃描中...</td></tr>
+    <tr class="load-row"><td colspan="21">開啟自動掃描中...</td></tr>
   </tbody>
 </table>
 </div>
@@ -992,7 +993,7 @@ const DEFAULT_SEC_FILTER=new Set(['IC設計','PCB','伺服器','其他電子','�
 const CACHE_VER=4; // 每次改篩選邏輯就加 1，自動讓舊快取失效
 let allResults=[], scoreMin=80, pctMax=999, secFilter=new Set([...DEFAULT_SEC_FILTER]), exFilter='ALL', signalFilter='ALL';
 const exDivMap2026={};  // code -> "MM/DD" 除息日
-const confMap2026={};   // code -> MOPS URL
+const confByDate={};    // "YYYY-MM-DD" -> Set of stock codes with 法說會
 let canslimMin=4;
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
@@ -1059,6 +1060,53 @@ function loadMarginFromDaily(){
 }
 // 保留空的 async 函數讓掃描流程不出錯
 async function loadMarginData(){loadMarginFromDaily();}
+
+// ── 法說會日曆載入（MOPS ajax_t100sb21，POST via corsproxy.io）────────────────
+async function loadConfCalendar(){
+  const tw=new Date(Date.now()+8*3600000);
+  const year=tw.getUTCFullYear()-1911;
+  const month=tw.getUTCMonth()+1;
+  const cacheKey=`conf_${year}_${String(month).padStart(2,'0')}`;
+  const cached=lsGet(cacheKey);
+  if(cached?.data&&Date.now()-(cached.ts||0)<3*3600*1000){
+    Object.entries(cached.data).forEach(([k,v])=>{confByDate[k]=new Set(v);});
+    return;
+  }
+  const mopsUrl='https://mops.twse.com.tw/mops/web/ajax_t100sb21';
+  const body=`step=1&year=${year}&month=${month}&co_id=&type1=&OK=%E6%9F%A5%E8%A9%A2`;
+  const proxyUrl='https://corsproxy.io/?'+encodeURIComponent(mopsUrl);
+  try{
+    const r=await fetchTO(proxyUrl,10000,{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body
+    });
+    if(!r.ok)return;
+    const html=await r.text();
+    if(!html||html.length<200)return;
+    const parser=new DOMParser();
+    const doc=parser.parseFromString(html,'text/html');
+    doc.querySelectorAll('table tr').forEach(tr=>{
+      const tds=[...tr.querySelectorAll('td')];
+      if(tds.length<3)return;
+      const code=(tds[0].textContent||'').trim();
+      const dateRaw=(tds[2].textContent||'').trim();
+      if(!/^\d{4,6}$/.test(code)||!/\d+\/\d+\/\d+/.test(dateRaw))return;
+      const parts=dateRaw.split('/');
+      if(parts.length!==3)return;
+      const adYear=parseInt(parts[0])+(parseInt(parts[0])<200?1911:0);
+      const dateKey=`${adYear}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
+      if(!confByDate[dateKey])confByDate[dateKey]=new Set();
+      confByDate[dateKey].add(code);
+    });
+    if(Object.keys(confByDate).length>0){
+      const toStore={};
+      Object.entries(confByDate).forEach(([k,v])=>{toStore[k]=[...v];});
+      lsSet(cacheKey,{data:toStore,ts:Date.now()});
+      renderTable(); // 更新 filter 結果
+    }
+  }catch(e){console.warn('法說會資料載入失敗',e);}
+}
 
 // ── 2026 除息日載入（TWSE TWT49U）───────────────────────────────────────────
 async function loadExDiv2026(){
@@ -2593,7 +2641,7 @@ async function startScan(){
   document.getElementById('sumGrid').style.display='';
   document.getElementById('filterBox').style.display='';
   document.getElementById('statsBar').style.display='';
-  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="22"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
+  document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="21"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
 
   // Get stock list based on selected source
   let stocks;
@@ -2776,6 +2824,12 @@ function getFiltered(){
     // 訊號 filter
     if(signalFilter==='BUY'&&!r.vcp.pbBuy?.strong)return false;
     if(signalFilter==='SELL'&&!(r.vcp.distVcpPivot>8))return false;
+    if(signalFilter==='CONF_TOMORROW'){
+      const tw=new Date(Date.now()+8*3600000);
+      tw.setUTCDate(tw.getUTCDate()+1);
+      const key=tw.toISOString().slice(0,10);
+      if(!confByDate[key]?.has(r.code))return false;
+    }
     return true;
   });
 }
@@ -3006,17 +3060,17 @@ function renderTable(){
   document.getElementById('showN').textContent=sorted.length;
   document.getElementById('totalN').textContent=counted;
   const tbody=document.getElementById('tblBody');
-  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="22">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
+  if(!allResults.length){tbody.innerHTML='<tr class="load-row"><td colspan="21">🐰 尚未掃描，請點擊「✨ 開始掃描 VCP」</td></tr>';return;}
   if(!sorted.length){
     if(scanning){
-      tbody.innerHTML='<tr class="load-row"><td colspan="22"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
+      tbody.innerHTML='<tr class="load-row"><td colspan="21"><span class="spin"></span> 掃描中，VCP 候選股將即時出現...</td></tr>';
     } else {
       const hasVcp=allResults.filter(r=>r.vcp).length;
       const passMin=allResults.filter(r=>r.vcp&&r.vcp.score>=scoreMin).length;
       if(hasVcp>0&&passMin===0&&scoreMin>=40){
-        tbody.innerHTML=`<tr class="empty-row"><td colspan="22">⚠️ 目前市場整體偏弱，${hasVcp} 支股票 VCP 分數均低於 ${scoreMin} 分<br><span style="font-size:.75rem;color:var(--text2)">台股受外部衝擊，多數股票尚未形成 VCP 型態</span><br><button onclick="document.querySelector('#scoreRow .pill').click()" style="margin-top:6px;padding:4px 14px;background:var(--purple);border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:.82rem">顯示全部股票（忽略分數）</button></td></tr>`;
+        tbody.innerHTML=`<tr class="empty-row"><td colspan="21">⚠️ 目前市場整體偏弱，${hasVcp} 支股票 VCP 分數均低於 ${scoreMin} 分<br><span style="font-size:.75rem;color:var(--text2)">台股受外部衝擊，多數股票尚未形成 VCP 型態</span><br><button onclick="document.querySelector('#scoreRow .pill').click()" style="margin-top:6px;padding:4px 14px;background:var(--purple);border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:.82rem">顯示全部股票（忽略分數）</button></td></tr>`;
       } else {
-        tbody.innerHTML='<tr class="empty-row"><td colspan="22">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';
+        tbody.innerHTML='<tr class="empty-row"><td colspan="21">沒有符合篩選條件的股票，請放寬條件 🌸</td></tr>';
       }
     }
     return;
@@ -3167,14 +3221,7 @@ function renderTable(){
             <div style="font-size:.58rem;color:var(--text2)">${daysLeft>=0?daysLeft+'天後':'已過'}</div>
           </td>`;
         })();
-        // ── 法說會欄 ────────────────────────────────────────────────────────
-        const confCell=(()=>{
-          const mopsUrl=`https://mops.twse.com.tw/mops/web/t100sb21?step=1&year=&month=&co_id=${r.code}&type1=&OK=%E6%9F%A5%E8%A9%A2`;
-          return `<td style="text-align:center">
-            <a href="${mopsUrl}" target="_blank" style="font-size:.65rem;color:var(--purple);text-decoration:none;background:rgba(99,102,241,.12);padding:2px 6px;border-radius:4px;white-space:nowrap">查詢↗</a>
-          </td>`;
-        })();
-        return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+pivotCell+signalCell+grahamCell+mgCell+exDivCell+confCell+cs.seven;
+        return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+pivotCell+signalCell+grahamCell+mgCell+exDivCell+cs.seven;
       })()}
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
       <td><div class="ma-row">${maHTML||'—'}</div></td>
@@ -3308,8 +3355,8 @@ function setSignal(v,el){
   signalFilter=v;
   document.getElementById('signalRow').querySelectorAll('.pill').forEach(p=>p.classList.remove('f-on'));
   el.classList.add('f-on');
-  // 現在買/賣 自動放寬 VCP 分數門檻，避免 0 結果
-  if(v==='BUY'&&scoreMin>60){
+  // 特殊 filter 自動放寬 VCP 分數門檻，避免 0 結果
+  if((v==='BUY'||v==='CONF_TOMORROW')&&scoreMin>60){
     scoreMin=60;
     document.getElementById('scoreRow').querySelectorAll('.pill').forEach(p=>p.classList.remove('f-on'));
   }
@@ -3688,12 +3735,13 @@ async function lookupStock() {
 
   // 無快取時才自動啟動掃描
   if(!cacheLoaded){
-    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="22"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
+    document.getElementById('tblBody').innerHTML='<tr class="load-row"><td colspan="21"><span class="spin"></span> 自動掃描中，請稍候...</td></tr>';
     setTimeout(()=>startScan(),1200);
   }
 
   // 頁面載入：同時載入所有靜態資料，完成後顯示新聞/時鐘
   loadExDiv2026().catch(()=>{});
+  loadConfCalendar().catch(()=>{});
   Promise.all([loadTWSEDaily(), loadStockPrices()]).finally(()=>{
     loadTrump(true);
     loadClock(true);
