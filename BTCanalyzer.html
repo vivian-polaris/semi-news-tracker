@@ -439,6 +439,24 @@ footer{text-align:center;padding:18px 0;color:var(--text2);font-size:.66rem;bord
   </div>
 </details>
 
+<!-- ── BTC 交易時段（沒有盤中盤尾）── -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid var(--gold)">
+  <div class="card-title" style="color:var(--gold)">🕐 BTC 交易時段（24/7，沒有開收盤）</div>
+  <div style="font-size:.76rem;line-height:1.75;color:var(--text)">
+    <div style="margin-bottom:8px;color:var(--text2)">BTC 全年無休，不像台股有 9:00–13:30 的交易時段。但不同時段有不同的量能與波動特性：</div>
+    <div style="display:grid;grid-template-columns:auto auto auto 1fr;gap:4px 16px;align-items:center;font-size:.74rem">
+      <span style="color:var(--text2)">時段</span><span style="color:var(--text2)">台灣時間</span><span style="color:var(--text2)">量能</span><span style="color:var(--text2)">特性</span>
+      <span>🌏 亞洲盤</span><span>06:00–15:00</span><span style="color:#fbbf24">中</span><span>波動平穩，跟隨昨晚美國走勢</span>
+      <span>🌍 歐洲盤</span><span>15:00–22:00</span><span style="color:#fbbf24">中高</span><span>量能開始放大，容易出現方向</span>
+      <span style="color:#34d399;font-weight:700">🇺🇸 美國盤</span><span style="color:#34d399">21:30–06:00</span><span style="color:#34d399;font-weight:700">最大</span><span style="color:#34d399">波動最劇烈，最重要時段</span>
+      <span>📋 月底期權結算</span><span>每月最後週五</span><span style="color:#f87171">極高</span><span>Deribit 期權到期，常有大波動</span>
+    </div>
+    <div style="margin-top:8px;padding:6px 10px;background:rgba(247,148,29,.08);border:1px solid rgba(247,148,29,.2);border-radius:6px;font-size:.7rem;color:var(--orange)">
+      ⚡ 最大差異：台股跌停最多 10%，BTC 無熔斷。周末凌晨美國睡覺，流動性差，大戶容易製造行情。建議週末出遊前先確認持倉有設停損。
+    </div>
+  </div>
+</div>
+
 <!-- ── 重要風險 ── -->
 <div class="card" style="margin-bottom:14px;border-left:4px solid var(--red)">
   <div class="card-title" style="color:var(--red)">⚠ BTC 特有風險（台股沒有的）</div>
@@ -493,68 +511,75 @@ function calcRSI(prices,n=14){
 // ─── State ──────────────────────────────────────────────────────────────────
 const scores={tech:null,sent:null,chain:null,gov:75};
 
-// ─── Fetch BTC current data ──────────────────────────────────────────────────
-async function fetchBTCCurrent(){
-  const cached=lsGet('current');
+// ─── Fetch BTC data (Binance primary, CoinGecko fallback) ────────────────────
+async function fetchBTCData(){
+  const cached=lsGet('btcData');
   if(cached&&Date.now()-cached.ts<300000)return cached.data;
-  const urls=[
-    'https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&community_data=false&developer_data=false&sparkline=false',
-    'https://api.allorigins.win/raw?url='+encodeURIComponent('https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&community_data=false&developer_data=false&sparkline=false'),
-  ];
-  for(const url of urls){
-    try{
-      const r=await fetchTO(url,12000);
-      if(!r.ok)continue;
-      const d=await r.json();
-      if(d?.market_data?.current_price?.usd){lsSet('current',{data:d,ts:Date.now()});return d;}
-    }catch(_){}
-  }
-  return null;
-}
 
-// ─── Fetch historical (need 400 days for MA200) ──────────────────────────────
-async function fetchBTCHistory(){
-  const cached=lsGet('history');
-  if(cached&&Date.now()-cached.ts<1800000)return cached.data;
-  const baseUrl='https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=400&interval=daily';
-  const urls=[
-    baseUrl,
-    'https://api.allorigins.win/raw?url='+encodeURIComponent(baseUrl),
-    'https://corsproxy.io/?'+encodeURIComponent(baseUrl),
-  ];
-  for(const url of urls){
-    try{
-      const r=await fetchTO(url,25000);
-      if(!r.ok)continue;
-      const d=await r.json();
-      if(d?.prices?.length>100){lsSet('history',{data:d,ts:Date.now()});return d;}
-    }catch(_){}
-  }
+  // ── Primary: Binance (best CORS support, most reliable) ──
+  try{
+    const [klR,tkR]=await Promise.all([
+      fetchTO('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d&limit=400',15000),
+      fetchTO('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT',8000),
+    ]);
+    if(klR.ok&&tkR.ok){
+      const klines=await klR.json();
+      const ticker=await tkR.json();
+      if(Array.isArray(klines)&&klines.length>100){
+        const prices=klines.map(k=>parseFloat(k[4]));          // close
+        const volumes=klines.map(k=>parseFloat(k[5])*parseFloat(k[4])); // vol * close = USD vol
+        const price=parseFloat(ticker.lastPrice);
+        const ch24=parseFloat(ticker.priceChangePercent);
+        const vol24=parseFloat(ticker.quoteVolume);
+        // 7d change: compare close 7 bars ago
+        const ch7=prices.length>=8?((price-prices[prices.length-8])/prices[prices.length-8]*100):0;
+        const mktCap=price*19700000; // approx circulating supply
+        const data={prices,volumes,price,ch24,ch7,vol24,mktCap,src:'Binance'};
+        lsSet('btcData',{data,ts:Date.now()});
+        return data;
+      }
+    }
+  }catch(_){}
+
+  // ── Fallback: CoinGecko ──
+  try{
+    const cgUrl='https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=400&interval=daily';
+    const proxies=[cgUrl,'https://api.allorigins.win/raw?url='+encodeURIComponent(cgUrl)];
+    for(const url of proxies){
+      try{
+        const r=await fetchTO(url,20000);
+        if(!r.ok)continue;
+        const d=await r.json();
+        if(!d?.prices?.length)continue;
+        const prices=d.prices.map(p=>p[1]);
+        const volumes=d.total_volumes.map(v=>v[1]);
+        const price=prices[prices.length-1];
+        const ch24=prices.length>=2?(price-prices[prices.length-2])/prices[prices.length-2]*100:0;
+        const ch7=prices.length>=8?(price-prices[prices.length-8])/prices[prices.length-8]*100:0;
+        const vol24=volumes[volumes.length-1];
+        const mktCap=price*19700000;
+        const data={prices,volumes,price,ch24,ch7,vol24,mktCap,src:'CoinGecko'};
+        lsSet('btcData',{data,ts:Date.now()});
+        return data;
+      }catch(_){}
+    }
+  }catch(_){}
+
   return null;
 }
 
 // ─── Update header price ─────────────────────────────────────────────────────
 function updatePriceDisplay(d){
-  const md=d.market_data;
-  const price=md.current_price.usd;
-  const ch24=md.price_change_percentage_24h||0;
-  const ch7=md.price_change_percentage_7d||0;
-  const vol24=md.total_volume.usd;
-  const mktCap=md.market_cap.usd;
-
+  const{price,ch24,ch7,vol24,mktCap,src}=d;
   document.getElementById('btcPrice').innerHTML='$'+Math.round(price).toLocaleString();
   const chEl=document.getElementById('btcChange');
   chEl.textContent=(ch24>=0?'+':'')+ch24.toFixed(2)+'%';
   chEl.className='price-change '+(ch24>=0?'up':'dn');
   document.getElementById('btcMeta').textContent=
-    `24h: ${ch24>=0?'+':''}${ch24.toFixed(2)}%  ·  7d: ${ch7>=0?'+':''}${ch7.toFixed(2)}%  ·  Vol: ${fmt$(vol24)}  ·  Mkt Cap: ${fmt$(mktCap)}`;
-
+    `24h: ${ch24>=0?'+':''}${ch24.toFixed(2)}%  ·  7d: ${ch7>=0?'+':''}${ch7.toFixed(2)}%  ·  Vol: ${fmt$(vol24)}  ·  Mkt Cap: ${fmt$(mktCap)}  ·  資料: ${src||'Binance'}`;
   // Gov holdings value
-  const govVal=198012*price;
-  document.getElementById('govBtcValue').textContent=fmt$(govVal);
-  // Global sovereign ~408k BTC
-  const globalSovPct=(408000/21000000*100).toFixed(2);
-  document.getElementById('govPctSupply').textContent=globalSovPct+'%';
+  document.getElementById('govBtcValue').textContent=fmt$(198012*price);
+  document.getElementById('govPctSupply').textContent=(408000/21000000*100).toFixed(2)+'%';
 }
 
 // ─── Technical Panel (VCP Logic) ─────────────────────────────────────────────
@@ -1119,34 +1144,25 @@ async function loadMacroPanel(){
 
 // ─── Main init ────────────────────────────────────────────────────────────────
 async function init(){
-  // Parallel: fetch price data + fear&greed + news
-  const [current, hist] = await Promise.all([
-    fetchBTCCurrent(),
-    fetchBTCHistory(),
-  ]);
-
-  // Start these in parallel too (non-blocking)
+  // Non-blocking parallel loads
   loadFearGreed();
   loadBTCNews();
   loadMacroPanel();
 
-  if(!current||!hist){
+  // Primary data (blocking — needed for all panels)
+  const d=await fetchBTCData();
+
+  if(!d){
     document.getElementById('btcPrice').textContent='載入失敗 ⚠';
-    document.getElementById('techPanel').innerHTML='<div style="color:#f87171;font-size:.78rem">⚠️ CoinGecko API 載入失敗，請稍後重試或重新整理頁面</div>';
+    document.getElementById('techPanel').innerHTML='<div style="color:#f87171;font-size:.78rem">⚠️ Binance + CoinGecko 均載入失敗，請重新整理頁面</div>';
     document.getElementById('onchainPanel').innerHTML='<div style="color:#f87171;font-size:.78rem">⚠️ 資料載入失敗</div>';
     return;
   }
 
-  updatePriceDisplay(current);
-
-  const price=current.market_data.current_price.usd;
-  const prices=hist.prices.map(p=>p[1]);
-  const volumes=hist.total_volumes.map(v=>v[1]);
-
-  // Render all panels
-  renderTechPanel(prices,volumes,price);
-  renderOnchainPanel(prices,price);
-  renderFlowPanel(); // async, updates independently
+  updatePriceDisplay(d);
+  renderTechPanel(d.prices,d.volumes,d.price);
+  renderOnchainPanel(d.prices,d.price);
+  renderFlowPanel();
 
   // Auto refresh every 5 min
   setTimeout(init, 5*60*1000);
