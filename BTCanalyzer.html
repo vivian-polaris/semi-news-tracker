@@ -127,6 +127,24 @@ h1{font-size:1.55rem;color:#fff;margin-bottom:4px;font-weight:700;letter-spacing
 .level-chip-label{font-size:.6rem;color:var(--text2);margin-top:2px}
 
 footer{text-align:center;padding:18px 0;color:var(--text2);font-size:.66rem;border-top:1px solid var(--border);margin-top:18px;line-height:1.8}
+
+/* ── NOW signal banner ── */
+.now-banner{border-radius:14px;padding:18px 22px;margin-bottom:14px;text-align:center;position:relative;overflow:hidden}
+.now-banner.buy{background:linear-gradient(135deg,#052e16,#065f46);border:2px solid #059669}
+.now-banner.sell{background:linear-gradient(135deg,#2d0a0a,#7f1d1d);border:2px solid #dc2626}
+.now-banner.wait{background:linear-gradient(135deg,#1c1202,#78350f);border:2px solid #d97706}
+.now-banner.no{background:linear-gradient(135deg,#111827,#1f2937);border:2px solid #6b7280}
+.now-action{font-size:2rem;font-weight:800;letter-spacing:.04em;margin-bottom:4px}
+.now-action.buy{color:#4ade80}
+.now-action.sell{color:#f87171}
+.now-action.wait{color:#fbbf24}
+.now-action.no{color:#9ca3af}
+.now-entry{font-size:1.1rem;font-weight:700;margin:6px 0 4px}
+.now-detail{font-size:.8rem;color:rgba(255,255,255,.75);line-height:1.65;max-width:600px;margin:0 auto}
+.now-levels{display:flex;justify-content:center;gap:20px;margin-top:12px;flex-wrap:wrap}
+.now-level{text-align:center;padding:6px 14px;background:rgba(0,0,0,.3);border-radius:8px;min-width:80px}
+.now-level-val{font-size:.95rem;font-weight:700}
+.now-level-label{font-size:.6rem;color:rgba(255,255,255,.55);margin-top:2px;text-transform:uppercase;letter-spacing:.06em}
 </style>
 </head>
 <body>
@@ -142,6 +160,14 @@ footer{text-align:center;padding:18px 0;color:var(--text2);font-size:.66rem;bord
   </div>
   <div class="price-meta" id="btcMeta">資料來源：CoinGecko · 每5分鐘更新</div>
 </header>
+
+<!-- ══ 現在要買還是賣？主訊號（最醒目） ══ -->
+<div id="nowBanner" class="now-banner wait">
+  <div class="now-action wait" id="nowAction"><span class="spin"></span> 分析中...</div>
+  <div class="now-entry" id="nowEntry"></div>
+  <div class="now-detail" id="nowDetail">正在從 Binance 抓取最新數據，請稍候...</div>
+  <div class="now-levels" id="nowLevels"></div>
+</div>
 
 <!-- ── 🇺🇸 美國戰略比特幣儲備（最重要籌碼因素）── -->
 <div class="gov-panel">
@@ -814,60 +840,114 @@ async function renderFlowPanel(){
   setScore('gov',govScore);
 }
 
-// ─── Buy/Sell Signal (VCP 核心邏輯，適配 BTC) ────────────────────────────────
+// ─── Buy/Sell Signal — 明確告訴你現在要買還是賣 ─────────────────────────────
 function renderSignal(price,prices,ma20,ma50,ma100,ma200,rsi,volRatio,distHigh,techScore,atrRatio){
   const el=document.getElementById('mainSignal');
   const detEl=document.getElementById('signalDetail');
 
-  // 30-day pivot (近期高點 = 阻力；低點 = 支撐)
+  // 阻力 = 近30日最高點；支撐 = MA20
   const p30=prices.slice(-30);
-  const pivot=Math.max(...p30);   // 近期阻力
-  const low30=Math.min(...p30);   // 近期支撐
-  const distPivot=(price-pivot)/pivot*100;  // 負 = 在阻力下方
+  const pivot=Math.max(...p30);
+  const distPivot=(price-pivot)/pivot*100; // 負=在阻力下，正=已突破
   const isS2=ma20&&ma50&&ma100&&ma200&&price>ma200&&ma20>ma50&&ma50>ma100&&ma100>ma200;
 
-  let sigType,sigLabel,sigDetail;
+  // 停損價 = MA50（BTC 主要支撐）或 -10%（取較近者）
+  const stopLoss=ma50?Math.max(ma50, price*0.90):price*0.90;
+  const stopLossPct=((price-stopLoss)/price*100).toFixed(1);
+  // 目標價 = 阻力 * 1.05（突破後的初步目標）
+  const target1=pivot*1.05;
+  const target2=pivot*1.15;
+  const targetPct1=((target1-price)/price*100).toFixed(1);
+  const targetPct2=((target2-price)/price*100).toFixed(1);
 
-  if(!isS2&&price<(ma200||0)*0.9){
-    // 跌破 MA200 且不是短暫假突破
-    sigType='NO';sigLabel='🚫 不買：下跌趨勢';
-    sigDetail=`均線排列偏空，股價低於 MA200 ($${Math.round(ma200).toLocaleString()})。等待趨勢重建：股價重回 MA200 → MA100 → MA50 多頭排列後再考慮進場。`;
-  } else if(rsi&&rsi>80){
-    sigType='SELL';sigLabel='🔴 超買：考慮減倉';
-    sigDetail=`RSI ${rsi.toFixed(0)} 進入超買區（>80）。BTC 歷史上 RSI>80 時常出現短線回調 5-20%。可分批獲利了結，保留核心倉位。`;
-  } else if(distPivot>20){
-    sigType='SELL';sigLabel='🔴 過熱：分批獲利了結';
-    sigDetail=`距30日高點 +${distPivot.toFixed(1)}%，短線過熱。RSI ${rsi?rsi.toFixed(0):'?'}，建議分批出場，停利設距成本 +5%。`;
-  } else if(distPivot>10){
-    sigType='WAIT';sigLabel='⏳ 不買：追高風險';
-    sigDetail=`較近期高點上漲 ${distPivot.toFixed(1)}%，追入停損空間不足（BTC 需至少 -8% 停損空間）。等回踩 MA20 $${ma20?Math.round(ma20).toLocaleString():'?'} 附近縮量後再進場。`;
-  } else if(distPivot>=2&&distPivot<=10){
-    sigType='WAIT';sigLabel='⏳ 突破後等回踩縮量';
-    sigDetail=`剛突破近期阻力 $${Math.round(pivot).toLocaleString()}（+${distPivot.toFixed(1)}%），突破當下不追。按 VCP 邏輯：等 1-3 天回踩 + 量縮至均量 50% 以下，才是低風險進場時機。`;
-  } else if(distPivot>=-8&&distPivot<2&&volRatio<0.6){
-    // 核心買點：在阻力附近 + 縮量
-    sigType='BUY';sigLabel='✅ 買：縮量回踩買點';
-    sigDetail=`現價 $${Math.round(price).toLocaleString()} 在近期阻力 $${Math.round(pivot).toLocaleString()} 附近（${distPivot.toFixed(1)}%），成交量縮至均量 ${(volRatio*100).toFixed(0)}%（縮量整理）。符合 VCP 回踩地量買點。停損設 MA50 $${ma50?Math.round(ma50).toLocaleString():'?'}（-${ma50?((price-ma50)/price*100).toFixed(1):'?'}%）。`;
-  } else if(distPivot>=-8&&distPivot<2&&volRatio>=0.6&&volRatio<0.9){
-    sigType='WAIT';sigLabel='⏳ 等量再縮';
-    sigDetail=`位置在買點區間（距阻力 ${distPivot.toFixed(1)}%），量能尚未充分縮減（目前均量 ${(volRatio*100).toFixed(0)}%，等降至 60% 以下）。今日等待，明天量若繼續萎縮再進場。`;
-  } else if(price<ma50&&rsi&&rsi<35&&isS2){
-    sigType='BUY';sigLabel='✅ 買：深度回踩低吸';
-    sigDetail=`深度回踩至 MA50 之下（RSI ${rsi.toFixed(0)} 超賣），但 Stage 2 多頭結構完整。可分批低吸，停損設 MA200 $${ma200?Math.round(ma200).toLocaleString():'?'}。BTC 波動大，分 2-3 批進場降低風險。`;
-  } else if(distHigh>35){
-    sigType='NO';sigLabel='⏳ 不買：距高點太遠';
-    sigDetail=`距52週高點 -${distHigh.toFixed(1)}%，修正幅度大。等待確認底部支撐（MA200 + 縮量 + RSI 超賣反彈）後再評估。`;
+  let sigType, nowAction, nowEntry, nowDetail, nowBannerClass;
+
+  // ─ 判斷邏輯（由嚴重到輕微，依序判斷）─
+  if(price<(ma200||0)*0.88){
+    // 跌破 MA200 超過 12% = 熊市
+    sigType='NO';nowBannerClass='no';
+    nowAction='🚫 暫時觀望';
+    nowEntry='';
+    nowDetail=`BTC 跌破所有均線，現在是趨勢向下的狀態。\n不適合買入，等待 BTC 重新站回 MA200（$${ma200?Math.round(ma200).toLocaleString():'？'}）且成交量縮小後再重新評估。`;
+  } else if(rsi&&rsi>82){
+    // RSI 超買 = 短線賣出
+    sigType='SELL';nowBannerClass='sell';
+    nowAction='🔴 現在考慮賣出（短線過熱）';
+    nowEntry=`RSI ${rsi.toFixed(0)} 超買，歷史上此時常回調 10-20%`;
+    nowDetail=`【賣出理由】RSI 達到 ${rsi.toFixed(0)}，高於 80 的超買警戒線。BTC 歷史上 RSI > 80 時，短線大多會出現 10-20% 的拉回。\n\n【建議做法】分批減倉 30-50%，保留核心倉位長期持有。\n【出場價位】現價 $${Math.round(price).toLocaleString()} 附近分批出，若有停利設在成本 +20% 以上。`;
+  } else if(distPivot>18){
+    // 短線過熱
+    sigType='SELL';nowBannerClass='sell';
+    nowAction='🔴 現在考慮獲利了結';
+    nowEntry=`距近期高點已漲 +${distPivot.toFixed(1)}%，短線過熱`;
+    nowDetail=`【賣出理由】BTC 距近期高點（$${Math.round(pivot).toLocaleString()}）已上漲 +${distPivot.toFixed(1)}%，短線漲幅過大，風險報酬比差。\n\n【建議做法】若有持倉，考慮獲利了結 30-50%。沒有持倉的話，不要現在追買。\n【等待買點】等回踩到 MA20（$${ma20?Math.round(ma20).toLocaleString():'？'}）附近再考慮再進場。`;
+  } else if(distPivot>=3&&distPivot<=18){
+    // 突破後漲了一段，等回踩
+    sigType='WAIT';nowBannerClass='wait';
+    nowAction='⏳ 現在等待，不買也不賣';
+    nowEntry=`突破阻力後已漲 +${distPivot.toFixed(1)}%，追買風險大`;
+    nowDetail=`【等待理由】BTC 剛突破近期阻力（$${Math.round(pivot).toLocaleString()}），但現在追買太貴了。VCP 邏輯：突破後不追，要等它「喘口氣」再進。\n\n【等什麼？】等 BTC 回踩到 MA20（約 $${ma20?Math.round(ma20).toLocaleString():'？'}）附近，且成交量明顯萎縮（今日量 < 過去20日平均量的60%）\n【現在若有持倉】繼續持有，設停利在 +15% 到 +20%。`;
+  } else if(distPivot>=-6&&distPivot<3&&volRatio<0.6){
+    // 核心買點：在阻力附近 + 縮量 = 最佳進場時機
+    sigType='BUY';nowBannerClass='buy';
+    nowAction='✅ 現在可以買入';
+    nowEntry=`在 $${Math.round(price).toLocaleString()} 附近買入`;
+    nowDetail=`【買入理由】①現價在近期阻力（$${Math.round(pivot).toLocaleString()}）附近（${distPivot.toFixed(1)}%）②成交量只有平均的 ${(volRatio*100).toFixed(0)}%（縮量 = 賣壓小）③均線多頭排列（${isS2?'Stage 2 ✅':'MA50 上方'}）三條件齊備，這是 VCP 的標準買點。\n\n【停損】跌破 $${Math.round(stopLoss).toLocaleString()}（-${stopLossPct}%）立刻出場，不猶豫。\n【目標】初步目標 $${Math.round(target1).toLocaleString()}（+${targetPct1}%），強勢可看 $${Math.round(target2).toLocaleString()}（+${targetPct2}%）`;
+  } else if(distPivot>=-6&&distPivot<3&&volRatio>=0.6&&volRatio<0.9){
+    // 位置對但量未縮 = 再等一天
+    sigType='WAIT';nowBannerClass='wait';
+    nowAction='⏳ 位置對，等量縮再買';
+    nowEntry=`今天等待，明天量若縮到 60% 以下就進場`;
+    nowDetail=`【還差一步】現價在買點區間（距阻力 ${distPivot.toFixed(1)}%），位置OK。但成交量還有平均的 ${(volRatio*100).toFixed(0)}%，還不夠縮（要低於 60%）。\n\n【明天要看什麼】成交量 < 平均量的 60%，且股價沒有大跌破 MA20 = 明天進場。\n【買入目標價】$${Math.round(price).toLocaleString()} 附近（現價）\n【停損設定】跌破 $${Math.round(stopLoss).toLocaleString()}（-${stopLossPct}%）出場。`;
+  } else if(price<ma50&&(ma50||0)>0&&rsi&&rsi<35&&isS2){
+    // 深度回踩 + 超賣 + 趨勢完整 = 低吸機會
+    sigType='BUY';nowBannerClass='buy';
+    nowAction='✅ 可以低吸（分批進場）';
+    nowEntry=`超賣反彈機會，在 $${Math.round(price).toLocaleString()} 分批買`;
+    nowDetail=`【買入理由】BTC 深度回踩到 MA50（$${Math.round(ma50).toLocaleString()}）以下，RSI ${rsi.toFixed(0)} 進入超賣區，但整體均線結構仍然健康（Stage 2 多頭）。這是「回踩不破結構」的低吸機會。\n\n【分批進場策略】今天買 1/3，再跌到 MA100（$${ma100?Math.round(ma100).toLocaleString():'？'}）再買 1/3，最後等反彈確認再補 1/3。\n【停損】跌破 MA200（$${ma200?Math.round(ma200).toLocaleString():'？'}）全部出場。`;
+  } else if(distHigh>40){
+    // 嚴重修正，不確定底部
+    sigType='WAIT';nowBannerClass='wait';
+    nowAction='⏳ 觀望，等底部確認';
+    nowEntry=`距52週高點已跌 -${distHigh.toFixed(1)}%，尚未確認底部`;
+    nowDetail=`【等待理由】BTC 距最高點已跌 ${distHigh.toFixed(1)}%，幅度大。但跌越多不代表越值得買，要等底部確認信號。\n\n【底部確認要看什麼】①RSI 跌到 30 以下後反彈（超賣反彈）②成交量放大後股價止跌 ③股價重新站回 MA200（$${ma200?Math.round(ma200).toLocaleString():'？'}）三條件出現才進場。`;
   } else {
-    sigType='WAIT';sigLabel='⏳ 觀望：等更好時機';
-    sigDetail=`距阻力 ${distPivot.toFixed(1)}%，量能 ${(volRatio*100).toFixed(0)}%。等待明確縮量回踩信號再進場。`;
+    sigType='WAIT';nowBannerClass='wait';
+    nowAction='⏳ 觀望，等更明確的信號';
+    nowEntry=`現在沒有明確買賣點，等待中`;
+    nowDetail=`目前 BTC 處於整理狀態。\n距阻力 ${distPivot.toFixed(1)}%，成交量 ${(volRatio*100).toFixed(0)}%，RSI ${rsi?rsi.toFixed(0):'N/A'}。\n\n最好的等待機會：①等縮量整理結束（量縮到 50-60%）②等突破近期高點 $${Math.round(pivot).toLocaleString()} 後的回踩 ③等 RSI 跌到 30 以下的超賣反彈`;
   }
 
-  const sigClass=sigType==='BUY'?'sig-buy':sigType==='SELL'?'sig-sell':'sig-wait';
-  el.innerHTML=`<div class="sig-big ${sigClass}">${sigLabel}</div>`;
+  // ── 更新頂部主訊號 Banner ──
+  const banner=document.getElementById('nowBanner');
+  const nowActionEl=document.getElementById('nowAction');
+  const nowEntryEl=document.getElementById('nowEntry');
+  const nowDetailEl=document.getElementById('nowDetail');
+  const nowLevels=document.getElementById('nowLevels');
 
-  // Support/Resistance display
+  if(banner){
+    banner.className=`now-banner ${nowBannerClass}`;
+    nowActionEl.className=`now-action ${nowBannerClass}`;
+    nowActionEl.textContent=nowAction;
+    nowEntryEl.textContent=nowEntry;
+    nowDetailEl.style.whiteSpace='pre-wrap';
+    nowDetailEl.textContent=nowDetail;
+    // 價位顯示
+    const lvl=(val,label,color)=>`<div class="now-level"><div class="now-level-val" style="color:${color}">$${Math.round(val).toLocaleString()}</div><div class="now-level-label">${label}</div></div>`;
+    nowLevels.innerHTML=
+      (ma20?lvl(ma20,'支撐 MA20','#4ade80'):'') +
+      (ma50?lvl(ma50,'支撐 MA50','#60a5fa'):'') +
+      lvl(pivot,'近期阻力','#f87171') +
+      (sigType==='BUY'?lvl(stopLoss,'停損出場','#fb923c'):'') +
+      (sigType==='BUY'?lvl(target1,'目標價1','#a78bfa'):'');
+  }
+
+  // ── 更新下方詳細訊號 ──
+  const sigClass=sigType==='BUY'?'sig-buy':sigType==='SELL'?'sig-sell':'sig-wait';
+  el.innerHTML=`<div class="sig-big ${sigClass}">${nowAction}</div>`;
+
   detEl.innerHTML=`
-    <div style="font-size:.76rem;color:var(--text);line-height:1.75;margin-bottom:12px">${escH(sigDetail)}</div>
+    <div style="font-size:.8rem;color:var(--text);line-height:1.8;margin-bottom:12px;white-space:pre-wrap;background:var(--card2);padding:10px 14px;border-radius:8px">${escH(nowDetail)}</div>
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
       <div class="level-chip" style="border:1px solid rgba(16,185,129,.3)">
         <div class="level-chip-val green">$${ma20?Math.round(ma20).toLocaleString():'N/A'}</div>
@@ -883,12 +963,13 @@ function renderSignal(price,prices,ma20,ma50,ma100,ma200,rsi,volRatio,distHigh,t
       </div>
       <div class="level-chip" style="border:1px solid rgba(248,113,113,.3)">
         <div class="level-chip-val red">$${Math.round(pivot).toLocaleString()}</div>
-        <div class="level-chip-label">阻力 · 30日高</div>
+        <div class="level-chip-label">阻力 · 近期高點</div>
       </div>
+      ${sigType==='BUY'?`<div class="level-chip" style="border:1px solid rgba(249,115,22,.4)"><div class="level-chip-val orange">$${Math.round(stopLoss).toLocaleString()}</div><div class="level-chip-label">停損出場</div></div>`:''}
+      ${sigType==='BUY'?`<div class="level-chip" style="border:1px solid rgba(167,139,250,.3)"><div class="level-chip-val" style="color:#a78bfa">$${Math.round(target1).toLocaleString()}</div><div class="level-chip-label">目標 (+${targetPct1}%)</div></div>`:''}
     </div>
     <div style="padding:8px 12px;background:rgba(247,148,29,.08);border:1px solid rgba(247,148,29,.2);border-radius:6px;font-size:.7rem;color:var(--orange);line-height:1.65">
-      ⚡ <strong>BTC 操作紀律（VCP 邏輯，停損加寬）：</strong>
-      突破不追 → 等回踩縮量（地量）→ 買入 → 停損 -8% 至 -12%（台股 VCP 為 -5%）→ 波動大，單次部位控制在總資金 10-20%
+      ⚡ <strong>BTC 操作紀律：</strong>停損 -8% 至 -12%（比台股 VCP 寬）· 單次部位建議不超過總資金 20% · BTC 24/7 交易，停損一定要提前設定好
     </div>
   `;
 }
