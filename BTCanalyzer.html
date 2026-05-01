@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vivian Edge — BTC 買賣點分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0d1117;--bg2:#111820;--card:#161b22;--card2:#1c2128;
+  --border:#2d3748;--border2:#3d4a5c;
+  --orange:#f7941d;--gold:#e6a817;
+  --mint:#3fb97a;--red:#e05c5c;--blue:#4a90c4;--purple:#4f7ef7;
+  --text:#e2e8f0;--text2:#718096;--tag:#1a2030;
+}
+body{
+  font-family:'Noto Sans TC','Hiragino Sans','Yu Gothic',-apple-system,
+    BlinkMacSystemFont,'Microsoft JhengHei','Segoe UI',sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;
+  line-height:1.6;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:1200px;margin:0 auto;padding:14px 20px}
+@media(max-width:640px){.wrap{padding:10px 14px}}
+
+/* ── Header ── */
+header{
+  text-align:center;padding:22px 20px 16px;position:relative;
+  background:linear-gradient(160deg,#0d1117 0%,#181000 60%,#0d1117 100%);
+  border-bottom:1px solid rgba(247,148,29,.3);margin-bottom:14px;overflow:hidden;
+}
+header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--orange),var(--gold),var(--orange),transparent)}
+header>*{position:relative;z-index:1}
+.back-btn{position:absolute;left:16px;top:18px;padding:5px 12px;
+  background:rgba(13,17,23,.8);border:1px solid rgba(255,255,255,.2);border-radius:6px;
+  color:rgba(255,255,255,.8);cursor:pointer;font-size:.72rem;font-weight:500;
+  text-decoration:none;display:inline-block;transition:all .2s;backdrop-filter:blur(8px)}
+.back-btn:hover{border-color:var(--orange);color:var(--orange)}
+h1{font-size:1.55rem;color:#fff;margin-bottom:4px;font-weight:700;letter-spacing:-.015em}
+.price-ticker{font-size:2.4rem;font-weight:700;color:var(--orange);letter-spacing:-.02em}
+.price-change{font-size:1rem;font-weight:600;margin-left:10px}
+.price-change.up{color:var(--mint)}.price-change.dn{color:var(--red)}
+.price-meta{font-size:.72rem;color:var(--text2);margin-top:6px}
+@media(max-width:640px){h1{font-size:1.15rem}.price-ticker{font-size:1.6rem}.back-btn{top:10px}}
+
+/* ── Cards ── */
+.card{background:var(--card);border-radius:10px;padding:16px 18px;border:1px solid var(--border)}
+.card-title{font-size:.73rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+@media(max-width:768px){.three-col{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.two-col,.three-col{grid-template-columns:1fr}}
+
+/* ── US Gov Reserve (most important section) ── */
+.gov-panel{
+  background:linear-gradient(135deg,#0d1520 0%,#0a1a0f 100%);
+  border:2px solid rgba(59,130,246,.4);border-left:5px solid #3b82f6;
+  border-radius:12px;padding:16px 20px;margin-bottom:14px;
+}
+.gov-title{font-size:.88rem;font-weight:800;color:#93c5fd;letter-spacing:.03em}
+.gov-subtitle{font-size:.68rem;color:var(--text2);margin-top:2px}
+.gov-stats{display:flex;gap:20px;margin:12px 0;flex-wrap:wrap}
+.gov-stat{text-align:center;min-width:90px}
+.gov-stat-val{font-size:1.25rem;font-weight:700;color:#60a5fa}
+.gov-stat-label{font-size:.58rem;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+.badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.7rem;font-weight:700}
+.badge-blue{background:rgba(59,130,246,.18);color:#93c5fd;border:1px solid rgba(59,130,246,.35)}
+.badge-green{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3)}
+.badge-orange{background:rgba(247,148,29,.15);color:var(--orange);border:1px solid rgba(247,148,29,.3)}
+.badge-red{background:rgba(220,38,38,.12);color:#f87171;border:1px solid rgba(220,38,38,.25)}
+.badge-gray{background:rgba(113,113,122,.12);color:#9ca3af;border:1px solid rgba(113,113,122,.22)}
+
+/* ── Score bar ── */
+.score-bar{height:7px;border-radius:4px;background:var(--border);overflow:hidden;margin:5px 0}
+.score-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.fill-green{background:linear-gradient(90deg,#059669,#10b981)}
+.fill-orange{background:linear-gradient(90deg,#d97706,#f59e0b)}
+.fill-red{background:linear-gradient(90deg,#dc2626,#ef4444)}
+.fill-blue{background:linear-gradient(90deg,#1d4ed8,#3b82f6)}
+
+/* ── Main signal ── */
+.sig-big{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:8px;
+  font-size:1.05rem;font-weight:800;margin:6px 0;letter-spacing:.02em}
+.sig-buy{background:rgba(5,150,105,.18);color:#34d399;border:2px solid rgba(5,150,105,.38)}
+.sig-wait{background:rgba(202,138,4,.14);color:#fbbf24;border:2px solid rgba(202,138,4,.28)}
+.sig-sell{background:rgba(220,38,38,.14);color:#f87171;border:2px solid rgba(220,38,38,.28)}
+
+/* ── MA dots ── */
+.ma-dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;margin-right:3px;flex-shrink:0}
+.dot-green{background:#10b981}.dot-red{background:#ef4444}.dot-gray{background:#6b7280}
+
+/* ── News / AI ── */
+.news-body{font-size:.8rem;line-height:1.75;color:var(--text);white-space:pre-wrap}
+.news-body.loading{color:var(--text2);font-style:italic;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.news-time{font-size:.6rem;color:var(--text2);margin-top:6px;text-align:right}
+.refresh-btn{background:transparent;border:1.5px solid var(--border);border-radius:12px;
+  color:var(--text2);cursor:pointer;font-size:.68rem;padding:3px 9px;transition:all .18s}
+.refresh-btn:hover{border-color:var(--orange);color:var(--orange)}
+
+/* ── Metric row ── */
+.mrow{display:flex;justify-content:space-between;align-items:center;
+  padding:6px 0;border-bottom:1px solid rgba(45,55,72,.4);font-size:.78rem}
+.mrow:last-child{border-bottom:none}
+.mlabel{color:var(--text2);font-size:.73rem}
+.mval{font-weight:700}
+.green{color:#34d399}.orange{color:#fbbf24}.red{color:#f87171}.blue{color:#60a5fa}.gray{color:#9ca3af}
+
+/* ── F&G Gauge ── */
+.fg-num{font-size:2.8rem;font-weight:700;line-height:1}
+.fg-label{font-size:.82rem;font-weight:700;margin-top:3px}
+.fg-gradient-bar{height:14px;border-radius:7px;background:linear-gradient(90deg,#3b82f6,#10b981,#fbbf24,#f97316,#ef4444);position:relative;margin:10px 0}
+
+/* ── Section divider ── */
+.sec-div{height:1px;background:var(--border);margin:14px 0;opacity:.5}
+
+/* ── Spinning loader ── */
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border);
+  border-top-color:var(--orange);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:5px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── Support/Resistance chips ── */
+.level-chip{text-align:center;padding:6px 8px;background:var(--card2);border-radius:6px;flex:1;min-width:0}
+.level-chip-val{font-size:.82rem;font-weight:700}
+.level-chip-label{font-size:.6rem;color:var(--text2);margin-top:2px}
+
+footer{text-align:center;padding:18px 0;color:var(--text2);font-size:.66rem;border-top:1px solid var(--border);margin-top:18px;line-height:1.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ── Header ── -->
+<header>
+  <a href="VCPfinder.html" class="back-btn">← VCPfinder</a>
+  <h1>₿ BTC 買賣點分析 <span style="font-weight:400;font-size:.6em;opacity:.7">· Vivian Edge</span></h1>
+  <div style="margin-top:10px">
+    <span class="price-ticker" id="btcPrice"><span class="spin"></span>載入中</span>
+    <span class="price-change" id="btcChange"></span>
+  </div>
+  <div class="price-meta" id="btcMeta">資料來源：CoinGecko · 每5分鐘更新</div>
+</header>
+
+<!-- ── 🇺🇸 美國戰略比特幣儲備（最重要籌碼因素）── -->
+<div class="gov-panel">
+  <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+    <div style="font-size:1.6rem;flex-shrink:0">🇺🇸</div>
+    <div style="flex:1;min-width:0">
+      <div class="gov-title">美國戰略比特幣儲備 (Strategic Bitcoin Reserve)</div>
+      <div class="gov-subtitle">2025/3/6 川普簽署行政令 EO14178 成立 · 永久持有，不得出售 · 史上最大主權級籌碼鎖定</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <span class="badge badge-green" id="govStatusBadge">🔒 持有中</span>
+      <button class="refresh-btn" onclick="loadGovNews()">↻ 最新動態</button>
+    </div>
+  </div>
+
+  <div class="gov-stats">
+    <div class="gov-stat">
+      <div class="gov-stat-val">~198,012</div>
+      <div class="gov-stat-label">美國持有 BTC</div>
+    </div>
+    <div class="gov-stat">
+      <div class="gov-stat-val" id="govBtcValue">—</div>
+      <div class="gov-stat-label">持倉市值（美元）</div>
+    </div>
+    <div class="gov-stat">
+      <div class="gov-stat-val">~210,000</div>
+      <div class="gov-stat-label">其他國家持有 BTC</div>
+    </div>
+    <div class="gov-stat">
+      <div class="gov-stat-val">~0.97%</div>
+      <div class="gov-stat-label">佔總供給比例</div>
+    </div>
+    <div class="gov-stat">
+      <div class="gov-stat-val" id="govPctSupply">—</div>
+      <div class="gov-stat-label">全球主權持有%</div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+    <span class="badge badge-blue">財政部扣押資產</span>
+    <span class="badge badge-blue">不得出售法令</span>
+    <span class="badge badge-green">1M BTC 立法草案進行中</span>
+    <span class="badge badge-orange">薩爾瓦多・阿布達比・捷克跟進</span>
+  </div>
+
+  <div style="padding-top:10px;border-top:1px solid rgba(59,130,246,.2)">
+    <div style="font-size:.68rem;font-weight:800;color:#93c5fd;letter-spacing:.05em;margin-bottom:6px">📡 政府 BTC 最新動向（AI 分析）</div>
+    <div class="news-body" id="govNewsBody" style="font-size:.76rem;color:var(--text2)">點擊「最新動態」載入 AI 分析...</div>
+    <div class="news-time" id="govNewsTime"></div>
+  </div>
+
+  <div style="margin-top:10px;padding:8px 12px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:6px;font-size:.7rem;color:#93c5fd;line-height:1.65">
+    💡 <strong>為何是最大籌碼：</strong>美國政府將 ~198,000 BTC 永久鎖定，不得出售。若「比特幣法案」通過，財政部可再購入高達 100萬枚，約佔總供給 5%。主權級買家進場 = 長期供給缺口擴大，是比任何技術形態更強的結構性利多。
+  </div>
+</div>
+
+<!-- ── BTC 新聞 + 恐慌貪婪指數 ── -->
+<div class="two-col">
+
+  <!-- BTC 市場快訊 -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="card-title" style="color:var(--orange);margin:0">₿ BTC 市場快訊</div>
+      <button class="refresh-btn" onclick="loadBTCNews()">↻ 刷新</button>
+    </div>
+    <div class="news-body loading" id="btcNewsBody">載入中...</div>
+    <div class="news-time" id="btcNewsTime"></div>
+  </div>
+
+  <!-- 恐慌貪婪指數（替代 美林時鐘） -->
+  <div class="card" style="text-align:center">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="card-title" style="margin:0">😱 恐慌貪婪指數</div>
+      <button class="refresh-btn" onclick="loadFearGreed()">↻ 刷新</button>
+    </div>
+    <div class="fg-num" id="fgNum" style="color:var(--text2)">—</div>
+    <div class="fg-label" id="fgLabel">載入中</div>
+    <div class="fg-gradient-bar">
+      <div id="fgNeedle" style="position:absolute;top:-3px;width:4px;height:20px;background:#fff;border-radius:2px;box-shadow:0 0 8px rgba(0,0,0,.6);left:50%;transform:translateX(-50%);transition:left .6s ease"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:.58rem;color:var(--text2);margin-bottom:10px">
+      <span>極度恐慌</span><span>恐慌</span><span>中性</span><span>貪婪</span><span>極度貪婪</span>
+    </div>
+    <div id="fgHistory" style="font-size:.72rem;color:var(--text2);margin-bottom:10px"></div>
+    <div style="padding-top:10px;border-top:1px solid var(--border);font-size:.72rem;color:var(--text2);line-height:1.65;text-align:left">
+      <strong style="color:var(--text)">反向操作參考：</strong><br>
+      &lt; 20 極度恐慌 → 歷史上常見底部附近，考慮低吸<br>
+      &gt; 80 極度貪婪 → 歷史上常見頂部附近，考慮減倉
+    </div>
+  </div>
+</div>
+
+<!-- ── 技術面 + 鏈上指標 + 資金流向 ── -->
+<div class="three-col">
+
+  <!-- 技術面（VCP 邏輯，直接套用） -->
+  <div class="card">
+    <div class="card-title" style="color:var(--orange)">📊 VCP 技術分析</div>
+    <div id="techPanel">
+      <div class="news-body loading" style="font-size:.75rem">計算中...</div>
+    </div>
+  </div>
+
+  <!-- 鏈上指標（替代 台股籌碼 外資/投信） -->
+  <div class="card">
+    <div class="card-title" style="color:#93c5fd">⛓ 鏈上指標</div>
+    <div id="onchainPanel">
+      <div class="news-body loading" style="font-size:.75rem">計算中...</div>
+    </div>
+  </div>
+
+  <!-- 資金流向（替代 融資/除息日） -->
+  <div class="card">
+    <div class="card-title" style="color:var(--mint)">💰 籌碼 &amp; 資金</div>
+    <div id="flowPanel">
+      <div class="news-body loading" style="font-size:.75rem">載入中...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 主買賣點訊號（VCP 邏輯核心） ── -->
+<div class="card" style="margin-bottom:14px;border-color:rgba(247,148,29,.35)">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+
+    <div style="flex:1;min-width:200px">
+      <div class="card-title" style="color:var(--orange)">🎯 BTC 買賣點訊號</div>
+      <div id="mainSignal">
+        <div class="news-body loading" style="font-size:.75rem">分析中...</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;min-width:110px">
+      <div style="font-size:.62rem;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em">綜合評分</div>
+      <div id="totalScore" style="font-size:2.8rem;font-weight:700;color:var(--orange);line-height:1">—</div>
+      <div id="totalGrade" style="font-size:.7rem;color:var(--text2);margin-top:4px">計算中...</div>
+    </div>
+  </div>
+
+  <!-- 各項分數（對應 VCPfinder 的 CAN SLIM + 籌碼 + 基本面） -->
+  <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px 16px" id="scoreBreakdown">
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:.64rem;color:var(--text2)">VCP 技術面</span>
+        <span style="font-size:.72rem;font-weight:700;color:var(--text)" id="techScoreVal">—</span>
+      </div>
+      <div class="score-bar"><div class="score-fill fill-orange" id="techScoreBar" style="width:0%"></div></div>
+    </div>
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:.64rem;color:var(--text2)">市場情緒 (F&amp;G)</span>
+        <span style="font-size:.72rem;font-weight:700;color:var(--text)" id="sentScoreVal">—</span>
+      </div>
+      <div class="score-bar"><div class="score-fill fill-orange" id="sentScoreBar" style="width:0%"></div></div>
+    </div>
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:.64rem;color:var(--text2)">鏈上健康 (MVRV+週期)</span>
+        <span style="font-size:.72rem;font-weight:700;color:var(--text)" id="chainScoreVal">—</span>
+      </div>
+      <div class="score-bar"><div class="score-fill fill-blue" id="chainScoreBar" style="width:0%"></div></div>
+    </div>
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:.64rem;color:var(--text2)">政府籌碼 (SBR)</span>
+        <span style="font-size:.72rem;font-weight:700;color:var(--text)" id="govScoreVal">—</span>
+      </div>
+      <div class="score-bar"><div class="score-fill fill-green" id="govScoreBar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- 詳細說明 -->
+  <div id="signalDetail" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)"></div>
+</div>
+
+<!-- ── 給新手的買賣操作指南 ── -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid var(--orange)">
+  <div class="card-title" style="color:var(--orange)">🔰 給新手：BTC 買賣怎麼看？（傻瓜指南）</div>
+  <div style="font-size:.78rem;line-height:1.8;color:var(--text)">
+
+    <div style="margin-bottom:10px;padding:8px 12px;background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.25);border-radius:6px">
+      <strong style="color:#34d399">✅ 什麼時候買？（7條全對才進場）</strong><br>
+      ① 綜合評分 ≥ 70 分<br>
+      ② 主訊號顯示「✅ 買」<br>
+      ③ MA 排列：股價在 MA20 / MA50 / MA200 全部上方（多頭排列）<br>
+      ④ 成交量「縮量」（量縮比 &lt; 60%）= 沒人在賣，等待爆發<br>
+      ⑤ 恐慌貪婪指數 &lt; 50（不是極度貪婪的時候）<br>
+      ⑥ MVRV &lt; 2.5（BTC 還沒被高估）<br>
+      ⑦ 美元（DXY）沒有強力上漲（美元跌 = BTC 漲）
+    </div>
+
+    <div style="margin-bottom:10px;padding:8px 12px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:6px">
+      <strong style="color:#f87171">🔴 什麼時候賣？（出現任一條考慮賣）</strong><br>
+      ① 主訊號顯示「🔴 過熱」<br>
+      ② RSI &gt; 80（市場過熱，通常會拉回）<br>
+      ③ 恐慌貪婪指數 &gt; 80（極度貪婪 = 歷史上常是頂部附近）<br>
+      ④ MVRV &gt; 3.5（BTC 被嚴重高估，歷史上常在此附近見頂）<br>
+      ⑤ 跌破 MA50（趨勢轉弱信號）
+    </div>
+
+    <div style="padding:8px 12px;background:rgba(113,113,122,.1);border:1px solid rgba(113,113,122,.2);border-radius:6px">
+      <strong>停損紀律（最重要，保住本金）：</strong><br>
+      買入後跌 -8% 至 -10% 就出場，不要抱著虧損期待反彈。BTC 一天可以跌 10-20%，停損是唯一保護。
+    </div>
+  </div>
+</div>
+
+<!-- ── 什麼因素決定 BTC 漲跌？（領先指標完整解說）── -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid var(--purple)">
+  <div class="card-title" style="color:var(--purple)">📡 什麼因素決定 BTC 漲跌？（可事先知道的領先指標）</div>
+  <div style="font-size:.77rem;line-height:1.8;color:var(--text)">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 20px">
+
+      <div style="padding:8px;background:var(--card2);border-radius:6px;border-left:3px solid #3b82f6">
+        <div style="font-weight:700;color:#93c5fd">🏛 美國政府買 BTC</div>
+        <div style="font-size:.72rem;color:var(--text2);margin-top:3px">政府宣布購買或鎖定 BTC → 市場流通量減少 → 價格上漲。這是 2025 年最新的「主權級籌碼」，影響力巨大。</div>
+        <div style="font-size:.65rem;color:#60a5fa;margin-top:3px">⏰ 提前知道：追蹤國會法案進展</div>
+      </div>
+
+      <div style="padding:8px;background:var(--card2);border-radius:6px;border-left:3px solid var(--orange)">
+        <div style="font-weight:700;color:var(--orange)">₿ 比特幣減半（Halving）</div>
+        <div style="font-size:.72rem;color:var(--text2);margin-top:3px">每4年，礦工獲得的新 BTC 獎勵減半。新幣減少 = 供給壓力下降。歷史上每次減半後 12-18 個月通常是牛市高點。上次：2024/4。</div>
+        <div style="font-size:.65rem;color:var(--orange);margin-top:3px">⏰ 提前知道：已知下次減半 ~2028/4</div>
+      </div>
+
+      <div style="padding:8px;background:var(--card2);border-radius:6px;border-left:3px solid var(--mint)">
+        <div style="font-weight:700;color:var(--mint)">💵 美元強弱（DXY 指數）</div>
+        <div style="font-size:.72rem;color:var(--text2);margin-top:3px">美元漲 → BTC 通常跌；美元跌 → BTC 通常漲。BTC 以美元計價，美元強勢時全球資金回流美元。最重要的宏觀反向指標。</div>
+        <div style="font-size:.65rem;color:var(--mint);margin-top:3px">⏰ 提前知道：Fed 開會前後 DXY 會波動</div>
+      </div>
+
+      <div style="padding:8px;background:var(--card2);border-radius:6px;border-left:3px solid #a78bfa">
+        <div style="font-weight:700;color:#a78bfa">🏦 聯準會（Fed）利率</div>
+        <div style="font-size:.72rem;color:var(--text2);margin-top:3px">Fed 降息 → 錢變便宜，流向風險資產（BTC、股票）→ BTC 漲。Fed 升息 → 錢流向債券 → BTC 跌。利率預期改變比實際改變更早影響價格。</div>
+        <div style="font-size:.65rem;color:#a78bfa;margin-top:3px">⏰ 提前知道：FOMC 會議（每年8次，有日程表）</div>
+      </div>
+
+      <div style="padding:8px;background:var(--card2);border-radius:6px;border-left:3px solid #fbbf24">
+        <div style="font-weight:700;color:#fbbf24">😱 恐慌貪婪指數</div>
+        <div style="font-size:.72rem;color:var(--text2);margin-top:3px">市場情緒的「溫度計」。極度恐慌（&lt;25）= 大家都怕，反而是買入機會；極度貪婪（&gt;75）= 大家都瘋了，通常接近頂部。巴菲特：「別人恐慌時貪婪，別人貪婪時恐慌」。</div>
+        <div style="font-size:.65rem;color:#fbbf24;margin-top:3px">⏰ 提前知道：每天更新，可作為短期信號</div>
+      </div>
+
+      <div style="padding:8px;background:var(--card2);border-radius:6px;border-left:3px solid #34d399">
+        <div style="font-weight:700;color:#34d399">📊 ETF 資金流向（每日）</div>
+        <div style="font-size:.72rem;color:var(--text2);margin-top:3px">自 2024/1 起，BlackRock IBIT 等 ETF 讓機構可以直接買 BTC。ETF 單日流入大 → BTC 漲；大量流出 → 短線壓力。這是最新的「法人買賣超」等效指標。</div>
+        <div style="font-size:.65rem;color:#34d399;margin-top:3px">⏰ 提前知道：查 farside.co.uk 每日更新</div>
+      </div>
+
+      <div style="padding:8px;background:var(--card2);border-radius:6px;border-left:3px solid #60a5fa">
+        <div style="font-weight:700;color:#60a5fa">📦 交易所 BTC 庫存</div>
+        <div style="font-size:.72rem;color:var(--text2);margin-top:3px">交易所上的 BTC 持續減少 = 投資人把 BTC 取出放自己錢包（長期持有）= 賣壓減少 → 看漲。交易所 BTC 增加 = 有人準備賣 = 賣壓增加 → 看跌。</div>
+        <div style="font-size:.65rem;color:#60a5fa;margin-top:3px">⏰ 提前知道：查 Glassnode / CryptoQuant</div>
+      </div>
+
+      <div style="padding:8px;background:var(--card2);border-radius:6px;border-left:3px solid var(--red)">
+        <div style="font-weight:700;color:var(--red)">💸 資金費率（Funding Rate）</div>
+        <div style="font-size:.72rem;color:var(--text2);margin-top:3px">期貨市場的「押注溫度」。費率為正（多頭支付空頭）且很高 → 槓桿多頭過多，容易引發多殺多；費率為負 → 空頭過多，容易引發軋空上漲。</div>
+        <div style="font-size:.65rem;color:var(--red);margin-top:3px">⏰ 提前知道：本工具從 Binance 即時抓取</div>
+      </div>
+
+    </div>
+
+    <div id="macroPanel" style="margin-top:12px;padding:10px 12px;background:var(--card2);border-radius:8px;border:1px solid var(--border)">
+      <div style="font-size:.7rem;font-weight:800;color:var(--purple);letter-spacing:.05em;margin-bottom:6px">📈 宏觀即時數據（DXY + 納指）</div>
+      <div id="macroPanelBody" class="news-body loading" style="font-size:.74rem">載入中...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── BTC vs 台股差異說明 ── -->
+<details style="margin-bottom:14px">
+  <summary style="cursor:pointer;font-size:.75rem;color:var(--purple);padding:8px 0">📋 BTC 分析邏輯 vs 台股 VCPfinder 差異說明 ▶</summary>
+  <div class="card" style="margin-top:6px;font-size:.76rem;line-height:1.75">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px">
+      <div><strong style="color:var(--mint)">✅ 保留（台股 + BTC 通用）</strong></div>
+      <div><strong style="color:var(--orange)">🔄 替換為 BTC 版本</strong></div>
+      <div>• MA 多頭排列（20/50/100/200）</div>
+      <div>• <del style="color:var(--text2)">CAN SLIM（EPS/ROE）</del> → MVRV + 減半週期</div>
+      <div>• 成交量萎縮（縮量整理）</div>
+      <div>• <del style="color:var(--text2)">融資/融券</del> → 資金費率（永續合約）</div>
+      <div>• 距高點距離分析</div>
+      <div>• <del style="color:var(--text2)">外資/投信籌碼</del> → 現貨 ETF 流向 + SBR</div>
+      <div>• 回踩縮量進場邏輯</div>
+      <div>• <del style="color:var(--text2)">美林投資時鐘</del> → 恐慌貪婪指數</div>
+      <div>• VCP 分數計算邏輯</div>
+      <div>• <del style="color:var(--text2)">除息日/法說會</del> → 減半週期倒計時</div>
+      <div>• AI 新聞快訊摘要</div>
+      <div>• <del style="color:var(--text2)">葛拉漢合理價</del> → MVRV 估值指標</div>
+      <div>• 買賣點訊號系統</div>
+      <div>• <strong style="color:#93c5fd">➕ 全新：美國戰略比特幣儲備追蹤</strong></div>
+    </div>
+    <div style="margin-top:8px;padding:8px 10px;background:rgba(247,148,29,.08);border:1px solid rgba(247,148,29,.2);border-radius:6px;color:var(--orange);font-size:.7rem">
+      ⚡ 重要差異：BTC 24/7 交易，波動為台股 3-5 倍。停損建議 -8% 至 -12%（台股 VCP 為 -5%）。
+    </div>
+  </div>
+</details>
+
+<!-- ── 重要風險 ── -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid var(--red)">
+  <div class="card-title" style="color:var(--red)">⚠ BTC 特有風險（台股沒有的）</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-size:.76rem;line-height:1.65">
+    <div>🔴 <strong>監管政策</strong>：各國禁止/開放政策急轉彎</div>
+    <div>🔴 <strong>24/7 無熔斷</strong>：周末凌晨可大跌，無保護機制</div>
+    <div>🔴 <strong>交易所倒閉</strong>：FTX 教訓（請用冷錢包）</div>
+    <div>🔴 <strong>鯨魚操控</strong>：前100位址持有 ~15% 供給</div>
+    <div>🟡 <strong>宏觀流動性</strong>：Fed 升息週期壓制風險資產</div>
+    <div>🟡 <strong>ETF 套利</strong>：大型機構可快速進出ETF</div>
+  </div>
+</div>
+
+<footer>BTC 買賣點分析 · Vivian Edge · 僅供研究參考，不構成投資建議<br>加密貨幣投資風險極高，漲跌幅無限制，請謹慎評估自身風險承受能力</footer>
+</div>
+
+<!-- ════════════════════ SCRIPT ════════════════════ -->
+<script>
+// ─── Utils ──────────────────────────────────────────────────────────────────
+function fmt$(n){
+  if(n>=1e12)return'$'+(n/1e12).toFixed(2)+'T';
+  if(n>=1e9)return'$'+(n/1e9).toFixed(2)+'B';
+  if(n>=1e6)return'$'+(n/1e6).toFixed(1)+'M';
+  return'$'+Math.round(n).toLocaleString();
+}
+function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fetchTO(url,ms=12000,opts={}){
+  const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);
+  return fetch(url,{...opts,signal:c.signal}).finally(()=>clearTimeout(t));
+}
+function lsGet(k){try{return JSON.parse(localStorage.getItem('btca_'+k)||'null');}catch(_){return null;}}
+function lsSet(k,v){try{localStorage.setItem('btca_'+k,JSON.stringify(v));}catch(_){}}
+function cacheAgeStr(ts){const m=Math.round((Date.now()-ts)/60000);return m<60?m+'分前更新':Math.floor(m/60)+'h前更新';}
+
+// ─── MA / RSI ────────────────────────────────────────────────────────────────
+function calcMA(arr,n){
+  if(!arr||arr.length<n)return null;
+  return arr.slice(-n).reduce((a,b)=>a+b,0)/n;
+}
+function calcRSI(prices,n=14){
+  if(prices.length<n+1)return null;
+  let g=0,l=0;
+  for(let i=prices.length-n;i<prices.length;i++){
+    const d=prices[i]-prices[i-1];
+    if(d>0)g+=d;else l-=d;
+  }
+  const ag=g/n,al=l/n;
+  if(al===0)return 100;
+  return 100-(100/(1+ag/al));
+}
+
+// ─── State ──────────────────────────────────────────────────────────────────
+const scores={tech:null,sent:null,chain:null,gov:75};
+
+// ─── Fetch BTC current data ──────────────────────────────────────────────────
+async function fetchBTCCurrent(){
+  const cached=lsGet('current');
+  if(cached&&Date.now()-cached.ts<300000)return cached.data;
+  const urls=[
+    'https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&community_data=false&developer_data=false&sparkline=false',
+    'https://api.allorigins.win/raw?url='+encodeURIComponent('https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&community_data=false&developer_data=false&sparkline=false'),
+  ];
+  for(const url of urls){
+    try{
+      const r=await fetchTO(url,12000);
+      if(!r.ok)continue;
+      const d=await r.json();
+      if(d?.market_data?.current_price?.usd){lsSet('current',{data:d,ts:Date.now()});return d;}
+    }catch(_){}
+  }
+  return null;
+}
+
+// ─── Fetch historical (need 400 days for MA200) ──────────────────────────────
+async function fetchBTCHistory(){
+  const cached=lsGet('history');
+  if(cached&&Date.now()-cached.ts<1800000)return cached.data;
+  const baseUrl='https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=400&interval=daily';
+  const urls=[
+    baseUrl,
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(baseUrl),
+    'https://corsproxy.io/?'+encodeURIComponent(baseUrl),
+  ];
+  for(const url of urls){
+    try{
+      const r=await fetchTO(url,25000);
+      if(!r.ok)continue;
+      const d=await r.json();
+      if(d?.prices?.length>100){lsSet('history',{data:d,ts:Date.now()});return d;}
+    }catch(_){}
+  }
+  return null;
+}
+
+// ─── Update header price ─────────────────────────────────────────────────────
+function updatePriceDisplay(d){
+  const md=d.market_data;
+  const price=md.current_price.usd;
+  const ch24=md.price_change_percentage_24h||0;
+  const ch7=md.price_change_percentage_7d||0;
+  const vol24=md.total_volume.usd;
+  const mktCap=md.market_cap.usd;
+
+  document.getElementById('btcPrice').innerHTML='$'+Math.round(price).toLocaleString();
+  const chEl=document.getElementById('btcChange');
+  chEl.textContent=(ch24>=0?'+':'')+ch24.toFixed(2)+'%';
+  chEl.className='price-change '+(ch24>=0?'up':'dn');
+  document.getElementById('btcMeta').textContent=
+    `24h: ${ch24>=0?'+':''}${ch24.toFixed(2)}%  ·  7d: ${ch7>=0?'+':''}${ch7.toFixed(2)}%  ·  Vol: ${fmt$(vol24)}  ·  Mkt Cap: ${fmt$(mktCap)}`;
+
+  // Gov holdings value
+  const govVal=198012*price;
+  document.getElementById('govBtcValue').textContent=fmt$(govVal);
+  // Global sovereign ~408k BTC
+  const globalSovPct=(408000/21000000*100).toFixed(2);
+  document.getElementById('govPctSupply').textContent=globalSovPct+'%';
+}
+
+// ─── Technical Panel (VCP Logic) ─────────────────────────────────────────────
+function renderTechPanel(prices,volumes,price){
+  const el=document.getElementById('techPanel');
+  const ma20=calcMA(prices,20);
+  const ma50=calcMA(prices,50);
+  const ma100=calcMA(prices,100);
+  const ma200=calcMA(prices,200);
+  const rsi=calcRSI(prices,14);
+
+  const high52w=Math.max(...prices.slice(-365));
+  const low52w=Math.min(...prices.slice(-365));
+  const distHigh=(high52w-price)/high52w*100;
+
+  const vol5=volumes.slice(-5).reduce((a,b)=>a+b,0)/5;
+  const vol20=volumes.slice(-20).reduce((a,b)=>a+b,0)/20;
+  const volRatio=vol5/vol20;
+
+  // ATR-like: compare recent 10d avg range vs 30d
+  const recent10=prices.slice(-11).map((p,i,a)=>i>0?Math.abs(p-a[i-1]):0).slice(1);
+  const older20=prices.slice(-31,-11).map((p,i,a)=>i>0?Math.abs(p-a[i-1]):0).slice(1);
+  const atrRec=recent10.reduce((a,b)=>a+b,0)/recent10.length;
+  const atrOld=older20.length?older20.reduce((a,b)=>a+b,0)/older20.length:atrRec;
+  const atrRatio=atrRec/atrOld;
+
+  // VCP Score (same logic as VCPfinder, thresholds adapted for BTC's wider moves)
+  let score=0;
+  // (1) MA position: 40 pts
+  if(price>ma200)score+=10;
+  if(price>ma100)score+=10;
+  if(price>ma50)score+=10;
+  if(price>ma20)score+=10;
+  // (2) MA bull order: 20 pts
+  if(ma20&&ma50&&ma100&&ma200&&ma20>ma50&&ma50>ma100&&ma100>ma200)score+=20;
+  else if(ma20&&ma50&&ma100&&ma20>ma50&&ma50>ma100)score+=12;
+  else if(ma20&&ma50&&ma20>ma50)score+=6;
+  // (3) Distance from 52w high: 20 pts (BTC threshold wider: <35% OK)
+  if(distHigh<5)score+=20;
+  else if(distHigh<15)score+=15;
+  else if(distHigh<25)score+=10;
+  else if(distHigh<35)score+=5;
+  // (4) Volume contraction: 12 pts
+  if(volRatio<0.5)score+=12;
+  else if(volRatio<0.7)score+=8;
+  else if(volRatio<0.85)score+=4;
+  // (5) ATR contraction: 8 pts
+  if(atrRatio<0.65)score+=8;
+  else if(atrRatio<0.8)score+=5;
+  else if(atrRatio<0.95)score+=2;
+
+  score=Math.min(100,Math.max(0,score));
+
+  // Is Stage 2?
+  const isS2=ma20&&ma50&&ma100&&ma200&&price>ma200&&ma20>ma50&&ma50>ma100&&ma100>ma200;
+
+  // MA dot helper
+  const dot=(v,label)=>{
+    const ok=v&&price>v;
+    return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;color:var(--text2)">
+      <span class="ma-dot ${ok?'dot-green':'dot-red'}"></span>${label} ${v?'$'+Math.round(v).toLocaleString():'N/A'}</span>`;
+  };
+
+  let rsiColor='var(--text)',rsiNote='中性';
+  if(rsi){
+    if(rsi>80){rsiColor='#f87171';rsiNote='超買';}
+    else if(rsi>70){rsiColor='#f97316';rsiNote='偏熱';}
+    else if(rsi>40){rsiColor='#34d399';rsiNote='健康';}
+    else if(rsi>30){rsiColor='#fbbf24';rsiNote='偏冷';}
+    else{rsiColor='#60a5fa';rsiNote='超賣';}
+  }
+
+  const vrc=volRatio<0.5?'#34d399':volRatio<0.85?'#fbbf24':'#f87171';
+  const vrn=volRatio<0.5?'地量 ✅':volRatio<0.7?'縮量中':volRatio<0.85?'略縮':'量偏大';
+
+  el.innerHTML=`
+    <div style="margin-bottom:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px">
+        ${dot(ma20,'MA20')}&nbsp;${dot(ma50,'MA50')}
+        ${dot(ma100,'MA100')}&nbsp;${dot(ma200,'MA200')}
+      </div>
+      <div style="font-size:.68rem;font-weight:700;margin-bottom:8px">
+        ${isS2
+          ?'<span style="color:#34d399">✅ Stage 2 多頭排列（最強結構）</span>'
+          :'<span style="color:#f87171">⚠ 均線排列不完整</span>'}
+      </div>
+    </div>
+    <div class="mrow"><span class="mlabel">RSI (14)</span>
+      <span class="mval" style="color:${rsiColor}">${rsi?rsi.toFixed(1):'N/A'} · ${rsiNote}</span></div>
+    <div class="mrow"><span class="mlabel">距52週高點</span>
+      <span class="mval ${distHigh<15?'green':distHigh<30?'orange':'red'}">-${distHigh.toFixed(1)}%</span></div>
+    <div class="mrow"><span class="mlabel">量縮比 (5d/20d)</span>
+      <span class="mval" style="color:${vrc}">${(volRatio*100).toFixed(0)}% · ${vrn}</span></div>
+    <div class="mrow"><span class="mlabel">波動收縮 (ATR)</span>
+      <span class="mval ${atrRatio<0.8?'green':atrRatio<1?'orange':'red'}">${(atrRatio*100).toFixed(0)}% ${atrRatio<0.8?'✅ 收縮中':atrRatio<1?'略縮':'未收縮'}</span></div>
+    <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+      <div class="score-bar"><div class="score-fill ${score>=70?'fill-green':score>=50?'fill-orange':'fill-red'}" style="width:${score}%"></div></div>
+      <div style="font-size:.75rem;font-weight:700;color:${score>=70?'#34d399':score>=50?'#fbbf24':'#f87171'}">VCP 技術分：${score}/100</div>
+    </div>
+  `;
+
+  setScore('tech',score);
+  renderSignal(price,prices,ma20,ma50,ma100,ma200,rsi,volRatio,distHigh,score,atrRatio);
+}
+
+// ─── On-chain Panel (替代 CAN SLIM / 基本面) ─────────────────────────────────
+function renderOnchainPanel(prices,price){
+  const el=document.getElementById('onchainPanel');
+
+  // MVRV estimate: current / 365d MA (rough proxy for realized price)
+  const ma365=calcMA(prices,Math.min(365,prices.length));
+  const mvrv=ma365?price/ma365:null;
+
+  // Halving cycle
+  const lastHalving=new Date('2024-04-19T00:00:00Z');
+  const nextHalving=new Date('2028-04-20T00:00:00Z');
+  const now=Date.now();
+  const daysSince=Math.floor((now-lastHalving)/(86400000));
+  const daysNext=Math.floor((nextHalving-now)/(86400000));
+  const monthsPost=daysSince/30.44;
+  const cyclePct=Math.min(100,daysSince/(daysSince+daysNext)*100);
+
+  // Halving phase analysis (based on historical BTC cycles)
+  // Post-halving: 0-6m = early accumulation, 6-18m = bull expansion (peak area), 18-36m = distribution/bear
+  let cyclePhase,cycleColor,cycleScore,cycleNote;
+  if(monthsPost<6){cyclePhase='早期蓄力 (0-6月)';cycleColor='#60a5fa';cycleScore=70;cycleNote='歷史上漲幅啟動前的蓄力階段';}
+  else if(monthsPost<18){cyclePhase='牛市擴張 (6-18月)';cycleColor='#34d399';cycleScore=85;cycleNote='歷史上BTC大多在此期間創ATH';}
+  else if(monthsPost<30){cyclePhase='頂部分配 (18-30月)';cycleColor='#fbbf24';cycleScore=45;cycleNote='需要謹慎，可能接近週期頂部';}
+  else{cyclePhase='熊市底部 (30m+)';cycleColor='#f87171';cycleScore=30;cycleNote='等待下次減半前蓄力';}
+
+  // MVRV interpretation
+  let mvrvColor='var(--text)',mvrvNote='',mvrvScore=50;
+  if(mvrv){
+    if(mvrv<0.8){mvrvColor='#3b82f6';mvrvNote='極度低估';mvrvScore=95;}
+    else if(mvrv<1.2){mvrvColor='#34d399';mvrvNote='歷史底部區';mvrvScore=85;}
+    else if(mvrv<2.0){mvrvColor='#10b981';mvrvNote='合理健康';mvrvScore=70;}
+    else if(mvrv<3.0){mvrvColor='#fbbf24';mvrvNote='開始偏熱';mvrvScore=50;}
+    else if(mvrv<4.0){mvrvColor='#f97316';mvrvNote='高估（歷史頂部區）';mvrvScore=25;}
+    else{mvrvColor='#ef4444';mvrvNote='極度高估';mvrvScore=10;}
+  }
+
+  const chainScore=Math.round(cycleScore*0.45+mvrvScore*0.55);
+
+  el.innerHTML=`
+    <div class="mrow"><span class="mlabel">MVRV（估算值）</span>
+      <span class="mval" style="color:${mvrvColor}">${mvrv?mvrv.toFixed(2):'N/A'} · ${mvrvNote}</span></div>
+    <div class="mrow"><span class="mlabel">365日均價（實現價代理）</span>
+      <span class="mval">${ma365?'$'+Math.round(ma365).toLocaleString():'N/A'}</span></div>
+    <div class="mrow"><span class="mlabel">減半週期位置</span>
+      <span class="mval" style="color:${cycleColor}">${cyclePhase}</span></div>
+    <div class="mrow"><span class="mlabel">距上次減半</span>
+      <span class="mval">${daysSince}天 (${monthsPost.toFixed(1)}個月)</span></div>
+    <div class="mrow"><span class="mlabel">下次減半倒計時</span>
+      <span class="mval blue">${daysNext}天後 (~2028/04)</span></div>
+    <div style="margin-top:10px">
+      <div style="font-size:.62rem;color:var(--text2);margin-bottom:4px">減半週期進度 (2024.04 → 2028.04)</div>
+      <div style="height:10px;border-radius:5px;background:linear-gradient(90deg,#60a5fa,#34d399,#fbbf24,#f87171);position:relative">
+        <div style="position:absolute;top:-3px;height:16px;width:3px;background:#fff;border-radius:2px;box-shadow:0 0 6px rgba(0,0,0,.5);left:${cyclePct.toFixed(1)}%;transform:translateX(-50%)"></div>
+      </div>
+      <div style="font-size:.58rem;color:var(--text2);margin-top:3px">${cycleNote}</div>
+    </div>
+    <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+      <div class="score-bar"><div class="score-fill ${chainScore>=70?'fill-green':chainScore>=50?'fill-orange':'fill-red'}" style="width:${chainScore}%"></div></div>
+      <div style="font-size:.75rem;font-weight:700;color:${chainScore>=70?'#34d399':chainScore>=50?'#fbbf24':'#f87171'}">鏈上分：${chainScore}/100</div>
+    </div>
+    <div style="margin-top:6px;font-size:.6rem;color:var(--text2);line-height:1.5">⚠ MVRV 為估算值（以365日均價代替鏈上實現價格）<br>精確數據請查 lookintobitcoin.com 或 glassnode.com</div>
+  `;
+
+  setScore('chain',chainScore);
+}
+
+// ─── Flow Panel (替代 融資/除息日/外資投信) ───────────────────────────────────
+async function renderFlowPanel(){
+  const el=document.getElementById('flowPanel');
+
+  // Try Binance funding rate (public API, no key needed)
+  let fundRate=null;
+  try{
+    const r=await fetchTO('https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT',6000);
+    if(r.ok){
+      const d=await r.json();
+      if(d?.lastFundingRate) fundRate=parseFloat(d.lastFundingRate)*100;
+    }
+  }catch(_){}
+
+  // Try open interest from Binance
+  let oi=null;
+  try{
+    const r=await fetchTO('https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT',5000);
+    if(r.ok){const d=await r.json();if(d?.openInterest) oi=parseFloat(d.openInterest);}
+  }catch(_){}
+
+  let frColor='var(--text)',frNote='';
+  if(fundRate!==null){
+    if(fundRate>0.15){frColor='#f87171';frNote='多頭過熱 ⚠';}
+    else if(fundRate>0.05){frColor='#f97316';frNote='偏多';}
+    else if(fundRate>-0.01){frColor='#34d399';frNote='中性偏多 ✅';}
+    else if(fundRate>-0.05){frColor='#60a5fa';frNote='偏空';}
+    else{frColor='#3b82f6';frNote='空頭過熱（反向機會）';}
+  }
+
+  // Gov score: SBR is structural bullish = 75pts base
+  const govScore=75;
+
+  el.innerHTML=`
+    <div class="mrow"><span class="mlabel">資金費率（永續合約）</span>
+      <span class="mval" style="color:${frColor}">${fundRate!==null?fundRate.toFixed(4)+'%':'查詢中'} ${frNote}</span></div>
+    <div class="mrow"><span class="mlabel">未平倉量 OI</span>
+      <span class="mval">${oi?Math.round(oi/1000)+'K BTC':'N/A'}</span></div>
+    <div style="height:1px;background:var(--border);margin:8px 0"></div>
+    <div class="mrow"><span class="mlabel">現貨 ETF 上市</span>
+      <span class="mval green">✅ 2024年1月</span></div>
+    <div class="mrow"><span class="mlabel">主要 ETF</span>
+      <span class="mval blue">IBIT · FBTC · ARKB</span></div>
+    <div style="height:1px;background:var(--border);margin:8px 0"></div>
+    <div class="mrow"><span class="mlabel">美國 SBR 狀態</span>
+      <span class="mval green">🔒 永久持有</span></div>
+    <div class="mrow"><span class="mlabel">鎖定供給量</span>
+      <span class="mval blue">~198,012 BTC</span></div>
+    <div class="mrow"><span class="mlabel">政府籌碼影響</span>
+      <span class="mval green">供給減少 → 結構利多</span></div>
+    <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+      <div class="score-bar"><div class="score-fill fill-green" style="width:${govScore}%"></div></div>
+      <div style="font-size:.75rem;font-weight:700;color:#34d399">政府籌碼分：${govScore}/100</div>
+    </div>
+    <div style="margin-top:6px;font-size:.6rem;color:var(--text2);line-height:1.5">
+      資金費率：正 = 多頭付空頭（過熱）；負 = 空頭付多頭（潛在反彈）<br>
+      ETF 詳細流量：查 <span style="color:#60a5fa">farside.co.uk/bitcoin-etf-flow</span>
+    </div>
+  `;
+
+  setScore('gov',govScore);
+}
+
+// ─── Buy/Sell Signal (VCP 核心邏輯，適配 BTC) ────────────────────────────────
+function renderSignal(price,prices,ma20,ma50,ma100,ma200,rsi,volRatio,distHigh,techScore,atrRatio){
+  const el=document.getElementById('mainSignal');
+  const detEl=document.getElementById('signalDetail');
+
+  // 30-day pivot (近期高點 = 阻力；低點 = 支撐)
+  const p30=prices.slice(-30);
+  const pivot=Math.max(...p30);   // 近期阻力
+  const low30=Math.min(...p30);   // 近期支撐
+  const distPivot=(price-pivot)/pivot*100;  // 負 = 在阻力下方
+  const isS2=ma20&&ma50&&ma100&&ma200&&price>ma200&&ma20>ma50&&ma50>ma100&&ma100>ma200;
+
+  let sigType,sigLabel,sigDetail;
+
+  if(!isS2&&price<(ma200||0)*0.9){
+    // 跌破 MA200 且不是短暫假突破
+    sigType='NO';sigLabel='🚫 不買：下跌趨勢';
+    sigDetail=`均線排列偏空，股價低於 MA200 ($${Math.round(ma200).toLocaleString()})。等待趨勢重建：股價重回 MA200 → MA100 → MA50 多頭排列後再考慮進場。`;
+  } else if(rsi&&rsi>80){
+    sigType='SELL';sigLabel='🔴 超買：考慮減倉';
+    sigDetail=`RSI ${rsi.toFixed(0)} 進入超買區（>80）。BTC 歷史上 RSI>80 時常出現短線回調 5-20%。可分批獲利了結，保留核心倉位。`;
+  } else if(distPivot>20){
+    sigType='SELL';sigLabel='🔴 過熱：分批獲利了結';
+    sigDetail=`距30日高點 +${distPivot.toFixed(1)}%，短線過熱。RSI ${rsi?rsi.toFixed(0):'?'}，建議分批出場，停利設距成本 +5%。`;
+  } else if(distPivot>10){
+    sigType='WAIT';sigLabel='⏳ 不買：追高風險';
+    sigDetail=`較近期高點上漲 ${distPivot.toFixed(1)}%，追入停損空間不足（BTC 需至少 -8% 停損空間）。等回踩 MA20 $${ma20?Math.round(ma20).toLocaleString():'?'} 附近縮量後再進場。`;
+  } else if(distPivot>=2&&distPivot<=10){
+    sigType='WAIT';sigLabel='⏳ 突破後等回踩縮量';
+    sigDetail=`剛突破近期阻力 $${Math.round(pivot).toLocaleString()}（+${distPivot.toFixed(1)}%），突破當下不追。按 VCP 邏輯：等 1-3 天回踩 + 量縮至均量 50% 以下，才是低風險進場時機。`;
+  } else if(distPivot>=-8&&distPivot<2&&volRatio<0.6){
+    // 核心買點：在阻力附近 + 縮量
+    sigType='BUY';sigLabel='✅ 買：縮量回踩買點';
+    sigDetail=`現價 $${Math.round(price).toLocaleString()} 在近期阻力 $${Math.round(pivot).toLocaleString()} 附近（${distPivot.toFixed(1)}%），成交量縮至均量 ${(volRatio*100).toFixed(0)}%（縮量整理）。符合 VCP 回踩地量買點。停損設 MA50 $${ma50?Math.round(ma50).toLocaleString():'?'}（-${ma50?((price-ma50)/price*100).toFixed(1):'?'}%）。`;
+  } else if(distPivot>=-8&&distPivot<2&&volRatio>=0.6&&volRatio<0.9){
+    sigType='WAIT';sigLabel='⏳ 等量再縮';
+    sigDetail=`位置在買點區間（距阻力 ${distPivot.toFixed(1)}%），量能尚未充分縮減（目前均量 ${(volRatio*100).toFixed(0)}%，等降至 60% 以下）。今日等待，明天量若繼續萎縮再進場。`;
+  } else if(price<ma50&&rsi&&rsi<35&&isS2){
+    sigType='BUY';sigLabel='✅ 買：深度回踩低吸';
+    sigDetail=`深度回踩至 MA50 之下（RSI ${rsi.toFixed(0)} 超賣），但 Stage 2 多頭結構完整。可分批低吸，停損設 MA200 $${ma200?Math.round(ma200).toLocaleString():'?'}。BTC 波動大，分 2-3 批進場降低風險。`;
+  } else if(distHigh>35){
+    sigType='NO';sigLabel='⏳ 不買：距高點太遠';
+    sigDetail=`距52週高點 -${distHigh.toFixed(1)}%，修正幅度大。等待確認底部支撐（MA200 + 縮量 + RSI 超賣反彈）後再評估。`;
+  } else {
+    sigType='WAIT';sigLabel='⏳ 觀望：等更好時機';
+    sigDetail=`距阻力 ${distPivot.toFixed(1)}%，量能 ${(volRatio*100).toFixed(0)}%。等待明確縮量回踩信號再進場。`;
+  }
+
+  const sigClass=sigType==='BUY'?'sig-buy':sigType==='SELL'?'sig-sell':'sig-wait';
+  el.innerHTML=`<div class="sig-big ${sigClass}">${sigLabel}</div>`;
+
+  // Support/Resistance display
+  detEl.innerHTML=`
+    <div style="font-size:.76rem;color:var(--text);line-height:1.75;margin-bottom:12px">${escH(sigDetail)}</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <div class="level-chip" style="border:1px solid rgba(16,185,129,.3)">
+        <div class="level-chip-val green">$${ma20?Math.round(ma20).toLocaleString():'N/A'}</div>
+        <div class="level-chip-label">支撐 1 · MA20</div>
+      </div>
+      <div class="level-chip" style="border:1px solid rgba(96,165,250,.3)">
+        <div class="level-chip-val blue">$${ma50?Math.round(ma50).toLocaleString():'N/A'}</div>
+        <div class="level-chip-label">支撐 2 · MA50</div>
+      </div>
+      <div class="level-chip" style="border:1px solid rgba(113,113,122,.3)">
+        <div class="level-chip-val gray">$${ma200?Math.round(ma200).toLocaleString():'N/A'}</div>
+        <div class="level-chip-label">強支撐 · MA200</div>
+      </div>
+      <div class="level-chip" style="border:1px solid rgba(248,113,113,.3)">
+        <div class="level-chip-val red">$${Math.round(pivot).toLocaleString()}</div>
+        <div class="level-chip-label">阻力 · 30日高</div>
+      </div>
+    </div>
+    <div style="padding:8px 12px;background:rgba(247,148,29,.08);border:1px solid rgba(247,148,29,.2);border-radius:6px;font-size:.7rem;color:var(--orange);line-height:1.65">
+      ⚡ <strong>BTC 操作紀律（VCP 邏輯，停損加寬）：</strong>
+      突破不追 → 等回踩縮量（地量）→ 買入 → 停損 -8% 至 -12%（台股 VCP 為 -5%）→ 波動大，單次部位控制在總資金 10-20%
+    </div>
+  `;
+}
+
+// ─── Fear & Greed ─────────────────────────────────────────────────────────────
+async function loadFearGreed(){
+  const numEl=document.getElementById('fgNum');
+  const lblEl=document.getElementById('fgLabel');
+  const histEl=document.getElementById('fgHistory');
+  const needle=document.getElementById('fgNeedle');
+  try{
+    const r=await fetchTO('https://api.alternative.me/fng/?limit=7',10000);
+    if(!r.ok)throw new Error('fail');
+    const d=await r.json();
+    const cur=d.data[0];
+    const val=parseInt(cur.value);
+    let color;
+    if(val<25)color='#3b82f6';
+    else if(val<45)color='#10b981';
+    else if(val<55)color='#e2e8f0';
+    else if(val<75)color='#f59e0b';
+    else color='#ef4444';
+    numEl.style.color=color;
+    numEl.textContent=val;
+    lblEl.textContent=cur.value_classification;
+    lblEl.style.color=color;
+    needle.style.left=`calc(${val}% - 2px)`;
+    const hist=d.data.slice(1,6).map(x=>{
+      const v=parseInt(x.value);
+      const c=v<45?'#10b981':v<55?'#e2e8f0':v<75?'#f59e0b':'#ef4444';
+      return`<span style="color:${c}">${v}</span>`;
+    }).join(' → ');
+    histEl.innerHTML=`過去5天：${hist}`;
+    // Sentiment score (inverse: extreme fear = buy = high score)
+    let ss;
+    if(val<15)ss=90;else if(val<25)ss=80;else if(val<35)ss=68;
+    else if(val<45)ss=58;else if(val<55)ss=50;else if(val<65)ss=40;
+    else if(val<75)ss=30;else if(val<85)ss=20;else ss=12;
+    setScore('sent',ss);
+  }catch(e){
+    numEl.textContent='N/A';lblEl.textContent='載入失敗';
+  }
+}
+
+// ─── BTC News (AI) ───────────────────────────────────────────────────────────
+async function loadBTCNews(){
+  const bEl=document.getElementById('btcNewsBody');
+  const tEl=document.getElementById('btcNewsTime');
+  const CACHE_TTL=8*60*60*1000;
+  const cached=lsGet('btcNews');
+  if(cached&&Date.now()-cached.ts<CACHE_TTL){
+    bEl.className='news-body';bEl.textContent=cached.text;
+    tEl.textContent=cacheAgeStr(cached.ts);return;
+  }
+  bEl.className='news-body loading';bEl.textContent='正在抓取 BTC 最新消息...';
+  let items=[];
+  try{
+    const rssUrl='https://news.google.com/rss/search?q=Bitcoin+BTC+price+2025&hl=en-US&gl=US&ceid=US:en';
+    const r=await fetchTO('https://api.allorigins.win/raw?url='+encodeURIComponent(rssUrl),12000);
+    if(r.ok){const xml=await r.text();items=parseRSSXml(xml);}
+  }catch(_){}
+  const headlines=items.slice(0,10).map((x,i)=>`${i+1}. ${x.title}`).join('\n');
+  const prompt=`你是 BTC 加密貨幣分析師。根據以下最新消息，用繁體中文寫 8-10 條市場快訊（每條一行，加編號）。重點包括：BTC 價格走勢、美國政府比特幣儲備動向、現貨 ETF 流量、法規政策、重大事件。
+
+最新相關新聞：
+${headlines||'請根據你的知識提供 2025 年最新 BTC 市場分析'}`;
+  try{
+    const text=await callAI(prompt);
+    const clean=stripMd(text);
+    bEl.className='news-body';bEl.textContent=clean;
+    const ts=Date.now();tEl.textContent=cacheAgeStr(ts);
+    lsSet('btcNews',{text:clean,ts});
+  }catch(_){bEl.className='news-body';bEl.textContent='⚠️ AI 暫時無法回應，請點 ↻ 重試';}
+}
+
+// ─── Gov Reserve News (AI) ───────────────────────────────────────────────────
+async function loadGovNews(){
+  const bEl=document.getElementById('govNewsBody');
+  const tEl=document.getElementById('govNewsTime');
+  const CACHE_TTL=4*60*60*1000;
+  const cached=lsGet('govNews');
+  if(cached&&Date.now()-cached.ts<CACHE_TTL){
+    bEl.className='news-body';bEl.textContent=cached.text;
+    tEl.textContent=cacheAgeStr(cached.ts);return;
+  }
+  bEl.className='news-body loading';bEl.textContent='查詢美國政府 BTC 最新動向...';
+  let items=[];
+  try{
+    const rssUrl='https://news.google.com/rss/search?q=Strategic+Bitcoin+Reserve+US+government+treasury+2025&hl=en-US&gl=US&ceid=US:en';
+    const r=await fetchTO('https://api.allorigins.win/raw?url='+encodeURIComponent(rssUrl),12000);
+    if(r.ok){const xml=await r.text();items=parseRSSXml(xml);}
+  }catch(_){}
+  const headlines=items.slice(0,8).map((x,i)=>`${i+1}. ${x.title}`).join('\n');
+  const prompt=`你是加密貨幣政策分析師。根據以下新聞，分析美國戰略比特幣儲備（SBR）最新動向（繁體中文，5-7條，每條一行，加編號）。重點：持有量變化、立法進展、其他國家跟進、對 BTC 供需的影響。
+
+背景知識：美國 2025/3/6 成立 SBR，持有約 198,012 BTC（財政部扣押），永不出售。國會有草案允許財政部再購入 100 萬枚。
+
+最新新聞：
+${headlines||'請根據你的知識說明 2025 年 SBR 最新情況'}`;
+  try{
+    const text=await callAI(prompt);
+    const clean=stripMd(text);
+    bEl.className='news-body';bEl.textContent=clean;
+    const ts=Date.now();tEl.textContent=cacheAgeStr(ts);
+    lsSet('govNews',{text:clean,ts});
+  }catch(_){bEl.className='news-body';bEl.textContent='⚠️ AI 暫時無法回應，請點「最新動態」重試';}
+}
+
+// ─── Score system ─────────────────────────────────────────────────────────────
+function setScore(key,val){
+  scores[key]=val;
+  const barMap={tech:'techScoreBar',sent:'sentScoreBar',chain:'chainScoreBar',gov:'govScoreBar'};
+  const valMap={tech:'techScoreVal',sent:'sentScoreVal',chain:'chainScoreVal',gov:'govScoreVal'};
+  const bar=document.getElementById(barMap[key]);
+  const valEl=document.getElementById(valMap[key]);
+  if(bar){
+    bar.style.width=val+'%';
+    bar.className='score-fill '+(val>=70?'fill-green':val>=50?'fill-orange':'fill-red');
+  }
+  if(valEl)valEl.textContent=val+'/100';
+  recalcTotal();
+}
+function recalcTotal(){
+  const vals=Object.values(scores).filter(v=>v!==null);
+  if(!vals.length)return;
+  const total=Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+  const el=document.getElementById('totalScore');
+  const gEl=document.getElementById('totalGrade');
+  if(el){
+    el.textContent=total;
+    el.style.color=total>=70?'#34d399':total>=50?'#fbbf24':'#f87171';
+  }
+  if(gEl){
+    let g;
+    if(total>=80)g='A · 強力買入訊號';
+    else if(total>=70)g='B · 偏多，可低吸布局';
+    else if(total>=55)g='C · 中性，等更好時機';
+    else if(total>=40)g='D · 偏空，謹慎觀望';
+    else g='E · 不建議進場';
+    gEl.textContent=g;
+  }
+}
+
+// ─── RSS parser ──────────────────────────────────────────────────────────────
+function parseRSSXml(xml){
+  return[...xml.matchAll(/<item>[\s\S]*?<\/item>/g)].slice(0,15).map(m=>{
+    const title=(m[0].match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)||m[0].match(/<title>(.*?)<\/title>/))?.[1]||'';
+    const link=(m[0].match(/<link><!\[CDATA\[(.*?)\]\]><\/link>/)||m[0].match(/<link>(https?:\/\/[^<]+)<\/link>/)||m[0].match(/<guid[^>]*>(https?:\/\/[^<]+)<\/guid>/))?.[1]||'';
+    return{title:title.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>'),link};
+  }).filter(x=>x.title);
+}
+
+// ─── AI helpers (same as VCPfinder) ─────────────────────────────────────────
+function stripMd(s){
+  return s.replace(/```[\s\S]*?```/g,'').replace(/`([^`]+)`/g,'$1')
+    .replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1')
+    .replace(/^#+\s*/gm,'').replace(/^>\s*/gm,'').replace(/\n{3,}/g,'\n\n').trim();
+}
+function fetchTimed(url,opts,ms=25000){
+  const c=new AbortController();const t=setTimeout(()=>c.abort(),ms);
+  return fetch(url,{...opts,signal:c.signal}).finally(()=>clearTimeout(t));
+}
+async function callAIFree(prompt){
+  const short=prompt.length>1800?prompt.slice(0,1800):prompt;
+  try{
+    const r=await fetchTimed('https://text.pollinations.ai/'+encodeURIComponent(short)+'?model=openai-fast&seed='+Math.floor(Math.random()*9999),{},18000);
+    if(r.status===429)throw new Error('429');
+    const t=await r.text();
+    if(t&&t.length>10&&!t.trim().startsWith('<!'))return t.trim();
+  }catch(e){if(e.message==='429')throw e;}
+  try{
+    const r=await fetchTimed('https://text.pollinations.ai/',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({messages:[{role:'user',content:prompt}],model:'openai-fast'})
+    },18000);
+    if(r.status===429)throw new Error('429');
+    const t=await r.text();
+    if(t&&t.length>10&&!t.trim().startsWith('<!'))return t.trim();
+  }catch(e){if(e.message==='429')throw e;}
+  throw new Error('bad response');
+}
+async function callAI(prompt){
+  const groqModels=['llama-3.3-70b-versatile','llama-3.1-70b-versatile','llama3-70b-8192','gemma2-9b-it'];
+  for(const model of groqModels){
+    try{
+      const r=await fetchTimed('/api/groq',{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:[{role:'user',content:prompt}],model,max_tokens:600,temperature:0.7})
+      },8000);
+      if(r.status===429)return'⚠️ Groq 速率限制，請稍後重試';
+      if(r.status===400||r.status===404)continue;
+      if(r.ok){const j=await r.json();const t=j.choices?.[0]?.message?.content||'';if(t.trim().length>10)return t.trim();}
+    }catch(_){}
+  }
+  try{return await callAIFree(prompt);}catch(e){
+    if(e.message&&e.message.includes('429'))return'⚠️ 免費 AI 已達上限，請稍後再試';
+  }
+  return'⚠️ AI 暫時無法回應，請點 ↻ 重試';
+}
+
+// ─── Macro Panel (DXY + Nasdaq) ──────────────────────────────────────────────
+async function loadMacroPanel(){
+  const el=document.getElementById('macroPanelBody');
+  if(!el)return;
+
+  // Try Yahoo Finance for DXY and QQQ (Nasdaq ETF)
+  const symbols=[
+    {sym:'DX-Y.NYB',label:'DXY 美元指數',note:'跌 = BTC 看漲，漲 = BTC 看跌'},
+    {sym:'QQQ',label:'納指 ETF (QQQ)',note:'漲 = 風險偏好好，BTC 通常跟漲'},
+    {sym:'GC=F',label:'黃金期貨',note:'漲 = 避險情緒高，BTC 有時跟漲'},
+  ];
+
+  const results=[];
+  for(const s of symbols){
+    try{
+      const url=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(s.sym)}?interval=1d&range=5d`;
+      const proxy='https://api.allorigins.win/raw?url='+encodeURIComponent(url);
+      const r=await fetchTO(proxy,8000);
+      if(!r.ok)continue;
+      const d=await r.json();
+      const closes=d?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
+      const meta=d?.chart?.result?.[0]?.meta;
+      if(!closes||!meta)continue;
+      const price=meta.regularMarketPrice||closes[closes.length-1];
+      const prev=closes[closes.length-2]||price;
+      const chg=(price-prev)/prev*100;
+      results.push({...s,price,chg});
+    }catch(_){}
+  }
+
+  if(results.length===0){
+    el.className='news-body';
+    el.innerHTML=`<span style="color:var(--text2)">宏觀數據暫無法載入（Yahoo Finance CORS 限制）。請直接查 <a href="https://finance.yahoo.com/quote/DX-Y.NYB/" target="_blank" style="color:var(--purple)">DXY</a> 和 <a href="https://finance.yahoo.com/quote/QQQ/" target="_blank" style="color:var(--purple)">QQQ</a>。</span>`;
+    return;
+  }
+
+  el.className='news-body';
+  el.innerHTML=results.map(r=>{
+    const chgColor=r.chg>=0?'#34d399':'#f87171';
+    const chgSign=r.chg>=0?'+':'';
+    const impact=r.sym==='DX-Y.NYB'
+      ?(r.chg>0?'<span style="color:#f87171">⚠ 美元強 → BTC 承壓</span>':'<span style="color:#34d399">✅ 美元弱 → BTC 有利</span>')
+      :(r.chg>0?'<span style="color:#34d399">✅ 風險偏好佳</span>':'<span style="color:#fbbf24">⚠ 風險偏好轉弱</span>');
+    return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(45,55,72,.4)">
+      <span style="min-width:130px;font-size:.72rem">${r.label}</span>
+      <span style="font-weight:700">${r.price.toFixed(2)}</span>
+      <span style="color:${chgColor};font-size:.72rem">${chgSign}${r.chg.toFixed(2)}%</span>
+      <span style="font-size:.68rem;color:var(--text2);margin-left:auto">${r.note}</span>
+      <span style="font-size:.68rem">${impact}</span>
+    </div>`;
+  }).join('');
+}
+
+// ─── Main init ────────────────────────────────────────────────────────────────
+async function init(){
+  // Parallel: fetch price data + fear&greed + news
+  const [current, hist] = await Promise.all([
+    fetchBTCCurrent(),
+    fetchBTCHistory(),
+  ]);
+
+  // Start these in parallel too (non-blocking)
+  loadFearGreed();
+  loadBTCNews();
+  loadMacroPanel();
+
+  if(!current||!hist){
+    document.getElementById('btcPrice').textContent='載入失敗 ⚠';
+    document.getElementById('techPanel').innerHTML='<div style="color:#f87171;font-size:.78rem">⚠️ CoinGecko API 載入失敗，請稍後重試或重新整理頁面</div>';
+    document.getElementById('onchainPanel').innerHTML='<div style="color:#f87171;font-size:.78rem">⚠️ 資料載入失敗</div>';
+    return;
+  }
+
+  updatePriceDisplay(current);
+
+  const price=current.market_data.current_price.usd;
+  const prices=hist.prices.map(p=>p[1]);
+  const volumes=hist.total_volumes.map(v=>v[1]);
+
+  // Render all panels
+  renderTechPanel(prices,volumes,price);
+  renderOnchainPanel(prices,price);
+  renderFlowPanel(); // async, updates independently
+
+  // Auto refresh every 5 min
+  setTimeout(init, 5*60*1000);
+}
+
+// ─── Expose for buttons ───────────────────────────────────────────────────────
+window.loadBTCNews=loadBTCNews;
+window.loadFearGreed=loadFearGreed;
+window.loadGovNews=loadGovNews;
+
+// ─── Start ────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
