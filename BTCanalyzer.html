@@ -28,7 +28,7 @@ body{
 header{
   text-align:center;padding:22px 20px 16px;position:relative;
   background:linear-gradient(160deg,#0d1117 0%,#181000 60%,#0d1117 100%);
-  border-bottom:1px solid rgba(247,148,29,.3);margin-bottom:14px;overflow:hidden;
+  border-bottom:1px solid rgba(247,148,29,.3);margin-bottom:14px;overflow:visible;
 }
 header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
   background:linear-gradient(90deg,transparent,var(--orange),var(--gold),var(--orange),transparent)}
@@ -1141,12 +1141,12 @@ async function loadFearGreed(){
 }
 
 // ─── BTC News (AI) ───────────────────────────────────────────────────────────
-async function loadBTCNews(){
+async function loadBTCNews(livePrice=null){
   const bEl=document.getElementById('btcNewsBody');
   const tEl=document.getElementById('btcNewsTime');
-  const CACHE_TTL=8*60*60*1000;
+  const CACHE_TTL=2*60*60*1000; // 2小時快取
   const cached=lsGet('btcNews');
-  if(cached&&Date.now()-cached.ts<CACHE_TTL){
+  if(cached&&Date.now()-cached.ts<CACHE_TTL&&!livePrice){
     bEl.className='news-body';bEl.textContent=cached.text;
     tEl.textContent=cacheAgeStr(cached.ts);return;
   }
@@ -1158,10 +1158,15 @@ async function loadBTCNews(){
     if(r.ok){const xml=await r.text();items=parseRSSXml(xml);}
   }catch(_){}
   const headlines=items.slice(0,10).map((x,i)=>`${i+1}. ${x.title}`).join('\n');
+  // 注入即時價格，防止 AI 用訓練資料的舊數字
+  const priceNote=livePrice
+    ?`⚠️ 重要：本頁即時數據顯示 BTC 當前價格為 $${Math.round(livePrice).toLocaleString()} 美元（來自 Binance API）。請以此為準，絕對不要使用訓練資料中的舊價格。`
+    :'';
   const prompt=`你是 BTC 加密貨幣分析師。根據以下最新消息，用繁體中文寫 8-10 條市場快訊（每條一行，加編號）。重點包括：BTC 價格走勢、美國政府比特幣儲備動向、現貨 ETF 流量、法規政策、重大事件。
+${priceNote}
 
-最新相關新聞：
-${headlines||'請根據你的知識提供 2025 年最新 BTC 市場分析'}`;
+最新相關新聞標題（今日）：
+${headlines||'（無法取得最新新聞，請根據已知資訊分析，但價格以上方即時數據為準）'}`;
   try{
     const text=await callAI(prompt);
     const clean=stripMd(text);
@@ -1500,9 +1505,8 @@ async function init(){
   if(_autoRefreshTimer){clearTimeout(_autoRefreshTimer);_autoRefreshTimer=null;}
   refreshSec=300;
 
-  // Non-blocking parallel loads
+  // Non-blocking parallel loads（BTC News 移到資料載入後，才能注入即時價格）
   loadFearGreed();
-  loadBTCNews();
   loadMacroPanel();
   loadDerivatives();
 
@@ -1526,6 +1530,7 @@ async function init(){
   renderOnchainPanel(d.prices,d.price);
   renderFlowPanel();
   loadMarketComparison(d);
+  loadBTCNews(d.price); // 注入即時價格，AI 不會用訓練資料舊數字
 
   _setLastUpdated();
   _isRefreshing=false;
@@ -1539,6 +1544,8 @@ function manualRefresh(){
   // 強制清除快取，確保抓取最新數據
   lsSet('btcData',null);
   lsSet('fearGreed',null);
+  lsSet('btcNews',null);
+  lsSet('govNews',null);
   _dxyCache=null;
   init();
 }
