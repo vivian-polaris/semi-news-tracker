@@ -923,8 +923,8 @@ function renderSignal(price,prices,ma20,ma50,ma100,ma200,rsi,volRatio,distHigh,t
     // 位置對但量未縮 = 再等一天
     sigType='WAIT';nowBannerClass='wait';
     nowAction='⏳ 位置對，等量縮再買';
-    nowEntry=`今天等待，明天量若縮到 60% 以下就進場`;
-    nowDetail=`【還差一步】現價在買點區間（距阻力 ${distPivot.toFixed(1)}%），位置OK。但成交量還有平均的 ${(volRatio*100).toFixed(0)}%，還不夠縮（要低於 60%）。\n\n【明天要看什麼】成交量 < 平均量的 60%，且股價沒有大跌破 MA20 = 明天進場。\n【買入目標價】$${Math.round(price).toLocaleString()} 附近（現價）\n【停損設定】跌破 $${Math.round(stopLoss).toLocaleString()}（-${stopLossPct}%）出場。`;
+    nowEntry=`差一步：等量縮到 60% 以下即可進場（BTC 24 小時可交易）`;
+    nowDetail=`【還差一步】現價在買點區間（距阻力 ${distPivot.toFixed(1)}%），位置OK。但成交量還有平均的 ${(volRatio*100).toFixed(0)}%，尚未夠縮（目標：低於 60%）。\n\n【進場條件】成交量 < 平均量 60%，且價格未跌破 MA20（$${ma20?Math.round(ma20).toLocaleString():'？'}）→ 條件達成時隨時可進場，BTC 24 小時皆可交易。\n【買入目標價】$${Math.round(price).toLocaleString()} 附近（現價）\n【停損設定】跌破 $${Math.round(stopLoss).toLocaleString()}（-${stopLossPct}%）出場。`;
   } else if(price<ma50&&(ma50||0)>0&&rsi&&rsi<35&&isS2){
     // 深度回踩 + 超賣 + 趨勢完整 = 低吸機會
     sigType='BUY';nowBannerClass='buy';
