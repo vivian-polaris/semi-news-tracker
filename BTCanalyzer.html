@@ -195,6 +195,68 @@ footer{text-align:center;padding:18px 0;color:var(--text2);font-size:.66rem;bord
   <div class="now-levels" id="nowLevels"></div>
 </div>
 
+<!-- ══ 🏦 衍生品市場訊號（機構法人首選工具）══ -->
+<div id="derivPanel" style="background:linear-gradient(135deg,#0a1020 0%,#0d1a10 100%);
+  border:2px solid rgba(168,85,247,.35);border-left:5px solid #a855f7;
+  border-radius:12px;padding:16px 20px;margin-bottom:14px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:.88rem;font-weight:800;color:#c084fc;letter-spacing:.03em">
+        🏦 衍生品市場訊號 <span style="font-size:.65rem;font-weight:500;color:var(--text2)">— 機構法人第一分析工具</span>
+      </div>
+      <div style="font-size:.62rem;color:var(--text2);margin-top:2px">資金費率・未平倉合約・大戶多空比（Binance Futures 即時數據）</div>
+    </div>
+    <button class="refresh-btn" onclick="loadDerivatives()" id="derivRefreshBtn">↻ 更新</button>
+  </div>
+
+  <!-- 三大指標 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+
+    <!-- 資金費率 -->
+    <div style="background:rgba(0,0,0,.3);border:1px solid rgba(168,85,247,.2);border-radius:8px;padding:10px 12px">
+      <div style="font-size:.6rem;color:var(--text2);font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">
+        資金費率（每8小時）
+      </div>
+      <div style="font-size:1.4rem;font-weight:800" id="derivFRVal">—</div>
+      <div style="font-size:.65rem;margin-top:4px" id="derivFRBadge"></div>
+      <div style="font-size:.58rem;color:var(--text2);margin-top:5px;line-height:1.5">
+        正值＝多頭付費給空頭<br>負值＝空頭付費給多頭
+      </div>
+    </div>
+
+    <!-- 未平倉合約 -->
+    <div style="background:rgba(0,0,0,.3);border:1px solid rgba(168,85,247,.2);border-radius:8px;padding:10px 12px">
+      <div style="font-size:.6rem;color:var(--text2);font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">
+        未平倉合約 OI（24H變化）
+      </div>
+      <div style="font-size:1.4rem;font-weight:800" id="derivOIVal">—</div>
+      <div style="font-size:.65rem;margin-top:4px" id="derivOIBadge"></div>
+      <div style="font-size:.58rem;color:var(--text2);margin-top:5px;line-height:1.5">
+        OI↑價↑＝多頭增倉（強）<br>OI↑價↓＝空頭增倉（弱）
+      </div>
+    </div>
+
+    <!-- 大戶多空比 -->
+    <div style="background:rgba(0,0,0,.3);border:1px solid rgba(168,85,247,.2);border-radius:8px;padding:10px 12px">
+      <div style="font-size:.6rem;color:var(--text2);font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">
+        大戶多空比（Long/Short）
+      </div>
+      <div style="font-size:1.4rem;font-weight:800" id="derivLSVal">—</div>
+      <div style="font-size:.65rem;margin-top:4px" id="derivLSBadge"></div>
+      <div style="font-size:.58rem;color:var(--text2);margin-top:5px;line-height:1.5">
+        &gt;1.5＝多頭主導・&lt;0.8＝空頭主導<br>極端值＝逆向信號
+      </div>
+    </div>
+  </div>
+
+  <!-- 綜合衍生品訊號 -->
+  <div id="derivSignalBox" style="border-radius:8px;padding:12px 16px;font-size:.82rem;line-height:1.7;display:none"></div>
+
+  <div style="margin-top:10px;padding:8px 12px;background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.2);border-radius:6px;font-size:.68rem;color:#c084fc;line-height:1.65">
+    💡 <strong>為什麼機構最看這個：</strong>衍生品市場是法人表態的地方。資金費率持續偏高 → 多頭槓桿過重 → 一旦回調會觸發連鎖爆倉。反之費率中性或負值 + OI 穩定 = 市場健康，適合進場。
+  </div>
+</div>
+
 <!-- ── 🇺🇸 美國戰略比特幣儲備（最重要籌碼因素）── -->
 <div class="gov-panel">
   <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap">
@@ -1071,6 +1133,126 @@ ${headlines||'請根據你的知識提供 2025 年最新 BTC 市場分析'}`;
   }catch(_){bEl.className='news-body';bEl.textContent='⚠️ AI 暫時無法回應，請點 ↻ 重試';}
 }
 
+// ─── 衍生品市場訊號（機構法人第一分析工具）───────────────────────────────────
+async function loadDerivatives(){
+  const btn=document.getElementById('derivRefreshBtn');
+  if(btn){btn.textContent='更新中…';btn.disabled=true;}
+
+  const BASE='https://fapi.binance.com';
+  async function jFetch(url){
+    const r=await fetchTO(url,10000);
+    if(!r.ok)throw new Error(r.status);
+    return r.json();
+  }
+
+  try{
+    // 同時抓三支 API
+    const [frData,oiCur,oiHist,lsData]=await Promise.all([
+      jFetch(`${BASE}/fapi/v1/premiumIndex?symbol=BTCUSDT`),
+      jFetch(`${BASE}/fapi/v1/openInterest?symbol=BTCUSDT`),
+      jFetch(`${BASE}/futures/data/openInterestHist?symbol=BTCUSDT&period=1h&limit=25`),
+      jFetch(`${BASE}/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=1h&limit=1`),
+    ]);
+
+    // ── 資金費率 ──
+    const fr=parseFloat(frData.lastFundingRate||0);
+    const frPct=+(fr*100).toFixed(4);
+    const frAnnual=+(frPct*3*365).toFixed(1); // 每8hr → 年化
+    document.getElementById('derivFRVal').textContent=`${frPct>0?'+':''}${frPct}%`;
+    document.getElementById('derivFRVal').style.color=
+      frPct>0.05?'#f87171':frPct<-0.01?'#34d399':'#fbbf24';
+    let frStatus,frCol,frScore=0;
+    if(frPct>0.1){frStatus='🔴 極度多頭擁擠（強力逆向警告）';frCol='#f87171';frScore=-2;}
+    else if(frPct>0.05){frStatus='🟠 多頭過熱，注意爆倉風險';frCol='#fb923c';frScore=-1;}
+    else if(frPct>0.01){frStatus='🟡 偏多，情緒正常';frCol='#fbbf24';frScore=0;}
+    else if(frPct>=-0.01){frStatus='🟢 中性（最健康進場環境）';frCol='#34d399';frScore=1;}
+    else{frStatus='🔵 空頭主導，可能反彈機會';frCol='#60a5fa';frScore=1;}
+    document.getElementById('derivFRBadge').innerHTML=
+      `<span style="color:${frCol}">${frStatus}</span><br><span style="color:var(--text2);font-size:.56rem">年化約 ${frAnnual>0?'+':''}${frAnnual}%</span>`;
+
+    // ── 未平倉合約 24H 變化 ──
+    const oiNow=parseFloat(oiCur.openInterest||0);
+    let oiScore=0,oiStatus,oiCol;
+    if(oiHist&&oiHist.length>=2){
+      const oiOld=parseFloat(oiHist[0].sumOpenInterest||oiHist[0].openInterest||0);
+      const oiChgPct=oiOld>0?((oiNow-oiOld)/oiOld*100):0;
+      const chgStr=`${oiChgPct>0?'+':''}${oiChgPct.toFixed(1)}%`;
+      document.getElementById('derivOIVal').textContent=chgStr;
+      document.getElementById('derivOIVal').style.color=oiChgPct>3?'#34d399':oiChgPct<-3?'#f87171':'#fbbf24';
+      if(oiChgPct>5){oiStatus='📈 OI 大幅增加（強烈做多）';oiCol='#34d399';oiScore=1;}
+      else if(oiChgPct>1){oiStatus='📈 OI 小幅增加（偏多）';oiCol='#86efac';oiScore=0.5;}
+      else if(oiChgPct>-1){oiStatus='➡ OI 穩定（中性）';oiCol='#fbbf24';oiScore=0;}
+      else if(oiChgPct>-5){oiStatus='📉 OI 下滑（資金撤出）';oiCol='#fb923c';oiScore=-0.5;}
+      else{oiStatus='📉 OI 大幅下滑（去槓桿）';oiCol='#f87171';oiScore=-1;}
+      document.getElementById('derivOIBadge').innerHTML=`<span style="color:${oiCol}">${oiStatus}</span>`;
+    }else{
+      const oiB=(oiNow/1e4).toFixed(0);
+      document.getElementById('derivOIVal').textContent=`${oiB}萬 BTC`;
+      document.getElementById('derivOIVal').style.color='#fbbf24';
+      document.getElementById('derivOIBadge').innerHTML='<span style="color:var(--text2)">歷史對比載入中</span>';
+    }
+
+    // ── 大戶多空比 ──
+    const ls=lsData&&lsData[0];
+    const lsRatio=ls?parseFloat(ls.longShortRatio):null;
+    const lsLong=ls?parseFloat(ls.longAccount)*100:null;
+    let lsScore=0,lsStatus,lsCol;
+    if(lsRatio!=null){
+      document.getElementById('derivLSVal').textContent=lsRatio.toFixed(2);
+      if(lsRatio>2.0){lsStatus='🔴 多頭嚴重擁擠（逆向警告）';lsCol='#f87171';lsScore=-1;}
+      else if(lsRatio>1.5){lsStatus='🟠 多頭偏多，注意';lsCol='#fb923c';lsScore=-0.5;}
+      else if(lsRatio>1.0){lsStatus='🟡 偏多，尚算健康';lsCol='#fbbf24';lsScore=0.5;}
+      else if(lsRatio>0.8){lsStatus='🟢 接近均衡（中性）';lsCol='#34d399';lsScore=1;}
+      else{lsStatus='🔵 空頭主導（可能反彈）';lsCol='#60a5fa';lsScore=1;}
+      document.getElementById('derivLSVal').style.color=lsRatio>2?'#f87171':lsRatio<0.8?'#60a5fa':'#fbbf24';
+      document.getElementById('derivLSBadge').innerHTML=
+        `<span style="color:${lsCol}">${lsStatus}</span><br><span style="color:var(--text2);font-size:.56rem">多頭佔比 ${lsLong?lsLong.toFixed(1):'?'}%</span>`;
+    }
+
+    // ── 綜合衍生品訊號 ──
+    const totalScore=frScore+oiScore+lsScore;
+    const sigBox=document.getElementById('derivSignalBox');
+    sigBox.style.display='block';
+    let sigBg,sigBorder,sigIcon,sigText,sigAction;
+    if(totalScore>=1.5){
+      sigBg='rgba(5,150,105,.15)';sigBorder='rgba(5,150,105,.4)';sigIcon='✅';
+      sigText='衍生品訊號看多';
+      sigAction='資金費率中性或負值、OI 穩定或增加、多空比均衡 → 槓桿環境健康，適合進場。';
+    }else if(totalScore<=-1.5){
+      sigBg='rgba(220,38,38,.12)';sigBorder='rgba(220,38,38,.35)';sigIcon='🚨';
+      sigText='衍生品訊號警告（多頭過度擁擠）';
+      sigAction='資金費率偏高、多頭嚴重擁擠 → 一旦下跌將觸發多頭連鎖爆倉。法人通常此時減倉或做空。';
+    }else if(totalScore>0){
+      sigBg='rgba(202,138,4,.12)';sigBorder='rgba(202,138,4,.3)';sigIcon='⏳';
+      sigText='衍生品訊號偏多，可持倉觀察';
+      sigAction='整體偏多頭，但尚未極端。持倉者繼續持有；無倉者可少量試單，避免重倉。';
+    }else{
+      sigBg='rgba(99,102,241,.1)';sigBorder='rgba(99,102,241,.3)';sigIcon='⏳';
+      sigText='衍生品訊號中性，等待明確方向';
+      sigAction='多空力道接近均衡，市場方向不明。配合價格訊號再決定，不宜單憑衍生品數據行動。';
+    }
+    sigBox.style.background=sigBg;
+    sigBox.style.border=`1px solid ${sigBorder}`;
+    sigBox.style.borderLeft=`4px solid ${sigBorder.replace('.3','1').replace('.4','1').replace('.35','1')}`;
+    sigBox.innerHTML=`
+      <div style="font-size:.88rem;font-weight:800;color:var(--text);margin-bottom:4px">${sigIcon} ${sigText}</div>
+      <div style="font-size:.75rem;color:var(--text2);line-height:1.65">${sigAction}</div>
+      <div style="font-size:.58rem;color:rgba(255,255,255,.25);margin-top:6px">資金費率分(${frScore}) + OI分(${oiScore}) + 多空比分(${lsScore}) = 總分 ${totalScore}</div>
+    `;
+
+  }catch(e){
+    ['derivFRVal','derivOIVal','derivLSVal'].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.textContent='—';
+    });
+    const sigBox=document.getElementById('derivSignalBox');
+    if(sigBox){sigBox.style.display='block';sigBox.style.background='rgba(220,38,38,.1)';
+      sigBox.style.border='1px solid rgba(220,38,38,.3)';
+      sigBox.innerHTML='<span style="color:#f87171;font-size:.75rem">⚠️ 衍生品數據載入失敗，請點「↻ 更新」重試</span>';}
+  }finally{
+    if(btn){btn.textContent='↻ 更新';btn.disabled=false;}
+  }
+}
+
 // ─── Gov Reserve News (AI) ───────────────────────────────────────────────────
 async function loadGovNews(){
   const bEl=document.getElementById('govNewsBody');
@@ -1284,6 +1466,7 @@ async function init(){
   loadFearGreed();
   loadBTCNews();
   loadMacroPanel();
+  loadDerivatives();
 
   // Primary data (blocking — needed for all panels)
   const d=await fetchBTCData();
@@ -1366,6 +1549,7 @@ function updateTWDPrice(usdPrice){
 window.loadBTCNews=loadBTCNews;
 window.loadFearGreed=loadFearGreed;
 window.loadGovNews=loadGovNews;
+window.loadDerivatives=loadDerivatives;
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 init();
