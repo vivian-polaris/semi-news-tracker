@@ -1516,44 +1516,50 @@ async function init(){
   if(_autoRefreshTimer){clearTimeout(_autoRefreshTimer);_autoRefreshTimer=null;}
   refreshSec=300;
 
-  // Non-blocking parallel loads（BTC News 移到資料載入後，才能注入即時價格）
-  loadFearGreed();
-  loadMacroPanel();
-  loadDerivatives();
-  fetchTWDRate();
+  try{
+    // Non-blocking parallel loads（BTC News 移到資料載入後，才能注入即時價格）
+    loadFearGreed();
+    loadMacroPanel();
+    loadDerivatives();
+    fetchTWDRate();
 
-  // Primary data (blocking — needed for all panels)
-  const d=await fetchBTCData();
+    // Primary data (blocking — needed for all panels)
+    const d=await fetchBTCData();
 
-  if(!d){
-    document.getElementById('btcPrice').textContent='載入失敗 ⚠';
-    document.getElementById('techPanel').innerHTML='<div style="color:#f87171;font-size:.78rem">⚠️ Binance + CoinGecko 均載入失敗，請重新整理頁面</div>';
-    document.getElementById('onchainPanel').innerHTML='<div style="color:#f87171;font-size:.78rem">⚠️ 資料載入失敗</div>';
+    if(!d){
+      document.getElementById('btcPrice').textContent='載入失敗 ⚠';
+      document.getElementById('techPanel').innerHTML='<div style="color:#f87171;font-size:.78rem">⚠️ Binance + CoinGecko 均載入失敗，請重新整理頁面</div>';
+      document.getElementById('onchainPanel').innerHTML='<div style="color:#f87171;font-size:.78rem">⚠️ 資料載入失敗</div>';
+      const el=document.getElementById('lastUpdatedLabel');
+      if(el){el.textContent='⚠ 更新失敗';el.style.color='#f87171';}
+      return;
+    }
+
+    updatePriceDisplay(d);
+    renderTechPanel(d.prices,d.volumes,d.price);
+    renderOnchainPanel(d.prices,d.price);
+    renderFlowPanel();
+    loadMarketComparison(d);
+    loadBTCNews(d.price); // 注入即時價格，AI 不會用訓練資料舊數字
+    _setLastUpdated();
+  }catch(e){
+    console.error('[BTCanalyzer] init error:',e);
     const el=document.getElementById('lastUpdatedLabel');
-    if(el){el.textContent='⚠ 更新失敗';el.style.color='#f87171';}
+    if(el){el.textContent='⚠ 更新失敗（JS 錯誤）';el.style.color='#f87171';}
+  }finally{
     _isRefreshing=false;
     _setRefreshBtn(false);
     _autoRefreshTimer=setTimeout(init,5*60*1000);
-    return;
   }
-
-  updatePriceDisplay(d);
-  renderTechPanel(d.prices,d.volumes,d.price);
-  renderOnchainPanel(d.prices,d.price);
-  renderFlowPanel();
-  loadMarketComparison(d);
-  loadBTCNews(d.price); // 注入即時價格，AI 不會用訓練資料舊數字
-
-  _setLastUpdated();
-  _isRefreshing=false;
-  _setRefreshBtn(false);
-  _autoRefreshTimer=setTimeout(init,5*60*1000);
 }
 
 function manualRefresh(){
-  if(_isRefreshing)return;
+  // 強制解除卡住的 lock（使用者手動點擊時應永遠有效）
+  _isRefreshing=false;
+  _setRefreshBtn(false);
+  if(_autoRefreshTimer){clearTimeout(_autoRefreshTimer);_autoRefreshTimer=null;}
   refreshSec=300;
-  // 強制清除快取，確保抓取最新數據
+  // 清除所有快取，確保抓取最新數據
   lsSet('btcData',null);
   lsSet('fearGreed',null);
   lsSet('btcNews',null);
