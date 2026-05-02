@@ -1291,28 +1291,53 @@ async function loadMarketComparison(btcData){
     return {score:Math.max(0,Math.min(100,score)),trend,statsHtml,perf20,distHi};
   }
 
+  // ── Yahoo Finance with multiple CORS proxies ──
+  async function fetchYahooAsset(a){
+    const url=`https://query1.finance.yahoo.com/v8/finance/chart/${a.sym}?range=12mo&interval=1d`;
+    const proxies=[
+      'https://api.allorigins.win/raw?url='+encodeURIComponent(url),
+      'https://corsproxy.io/?'+encodeURIComponent(url),
+      'https://api.allorigins.win/raw?url='+encodeURIComponent(url.replace('query1','query2')),
+    ];
+    for(const proxy of proxies){
+      try{
+        const res=await fetchTO(proxy,12000);
+        if(!res.ok)continue;
+        const j=await res.json();
+        const r=j?.chart?.result?.[0];
+        const meta=r?.meta;
+        const closes=(r?.indicators?.quote?.[0]?.close||[]).filter(v=>v!=null);
+        if(closes.length<20||!meta)continue;
+        const price=meta.regularMarketPrice||closes[closes.length-1];
+        const prev=closes[closes.length-2]||price;
+        const chgPct=prev>0?(price-prev)/prev*100:0;
+        const fmtPrice=parseFloat(a.fmt)===0
+          ?price.toLocaleString('en-US',{maximumFractionDigits:0})
+          :price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+        const scored=scoreFromCloses(closes);
+        return{id:a.id,price:fmtPrice+a.suffix,chgPct,scored,ok:true};
+      }catch(_){}
+    }
+    // ── Metals.live fallback for gold/silver (price only, no history for scoring) ──
+    if(a.id==='gold'||a.id==='silv'){
+      try{
+        const r=await fetchTO('https://api.metals.live/v1/spot',8000);
+        if(r.ok){
+          const d=await r.json();
+          const obj=Object.assign({},...d);
+          const price=a.id==='gold'?obj.gold:obj.silver;
+          if(price){
+            const fmtPrice=price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+            return{id:a.id,price:fmtPrice,chgPct:0,scored:{score:0,trend:'',statsHtml:'（僅現價，無法計算趨勢分）'},ok:true,noScore:true};
+          }
+        }
+      }catch(_){}
+    }
+    return{id:a.id,err:true};
+  }
+
   const yahooAssets=ASSETS.filter(a=>a.sym);
-  const yahooPromises=yahooAssets.map(async a=>{
-    try{
-      const url=`https://query1.finance.yahoo.com/v8/finance/chart/${a.sym}?range=12mo&interval=1d`;
-      const res=await fetchTO('https://corsproxy.io/?'+encodeURIComponent(url),14000);
-      if(!res.ok)return{id:a.id,err:true};
-      const j=await res.json();
-      const r=j?.chart?.result?.[0];
-      const meta=r?.meta;
-      const closes=(r?.indicators?.quote?.[0]?.close||[]).filter(v=>v!=null);
-      if(closes.length<20||!meta)return{id:a.id,err:true};
-      const price=meta.regularMarketPrice||closes[closes.length-1];
-      const prev=closes[closes.length-2]||price;
-      const chgPct=prev>0?(price-prev)/prev*100:0;
-      const fmtPrice=parseFloat(a.fmt)===0
-        ?price.toLocaleString('en-US',{maximumFractionDigits:0})
-        :price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-      const scored=scoreFromCloses(closes);
-      return{id:a.id,price:fmtPrice+a.suffix,chgPct,scored,ok:true};
-    }catch(_){return{id:a.id,err:true};}
-  });
-  const yahooResults=await Promise.all(yahooPromises);
+  const yahooResults=await Promise.all(yahooAssets.map(a=>fetchYahooAsset(a)));
 
   let btcResult={id:'btc',price:'—',chgPct:0,scored:{score:50,trend:'—',statsHtml:'—'},ok:false};
   try{
@@ -1362,16 +1387,19 @@ async function loadMarketComparison(btcData){
     const trendEl=document.getElementById(`cmpTrend_${a.id}`);
     if(!priceEl)return;
     if(r?.err||!r?.ok){
-      priceEl.textContent='無法取得';chgEl.innerHTML='';scoreEl.textContent='—';trendEl.innerHTML='API 暫時無法連線';return;
+      priceEl.textContent='—';chgEl.innerHTML='';scoreEl.textContent='';trendEl.innerHTML='';return;
     }
     priceEl.textContent=r.price;
     const c=r.chgPct||0;
-    chgEl.innerHTML=`<span style="color:${c>=0?'#34d399':'#f87171'}">${c>=0?'+':''}${c.toFixed(2)}%</span>`;
+    chgEl.innerHTML=c!==0?`<span style="color:${c>=0?'#34d399':'#f87171'}">${c>=0?'+':''}${c.toFixed(2)}%</span>`:'';
     const s=r.scored.score;
-    const col=s>=65?'#34d399':s>=50?'#fbbf24':'#f87171';
-    const bg=s>=65?'rgba(5,150,105,.18)':s>=50?'rgba(202,138,4,.18)':'rgba(220,38,38,.15)';
-    scoreEl.textContent=`評分 ${s} 分`;scoreEl.style.color=col;scoreEl.style.background=bg;
-    trendEl.innerHTML=r.scored.statsHtml;
+    if(r.noScore){scoreEl.textContent='';trendEl.innerHTML=r.scored.statsHtml;}
+    else{
+      const col=s>=65?'#34d399':s>=50?'#fbbf24':'#f87171';
+      const bg=s>=65?'rgba(5,150,105,.18)':s>=50?'rgba(202,138,4,.18)':'rgba(220,38,38,.15)';
+      scoreEl.textContent=`評分 ${s} 分`;scoreEl.style.color=col;scoreEl.style.background=bg;
+      trendEl.innerHTML=r.scored.statsHtml;
+    }
     const card=document.getElementById(`cmpCard_${a.id}`);
     if(card)card.style.borderColor=s>=65?a.accent:'var(--border)';
   });
