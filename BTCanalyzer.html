@@ -153,12 +153,38 @@ footer{text-align:center;padding:18px 0;color:var(--text2);font-size:.66rem;bord
 <!-- ── Header ── -->
 <header>
   <a href="VCPfinder.html" class="back-btn">← VCPfinder</a>
+
+  <!-- 台灣時間 + 美國盤狀態 + 更新按鈕 -->
+  <div style="position:absolute;right:16px;top:14px;text-align:right">
+    <div style="font-size:.78rem;font-weight:700;color:rgba(255,255,255,.9)" id="twClock">--:--:--</div>
+    <div style="font-size:.6rem;color:rgba(255,255,255,.5)">台灣時間 (UTC+8)</div>
+    <div style="font-size:.62rem;font-weight:700;margin-top:2px" id="sessionBadge"></div>
+    <div style="margin-top:7px;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+      <div style="font-size:.58rem;color:rgba(255,255,255,.38)" id="lastUpdatedLabel">尚未更新</div>
+      <button id="refreshAllBtn" onclick="manualRefresh()"
+        style="background:rgba(247,148,29,.12);border:1.5px solid rgba(247,148,29,.55);border-radius:8px;
+               color:var(--orange);cursor:pointer;font-size:.68rem;font-weight:700;padding:4px 12px;
+               transition:all .18s;white-space:nowrap;letter-spacing:.02em"
+        onmouseover="if(!this.disabled)this.style.background='rgba(247,148,29,.25)'"
+        onmouseout="if(!this.disabled)this.style.background='rgba(247,148,29,.12)'">
+        ⟳ 立即更新全部
+      </button>
+      <div style="font-size:.52rem;color:rgba(255,255,255,.28)" id="refreshCountdown"></div>
+    </div>
+  </div>
+
   <h1>₿ BTC 買賣點分析 <span style="font-weight:400;font-size:.6em;opacity:.7">· Vivian Edge</span></h1>
-  <div style="margin-top:10px">
+
+  <div style="margin-top:8px;font-size:.68rem;color:rgba(255,255,255,.5)">
+    1 BTC（1顆比特幣）目前價格 ↓
+  </div>
+  <div style="margin-top:4px">
     <span class="price-ticker" id="btcPrice"><span class="spin"></span>載入中</span>
     <span class="price-change" id="btcChange"></span>
+    <span style="font-size:.75rem;color:rgba(255,255,255,.5);margin-left:8px">美元 / 1 BTC</span>
   </div>
-  <div class="price-meta" id="btcMeta">資料來源：CoinGecko · 每5分鐘更新</div>
+  <div id="btcTwdPrice" style="font-size:.9rem;color:rgba(255,165,0,.8);margin-top:2px"></div>
+  <div class="price-meta" id="btcMeta">資料: Binance · 每5分鐘自動更新</div>
 </header>
 
 <!-- ══ 現在要買還是賣？主訊號（最醒目） ══ -->
@@ -1224,7 +1250,36 @@ async function loadMacroPanel(){
 }
 
 // ─── Main init ────────────────────────────────────────────────────────────────
+let _isRefreshing=false;
+let _autoRefreshTimer=null;
+
+function _setRefreshBtn(loading){
+  const btn=document.getElementById('refreshAllBtn');
+  if(!btn)return;
+  btn.disabled=loading;
+  btn.textContent=loading?'⏳ 更新中…':'⟳ 立即更新全部';
+  btn.style.opacity=loading?'0.5':'1';
+  btn.style.cursor=loading?'default':'pointer';
+}
+
+function _setLastUpdated(){
+  const el=document.getElementById('lastUpdatedLabel');
+  if(!el)return;
+  const now=new Date(Date.now()+8*3600000); // 台灣時間 UTC+8
+  const hh=String(now.getUTCHours()).padStart(2,'0');
+  const mm=String(now.getUTCMinutes()).padStart(2,'0');
+  const ss=String(now.getUTCSeconds()).padStart(2,'0');
+  el.textContent=`✓ 最後更新 ${hh}:${mm}:${ss}`;
+  el.style.color='rgba(52,211,153,.7)';
+}
+
 async function init(){
+  if(_isRefreshing)return;
+  _isRefreshing=true;
+  _setRefreshBtn(true);
+  if(_autoRefreshTimer){clearTimeout(_autoRefreshTimer);_autoRefreshTimer=null;}
+  refreshSec=300;
+
   // Non-blocking parallel loads
   loadFearGreed();
   loadBTCNews();
@@ -1237,6 +1292,11 @@ async function init(){
     document.getElementById('btcPrice').textContent='載入失敗 ⚠';
     document.getElementById('techPanel').innerHTML='<div style="color:#f87171;font-size:.78rem">⚠️ Binance + CoinGecko 均載入失敗，請重新整理頁面</div>';
     document.getElementById('onchainPanel').innerHTML='<div style="color:#f87171;font-size:.78rem">⚠️ 資料載入失敗</div>';
+    const el=document.getElementById('lastUpdatedLabel');
+    if(el){el.textContent='⚠ 更新失敗';el.style.color='#f87171';}
+    _isRefreshing=false;
+    _setRefreshBtn(false);
+    _autoRefreshTimer=setTimeout(init,5*60*1000);
     return;
   }
 
@@ -1245,8 +1305,61 @@ async function init(){
   renderOnchainPanel(d.prices,d.price);
   renderFlowPanel();
 
-  // Auto refresh every 5 min
-  setTimeout(init, 5*60*1000);
+  _setLastUpdated();
+  _isRefreshing=false;
+  _setRefreshBtn(false);
+  _autoRefreshTimer=setTimeout(init,5*60*1000);
+}
+
+function manualRefresh(){
+  if(_isRefreshing)return;
+  refreshSec=300;
+  init();
+}
+window.manualRefresh=manualRefresh;
+
+// ─── 台灣時間時鐘 + 美國盤狀態 ──────────────────────────────────────────────
+let refreshSec=300;
+function updateClock(){
+  const now=new Date();
+  // 台灣時間 = UTC+8
+  const tw=new Date(now.getTime()+8*3600000);
+  const hh=String(tw.getUTCHours()).padStart(2,'0');
+  const mm=String(tw.getUTCMinutes()).padStart(2,'0');
+  const ss=String(tw.getUTCSeconds()).padStart(2,'0');
+  const clk=document.getElementById('twClock');
+  if(clk) clk.textContent=`${hh}:${mm}:${ss}`;
+
+  // 判斷美國盤是否開盤（台灣時間 21:30–06:00 = EST 9:30–16:00）
+  const twH=tw.getUTCHours();
+  const twM=tw.getUTCMinutes();
+  const twMins=twH*60+twM;
+  const badge=document.getElementById('sessionBadge');
+  if(badge){
+    // 美股: 台灣 21:30 – 04:00（夏令時）or 22:30 – 05:00（冬令時）
+    // 簡化：台灣 22:00–05:00 視為美國盤活躍時段
+    const isUS=(twMins>=22*60||twMins<5*60);
+    const isEU=(twMins>=15*60&&twMins<22*60);
+    if(isUS){badge.innerHTML='<span style="color:#34d399;font-size:.65rem">🇺🇸 美國盤進行中（量最大）</span>';}
+    else if(isEU){badge.innerHTML='<span style="color:#60a5fa;font-size:.65rem">🌍 歐洲盤進行中</span>';}
+    else{badge.innerHTML='<span style="color:rgba(255,255,255,.4);font-size:.65rem">🌏 亞洲盤（較平穩）</span>';}
+  }
+
+  // 倒計時顯示（實際 refresh 由 _autoRefreshTimer 控制）
+  refreshSec--;
+  if(refreshSec<=0)refreshSec=300;
+  const cd=document.getElementById('refreshCountdown');
+  if(cd) cd.textContent=`${refreshSec} 秒後自動更新`;
+}
+setInterval(updateClock,1000);
+updateClock();
+
+// ─── 台幣換算 ─────────────────────────────────────────────────────────────────
+function updateTWDPrice(usdPrice){
+  const TWD_RATE=32.5; // 台幣匯率（近似值）
+  const twd=Math.round(usdPrice*TWD_RATE);
+  const el=document.getElementById('btcTwdPrice');
+  if(el) el.textContent=`≈ 台幣 ${twd.toLocaleString()} 元 / 1 BTC（匯率 ~${TWD_RATE}）`;
 }
 
 // ─── Expose for buttons ───────────────────────────────────────────────────────
