@@ -257,6 +257,40 @@ footer{text-align:center;padding:18px 0;color:var(--text2);font-size:.66rem;bord
   </div>
 </div>
 
+<!-- ══ ⚖️ 現在應該關注：台股 vs BTC？══ -->
+<div id="comparePanel" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:14px">
+  <div style="font-size:.88rem;font-weight:800;color:var(--text);margin-bottom:14px;letter-spacing:.02em">
+    ⚖️ 現在應該關注：台股 還是 BTC？
+    <span style="font-size:.62rem;font-weight:500;color:var(--text2);margin-left:8px">即時比較・每次更新自動重算</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+
+    <!-- 台股 TAIEX -->
+    <div id="cmpTW" style="background:rgba(56,189,248,.06);border:1.5px solid rgba(56,189,248,.25);border-radius:10px;padding:12px 14px">
+      <div style="font-size:.7rem;font-weight:800;color:#7dd3fc;letter-spacing:.05em;margin-bottom:8px">🇹🇼 台股 TAIEX</div>
+      <div style="font-size:1.5rem;font-weight:800;color:var(--text)" id="cmpTWPrice">載入中…</div>
+      <div style="font-size:.72rem;margin-top:3px" id="cmpTWChg">—</div>
+      <div style="margin-top:8px;font-size:.7rem;line-height:1.8;color:var(--text2)" id="cmpTWStats">—</div>
+      <div style="margin-top:8px;text-align:center;padding:6px;border-radius:6px;font-size:.75rem;font-weight:800" id="cmpTWScore">計算中</div>
+    </div>
+
+    <!-- BTC -->
+    <div id="cmpBTC" style="background:rgba(247,148,29,.06);border:1.5px solid rgba(247,148,29,.25);border-radius:10px;padding:12px 14px">
+      <div style="font-size:.7rem;font-weight:800;color:var(--orange);letter-spacing:.05em;margin-bottom:8px">₿ 比特幣 BTC</div>
+      <div style="font-size:1.5rem;font-weight:800;color:var(--text)" id="cmpBTCPrice">—</div>
+      <div style="font-size:.72rem;margin-top:3px" id="cmpBTCChg">—</div>
+      <div style="margin-top:8px;font-size:.7rem;line-height:1.8;color:var(--text2)" id="cmpBTCStats">—</div>
+      <div style="margin-top:8px;text-align:center;padding:6px;border-radius:6px;font-size:.75rem;font-weight:800" id="cmpBTCScore">計算中</div>
+    </div>
+  </div>
+
+  <!-- 綜合建議 -->
+  <div id="cmpVerdict" style="border-radius:8px;padding:12px 16px;font-size:.82rem;line-height:1.75;background:rgba(45,55,72,.3);border:1px solid var(--border)">
+    <span class="spin"></span> 分析中，請稍候…
+  </div>
+</div>
+
 <!-- ── 🇺🇸 美國戰略比特幣儲備（最重要籌碼因素）── -->
 <div class="gov-panel">
   <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap">
@@ -1487,6 +1521,7 @@ async function init(){
   renderTechPanel(d.prices,d.volumes,d.price);
   renderOnchainPanel(d.prices,d.price);
   renderFlowPanel();
+  loadMarketComparison(d);
 
   _setLastUpdated();
   _isRefreshing=false;
@@ -1550,6 +1585,149 @@ window.loadBTCNews=loadBTCNews;
 window.loadFearGreed=loadFearGreed;
 window.loadGovNews=loadGovNews;
 window.loadDerivatives=loadDerivatives;
+
+// ─── 台股 vs BTC 市場機會比較 ─────────────────────────────────────────────────
+async function loadMarketComparison(btcData){
+  const verdict=document.getElementById('cmpVerdict');
+
+  // ── 台股 TAIEX ──
+  let twScore=50,twTrend='—',twChgStr='—',twPriceStr='—',twStatsHtml='—';
+  try{
+    const twUrl='https://query1.finance.yahoo.com/v8/finance/chart/%5ETWII?range=6mo&interval=1d';
+    const proxy='https://corsproxy.io/?'+encodeURIComponent(twUrl);
+    const res=await fetchTO(proxy,12000);
+    if(res.ok){
+      const j=await res.json();
+      const r=j?.chart?.result?.[0];
+      const meta=r?.meta;
+      const closes=r?.indicators?.quote?.[0]?.close?.filter(v=>v!=null)??[];
+      if(closes.length>=50&&meta){
+        const price=meta.regularMarketPrice||closes[closes.length-1];
+        const prev=closes[closes.length-2]||price;
+        const chgPct=prev>0?(price-prev)/prev*100:0;
+        twPriceStr=price.toLocaleString('zh-TW',{maximumFractionDigits:0})+' 點';
+        twChgStr=`<span style="color:${chgPct>=0?'#34d399':'#f87171'}">${chgPct>=0?'+':''}${chgPct.toFixed(2)}%</span>`;
+
+        // MAs
+        const ma20=closes.slice(-20).reduce((a,b)=>a+b,0)/20;
+        const ma50=closes.slice(-50).reduce((a,b)=>a+b,0)/50;
+        const ma150=closes.length>=150?closes.slice(-150).reduce((a,b)=>a+b,0)/150:null;
+        const ma200=closes.length>=200?closes.slice(-200).reduce((a,b)=>a+b,0)/200:null;
+        const hi52=Math.max(...closes.slice(-252));
+        const distHi=hi52>0?(price-hi52)/hi52*100:0;
+        const perf20=(closes[closes.length-21]||closes[0])>0?(price-(closes[closes.length-21]||closes[0]))/(closes[closes.length-21]||closes[0])*100:0;
+
+        // 台股 Stage 2 check
+        const s2=ma50>0&&ma150!=null&&ma200!=null&&ma50>ma150&&ma150>ma200&&price>ma50;
+
+        // Scoring
+        if(price>ma20)twScore+=5;
+        if(price>ma50)twScore+=12;else twScore-=10;
+        if(ma150&&price>ma150)twScore+=8;else twScore-=5;
+        if(ma200&&price>ma200)twScore+=8;else twScore-=5;
+        if(s2)twScore+=12;
+        if(perf20>5)twScore+=10;else if(perf20>2)twScore+=5;else if(perf20<-5)twScore-=10;else if(perf20<-2)twScore-=5;
+        if(distHi>-5)twScore+=8;else if(distHi<-20)twScore-=10;
+
+        twTrend=s2?'✅ Stage 2 多頭':price>ma50?'🟡 MA50 上方整理':'🔴 均線下方，趨勢弱';
+        twStatsHtml=`趨勢：${twTrend}<br>近20日：<span style="color:${perf20>=0?'#34d399':'#f87171'}">${perf20>=0?'+':''}${perf20.toFixed(1)}%</span>　距52週高：<span style="color:${distHi>-10?'#34d399':'#f87171'}">${distHi.toFixed(1)}%</span>`;
+      }
+    }
+  }catch(_){}
+
+  twScore=Math.max(0,Math.min(100,twScore));
+
+  // ── BTC 評分（讀已載入的 DOM 數據）──
+  let btcScore=50,btcTrend='—',btcChgStr='—',btcPriceStr='—',btcStatsHtml='—';
+  try{
+    const price=btcData?.price||0;
+    const prices=btcData?.prices||[];
+    const nowActionText=document.getElementById('nowAction')?.textContent||'';
+    const fgNum=parseInt(document.getElementById('fgNum')?.textContent||'50')||50;
+    const frText=(document.getElementById('derivFRVal')?.textContent||'0').replace('+','').replace('%','');
+    const frVal=parseFloat(frText)||0;
+
+    if(price>0) btcPriceStr='$'+price.toLocaleString('en-US',{maximumFractionDigits:0});
+    if(btcData?.ch24!=null){
+      const c=btcData.ch24;
+      btcChgStr=`<span style="color:${c>=0?'#34d399':'#f87171'}">${c>=0?'+':''}${(+c).toFixed(2)}%</span>`;
+    }
+
+    // BTC MA（prices 是舊→新排列，最後一筆最新）
+    if(prices.length>=50){
+      const ma50b=prices.slice(-50).reduce((a,b)=>a+b,0)/50;
+      const ma150b=prices.length>=150?prices.slice(-150).reduce((a,b)=>a+b,0)/150:null;
+      const ma200b=prices.length>=200?prices.slice(-200).reduce((a,b)=>a+b,0)/200:null;
+      const s2b=!!(ma150b&&ma200b&&ma50b>ma150b&&ma150b>ma200b&&price>ma50b);
+      btcTrend=s2b?'✅ Stage 2 多頭':price>ma50b?'🟡 MA50 上方整理':'🔴 均線下方，趨勢弱';
+      if(s2b)btcScore+=12;
+      if(price>ma50b)btcScore+=10;else btcScore-=10;
+      if(ma150b&&price>ma150b)btcScore+=8;
+      if(ma200b&&price>ma200b)btcScore+=8;
+    }
+
+    // BTC signal
+    if(nowActionText.includes('可以買入')||nowActionText.includes('低吸'))btcScore+=20;
+    else if(nowActionText.includes('獲利了結'))btcScore-=20;
+    else if(nowActionText.includes('位置對'))btcScore+=8;
+
+    // Fear & Greed
+    if(fgNum<20)btcScore+=15;else if(fgNum<35)btcScore+=8;
+    else if(fgNum>80)btcScore-=15;else if(fgNum>65)btcScore-=8;
+
+    // Funding Rate（derivFRVal 格式：+0.0100% or -0.0050%）
+    if(frVal<0)btcScore+=10;else if(frVal<0.02)btcScore+=5;
+    else if(frVal>0.1)btcScore-=20;else if(frVal>0.05)btcScore-=10;
+
+    const hi52b=prices.length>0?Math.max(...prices.slice(-252)):0;
+    const distHiB=hi52b>0?(price-hi52b)/hi52b*100:0;
+    const p20ago=prices[prices.length-21]||prices[0];
+    const perf20b=p20ago>0?(price-p20ago)/p20ago*100:0;
+    btcStatsHtml=`趨勢：${btcTrend}<br>近20日：<span style="color:${perf20b>=0?'#34d399':'#f87171'}">${perf20b>=0?'+':''}${perf20b.toFixed(1)}%</span>　距52週高：<span style="color:${distHiB>-10?'#34d399':'#f87171'}">${distHiB.toFixed(1)}%</span>`;
+  }catch(_){}
+
+  btcScore=Math.max(0,Math.min(100,btcScore));
+
+  // ── 渲染分數 ──
+  const scoreEl=(id,score)=>{
+    const el=document.getElementById(id);if(!el)return;
+    const col=score>=65?'#34d399':score>=50?'#fbbf24':'#f87171';
+    const bg=score>=65?'rgba(5,150,105,.15)':score>=50?'rgba(202,138,4,.15)':'rgba(220,38,38,.12)';
+    el.textContent=`機會評分 ${score} 分`;
+    el.style.color=col;el.style.background=bg;
+  };
+
+  document.getElementById('cmpTWPrice').textContent=twPriceStr;
+  document.getElementById('cmpTWChg').innerHTML=twChgStr;
+  document.getElementById('cmpTWStats').innerHTML=twStatsHtml;
+  scoreEl('cmpTWScore',twScore);
+
+  document.getElementById('cmpBTCPrice').textContent=btcPriceStr;
+  document.getElementById('cmpBTCChg').innerHTML=btcChgStr;
+  document.getElementById('cmpBTCStats').innerHTML=btcStatsHtml;
+  scoreEl('cmpBTCScore',btcScore);
+
+  // ── 綜合建議 ──
+  const diff=btcScore-twScore;
+  let vBg,vBorder,vIcon,vTitle,vBody;
+  if(diff>=15){
+    vBg='rgba(247,148,29,.1)';vBorder='rgba(247,148,29,.4)';vIcon='₿';
+    vTitle=`現在 BTC 機會較明確（BTC ${btcScore}分 vs 台股 ${twScore}分）`;
+    vBody=`BTC 的趨勢結構、進場訊號、衍生品環境目前優於台股。若兩者都想參與，資金配置可以 BTC 為主（6-7 成），台股為輔。`;
+  }else if(diff<=-15){
+    vBg='rgba(56,189,248,.09)';vBorder='rgba(56,189,248,.35)';vIcon='🇹🇼';
+    vTitle=`現在台股機會較明確（台股 ${twScore}分 vs BTC ${btcScore}分）`;
+    vBody=`台股整體趨勢與動能目前優於 BTC。若資金有限，優先尋找台股 VCP 買點；BTC 可以少量持有或等更好的時機。`;
+  }else{
+    vBg='rgba(99,102,241,.09)';vBorder='rgba(99,102,241,.3)';vIcon='⚖️';
+    vTitle=`兩市場機會相當（BTC ${btcScore}分 / 台股 ${twScore}分）`;
+    vBody=`BTC 與台股目前機會評分接近，可以同時關注。依個人風險偏好分配：台股 VCP 進場訊號出現就買台股；BTC 量縮進場條件達成就買 BTC。`;
+  }
+  verdict.style.background=vBg;
+  verdict.style.border=`1px solid ${vBorder}`;
+  verdict.style.borderLeft=`4px solid ${vBorder}`;
+  verdict.innerHTML=`<div style="font-size:.88rem;font-weight:800;color:var(--text);margin-bottom:5px">${vIcon} ${vTitle}</div><div style="font-size:.75rem;color:var(--text2);line-height:1.7">${vBody}</div>`;
+}
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 init();
