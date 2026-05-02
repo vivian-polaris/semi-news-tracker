@@ -236,6 +236,24 @@ footer{text-align:center;padding:18px 0;color:var(--text2);font-size:.66rem;bord
   </div>
 </div>
 
+<!-- ══ ⚖️ 8大市場即時評分比較 ══ -->
+<div id="comparePanel" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:14px">
+  <div style="margin-bottom:14px">
+    <div style="font-size:.9rem;font-weight:800;color:var(--text);letter-spacing:.02em">⚖️ 現在最值得關注哪一個市場？</div>
+    <div style="font-size:.62rem;color:var(--text2);margin-top:3px">8大資產即時評分 · MA趨勢結構＋動能＋特殊訊號綜合計算 · 自動更新</div>
+  </div>
+  <div id="assetGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;margin-bottom:14px">
+    <div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text2);font-size:.75rem"><span class="spin"></span> 載入市場數據中…</div>
+  </div>
+  <div id="cmpVerdict" style="border-radius:8px;padding:12px 16px;font-size:.82rem;line-height:1.75;background:rgba(45,55,72,.3);border:1px solid var(--border)">
+    <span class="spin"></span> 分析中，請稍候…
+  </div>
+  <div style="margin-top:8px;font-size:.57rem;color:rgba(255,255,255,.22);line-height:1.7">
+    資料來源：BTC = Binance API · 台股/黃金/白銀/石油/黃豆/費城半導體 = Yahoo Finance · 穩定幣 = 恐慌貪婪＋資金費率反向計算<br>
+    評分邏輯（0-100）：MA50/150/200 趨勢結構 · 近20日動能 · 距52週高點 · BTC另加衍生品信號 · ≥65=多頭 · 50-64=整理 · &lt;50=弱勢
+  </div>
+</div>
+
 <!-- ── 即時 K 線圖（TradingView，常駐）── -->
 <div class="card" style="margin-bottom:14px;padding:0;overflow:hidden">
   <div style="padding:10px 16px 8px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)">
@@ -826,7 +844,7 @@ async function renderFlowPanel(){
 
   el.innerHTML=`
     <div class="mrow"><span class="mlabel">資金費率（永續合約）</span>
-      <span class="mval" style="color:${frColor}">${fundRate!==null?fundRate.toFixed(4)+'%':'查詢中'} ${frNote}</span></div>
+      <span class="mval" style="color:${frColor}" id="derivFRVal">${fundRate!==null?fundRate.toFixed(4)+'%':'查詢中'} ${frNote}</span></div>
     <div class="mrow"><span class="mlabel">未平倉量 OI</span>
       <span class="mval">${oi?Math.round(oi/1000)+'K BTC':'N/A'}</span></div>
     <div style="height:1px;background:var(--border);margin:8px 0"></div>
@@ -1218,6 +1236,163 @@ async function loadMacroPanel(){
   }).join('');
 }
 
+// ─── 8大資產市場比較 ──────────────────────────────────────────────────────────
+async function loadMarketComparison(btcData){
+  const grid=document.getElementById('assetGrid');
+  const verdict=document.getElementById('cmpVerdict');
+
+  const ASSETS=[
+    {id:'btc',  name:'比特幣',    icon:'₿',  accent:'#f7941d', src:'Binance 即時'},
+    {id:'stbl', name:'穩定幣',    icon:'💵', accent:'#34d399', src:'風險逆向指標'},
+    {id:'twii', name:'台股',      icon:'🇹🇼', accent:'#38bdf8', src:'Yahoo Finance', sym:'%5ETWII', suffix:'點', fmt:'0'},
+    {id:'gold', name:'黃金',      icon:'🥇', accent:'#fbbf24', src:'Yahoo Finance', sym:'GC%3DF',  suffix:'',   fmt:'2'},
+    {id:'silv', name:'白銀',      icon:'🥈', accent:'#94a3b8', src:'Yahoo Finance', sym:'SI%3DF',  suffix:'',   fmt:'2'},
+    {id:'oil',  name:'石油(WTI)', icon:'🛢️', accent:'#f97316', src:'Yahoo Finance', sym:'CL%3DF',  suffix:'',   fmt:'2'},
+    {id:'soy',  name:'黃豆',      icon:'🌱', accent:'#84cc16', src:'Yahoo Finance', sym:'ZS%3DF',  suffix:'',   fmt:'2'},
+    {id:'sox',  name:'費半SOX',   icon:'💻', accent:'#a78bfa', src:'Yahoo Finance', sym:'%5ESOX',  suffix:'',   fmt:'0'},
+  ];
+
+  grid.innerHTML=ASSETS.map(a=>`
+    <div id="cmpCard_${a.id}" style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:10px 12px;min-width:0">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <span style="font-size:1.1rem">${a.icon}</span>
+        <span style="font-size:.72rem;font-weight:700;color:var(--text)">${a.name}</span>
+      </div>
+      <div id="cmpPrice_${a.id}" style="font-size:.82rem;font-weight:700;color:var(--text);margin-bottom:2px"><span class="spin"></span></div>
+      <div id="cmpChg_${a.id}"   style="font-size:.68rem;margin-bottom:6px">—</div>
+      <div id="cmpScore_${a.id}" style="font-size:.7rem;font-weight:700;border-radius:5px;padding:3px 7px;display:inline-block;margin-bottom:5px">—</div>
+      <div id="cmpTrend_${a.id}" style="font-size:.63rem;color:var(--text2);line-height:1.6">—</div>
+      <div style="font-size:.56rem;color:#4b5563;margin-top:4px">來源：${a.src}</div>
+    </div>`).join('');
+
+  function scoreFromCloses(closes){
+    const n=closes.length;
+    let score=50;
+    const price=closes[n-1];
+    const ma20=n>=20?closes.slice(-20).reduce((a,b)=>a+b,0)/20:null;
+    const ma50=n>=50?closes.slice(-50).reduce((a,b)=>a+b,0)/50:null;
+    const ma150=n>=150?closes.slice(-150).reduce((a,b)=>a+b,0)/150:null;
+    const ma200=n>=200?closes.slice(-200).reduce((a,b)=>a+b,0)/200:null;
+    const hi52=Math.max(...closes.slice(-Math.min(252,n)));
+    const distHi=hi52>0?(price-hi52)/hi52*100:0;
+    const p20=closes[n-21]||closes[0];
+    const perf20=p20>0?(price-p20)/p20*100:0;
+    const s2=!!(ma50&&ma150&&ma200&&ma50>ma150&&ma150>ma200&&price>ma50);
+    if(ma20&&price>ma20)score+=4;
+    if(ma50){if(price>ma50)score+=12;else score-=10;}
+    if(ma150){if(price>ma150)score+=8;else score-=5;}
+    if(ma200){if(price>ma200)score+=8;else score-=5;}
+    if(s2)score+=12;
+    if(perf20>7)score+=12;else if(perf20>3)score+=6;else if(perf20<-7)score-=12;else if(perf20<-3)score-=6;
+    if(distHi>-5)score+=8;else if(distHi>-15)score+=3;else if(distHi<-30)score-=10;
+    const trend=s2?'✅ Stage 2 多頭':ma50&&price>ma50?'🟡 MA50 上方整理':'🔴 均線下方，趨勢弱';
+    const statsHtml=`趨勢：${trend}<br>近20日：<span style="color:${perf20>=0?'#34d399':'#f87171'}">${perf20>=0?'+':''}${perf20.toFixed(1)}%</span>　距52週高：<span style="color:${distHi>-15?'#34d399':'#f87171'}">${distHi.toFixed(1)}%</span>`;
+    return {score:Math.max(0,Math.min(100,score)),trend,statsHtml,perf20,distHi};
+  }
+
+  const yahooAssets=ASSETS.filter(a=>a.sym);
+  const yahooPromises=yahooAssets.map(async a=>{
+    try{
+      const url=`https://query1.finance.yahoo.com/v8/finance/chart/${a.sym}?range=12mo&interval=1d`;
+      const res=await fetchTO('https://corsproxy.io/?'+encodeURIComponent(url),14000);
+      if(!res.ok)return{id:a.id,err:true};
+      const j=await res.json();
+      const r=j?.chart?.result?.[0];
+      const meta=r?.meta;
+      const closes=(r?.indicators?.quote?.[0]?.close||[]).filter(v=>v!=null);
+      if(closes.length<20||!meta)return{id:a.id,err:true};
+      const price=meta.regularMarketPrice||closes[closes.length-1];
+      const prev=closes[closes.length-2]||price;
+      const chgPct=prev>0?(price-prev)/prev*100:0;
+      const fmtPrice=parseFloat(a.fmt)===0
+        ?price.toLocaleString('en-US',{maximumFractionDigits:0})
+        :price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+      const scored=scoreFromCloses(closes);
+      return{id:a.id,price:fmtPrice+a.suffix,chgPct,scored,ok:true};
+    }catch(_){return{id:a.id,err:true};}
+  });
+  const yahooResults=await Promise.all(yahooPromises);
+
+  let btcResult={id:'btc',price:'—',chgPct:0,scored:{score:50,trend:'—',statsHtml:'—'},ok:false};
+  try{
+    const price=btcData?.price||0;
+    const prices=btcData?.prices||[];
+    const nowActionText=document.getElementById('nowAction')?.textContent||'';
+    const fgNum=parseInt(document.getElementById('fgNum')?.textContent||'50')||50;
+    const frText=(document.getElementById('derivFRVal')?.textContent||'0').replace('+','').replace('%','');
+    const frVal=parseFloat(frText)||0;
+    if(price>0&&prices.length>=50){
+      const base=scoreFromCloses(prices);
+      let score=base.score;
+      if(nowActionText.includes('可以買入')||nowActionText.includes('低吸'))score+=18;
+      else if(nowActionText.includes('獲利了結'))score-=18;
+      else if(nowActionText.includes('位置對'))score+=8;
+      if(fgNum<20)score+=15;else if(fgNum<35)score+=8;else if(fgNum>80)score-=15;else if(fgNum>65)score-=8;
+      if(frVal<0)score+=10;else if(frVal<0.02)score+=5;else if(frVal>0.1)score-=20;else if(frVal>0.05)score-=10;
+      score=Math.max(0,Math.min(100,score));
+      const chgPct=btcData.ch24!=null?+btcData.ch24:0;
+      btcResult={id:'btc',price:'$'+price.toLocaleString('en-US',{maximumFractionDigits:0}),chgPct,scored:{score,trend:base.trend,statsHtml:base.statsHtml+`<br>恐慌指數：${fgNum}　Funding：${frVal>0?'+':''}${frVal.toFixed(4)}%`},ok:true};
+    }
+  }catch(_){}
+
+  let stblResult={id:'stbl',price:'$1.000',chgPct:0,scored:{score:50,trend:'—',statsHtml:'—'},ok:true};
+  try{
+    const fgNum=parseInt(document.getElementById('fgNum')?.textContent||'50')||50;
+    const frText=(document.getElementById('derivFRVal')?.textContent||'0').replace('+','').replace('%','');
+    const frVal=parseFloat(frText)||0;
+    let stblScore=50;
+    if(fgNum<25)stblScore+=20;else if(fgNum<40)stblScore+=10;else if(fgNum>75)stblScore-=20;else if(fgNum>60)stblScore-=10;
+    if(frVal<0)stblScore+=8;else if(frVal>0.08)stblScore-=15;
+    stblScore=Math.max(20,Math.min(65,stblScore));
+    const stblTrend=stblScore>=55?'🛡️ 市場恐慌，穩定幣避險價值高':stblScore>=45?'🟡 中性，可小部分配置':'📈 市場樂觀，穩定幣機會成本高';
+    stblResult={id:'stbl',price:'$1.000',chgPct:0,scored:{score:stblScore,trend:stblTrend,statsHtml:`趨勢：${stblTrend}<br>恐慌指數：${fgNum}　Funding：${frVal>0?'+':''}${frVal.toFixed(4)}%<br>USDT/USDC 維持 $1 錨定`},ok:true};
+  }catch(_){}
+
+  const resultMap={};
+  yahooResults.forEach(r=>resultMap[r.id]=r);
+  resultMap['btc']=btcResult;
+  resultMap['stbl']=stblResult;
+
+  ASSETS.forEach(a=>{
+    const r=resultMap[a.id];
+    const priceEl=document.getElementById(`cmpPrice_${a.id}`);
+    const chgEl=document.getElementById(`cmpChg_${a.id}`);
+    const scoreEl=document.getElementById(`cmpScore_${a.id}`);
+    const trendEl=document.getElementById(`cmpTrend_${a.id}`);
+    if(!priceEl)return;
+    if(r?.err||!r?.ok){
+      priceEl.textContent='無法取得';chgEl.innerHTML='';scoreEl.textContent='—';trendEl.innerHTML='API 暫時無法連線';return;
+    }
+    priceEl.textContent=r.price;
+    const c=r.chgPct||0;
+    chgEl.innerHTML=`<span style="color:${c>=0?'#34d399':'#f87171'}">${c>=0?'+':''}${c.toFixed(2)}%</span>`;
+    const s=r.scored.score;
+    const col=s>=65?'#34d399':s>=50?'#fbbf24':'#f87171';
+    const bg=s>=65?'rgba(5,150,105,.18)':s>=50?'rgba(202,138,4,.18)':'rgba(220,38,38,.15)';
+    scoreEl.textContent=`評分 ${s} 分`;scoreEl.style.color=col;scoreEl.style.background=bg;
+    trendEl.innerHTML=r.scored.statsHtml;
+    const card=document.getElementById(`cmpCard_${a.id}`);
+    if(card)card.style.borderColor=s>=65?a.accent:'var(--border)';
+  });
+
+  const ranked=ASSETS.map(a=>({...a,score:resultMap[a.id]?.scored?.score??0,ok:resultMap[a.id]?.ok}))
+    .filter(a=>a.ok).sort((a,b)=>b.score-a.score);
+  const top3=ranked.slice(0,3);
+  const medals=['🥇','🥈','🥉'];
+  const topHtml=top3.map((a,i)=>`<span style="font-weight:700;color:${a.accent}">${medals[i]} ${a.name} ${a.score}分</span>`).join('　');
+  const top1=top3[0];
+  let advice='';
+  if(top1?.id==='btc')advice='BTC 現在綜合評分最高，趨勢結構＋衍生品訊號均強，是目前最值得關注的進場機會。';
+  else if(top1?.id==='stbl')advice='目前市場風險偏高，穩定幣相對安全，建議持幣觀望，等待更好的進場時機。';
+  else if(top1?.id==='twii')advice='台股目前 MA 趨勢結構優於其他資產，可優先從 VCPfinder 找台股買點。';
+  else if(top1?.id==='gold')advice='黃金趨勢最強，抗通膨屬性發揮，適合保守型配置或作為避險倉位。';
+  else if(top1?.id==='sox')advice='費城半導體指數領漲，科技股週期向上，可關注相關ETF或半導體個股。';
+  else advice=`${top1?.name||''}目前綜合評分最高，趨勢動能優於其他資產，值得優先關注。`;
+
+  verdict.style.cssText='border-radius:8px;padding:12px 16px;font-size:.82rem;line-height:1.75;background:rgba(45,55,72,.35);border:1px solid var(--border);border-left:4px solid '+(top1?.accent||'#6366f1');
+  verdict.innerHTML=`<div style="font-size:.8rem;font-weight:800;color:var(--text);margin-bottom:7px">📊 8大資產排行：${topHtml}</div><div style="font-size:.73rem;color:var(--text2)">${advice}</div><div style="font-size:.6rem;color:#4b5563;margin-top:6px">評分依據：MA50/150/200 趨勢結構 + Stage 2 判斷 + 近20日動能 + 距52週高 + BTC 另含 F&G、Funding Rate、進場訊號</div>`;
+}
+
 // ─── Main init ────────────────────────────────────────────────────────────────
 async function init(){
   loadFearGreed();
@@ -1237,6 +1412,7 @@ async function init(){
   renderTechPanel(d.prices,d.volumes,d.price);
   renderOnchainPanel(d.prices,d.price);
   renderFlowPanel();
+  loadMarketComparison(d);
 
   setTimeout(init, 5*60*1000);
 }
