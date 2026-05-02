@@ -469,15 +469,15 @@ footer{text-align:center;padding:18px 0;color:var(--text2);font-size:.66rem;bord
   <div class="card-title" style="color:var(--orange)">🔰 給新手：BTC 買賣怎麼看？（傻瓜指南）</div>
   <div style="font-size:.78rem;line-height:1.8;color:var(--text)">
 
-    <div style="margin-bottom:10px;padding:8px 12px;background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.25);border-radius:6px">
-      <strong style="color:#34d399">✅ 什麼時候買？（7條全對才進場）</strong><br>
-      ① 綜合評分 ≥ 70 分<br>
-      ② 主訊號顯示「✅ 買」<br>
-      ③ MA 排列：股價在 MA20 / MA50 / MA200 全部上方（多頭排列）<br>
-      ④ 成交量「縮量」（量縮比 &lt; 60%）= 沒人在賣，等待爆發<br>
-      ⑤ 恐慌貪婪指數 &lt; 50（不是極度貪婪的時候）<br>
-      ⑥ MVRV &lt; 2.5（BTC 還沒被高估）<br>
-      ⑦ 美元（DXY）沒有強力上漲（美元跌 = BTC 漲）
+    <div style="margin-bottom:10px;padding:10px 14px;background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.25);border-radius:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong style="color:#34d399;font-size:.82rem">✅ 什麼時候買？（7條全對才進場）</strong>
+        <span id="chkPassCount" style="font-size:.65rem;color:var(--text2)">計算中…</span>
+      </div>
+      <div id="buyChecklist" style="display:flex;flex-direction:column;gap:5px;font-size:.75rem">
+        <!-- 動態產生，見 updateChecklist() -->
+        <div style="color:var(--text2);font-size:.72rem"><span class="spin"></span> 載入即時數據中…</div>
+      </div>
     </div>
 
     <div style="margin-bottom:10px;padding:8px 12px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:6px">
@@ -1094,6 +1094,10 @@ function renderSignal(price,prices,ma20,ma50,ma100,ma200,rsi,volRatio,distHigh,t
       ⚡ <strong>BTC 操作紀律：</strong>停損 -8% 至 -12%（比台股 VCP 寬）· 單次部位建議不超過總資金 20% · BTC 24/7 交易，停損一定要提前設定好
     </div>
   `;
+
+  // 存全局狀態，供 7條 Checklist 讀取
+  window._btcState={sigType,price,ma20,ma50,ma100,ma200,rsi,volRatio,distHigh,techScore,atrRatio,pivot,stopLoss,target1};
+  if(typeof updateChecklist==='function') updateChecklist();
 }
 
 // ─── Fear & Greed ─────────────────────────────────────────────────────────────
@@ -1532,6 +1536,10 @@ async function init(){
 function manualRefresh(){
   if(_isRefreshing)return;
   refreshSec=300;
+  // 強制清除快取，確保抓取最新數據
+  lsSet('btcData',null);
+  lsSet('fearGreed',null);
+  _dxyCache=null;
   init();
 }
 window.manualRefresh=manualRefresh;
@@ -1585,6 +1593,108 @@ window.loadBTCNews=loadBTCNews;
 window.loadFearGreed=loadFearGreed;
 window.loadGovNews=loadGovNews;
 window.loadDerivatives=loadDerivatives;
+
+// ─── 7條進場 Checklist ────────────────────────────────────────────────────────
+let _dxyCache=null;
+async function fetchDXY(){
+  if(_dxyCache&&Date.now()-_dxyCache.ts<15*60*1000) return _dxyCache.val;
+  try{
+    const url='https://query1.finance.yahoo.com/v8/finance/chart/%5EDXY?range=1mo&interval=1d';
+    const proxy='https://corsproxy.io/?'+encodeURIComponent(url);
+    const r=await fetchTO(proxy,10000);
+    if(!r.ok)return null;
+    const j=await r.json();
+    const closes=j?.chart?.result?.[0]?.indicators?.quote?.[0]?.close?.filter(v=>v!=null)??[];
+    if(closes.length<10)return null;
+    const cur=closes[closes.length-1];
+    const ma20=closes.slice(-20).reduce((a,b)=>a+b,0)/Math.min(closes.length,20);
+    const pct5=(closes[closes.length-6]||cur)>0?(cur-(closes[closes.length-6]||cur))/(closes[closes.length-6]||cur)*100:0;
+    const val={cur,ma20,pct5,above:cur>ma20,rising:pct5>1.5};
+    _dxyCache={val,ts:Date.now()};
+    return val;
+  }catch(_){return null;}
+}
+
+function updateChecklist(){
+  const s=window._btcState;
+  const el=document.getElementById('buyChecklist');
+  if(!el)return;
+
+  const chkRow=(num,label,valStr,met,note='')=>{
+    const col=met===true?'#34d399':met===false?'#f87171':'#9ca3af';
+    const icon=met===true?'✅':met===false?'❌':'⏳';
+    return `<div style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:5px;background:${met===true?'rgba(5,150,105,.08)':met===false?'rgba(220,38,38,.06)':'rgba(45,55,72,.2)'}">
+      <span style="font-size:.85rem;flex-shrink:0">${icon}</span>
+      <span style="flex:1;color:var(--text)">${num} ${label}</span>
+      <span style="font-weight:700;color:${col};white-space:nowrap;font-size:.72rem">${valStr}</span>
+      ${note?`<span style="font-size:.6rem;color:var(--text2);white-space:nowrap">${note}</span>`:''}
+    </div>`;
+  };
+
+  if(!s){el.innerHTML='<div style="color:var(--text2);font-size:.72rem">等待 BTC 數據載入…</div>';return;}
+
+  // ① 綜合評分
+  const totalValEl=document.getElementById('totalScoreVal');
+  const total=totalValEl?parseInt(totalValEl.textContent):null;
+  const c1=total!=null?total>=70:null;
+
+  // ② 主訊號
+  const c2=s.sigType==='BUY';
+
+  // ③ MA 多頭排列
+  const maOk=!!(s.price&&s.ma20&&s.ma50&&s.ma200&&s.price>s.ma20&&s.price>s.ma50&&s.price>s.ma200&&s.ma50>s.ma200);
+  const c3=maOk;
+
+  // ④ 量縮比 < 60%
+  const c4=s.volRatio!=null?s.volRatio<0.6:null;
+
+  // ⑤ F&G < 50
+  const fgNum=parseInt(document.getElementById('fgNum')?.textContent||'999')||999;
+  const c5=fgNum<999?fgNum<50:null;
+
+  // ⑥ 估算 MVRV（price/MA200 近似，MVRV≈price/(200日均價)≈比值）
+  const mvrvApprox=s.ma200>0?(s.price/s.ma200):null;
+  const c6=mvrvApprox!=null?mvrvApprox<2.5:null;
+
+  // 組裝 rows（①-⑤⑥ 同步部分）
+  const rows=[
+    chkRow('①','綜合評分 ≥ 70 分',total!=null?`${total}/100`:'載入中',c1,'（見下方評分板）'),
+    chkRow('②','主訊號顯示「✅ 買」',s.sigType==='BUY'?'✅ 買入':s.sigType==='SELL'?'🔴 賣出':'⏳ 等待',c2),
+    chkRow('③','均線多頭排列（MA20>MA50>MA200）',
+      s.ma50&&s.ma200?`MA50 $${Math.round(s.ma50).toLocaleString()} / MA200 $${Math.round(s.ma200).toLocaleString()}`:'-',c3),
+    chkRow('④','量縮比 < 60%（地量）',
+      s.volRatio!=null?`現在 ${(s.volRatio*100).toFixed(0)}%`:'載入中',c4,'（過去5日/20日平均）'),
+    chkRow('⑤','恐慌貪婪 < 50',fgNum<999?`現在 ${fgNum}`:'載入中',c5),
+    chkRow('⑥','估算 MVRV < 2.5',mvrvApprox!=null?`≈${mvrvApprox.toFixed(2)}（現價/MA200）`:'-',c6,'（近似值）'),
+    `<div id="chkRow7">${chkRow('⑦','美元(DXY)非強勢上漲','載入中…',null)}</div>`,
+  ];
+  el.innerHTML=rows.join('');
+
+  // 即時計算通過條數（先不算⑦）
+  const passed=[c1,c2,c3,c4,c5,c6].filter(v=>v===true).length;
+  const passEl=document.getElementById('chkPassCount');
+  if(passEl) passEl.textContent=`${passed}/6 條達標（第⑦條更新中）`;
+
+  // ⑦ DXY 非同步
+  fetchDXY().then(dxy=>{
+    const row7=document.getElementById('chkRow7');
+    if(!row7)return;
+    let c7,valStr;
+    if(!dxy){c7=null;valStr='無法取得（Yahoo）';}
+    else{
+      c7=!dxy.rising; // 美元非強勢上漲
+      valStr=`DXY ${dxy.cur.toFixed(2)}（5日${dxy.pct5>=0?'+':''}${dxy.pct5.toFixed(1)}%）`;
+    }
+    row7.innerHTML=chkRow('⑦','美元(DXY)非強勢上漲',valStr,c7,'（DXY漲>+1.5%=警示）');
+    // 更新通過數（含⑦）
+    const total7=[c1,c2,c3,c4,c5,c6,c7].filter(v=>v===true).length;
+    const passEl2=document.getElementById('chkPassCount');
+    if(passEl2){
+      const col=total7>=6?'#34d399':total7>=4?'#fbbf24':'#f87171';
+      passEl2.innerHTML=`<span style="color:${col};font-weight:700">${total7}/7 條達標</span>`;
+    }
+  });
+}
 
 // ─── 台股 vs BTC 市場機會比較 ─────────────────────────────────────────────────
 async function loadMarketComparison(btcData){
