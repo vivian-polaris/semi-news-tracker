@@ -301,7 +301,7 @@ footer{text-align:center;padding:18px 0;color:var(--text2);font-size:.66rem;bord
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
       <span class="badge badge-green" id="govStatusBadge">🔒 持有中</span>
-      <button class="refresh-btn" onclick="loadGovNews()">↻ 最新動態</button>
+      <button class="refresh-btn" onclick="loadGovNews(true)">↻ 最新動態</button>
     </div>
   </div>
 
@@ -353,7 +353,7 @@ footer{text-align:center;padding:18px 0;color:var(--text2);font-size:.66rem;bord
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-title" style="color:var(--orange);margin:0">₿ BTC 市場快訊</div>
-      <button class="refresh-btn" onclick="loadBTCNews()">↻ 刷新</button>
+      <button class="refresh-btn" onclick="loadBTCNews(window._btcState?.price||null,true)">↻ 刷新</button>
     </div>
     <div class="news-body loading" id="btcNewsBody">載入中...</div>
     <div class="news-time" id="btcNewsTime"></div>
@@ -1141,15 +1141,16 @@ async function loadFearGreed(){
 }
 
 // ─── BTC News (AI) ───────────────────────────────────────────────────────────
-async function loadBTCNews(livePrice=null){
+async function loadBTCNews(livePrice=null, forceRefresh=false){
   const bEl=document.getElementById('btcNewsBody');
   const tEl=document.getElementById('btcNewsTime');
-  const CACHE_TTL=2*60*60*1000; // 2小時快取
+  const CACHE_TTL=2*60*60*1000;
   const cached=lsGet('btcNews');
-  if(cached&&Date.now()-cached.ts<CACHE_TTL&&!livePrice){
+  if(!forceRefresh&&cached&&Date.now()-cached.ts<CACHE_TTL){
     bEl.className='news-body';bEl.textContent=cached.text;
     tEl.textContent=cacheAgeStr(cached.ts);return;
   }
+  if(forceRefresh) lsSet('btcNews',null);
   bEl.className='news-body loading';bEl.textContent='正在抓取 BTC 最新消息...';
   let items=[];
   try{
@@ -1157,16 +1158,26 @@ async function loadBTCNews(livePrice=null){
     const r=await fetchTO('https://api.allorigins.win/raw?url='+encodeURIComponent(rssUrl),12000);
     if(r.ok){const xml=await r.text();items=parseRSSXml(xml);}
   }catch(_){}
-  const headlines=items.slice(0,10).map((x,i)=>`${i+1}. ${x.title}`).join('\n');
-  // 注入即時價格，防止 AI 用訓練資料的舊數字
-  const priceNote=livePrice
-    ?`⚠️ 重要：本頁即時數據顯示 BTC 當前價格為 $${Math.round(livePrice).toLocaleString()} 美元（來自 Binance API）。請以此為準，絕對不要使用訓練資料中的舊價格。`
-    :'';
-  const prompt=`你是 BTC 加密貨幣分析師。根據以下最新消息，用繁體中文寫 8-10 條市場快訊（每條一行，加編號）。重點包括：BTC 價格走勢、美國政府比特幣儲備動向、現貨 ETF 流量、法規政策、重大事件。
-${priceNote}
 
-最新相關新聞標題（今日）：
-${headlines||'（無法取得最新新聞，請根據已知資訊分析，但價格以上方即時數據為準）'}`;
+  // 若 RSS 完全失敗，不呼叫 AI（避免 AI 用訓練資料瞎說）
+  if(!items.length&&!livePrice){
+    bEl.className='news-body';
+    bEl.textContent='⚠️ 無法取得最新新聞標題（RSS 故障），請點 ↻ 稍後重試。避免 AI 提供錯誤舊資料。';
+    tEl.textContent='';return;
+  }
+
+  const now=new Date();
+  const today=`${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+  const price=livePrice||window._btcState?.price;
+  const priceNote=price?`⚠️ 即時數據（Binance）：BTC 現價 $${Math.round(price).toLocaleString()} 美元。此為真實即時數字，請以此為準，禁止使用訓練資料中任何不同的價格數字。`:'';
+  const headlines=items.slice(0,10).map((x,i)=>`${i+1}. ${x.title}`).join('\n');
+
+  const prompt=`你是 BTC 加密貨幣分析師。今天日期：${today}。根據以下今日最新新聞，用繁體中文寫 8-10 條市場快訊（每條一行，加編號）。
+${priceNote}
+重點：BTC 價格走勢、美國政府比特幣儲備動向、現貨 ETF 流量、法規政策、重大事件。不要捏造或猜測任何數字，只報導新聞事實。
+
+今日新聞標題：
+${headlines}`;
   try{
     const text=await callAI(prompt);
     const clean=stripMd(text);
@@ -1297,15 +1308,16 @@ async function loadDerivatives(){
 }
 
 // ─── Gov Reserve News (AI) ───────────────────────────────────────────────────
-async function loadGovNews(){
+async function loadGovNews(forceRefresh=false){
   const bEl=document.getElementById('govNewsBody');
   const tEl=document.getElementById('govNewsTime');
   const CACHE_TTL=4*60*60*1000;
   const cached=lsGet('govNews');
-  if(cached&&Date.now()-cached.ts<CACHE_TTL){
+  if(!forceRefresh&&cached&&Date.now()-cached.ts<CACHE_TTL){
     bEl.className='news-body';bEl.textContent=cached.text;
     tEl.textContent=cacheAgeStr(cached.ts);return;
   }
+  if(forceRefresh) lsSet('govNews',null);
   bEl.className='news-body loading';bEl.textContent='查詢美國政府 BTC 最新動向...';
   let items=[];
   try{
@@ -1313,13 +1325,28 @@ async function loadGovNews(){
     const r=await fetchTO('https://api.allorigins.win/raw?url='+encodeURIComponent(rssUrl),12000);
     if(r.ok){const xml=await r.text();items=parseRSSXml(xml);}
   }catch(_){}
+
+  // 若 RSS 完全失敗，不呼叫 AI（避免 AI 用訓練資料瞎說）
+  if(!items.length){
+    bEl.className='news-body';
+    bEl.textContent='⚠️ 無法取得最新 SBR 新聞（RSS 故障），請點「最新動態」稍後重試。避免 AI 提供錯誤舊資料。';
+    tEl.textContent='';return;
+  }
+
+  const now=new Date();
+  const today=`${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+  const price=window._btcState?.price;
+  const priceNote=price?`BTC 即時現價（Binance）：$${Math.round(price).toLocaleString()} 美元。`:'';
   const headlines=items.slice(0,8).map((x,i)=>`${i+1}. ${x.title}`).join('\n');
-  const prompt=`你是加密貨幣政策分析師。根據以下新聞，分析美國戰略比特幣儲備（SBR）最新動向（繁體中文，5-7條，每條一行，加編號）。重點：持有量變化、立法進展、其他國家跟進、對 BTC 供需的影響。
 
-背景知識：美國 2025/3/6 成立 SBR，持有約 198,012 BTC（財政部扣押），永不出售。國會有草案允許財政部再購入 100 萬枚。
+  const prompt=`你是加密貨幣政策分析師。今天日期：${today}。${priceNote}
+根據以下今日新聞，分析美國戰略比特幣儲備（SBR）最新動向（繁體中文，5-7條，每條一行，加編號）。
+重點：持有量變化、立法進展、其他國家跟進、對 BTC 供需的影響。只報導新聞事實，不要捏造或猜測數字。
 
-最新新聞：
-${headlines||'請根據你的知識說明 2025 年 SBR 最新情況'}`;
+背景：美國 2025/3/6 成立 SBR，持有約 198,012 BTC（財政部扣押），永不出售。國會有草案允許購入 100 萬枚。
+
+今日新聞：
+${headlines}`;
   try{
     const text=await callAI(prompt);
     const clean=stripMd(text);
@@ -1509,6 +1536,7 @@ async function init(){
   loadFearGreed();
   loadMacroPanel();
   loadDerivatives();
+  fetchTWDRate();
 
   // Primary data (blocking — needed for all panels)
   const d=await fetchBTCData();
@@ -1588,11 +1616,19 @@ setInterval(updateClock,1000);
 updateClock();
 
 // ─── 台幣換算 ─────────────────────────────────────────────────────────────────
+let _twdRate=32.5; // 預設值，fetchTWDRate 會覆蓋
+async function fetchTWDRate(){
+  try{
+    const r=await fetchTO('https://open.er-api.com/v6/latest/USD',8000);
+    if(!r.ok)return;
+    const j=await r.json();
+    if(j?.rates?.TWD) _twdRate=+j.rates.TWD.toFixed(2);
+  }catch(_){}
+}
 function updateTWDPrice(usdPrice){
-  const TWD_RATE=32.5; // 台幣匯率（近似值）
-  const twd=Math.round(usdPrice*TWD_RATE);
+  const twd=Math.round(usdPrice*_twdRate);
   const el=document.getElementById('btcTwdPrice');
-  if(el) el.textContent=`≈ 台幣 ${twd.toLocaleString()} 元 / 1 BTC（匯率 ~${TWD_RATE}）`;
+  if(el) el.textContent=`≈ 台幣 ${twd.toLocaleString()} 元 / 1 BTC（USD/TWD ${_twdRate}）`;
 }
 
 // ─── Expose for buttons ───────────────────────────────────────────────────────
@@ -1600,6 +1636,7 @@ window.loadBTCNews=loadBTCNews;
 window.loadFearGreed=loadFearGreed;
 window.loadGovNews=loadGovNews;
 window.loadDerivatives=loadDerivatives;
+window.fetchTWDRate=fetchTWDRate;
 
 // ─── 7條進場 Checklist ────────────────────────────────────────────────────────
 let _dxyCache=null;
