@@ -1240,6 +1240,8 @@ async function loadMacroPanel(){
 async function loadMarketComparison(btcData){
   const grid=document.getElementById('assetGrid');
   const verdict=document.getElementById('cmpVerdict');
+  // Force 8-column single row regardless of cached HTML style
+  if(grid) grid.style.cssText='display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin-bottom:14px;overflow-x:auto';
 
   const ASSETS=[
     {id:'btc',  name:'比特幣',    icon:'₿',  accent:'#f7941d', src:'Binance 即時'},
