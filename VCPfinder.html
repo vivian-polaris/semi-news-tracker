@@ -3948,6 +3948,33 @@ async function lookupStock() {
     actionNote=vcpData.vcpPivot?`距突破點 $${vcpData.vcpPivot} 尚差 ${Math.abs(vcpData.distVcpPivot??0)}%，形態未成熟`:'技術形態不符 VCP 條件';
   }
 
+  // ── 明確買賣訊號計算 ─────────────────────────────────────────────────
+  let buySignal, sellSignal;
+
+  // 買訊號
+  if(isRsiOverbought||isFomo||isDistribution||(lkBothSell&&buyScore<60)){
+    buySignal={emoji:'🔴',label:'現在不能買',sub:isRsiOverbought?'RSI超買（>80）':isFomo?'散戶FOMO量比>3':'技術或籌碼異常',color:'#f87171',bg:'rgba(220,38,38,.12)',border:'#dc2626'};
+  }else if(lkBothBuy&&buyScore>=70&&vcpData.stage2&&isNearBreak){
+    buySignal={emoji:'🟢',label:'現在可以買',sub:'外資投信同買＋VCP強勢＋接近突破',color:'#34d399',bg:'rgba(5,150,105,.18)',border:'#059669'};
+  }else if((lkBothBuy&&buyScore>=60)||(lkOneBuy&&buyScore>=65&&isNearBreak)){
+    buySignal={emoji:'✅',label:'可以考慮買',sub:'機構買超＋VCP符合條件',color:'#fff',bg:'rgba(5,150,105,.10)',border:'#34d399'};
+  }else if(vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>=0&&vcpData.distVcpPivot<=3){
+    buySignal={emoji:'⏳',label:'突破了，等回踩',sub:'不追當下，等縮量回踩再買',color:'#9ca3af',bg:'rgba(113,113,122,.08)',border:'#6b7280'};
+  }else{
+    buySignal={emoji:'⏳',label:'現在不買',sub:'等待更好的進場時機',color:'#9ca3af',bg:'rgba(113,113,122,.08)',border:'#6b7280'};
+  }
+
+  // 賣訊號
+  if((isRsiOverbought||sellScore>=65)&&lkBothSell){
+    sellSignal={emoji:'🔴',label:'現在應該賣',sub:'外資投信雙賣＋超買訊號齊發',color:'#f87171',bg:'rgba(220,38,38,.18)',border:'#dc2626'};
+  }else if(isRsiOverbought||(isOverbought&&sellScore>=55)){
+    sellSignal={emoji:'🔴',label:'建議賣出',sub:isRsiOverbought?`RSI ${vcpData.rsi} 嚴重超買`:`超突破點+${vcpData.distVcpPivot}%，過熱`,color:'#f87171',bg:'rgba(220,38,38,.12)',border:'#dc2626'};
+  }else if(sellScore>=55||lkBothSell){
+    sellSignal={emoji:'⚠️',label:'考慮減碼',sub:lkBothSell?'外資投信雙賣超':`賣出壓力 ${sellScore}分`,color:'#fbbf24',bg:'rgba(202,138,4,.12)',border:'#d97706'};
+  }else{
+    sellSignal={emoji:'⬜',label:'繼續持有',sub:'尚無賣出訊號',color:'#9ca3af',bg:'rgba(113,113,122,.06)',border:'#6b7280'};
+  }
+
   res.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
       <span class="tc" style="font-size:1rem">${stockInfo.code}</span>
@@ -3955,8 +3982,26 @@ async function lookupStock() {
       ${stockInfo.sector ? `<span class="tsec">${escH(stockInfo.sector)}</span>` : ''}
       <a href="${tv}" target="_blank" class="tv-btn">TV</a>
     </div>
+
+    <!-- ── 明確買賣訊號（最顯眼）── -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div style="background:${buySignal.bg};border:2px solid ${buySignal.border};border-radius:12px;padding:12px;text-align:center">
+        <div style="font-size:.62rem;font-weight:800;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">現在可買？</div>
+        <div style="font-size:1.5rem;line-height:1.1;margin-bottom:2px">${buySignal.emoji}</div>
+        <div style="font-size:.88rem;font-weight:800;color:${buySignal.color};line-height:1.2">${buySignal.label}</div>
+        <div style="font-size:.58rem;color:var(--text2);margin-top:4px;line-height:1.4">${buySignal.sub}</div>
+      </div>
+      <div style="background:${sellSignal.bg};border:2px solid ${sellSignal.border};border-radius:12px;padding:12px;text-align:center">
+        <div style="font-size:.62rem;font-weight:800;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">現在可賣？</div>
+        <div style="font-size:1.5rem;line-height:1.1;margin-bottom:2px">${sellSignal.emoji}</div>
+        <div style="font-size:.88rem;font-weight:800;color:${sellSignal.color};line-height:1.2">${sellSignal.label}</div>
+        <div style="font-size:.58rem;color:var(--text2);margin-top:4px;line-height:1.4">${sellSignal.sub}</div>
+      </div>
+    </div>
+
+    <!-- 詳細進場說明 -->
     <div style="text-align:center;padding:10px 16px;border-radius:8px;background:${actionBg};margin-bottom:10px;border:1.5px solid ${actionColor}40">
-      <div style="font-size:1.15rem;font-weight:800;color:${actionColor}">${actionLabel}</div>
+      <div style="font-size:1.05rem;font-weight:800;color:${actionColor}">${actionLabel}</div>
       <div style="font-size:.7rem;color:var(--text2);margin-top:4px">${escH(actionNote)}</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
