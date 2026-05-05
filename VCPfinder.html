@@ -3519,7 +3519,7 @@ function renderTable(){
         <th style="padding:4px 8px;text-align:right">現價</th>
         <th style="padding:4px 8px;text-align:right">買點</th>
         <th style="padding:4px 8px;text-align:right">停損</th>
-        <th style="padding:4px 8px;text-align:center">進場訊號</th>
+        <th style="padding:4px 8px;text-align:center">VCP回踩點</th>
         <th style="padding:4px 8px;text-align:center">籌碼</th>
         <th style="padding:4px 8px;text-align:center">隔日沖分</th>
       </tr></thead>
@@ -3541,7 +3541,7 @@ function renderTable(){
           <td style="padding:8px 8px;text-align:right;font-weight:600">$${v.price}</td>
           <td style="padding:8px 8px;text-align:right;color:var(--text2)">$${v.vcpPivot||'—'}</td>
           <td style="padding:8px 8px;text-align:right;color:#f87171">${stop?'$'+stop:'—'}</td>
-          <td style="padding:8px 8px;text-align:center;font-size:.7rem;font-weight:800;color:${v.pbBuy?.strong?'#34d399':'#fbbf24'}">${v.pbBuy?.strong?'✅ 買：回踩地量':'⏳ 不買：等量再縮'}</td>
+          <td style="padding:8px 8px;text-align:center;font-size:.62rem;font-weight:700;color:${v.pbBuy?.strong?'#34d399':v.pbBuy?'#fbbf24':'#9ca3af'}">${v.pbBuy?.strong?'✅ 地量回踩':v.pbBuy?'⏳ 縮量中':'— 整理中'}<br><span style="font-size:.55rem;color:var(--text2);font-weight:400">VCP中線買點</span></td>
           <td style="padding:8px 8px;text-align:center;font-size:.68rem;font-weight:800;color:${dtChipCol}">${dtChipTxt}</td>
           <td style="padding:8px 8px;text-align:center;font-weight:800;color:${scoreCol}">${s}分</td>
         </tr>`;
