@@ -449,6 +449,57 @@ footer a:hover{text-decoration:underline}
   .sec-body.open .news-card,.sec-body.open .inv-card{border-top-left-radius:0!important;border-top-right-radius:0!important;border-top:none!important}
   .sec-toggle{border-bottom-left-radius:0;border-bottom-right-radius:0;margin-bottom:0}
   .sec-toggle+.sec-body.open{margin-bottom:8px}
+
+  /* ── 手機：情緒面板 ── */
+  #sentimentPanel{
+    flex-direction:column!important;
+    align-items:flex-start!important;
+    gap:8px!important;
+    padding:10px 12px!important;
+  }
+  #sentimentPanel>div[style*="width:1px"]{display:none!important} /* 隱藏垂直分隔線 */
+  #sentimentPanel .sent-btn-group{
+    display:flex!important;
+    flex-wrap:wrap!important;
+    gap:5px!important;
+    width:100%!important;
+  }
+  #sentimentPanel button{
+    font-size:.65rem!important;
+    padding:3px 8px!important;
+  }
+  #btcPrice{font-size:.78rem!important}
+  #btcChange{font-size:.68rem!important}
+
+  /* ── 手機：個股快查評分卡（3欄→2欄） ── */
+  #lookupResult [style*="grid-template-columns:1fr 1fr 1fr"]{
+    grid-template-columns:1fr 1fr!important;
+  }
+  #lookupResult [style*="grid-template-columns:1fr 1fr"]{
+    grid-template-columns:1fr!important;
+  }
+  #lookupResult .sum-card{
+    padding:8px 6px!important;
+  }
+  #lookupResult [style*="font-size:1.6rem"]{
+    font-size:1.3rem!important;
+  }
+  #lookupResult [style*="font-size:1.4rem"]{
+    font-size:1.2rem!important;
+  }
+  /* 進場訊號區塊緊湊 */
+  #lookupResult [style*="font-size:1.15rem"]{
+    font-size:.95rem!important;
+  }
+  #lookupResult [style*="font-size:.7rem;color:var(--text2)"]{
+    font-size:.62rem!important;
+  }
+  /* 底部資訊欄換行顯示 */
+  #lookupResult [style*="font-size:.68rem;color:var(--text2);line-height"]{
+    font-size:.6rem!important;
+    line-height:1.8!important;
+    word-break:break-all!important;
+  }
 }
 </style>
 </head>
@@ -476,11 +527,11 @@ footer a:hover{text-decoration:underline}
   </div>
   <div style="width:1px;height:24px;background:var(--border)"></div>
   <!-- Manual Sentiment Toggle -->
-  <div style="display:flex;align-items:center;gap:6px">
-    <span style="font-size:.62rem;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.06em">大盤情緒</span>
-    <button id="sentBtn_risk_on" onclick="setSentiment('risk_on')" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--tag);color:var(--text);font-size:.72rem;cursor:pointer;font-weight:700">🟢 風險開啟</button>
-    <button id="sentBtn_neutral" onclick="setSentiment('neutral')" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--tag);color:var(--text);font-size:.72rem;cursor:pointer;font-weight:700">🟡 中性</button>
-    <button id="sentBtn_risk_off" onclick="setSentiment('risk_off')" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--tag);color:var(--text);font-size:.72rem;cursor:pointer;font-weight:700">🔴 風險關閉</button>
+  <div class="sent-btn-group" style="display:flex;align-items:center;gap:6px">
+    <span style="font-size:.62rem;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">大盤情緒</span>
+    <button id="sentBtn_risk_on" onclick="setSentiment('risk_on')" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--tag);color:var(--text);font-size:.72rem;cursor:pointer;font-weight:700;white-space:nowrap">🟢 風險開啟</button>
+    <button id="sentBtn_neutral" onclick="setSentiment('neutral')" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--tag);color:var(--text);font-size:.72rem;cursor:pointer;font-weight:700;white-space:nowrap">🟡 中性</button>
+    <button id="sentBtn_risk_off" onclick="setSentiment('risk_off')" style="padding:4px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--tag);color:var(--text);font-size:.72rem;cursor:pointer;font-weight:700;white-space:nowrap">🔴 風險關閉</button>
   </div>
   <div style="width:1px;height:24px;background:var(--border)"></div>
   <!-- Monitor Mode -->
