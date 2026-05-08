@@ -3772,6 +3772,32 @@ function sparkline(closes,w=80,h=28){
 
 // ─── Init ─────────────────────────────────────────────────────────────────
 
+// ── 今日盤況即時查詢（Yahoo Finance v7 quote）──
+async function fetchFullQuote(sym) {
+  const proxies = ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url=', 'https://api.codetabs.com/v1/proxy?quest='];
+  const base = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(sym)}&_t=${Date.now()}`;
+  for (const px of proxies) {
+    try {
+      const r = await fetchTO(px + encodeURIComponent(base), 5000);
+      if (!r.ok) continue;
+      const j = await r.json();
+      const q = j?.quoteResponse?.result?.[0];
+      if (!q) continue;
+      return {
+        price: q.regularMarketPrice ?? null,
+        open: q.regularMarketOpen ?? null,
+        high: q.regularMarketDayHigh ?? null,
+        low: q.regularMarketDayLow ?? null,
+        change: q.regularMarketChange ?? null,
+        changePct: q.regularMarketChangePercent ?? null,
+        volume: q.regularMarketVolume ?? null,
+        prevClose: q.regularMarketPreviousClose ?? null
+      };
+    } catch (_) {}
+  }
+  return null;
+}
+
 // 個股快查
 async function lookupStock() {
   const raw = document.getElementById('lookupInput').value.trim();
@@ -3846,11 +3872,28 @@ async function lookupStock() {
     return;
   }
 
+  // ── 今日盤況（即時查詢）──
+  const sym = `${stockInfo.code}.${stockInfo.ex === 'TWO' ? 'TWO' : 'TW'}`;
+  const fullQuote = await fetchFullQuote(sym);
+  const todayPrice    = fullQuote?.price    ?? null;
+  const todayOpen     = fullQuote?.open     ?? null;
+  const todayHigh     = fullQuote?.high     ?? null;
+  const todayLow      = fullQuote?.low      ?? null;
+  const todayChange   = fullQuote?.change   ?? null;
+  const todayChangePct = fullQuote?.changePct ?? null;
+  const todayVolume   = fullQuote?.volume   ?? null;
+  const todayPrevClose = fullQuote?.prevClose ?? null;
+  let todayBorderLeft = '3px solid var(--border)';
+  if (todayChangePct !== null && todayChangePct <= -5) todayBorderLeft = '3px solid #f87171';
+  else if (todayChangePct !== null && todayChangePct <= -3) todayBorderLeft = '3px solid #f97316';
+  else if (todayChangePct !== null && todayChangePct >= 5) todayBorderLeft = '3px solid #fbbf24';
+
   const buyScore = vcpData.score;
 
   const lkChips = chipsMap[stockInfo.code] || null;
   const lkF = lkChips ? parseChipNum(lkChips.foreignNet) ?? 0 : null;
   const lkT = lkChips ? parseChipNum(lkChips.trustNet) ?? 0 : null;
+  const lkD = lkChips ? parseChipNum(lkChips.dealerNet) ?? null : null;
   const lkBothBuy  = lkF !== null && lkF > 0 && lkT !== null && lkT > 0;
   const lkOneBuy   = lkF !== null && lkT !== null && (lkF > 0 || lkT > 0) && !lkBothBuy;
   const lkBothSell = lkF !== null && lkF < 0 && lkT !== null && lkT < 0;
@@ -3979,6 +4022,18 @@ async function lookupStock() {
     buySignal={emoji:'⏳',label:'現在不買',sub:'等待更好的進場時機',color:'#9ca3af',bg:'rgba(113,113,122,.08)',border:'#6b7280'};
   }
 
+  // 今日大跌 → 覆蓋買訊號
+  if (todayChangePct !== null && todayChangePct <= -3) {
+    buySignal = {
+      emoji: '⚠️',
+      label: '今日大跌，暫緩',
+      sub: `今日跌 ${todayChangePct.toFixed(1)}%，VCP為昨日資料，請等穩定再評估`,
+      color: '#f97316',
+      bg: 'rgba(249,115,22,.15)',
+      border: '#f97316'
+    };
+  }
+
   // 賣訊號
   if((isRsiOverbought||sellScore>=65)&&lkBothSell){
     sellSignal={emoji:'🔴',label:'現在應該賣',sub:'外資投信雙賣＋超買訊號齊發',color:'#f87171',bg:'rgba(220,38,38,.18)',border:'#dc2626'};
@@ -3997,6 +4052,35 @@ async function lookupStock() {
       ${stockInfo.sector ? `<span class="tsec">${escH(stockInfo.sector)}</span>` : ''}
       <a href="${tv}" target="_blank" class="tv-btn">TV</a>
     </div>
+
+    <!-- ── 今日盤況 ── -->
+    ${fullQuote ? `
+    <div style="background:var(--tag);border-radius:10px;padding:10px 14px;margin-bottom:10px;border-left:${todayBorderLeft}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:.65rem;font-weight:800;color:var(--text2)">今日盤況</span>
+        <span style="font-size:.6rem;color:var(--text2)">即時查詢</span>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+        <span style="font-size:1.3rem;font-weight:700;color:var(--text)">${todayPrice !== null ? todayPrice.toFixed(2) : '—'}</span>
+        ${todayChange !== null ? `<span style="font-size:.82rem;font-weight:600;color:${todayChange >= 0 ? '#34d399' : '#f87171'}">${todayChange >= 0 ? '+' : ''}${todayChange.toFixed(2)}</span>` : ''}
+        ${todayChangePct !== null ? `<span style="font-size:.75rem;font-weight:600;color:${todayChangePct >= 0 ? '#34d399' : '#f87171'}">(${todayChangePct >= 0 ? '+' : ''}${todayChangePct.toFixed(1)}%)</span>` : ''}
+      </div>
+      <div style="font-size:.65rem;color:var(--text2);margin-bottom:2px">
+        開 ${todayOpen !== null ? todayOpen.toFixed(2) : '—'}　高 ${todayHigh !== null ? todayHigh.toFixed(2) : '—'}　低 ${todayLow !== null ? todayLow.toFixed(2) : '—'}　昨收 ${todayPrevClose !== null ? todayPrevClose.toFixed(2) : '—'}
+      </div>
+      <div style="font-size:.65rem;color:var(--text2)">
+        今日量 ${todayVolume !== null ? Math.round(todayVolume / 1000).toLocaleString() + ' 張' : '—'}
+      </div>
+      ${todayChangePct !== null && todayChangePct <= -3 ? `
+      <div style="margin-top:6px;font-size:.68rem;color:${todayChangePct <= -5 ? '#f87171' : '#f97316'};font-weight:600">
+        ⚠️ 今日下跌 ${Math.abs(todayChangePct).toFixed(1)}%，VCP訊號為昨日收盤資料，建議謹慎評估後再進場
+      </div>` : ''}
+    </div>
+    ` : `
+    <div style="background:var(--tag);border-radius:10px;padding:10px 14px;margin-bottom:10px;border-left:3px solid var(--border)">
+      <div style="font-size:.65rem;color:var(--text2);font-style:italic">盤中資料暫無（非交易時段或網路限制）</div>
+    </div>
+    `}
 
     <!-- ── 明確買賣訊號（最顯眼）── -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
@@ -4076,6 +4160,29 @@ async function lookupStock() {
         ${lkF!==null?`｜ 外資 <strong style="color:${lkF>0?'#34d399':'#f87171'}">${lkF>0?'+':''}${lkF}千股</strong>`:''}
         ${lkT!==null?`｜ 投信 <strong style="color:${lkT>0?'#34d399':'#f87171'}">${lkT>0?'+':''}${lkT}千股</strong>`:''}
       </div>
+    </div>
+
+    <!-- ── 昨日籌碼 ── -->
+    <div style="background:var(--tag);border-radius:10px;padding:10px 14px;margin-top:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:.65rem;font-weight:800;color:var(--text2)">昨日籌碼</span>
+        <span style="font-size:.6rem;color:var(--text2)">T86・盤後更新</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px">
+        <div style="text-align:center">
+          <div style="font-size:.58rem;color:var(--text2)">外資</div>
+          <div style="font-size:.85rem;font-weight:700;color:${lkF !== null ? (lkF > 0 ? '#34d399' : lkF < 0 ? '#f87171' : 'var(--text)') : 'var(--text2)'}">${lkF !== null ? (lkF > 0 ? '+' : '') + lkF + '千股' : '—'}</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:.58rem;color:var(--text2)">投信</div>
+          <div style="font-size:.85rem;font-weight:700;color:${lkT !== null ? (lkT > 0 ? '#34d399' : lkT < 0 ? '#f87171' : 'var(--text)') : 'var(--text2)'}">${lkT !== null ? (lkT > 0 ? '+' : '') + lkT + '千股' : '—'}</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:.58rem;color:var(--text2)">自營</div>
+          <div style="font-size:.85rem;font-weight:700;color:${lkD !== null ? (lkD > 0 ? '#34d399' : lkD < 0 ? '#f87171' : 'var(--text)') : 'var(--text2)'}">${lkD !== null ? (lkD > 0 ? '+' : '') + lkD + '千股' : '—'}</div>
+        </div>
+      </div>
+      <div style="font-size:.6rem;color:var(--text2)">⚠️ 以上為昨日 T86 收盤後數據，今日籌碼約 17:30 更新，盤中僅供參考</div>
     </div>`;
 }
 (function init(){
