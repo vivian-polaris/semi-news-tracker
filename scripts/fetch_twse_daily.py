@@ -576,6 +576,16 @@ def main():
         existing_otc=existing_otc_price,
     )
 
+    # 用 TWSE/TPEX 的中文名覆蓋 Yahoo Finance 回傳的英文名
+    name_map = {s['code']: s['name'] for s in tse_stocks + otc_stocks if s.get('name') and s['name'] != s['code']}
+    for code, data in tse_prices.items():
+        if code in name_map:
+            data['n'] = name_map[code]
+    for code, data in otc_prices.items():
+        if code in name_map:
+            data['n'] = name_map[code]
+    print(f'  Chinese names applied: {len(name_map)} stocks')
+
     with open('stocks_tse.json', 'w', encoding='utf-8') as f:
         json.dump({'date': date_str, 'stocks': tse_prices}, f, ensure_ascii=False, separators=(',', ':'))
     with open('stocks_otc.json', 'w', encoding='utf-8') as f:
@@ -598,7 +608,7 @@ def main():
         'date':         date_str,
         'sectors':      sectors,
         'tseStocks':    tse_stocks or [{'code': code, 'name': info['n']} for code, info in tse_prices.items()],
-        'otcStocks':    otc_stocks,
+        'otcStocks':    otc_stocks or [{'code': c, 'name': d.get('n', c)} for c, d in otc_prices.items()],
         'chips':        chips,
         'bwibbu':       bwibbu,
         'monthRevenue': month_revenue,

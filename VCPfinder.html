@@ -2837,7 +2837,7 @@ async function startScan(){
       if(!data)failed++;
       if(vcp&&vcp.score>=40) vcpFound++;
       // 用 Yahoo 回傳的中文名補全（全掃模式股票清單可能只有代號）
-      if(data?._yahooName&&(s.name===s.code||!s.name||s.name.length<2)&&!/[一-鿿]/.test(s.name)){
+      if(data?._yahooName&&/[一-鿿]/.test(data._yahooName)&&(s.name===s.code||!s.name||s.name.length<2)){
         s.name=data._yahooName;
       }
       const fund=quickFund(sym);  // 即時，讀本地 twseDailyMap
