@@ -294,11 +294,21 @@ tbody tr:hover{background:rgba(79,126,247,.04);}
 
 <!-- Scan Button -->
 <div class="scan-area">
-  <button class="scan-btn" id="scanBtn">
-    <span class="btn-ripple"></span>
-    <i class="fas fa-radar" style="position:relative;z-index:1;"></i>
-    <span style="position:relative;z-index:1;" id="scanBtnText">開始掃描所有台灣 ETF</span>
-  </button>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+    <button class="scan-btn" id="scanBtn" style="flex:1;min-width:200px">
+      <span class="btn-ripple"></span>
+      <i class="fas fa-satellite-dish" style="position:relative;z-index:1;"></i>
+      <span style="position:relative;z-index:1;" id="scanBtnText">開始掃描所有台灣 ETF</span>
+    </button>
+    <button id="modeGrowthBtn" onclick="setMode('growth')"
+      style="padding:12px 20px;border-radius:12px;border:2px solid var(--purple);background:transparent;color:var(--pink);font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap">
+      🚀 成長動能模式
+    </button>
+    <button id="modeIncomeBtn" onclick="setMode('income')"
+      style="padding:12px 20px;border-radius:12px;border:2px solid var(--mint);background:transparent;color:var(--mint);font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap">
+      💰 穩定收益模式
+    </button>
+  </div>
   <div class="progress-wrap" id="progressWrap">
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     <div class="progress-text">
@@ -671,42 +681,78 @@ function calcETF(data, etf) {
 }
 
 // ============================================================
-// 資料抓取
+// 資料抓取（多 proxy 備援，與 VCPfinder 相同架構）
 // ============================================================
-const CORS_PROXY = 'https://corsproxy.io/?';
-const SCAN_DELAY = 350; // ms，避免被擋
+const PROXIES = [
+  'https://corsproxy.io/?',
+  'https://api.allorigins.win/raw?url=',
+  'https://api.codetabs.com/v1/proxy?quest=',
+  'https://thingproxy.freeboard.io/fetch/',
+  'https://corsproxy.io/?',  // 第二輪再試一次
+];
+const SCAN_DELAY = 400;
 
-let scanResults = []; // 存放所有掃描結果
+let scanResults = [];
 let isScanning = false;
 
+// timeout-aware fetch
+function fetchTO(url, ms=12000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('timeout')), ms);
+    fetch(url).then(r => { clearTimeout(timer); resolve(r); })
+              .catch(e => { clearTimeout(timer); reject(e); });
+  });
+}
+
+// 解析 Yahoo Finance chart JSON → OHLCV 陣列（第0筆=最新）
+function parseYahooChart(json) {
+  const r = json?.chart?.result?.[0];
+  if (!r?.timestamp) return null;
+  const q = r.indicators?.quote?.[0] ?? {};
+  const arr = r.timestamp.map((t, i) => ({
+    open: q.open?.[i] ?? null, high: q.high?.[i] ?? null,
+    low:  q.low?.[i]  ?? null, close: q.close?.[i] ?? null,
+    volume: q.volume?.[i] ?? 0
+  })).filter(d => d.close !== null && d.close > 0);
+  arr.reverse(); // 最新在前
+  return arr.length > 0 ? arr : null;
+}
+
 async function fetchETFData(etf) {
-  const suffix = getYahooSuffix(etf);
-  const symbol = etf.id + suffix;
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2y`;
-  const proxyUrl = CORS_PROXY + encodeURIComponent(url);
-
-  try {
-    const resp = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const json = await resp.json();
-
-    const result = json.chart?.result?.[0];
-    if (!result || !result.indicators?.quote?.[0]) throw new Error('No data');
-
-    const q = result.indicators.quote[0];
-    const ohlcv = [];
-    // Yahoo 回傳最舊在前，我們需反轉成第0筆=最新
-    const len = q.close?.length || 0;
-    for (let i = len - 1; i >= 0; i--) {
-      const c = q.close[i], o = q.open[i], h = q.high[i], l = q.low[i], v = q.volume[i];
-      if (c != null && o != null && h != null && l != null) {
-        ohlcv.push({ open: o, high: h, low: l, close: c, volume: v || 0 });
-      }
+  const sym = etf.id + getYahooSuffix(etf);
+  // 嘗試多個 endpoint（2y 主 → 2y 備 → 1y 備）
+  const bases = [
+    `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2y&includePrePost=false`,
+    `https://query2.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2y&includePrePost=false`,
+    `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1y&includePrePost=false`,
+  ];
+  for (const base of bases) {
+    for (const px of PROXIES) {
+      try {
+        const res = await fetchTO(px + encodeURIComponent(base), 12000);
+        if (!res.ok) continue;
+        const text = await res.text();
+        if (!text || text.trim().startsWith('<') || text.includes('Rate limit')) continue;
+        const json = JSON.parse(text);
+        const ohlcv = parseYahooChart(json);
+        if (ohlcv) return ohlcv;
+      } catch(_) {}
     }
-    return ohlcv;
-  } catch (e) {
-    return null;
   }
+  // 最後備援：localStorage 快取
+  try {
+    const cached = JSON.parse(localStorage.getItem('etf_'+sym));
+    if (cached && cached.data && Date.now() - cached.ts < 86400000*3) return cached.data;
+  } catch(_) {}
+  return null;
+}
+
+// 掃完後快取到 localStorage
+function cacheETF(etf, ohlcv) {
+  try {
+    const sym = etf.id + getYahooSuffix(etf);
+    localStorage.setItem('etf_'+sym, JSON.stringify({data: ohlcv.slice(0,260), ts: Date.now()}));
+  } catch(_) {}
 }
 
 // ============================================================
@@ -908,6 +954,39 @@ const progressEta = document.getElementById('progressEta');
 
 scanBtn.addEventListener('click', startScan);
 
+// ── 模式切換 ──
+function setMode(mode) {
+  const gBtn = document.getElementById('modeGrowthBtn');
+  const iBtn = document.getElementById('modeIncomeBtn');
+  if (mode === 'growth') {
+    // 成長動能：篩選科技+市值+海外，按分數排序，適合費半/台灣50類
+    gBtn.style.background = 'rgba(79,126,247,.2)'; iBtn.style.background = 'transparent';
+    // 把類型篩選設為 tech
+    document.querySelectorAll('.fbtn[data-filter="type"]').forEach(b => b.classList.remove('active'));
+    const techBtn = document.querySelector('.fbtn[data-filter="type"][data-val="tech"]');
+    if (techBtn) techBtn.classList.add('active');
+    filters.type = 'all'; // 顯示所有，但排序強調高分
+    // 用趨勢篩選 Stage2
+    document.querySelectorAll('.fbtn[data-filter="trend"]').forEach(b => b.classList.remove('active'));
+    const s2Btn = document.querySelector('.fbtn[data-filter="trend"][data-val="Stage2"]');
+    if (s2Btn) { s2Btn.classList.add('active'); filters.trend = 'Stage2'; }
+    filters.score = 0;
+    showToast('🚀 成長動能模式：顯示 Stage2 趨勢確立的 ETF，依分數排序', 'info');
+  } else {
+    // 穩定收益：篩選高股息+債券，優先月配，進場訊號優先
+    iBtn.style.background = 'rgba(63,185,122,.2)'; gBtn.style.background = 'transparent';
+    document.querySelectorAll('.fbtn[data-filter="type"]').forEach(b => b.classList.remove('active'));
+    const divBtn = document.querySelector('.fbtn[data-filter="type"][data-val="dividend"]');
+    if (divBtn) { divBtn.classList.add('active'); filters.type = 'dividend'; }
+    document.querySelectorAll('.fbtn[data-filter="trend"]').forEach(b => b.classList.remove('active'));
+    const allBtn = document.querySelector('.fbtn[data-filter="trend"][data-val="all"]');
+    if (allBtn) { allBtn.classList.add('active'); filters.trend = 'all'; }
+    filters.score = 0;
+    showToast('💰 穩定收益模式：顯示高股息 ETF，月配優先，找進場甜蜜點', 'info');
+  }
+  renderTable();
+}
+
 async function startScan() {
   if (isScanning) return;
   isScanning = true;
@@ -944,6 +1023,7 @@ async function startScan() {
     const ohlcv = await fetchETFData(etf);
 
     if (ohlcv && ohlcv.length >= 60) {
+      cacheETF(etf, ohlcv);
       const details = calcETF(ohlcv, etf);
       scanResults.push({ etf, details });
     } else {
