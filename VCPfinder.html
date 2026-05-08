@@ -725,16 +725,6 @@ footer a:hover{text-decoration:underline}
       <div id="buyPtBody" style="font-size:.72rem"></div>
     </div>
 
-    <!-- 今日賣點 -->
-    <div style="background:var(--card);border:1.5px solid #dc2626;border-radius:10px;padding:12px 14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-size:.78rem;font-weight:800;color:#f87171;letter-spacing:.05em">
-          🔴 今日賣點 <span id="sellPtCount" style="font-size:.65rem;font-weight:400;color:var(--text2)"></span>
-        </div>
-        <div style="font-size:.58rem;color:var(--text2)">超漲獲利了結 / 跌破停損必出場</div>
-      </div>
-      <div id="sellPtBody" style="font-size:.72rem"></div>
-    </div>
 
   </div>
 </div>
@@ -3411,22 +3401,7 @@ function renderTable(){
     };
     const buyList=buyListRaw.sort(buySort).slice(0,15);
 
-    const sellListRaw=allResults.filter(r=>{const d=r.vcp?.distVcpPivot;if(d==null)return false;return d>20||d<-8;});
-    const sellSort=(a,b)=>{
-      let av,bv;
-      if(sellSortKey==='vcpScore'){av=a.vcp?.score??0;bv=b.vcp?.score??0;}
-      else if(sellSortKey==='price'){av=a.vcp?.price??0;bv=b.vcp?.price??0;}
-      else if(sellSortKey==='canslim'){av=calcCANSLIM(a.vcp,a.fund,chipsMap[a.code]).total;bv=calcCANSLIM(b.vcp,b.fund,chipsMap[b.code]).total;}
-      else if(sellSortKey==='fund'){av=calcFundGrade(a.fund||{})?.score??0;bv=calcFundGrade(b.fund||{})?.score??0;}
-      else if(sellSortKey==='margin'){av=marginMap[a.code]?.change??0;bv=marginMap[b.code]?.change??0;}
-      else if(sellSortKey==='dist'){av=a.vcp?.distVcpPivot??0;bv=b.vcp?.distVcpPivot??0;return sellSortAsc?av-bv:bv-av;}
-      else if(sellSortKey==='sector'){return sellSortAsc?a.sector.localeCompare(b.sector):b.sector.localeCompare(a.sector);}
-      else{const da=a.vcp.distVcpPivot,db=b.vcp.distVcpPivot;if(da<-8&&db>20)return-1;if(db<-8&&da>20)return 1;if(da<0&&db<0)return da-db;return db-da;}
-      return sellSortAsc?av-bv:bv-av;
-    };
-    const sellList=sellListRaw.sort(sellSort).slice(0,15);
-
-    if(!buyList.length&&!sellList.length){wrap.style.display='none';return;}
+    if(!buyList.length){wrap.style.display='none';return;}
     wrap.style.display='block';
 
     const tStyle='width:100%;border-collapse:collapse;font-size:.72rem';
@@ -3472,47 +3447,6 @@ function renderTable(){
       if(buyCount)buyCount.textContent=buyList.length?`（${buyList.length} 支）`:'';
     }
 
-    if(sellBody){
-      if(sellList.length){
-        sellBody.innerHTML=`<div style="overflow-x:auto"><table style="${tStyle}">
-          <thead><tr style="${hdStyle}">
-            <th style="${td}text-align:left">代號/名稱</th>
-            ${_thS('sector','產業','setSellSort',sellSortKey,sellSortAsc,'left')}
-            ${_thS('price','現價','setSellSort',sellSortKey,sellSortAsc)}
-            <th style="${td}text-align:left;color:var(--text2)">走勢</th>
-            ${_thS('vcpScore','VCP分','setSellSort',sellSortKey,sellSortAsc,'center')}
-            ${_thS('fund','基本面','setSellSort',sellSortKey,sellSortAsc,'center')}
-            <th style="${td}text-align:center;color:var(--text2)">籌碼</th>
-            ${_thS('margin','融資','setSellSort',sellSortKey,sellSortAsc,'center')}
-            ${_thS('canslim','CANSLIM','setSellSort',sellSortKey,sellSortAsc,'center')}
-            ${_thS('dist','出場原因','setSellSort',sellSortKey,sellSortAsc,'center')}
-          </tr></thead>
-          <tbody>${sellList.map(r=>{
-            const v=r.vcp;
-            const tv=`https://www.tradingview.com/chart/?symbol=${r.ex==='TWO'?'TPEX':'TWSE'}%3A${r.code}`;
-            const d=v.distVcpPivot;
-            const tag=d<-8?`${d}%停損⚠`:d>20?`+${d}%超漲`:'';
-            const tagCol=d<-8?'#f87171':'#f97316';
-            return`<tr style="border-bottom:1px solid rgba(45,55,72,.3)" onmouseover="this.style.background='rgba(220,38,38,.07)'" onmouseout="this.style.background=''">
-              <td style="${td}white-space:nowrap"><a href="${tv}" target="_blank" style="color:var(--purple);font-weight:700;text-decoration:none">${escH(r.code)}</a> <span style="color:var(--text);font-size:.72rem">${escH(r.name)}</span></td>
-              <td style="${td}font-size:.62rem;color:var(--text2)">${escH(r.sector||'—')}</td>
-              <td style="${td}text-align:right;font-weight:600">$${v.price}</td>
-              <td style="${td}white-space:nowrap">${_maC(v)||'—'}</td>
-              <td style="${td}text-align:center"><span style="font-size:.72rem;font-weight:800;color:${_vcpCol(v.score)}">${v.score}</span></td>
-              <td style="${td}text-align:center">${_fundC(r.fund)}</td>
-              <td style="${td}text-align:center">${_chipC(r.code)}</td>
-              <td style="${td}text-align:center">${_mgC(r.code)}</td>
-              <td style="${td}text-align:center">${_csC(v,r.fund,r.code)}</td>
-              <td style="${td}text-align:center"><span style="font-size:.65rem;font-weight:800;color:${tagCol}">${tag}</span></td>
-            </tr>`;
-          }).join('')}</tbody>
-        </table></div>
-        <div style="margin-top:6px;font-size:.6rem;color:var(--text2)">超漲>20%：獲利了結・跌破停損：今日收盤前必出場</div>`;
-      }else{
-        sellBody.innerHTML='<div style="color:var(--text2);font-size:.68rem;padding:8px 0">目前無需緊急出場的股票</div>';
-      }
-      if(sellCount)sellCount.textContent=sellList.length?`（${sellList.length} 支）`:'';
-    }
   })();
 
   // ── 隔日沖候選名單更新 ──────────────────────────────────────────────────
@@ -3541,7 +3475,7 @@ function renderTable(){
       if(v.closeRatio!=null){if(v.closeRatio>=0.75)s+=10;else if(v.closeRatio>=0.5)s+=5;else if(v.closeRatio<0.4&&v.vRat>2.0)s-=15;}
       if(mg?.change>0)s-=15;else if(mg?.change<0)s+=8;
       if(v.vRat>=3.0)s-=10;
-      return s>=60?s:-1;
+      return s>=80?s:-1;
     };
 
     const sentMult=({'risk_on':1.1,'neutral':1.0,'risk_off':0.7})[localStorage.getItem('mktSentiment')||'neutral'];
@@ -4361,6 +4295,25 @@ async function lookupStock() {
       }
     }
   });
+
+  // 13:30 盤後自動更新（GLM 生成，Claude 修正 allResults + !scanning）
+  let _afterCloseRefreshed=false;
+  setInterval(async()=>{
+    const now=new Date();
+    const utcMin=now.getUTCHours()*60+now.getUTCMinutes();
+    if(utcMin<60) _afterCloseRefreshed=false; // 每天 09:00 前重置
+    if(utcMin>=330&&utcMin<=390&&!isTradingHours()&&allResults.length>0&&!scanning&&!_afterCloseRefreshed){
+      _afterCloseRefreshed=true;
+      const toast=document.createElement('div');
+      toast.textContent='13:30 盤後自動更新中…';
+      Object.assign(toast.style,{position:'fixed',top:'20px',left:'50%',transform:'translateX(-50%)',
+        background:'rgba(13,17,23,.92)',color:'#fbbf24',padding:'10px 22px',borderRadius:'8px',
+        zIndex:'9999',fontSize:'14px',border:'1px solid #fbbf24',transition:'opacity .3s'});
+      document.body.appendChild(toast);
+      setTimeout(()=>{toast.style.opacity='0';setTimeout(()=>toast.remove(),300);},2500);
+      await refreshDtList();
+    }
+  },60*1000);
 
   // 盤中每 3 分鐘輪詢即時價格，更新 allResults 並重渲染
   setInterval(async()=>{
