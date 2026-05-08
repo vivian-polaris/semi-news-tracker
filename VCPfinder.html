@@ -1108,7 +1108,6 @@ let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=fal
 let hideDoubleShort=true;
 let dtSortKey='dtScore', dtSortAsc=false;
 let buySortKey='stability', buySortAsc=false;
-let sellSortKey='urgency', sellSortAsc=true;
 let fundMin=0;
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
@@ -3377,9 +3376,7 @@ function renderTable(){
   (()=>{
     const wrap=document.getElementById('actionPanelWrap');
     const buyBody=document.getElementById('buyPtBody');
-    const sellBody=document.getElementById('sellPtBody');
     const buyCount=document.getElementById('buyPtCount');
-    const sellCount=document.getElementById('sellPtCount');
     if(!wrap||!allResults.length){if(wrap)wrap.style.display='none';return;}
 
     const buyStability=r=>{
@@ -3671,7 +3668,6 @@ function setFundMin(v,el){
 
 function setDtSort(k){if(dtSortKey===k)dtSortAsc=!dtSortAsc;else{dtSortKey=k;dtSortAsc=false;}renderTable();}
 function setBuySort(k){if(buySortKey===k)buySortAsc=!buySortAsc;else{buySortKey=k;buySortAsc=false;}renderTable();}
-function setSellSort(k){if(sellSortKey===k)sellSortAsc=!sellSortAsc;else{sellSortKey=k;sellSortAsc=false;}renderTable();}
 
 // ─── Export CSV ─────────────────────────────────────────────────────────────
 function exportCSV(){
