@@ -1,0 +1,913 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ETFfinder — 台股 ETF 量化掃描系統</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root{
+  --bg:#0d1117;--bg2:#111820;--card:#161b22;--card2:#1c2128;
+  --border:#2d3748;--border2:#3d4a5c;--purple:#4f7ef7;--pink:#7aa2f7;
+  --mint:#3fb97a;--orange:#d4a84b;--red:#e05c5c;--sky:#4a90c4;
+  --yellow:#d4a84b;--text:#e2e8f0;--text2:#718096;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;min-height:100vh;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text2);}
+
+/* Header */
+.hero{position:relative;overflow:hidden;min-height:280px;display:flex;align-items:center;justify-content:center;flex-direction:column;}
+.hero-bg{position:absolute;inset:0;background:url('https://images.pexels.com/photos/31295155/pexels-photo-31295155.jpeg?auto=compress&cs=tinysrgb&w=1600') center/cover no-repeat;filter:brightness(.3) saturate(.6);}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,17,23,.2) 0%,rgba(13,17,23,.95) 100%);}
+.hero-content{position:relative;z-index:2;text-align:center;padding:40px 20px 30px;}
+.hero-title{font-size:clamp(2rem,5vw,3.2rem);font-weight:900;letter-spacing:-.02em;background:linear-gradient(135deg,#7aa2f7,#3fb97a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
+.hero-sub{font-size:clamp(.85rem,2vw,1.05rem);color:var(--text2);font-weight:300;letter-spacing:.04em;}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;background:rgba(79,126,247,.12);border:1px solid rgba(79,126,247,.25);font-size:.78rem;color:var(--pink);margin-top:12px;}
+
+/* Stats Cards */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;max-width:1400px;margin:0 auto;padding:0 20px;margin-top:-30px;position:relative;z-index:5;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 16px;text-align:center;transition:border-color .3s,transform .2s;}
+.stat-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.stat-card .stat-val{font-size:1.8rem;font-weight:900;line-height:1.2;}
+.stat-card .stat-label{font-size:.72rem;color:var(--text2);margin-top:4px;letter-spacing:.06em;text-transform:uppercase;}
+.stat-card.scanned .stat-val{color:var(--pink);}
+.stat-card.high-score .stat-val{color:var(--mint);}
+.stat-card.sweet .stat-val{color:var(--orange);}
+.stat-card.time .stat-val{color:var(--sky);font-size:1.1rem;}
+
+/* Info Card */
+.info-card{max-width:1400px;margin:16px auto;padding:0 20px;}
+.info-inner{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.info-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;user-select:none;transition:background .2s;}
+.info-header:hover{background:var(--card2);}
+.info-header h3{font-size:.88rem;font-weight:500;display:flex;align-items:center;gap:8px;}
+.info-header .chevron{transition:transform .3s;color:var(--text2);font-size:.75rem;}
+.info-header .chevron.open{transform:rotate(180deg);}
+.info-body{max-height:0;overflow:hidden;transition:max-height .4s ease;padding:0 18px;}
+.info-body.open{max-height:600px;padding:0 18px 16px;}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-top:8px;}
+.info-item{display:flex;gap:10px;padding:8px 10px;border-radius:8px;background:var(--bg2);border:1px solid var(--border);}
+.info-item .ii-icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0;}
+.info-item .ii-text{font-size:.76rem;color:var(--text2);line-height:1.5;}
+.info-item .ii-text strong{color:var(--text);font-weight:500;}
+
+/* Controls */
+.controls{max-width:1400px;margin:16px auto;padding:0 20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+.filter-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.filter-group .fg-label{font-size:.72rem;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-right:2px;white-space:nowrap;}
+.fbtn{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text2);font-size:.76rem;cursor:pointer;transition:all .2s;font-family:inherit;white-space:nowrap;}
+.fbtn:hover{border-color:var(--border2);color:var(--text);}
+.fbtn.active{background:rgba(79,126,247,.15);border-color:var(--purple);color:var(--pink);}
+.fbtn.type-mint.active{background:rgba(63,185,122,.12);border-color:var(--mint);color:var(--mint);}
+.fbtn.type-sky.active{background:rgba(74,144,196,.12);border-color:var(--sky);color:var(--sky);}
+.fbtn.type-orange.active{background:rgba(212,168,75,.12);border-color:var(--orange);color:var(--orange);}
+.fbtn.type-purple.active{background:rgba(79,126,247,.12);border-color:var(--purple);color:var(--purple);}
+.fbtn.type-red.active{background:rgba(224,92,92,.12);border-color:var(--red);color:var(--red);}
+.fbtn.type-yellow.active{background:rgba(212,168,75,.12);border-color:var(--yellow);color:var(--yellow);}
+
+.divider{width:1px;height:28px;background:var(--border);margin:0 6px;}
+
+/* Scan Button */
+.scan-area{max-width:1400px;margin:16px auto;padding:0 20px;}
+.scan-btn{display:inline-flex;align-items:center;gap:10px;padding:14px 32px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--purple),#6c5ce7);color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .25s;box-shadow:0 4px 20px rgba(79,126,247,.3);position:relative;overflow:hidden;}
+.scan-btn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(79,126,247,.45);}
+.scan-btn:active{transform:translateY(0);}
+.scan-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none;}
+.scan-btn .btn-ripple{position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);transform:translateX(-100%);animation:ripple 2s infinite;}
+@keyframes ripple{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.scan-btn:disabled .btn-ripple{animation:none;}
+
+/* Progress */
+.progress-wrap{margin-top:12px;display:none;}
+.progress-wrap.show{display:block;}
+.progress-bar{width:100%;height:6px;background:var(--bg2);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--mint));border-radius:3px;transition:width .3s;width:0%;}
+.progress-text{display:flex;justify-content:space-between;margin-top:6px;font-size:.75rem;color:var(--text2);}
+.progress-eta{color:var(--pink);}
+
+/* Table */
+.table-area{max-width:1400px;margin:20px auto;padding:0 20px 60px;}
+.table-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+.table-count{font-size:.78rem;color:var(--text2);}
+.table-count span{color:var(--text);font-weight:700;}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--card);}
+table{width:100%;border-collapse:collapse;min-width:960px;}
+thead{background:var(--bg2);}
+th{padding:12px 14px;text-align:left;font-size:.72rem;font-weight:500;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;background:var(--bg2);z-index:2;}
+td{padding:10px 14px;font-size:.82rem;border-bottom:1px solid rgba(45,55,72,.4);white-space:nowrap;}
+tr{transition:background .15s;}
+tbody tr:hover{background:rgba(79,126,247,.04);}
+.ticker-link{color:var(--pink);text-decoration:none;font-weight:700;transition:color .2s;}
+.ticker-link:hover{color:#fff;text-decoration:underline;}
+.type-tag{display:inline-block;padding:3px 10px;border-radius:6px;font-size:.7rem;font-weight:600;letter-spacing:.02em;}
+.type-tag.market{background:rgba(74,144,196,.15);color:var(--sky);}
+.type-tag.dividend{background:rgba(63,185,122,.15);color:var(--mint);}
+.type-tag.bond{background:rgba(212,168,75,.15);color:var(--orange);}
+.type-tag.tech{background:rgba(79,126,247,.15);color:var(--purple);}
+.type-tag.esg{background:rgba(224,92,92,.15);color:var(--red);}
+.type-tag.overseas{background:rgba(212,168,75,.15);color:var(--yellow);}
+.type-tag.reits{background:rgba(122,162,247,.15);color:var(--pink);}
+.type-tag.other{background:rgba(113,128,150,.15);color:var(--text2);}
+
+.score-cell{font-weight:900;font-size:.95rem;}
+.score-high{color:var(--mint);}
+.score-mid{color:var(--orange);}
+.score-low{color:var(--red);}
+
+.atr-tag{font-size:.72rem;padding:3px 8px;border-radius:5px;font-weight:600;}
+.atr-strong{background:rgba(63,185,122,.15);color:var(--mint);}
+.atr-mid{background:rgba(212,168,75,.15);color:var(--orange);}
+.atr-none{background:rgba(113,128,150,.1);color:var(--text2);}
+
+.trend-tag{font-size:.72rem;padding:3px 8px;border-radius:5px;font-weight:600;}
+.trend-s2{background:rgba(63,185,122,.15);color:var(--mint);}
+.trend-bull{background:rgba(74,144,196,.15);color:var(--sky);}
+.trend-bear{background:rgba(224,92,92,.15);color:var(--red);}
+
+.sweet-tag{font-size:.72rem;padding:3px 8px;border-radius:5px;font-weight:600;}
+.sweet-best{background:rgba(63,185,122,.2);color:var(--mint);}
+.sweet-strong{background:rgba(74,144,196,.15);color:var(--sky);}
+.sweet-wait{background:rgba(224,92,92,.12);color:var(--red);}
+
+.signal-dot{width:12px;height:12px;border-radius:50%;display:inline-block;position:relative;}
+.signal-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;animation:pulse 2s infinite;}
+.signal-green{background:var(--mint);}
+.signal-green::after{border:2px solid var(--mint);}
+.signal-yellow{background:var(--orange);}
+.signal-yellow::after{border:2px solid var(--orange);}
+.signal-red{background:var(--red);}
+.signal-red::after{border:2px solid var(--red);}
+@keyframes pulse{0%,100%{opacity:0;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+
+.ma-cell{font-size:.76rem;color:var(--text2);}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--text2);}
+.empty-state i{font-size:2.5rem;margin-bottom:12px;opacity:.3;display:block;}
+.empty-state p{font-size:.88rem;}
+
+/* Loading Skeleton */
+.skeleton{background:linear-gradient(90deg,var(--card2) 25%,var(--bg2) 50%,var(--card2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px;height:16px;}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* Toast */
+.toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{padding:12px 18px;border-radius:10px;font-size:.82rem;color:var(--text);background:var(--card2);border:1px solid var(--border);box-shadow:0 8px 24px rgba(0,0,0,.4);animation:slideIn .3s ease;display:flex;align-items:center;gap:8px;max-width:360px;}
+.toast.success{border-color:rgba(63,185,122,.4);}
+.toast.error{border-color:rgba(224,92,92,.4);}
+.toast.info{border-color:rgba(79,126,247,.4);}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* Responsive */
+@media(max-width:768px){
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+  .controls{flex-direction:column;align-items:flex-start;}
+  .divider{display:none;}
+  .hero{min-height:200px;}
+  .scan-btn{width:100%;justify-content:center;}
+}
+@media(max-width:480px){
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .stat-card .stat-val{font-size:1.4rem;}
+}
+
+/* Floating particles */
+.particles{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
+.particle{position:absolute;width:2px;height:2px;background:rgba(122,162,247,.3);border-radius:50%;animation:float linear infinite;}
+@keyframes float{0%{transform:translateY(100vh) scale(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-10vh) scale(1);opacity:0}}
+
+/* Glow effect */
+.glow-line{height:1px;background:linear-gradient(90deg,transparent,var(--purple),var(--mint),transparent);opacity:.3;margin:0 20px;max-width:1400px;margin-left:auto;margin-right:auto;}
+</style>
+</head>
+<body>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Header -->
+<header class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-overlay"></div>
+  <div class="particles" id="particles"></div>
+  <div class="hero-content">
+    <div class="hero-title">ETFfinder</div>
+    <div class="hero-sub">台股 ETF 量化掃描系統 — VCP / Stage2 / 加碼甜蜜點 一鍵偵測</div>
+    <div class="hero-badge"><i class="fas fa-satellite-dish"></i> 資料來源：Yahoo Finance</div>
+  </div>
+</header>
+
+<!-- Stats -->
+<div class="stats-row" id="statsRow">
+  <div class="stat-card scanned">
+    <div class="stat-val" id="statScanned">0</div>
+    <div class="stat-label">已掃描 ETF</div>
+  </div>
+  <div class="stat-card high-score">
+    <div class="stat-val" id="statHighScore">0</div>
+    <div class="stat-label">分數 ≥ 60</div>
+  </div>
+  <div class="stat-card sweet">
+    <div class="stat-val" id="statSweet">0</div>
+    <div class="stat-label">加碼甜蜜點</div>
+  </div>
+  <div class="stat-card time">
+    <div class="stat-val" id="statTime">--</div>
+    <div class="stat-label">掃描耗時</div>
+  </div>
+</div>
+
+<!-- Info Card -->
+<div class="info-card">
+  <div class="info-inner">
+    <div class="info-header" id="infoHeader">
+      <h3><i class="fas fa-circle-info" style="color:var(--pink)"></i> 指標說明</h3>
+      <i class="fas fa-chevron-down chevron" id="infoChevron"></i>
+    </div>
+    <div class="info-body" id="infoBody">
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="ii-icon" style="background:rgba(63,185,122,.15);color:var(--mint);">AT</div>
+          <div class="ii-text"><strong>ATR 收縮</strong>：短期波動（ATR10）相對長期波動（ATR20）萎縮，比值 &lt; 0.75 為強收縮，代表價格正蓄勢準備突破。</div>
+        </div>
+        <div class="info-item">
+          <div class="ii-icon" style="background:rgba(79,126,247,.15);color:var(--purple);">MA</div>
+          <div class="ii-text"><strong>MA 糾纏</strong>：MA5/MA10/MA20 三線差距 &lt; 3%，代表均線糾結走平，是VCP型態的特徵。</div>
+        </div>
+        <div class="info-item">
+          <div class="ii-icon" style="background:rgba(74,144,196,.15);color:var(--sky);">S2</div>
+          <div class="ii-text"><strong>長期趨勢</strong>：價格 &gt; MA200 且 MA50 &gt; MA200，符合 Stage 2 上升趨勢定義。</div>
+        </div>
+        <div class="info-item">
+          <div class="ii-icon" style="background:rgba(212,168,75,.15);color:var(--orange);">SW</div>
+          <div class="ii-text"><strong>加碼甜蜜點</strong>：價格落在 MA50 ~ MA200 之間，是回檔加碼的最佳區間；高於 MA50 為強勢；低於 MA200 為趨勢破壞。</div>
+        </div>
+        <div class="info-item">
+          <div class="ii-icon" style="background:rgba(224,92,92,.15);color:var(--red);">CV</div>
+          <div class="ii-text"><strong>價格穩定度</strong>：近20日收盤變異係數 &lt; 1.5%，代表近期價格窄幅盤整，波動極低。</div>
+        </div>
+        <div class="info-item">
+          <div class="ii-icon" style="background:rgba(122,162,247,.15);color:var(--pink);">V</div>
+          <div class="ii-text"><strong>量能穩定</strong>：V20/V60 介於 0.7~1.3，代表近期量能沒有異常縮減或暴增，走勢健康。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="glow-line" style="margin-top:16px;"></div>
+
+<!-- Controls -->
+<div class="controls">
+  <div class="filter-group">
+    <span class="fg-label">類型</span>
+    <button class="fbtn type-sky active" data-filter="type" data-val="all">全部</button>
+    <button class="fbtn type-mint" data-filter="type" data-val="dividend">高股息</button>
+    <button class="fbtn type-sky" data-filter="type" data-val="market">市值型</button>
+    <button class="fbtn type-orange" data-filter="type" data-val="bond">債券</button>
+    <button class="fbtn type-purple" data-filter="type" data-val="tech">科技</button>
+    <button class="fbtn type-red" data-filter="type" data-val="esg">ESG</button>
+    <button class="fbtn type-yellow" data-filter="type" data-val="overseas">海外</button>
+  </div>
+  <div class="divider"></div>
+  <div class="filter-group">
+    <span class="fg-label">分數</span>
+    <button class="fbtn active" data-filter="score" data-val="0">全部</button>
+    <button class="fbtn" data-filter="score" data-val="40">≥40</button>
+    <button class="fbtn" data-filter="score" data-val="60">≥60</button>
+    <button class="fbtn" data-filter="score" data-val="70">≥70</button>
+    <button class="fbtn" data-filter="score" data-val="80">≥80</button>
+  </div>
+  <div class="divider"></div>
+  <div class="filter-group">
+    <span class="fg-label">趨勢</span>
+    <button class="fbtn active" data-filter="trend" data-val="all">全部</button>
+    <button class="fbtn type-mint" data-filter="trend" data-val="Stage2">Stage2</button>
+    <button class="fbtn type-sky" data-filter="trend" data-val="多頭">多頭</button>
+    <button class="fbtn type-orange" data-filter="trend" data-val="sweet">加碼甜蜜點</button>
+  </div>
+</div>
+
+<!-- Scan Button -->
+<div class="scan-area">
+  <button class="scan-btn" id="scanBtn">
+    <span class="btn-ripple"></span>
+    <i class="fas fa-radar" style="position:relative;z-index:1;"></i>
+    <span style="position:relative;z-index:1;" id="scanBtnText">開始掃描所有台灣 ETF</span>
+  </button>
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-text">
+      <span id="progressLabel">準備中...</span>
+      <span class="progress-eta" id="progressEta"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="table-area">
+  <div class="table-top">
+    <div class="table-count">顯示 <span id="showCount">0</span> / <span id="totalCount">0</span> 檔 ETF</div>
+  </div>
+  <div class="table-wrap" style="max-height:70vh;overflow-y:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>信號</th>
+          <th>代號</th>
+          <th>名稱</th>
+          <th>類型</th>
+          <th>現價</th>
+          <th>ETF分數</th>
+          <th>ATR收縮</th>
+          <th>趨勢</th>
+          <th>加碼甜蜜點</th>
+          <th>20日波動</th>
+          <th>MA50</th>
+          <th>MA200</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="12"><div class="empty-state"><i class="fas fa-chart-line"></i><p>點擊上方按鈕開始掃描</p></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// ETF 清單
+// ============================================================
+const ETF_LIST = [
+  // 台股市值型
+  {id:'0050',name:'元大台灣50',type:'market'},
+  {id:'006208',name:'富邦台灣50',type:'market'},
+  {id:'00692',name:'富邦公司治理',type:'market'},
+  {id:'00905',name:'新光臺灣半導體',type:'market'},
+  {id:'00922',name:'國泰台灣領袖50',type:'market'},
+  // 高股息型
+  {id:'0056',name:'元大高股息',type:'dividend'},
+  {id:'00878',name:'國泰永續高股息',type:'dividend'},
+  {id:'00919',name:'群益台灣精選高息',type:'dividend'},
+  {id:'00929',name:'兆豐台灣價值高息',type:'dividend'},
+  {id:'00713',name:'元大台灣高息低波',type:'dividend'},
+  {id:'00915',name:'凱基優選高股息30',type:'dividend'},
+  {id:'00918',name:'大華優利高填息30',type:'dividend'},
+  {id:'00891',name:'中信中國高股息',type:'dividend'},
+  {id:'00900',name:'富邦特選高股息30',type:'dividend'},
+  {id:'00907',name:'永豐優息存股',type:'dividend'},
+  {id:'00930',name:'群益台灣ESG低碳高息',type:'dividend'},
+  {id:'00939',name:'統一台灣高息動能',type:'dividend'},
+  {id:'00940',name:'元大台灣價值高息',type:'dividend'},
+  {id:'00946',name:'新光優選高股息30',type:'dividend'},
+  {id:'00955',name:'野村優質高息',type:'dividend'},
+  {id:'00956',name:'台新永續高息中小',type:'dividend'},
+  {id:'00957',name:'統一優選高息',type:'dividend'},
+  {id:'00960',name:'富邦台灣優質高息',type:'dividend'},
+  {id:'00963',name:'凱基優選高息精選',type:'dividend'},
+  {id:'00966',name:'群益優選高息',type:'dividend'},
+  // 債券型
+  {id:'00679B',name:'元大美國政府20年期',type:'bond'},
+  {id:'00772B',name:'富邦美國20年期',type:'bond'},
+  {id:'00687B',name:'國泰20年期美債',type:'bond'},
+  {id:'00741B',name:'群益25年期美債',type:'bond'},
+  {id:'00833B',name:'富邦挪威主權',type:'bond'},
+  {id:'00937B',name:'統一美國20年',type:'bond'},
+  {id:'00696B',name:'元大美國20年期B',type:'bond'},
+  {id:'00720B',name:'凱基美國20年期',type:'bond'},
+  {id:'00724B',name:'中信美國20年期',type:'bond'},
+  {id:'00725B',name:'中國信託美國20年',type:'bond'},
+  {id:'00750B',name:'凱基中國債',type:'bond'},
+  {id:'00751B',name:'元大中國債',type:'bond'},
+  {id:'00753B',name:'群益中國債',type:'bond'},
+  {id:'00761B',name:'復華美國20年期',type:'bond'},
+  {id:'00777B',name:'凱基美國20年A',type:'bond'},
+  {id:'00781B',name:'兆豐美國20年期',type:'bond'},
+  {id:'00860B',name:'中信投級公司債',type:'bond'},
+  {id:'00864B',name:'群益投級公司債',type:'bond'},
+  {id:'00870B',name:'富邦投級公司債',type:'bond'},
+  {id:'00879B',name:'元大投級公司債',type:'bond'},
+  {id:'00886B',name:'國泰投級公司債',type:'bond'},
+  {id:'00895B',name:'永豐投級公司債',type:'bond'},
+  {id:'00896B',name:'統一投級公司債',type:'bond'},
+  {id:'00898B',name:'元大美國20年C',type:'bond'},
+  {id:'00899B',name:'中信美國20年B',type:'bond'},
+  {id:'00902B',name:'凱基美國20年B',type:'bond'},
+  {id:'00913B',name:'中信美國20年C',type:'bond'},
+  {id:'00933B',name:'國泰美國20年A',type:'bond'},
+  {id:'00934B',name:'富邦美國20年A',type:'bond'},
+  {id:'00936B',name:'元大美國20年D',type:'bond'},
+  {id:'00938B',name:'統一美國20年B',type:'bond'},
+  {id:'00942B',name:'群益美國20年期',type:'bond'},
+  {id:'00948B',name:'台新美國20年期',type:'bond'},
+  {id:'00950B',name:'永豐美國20年期',type:'bond'},
+  // 科技/產業型
+  {id:'00881',name:'國泰台灣5G+',type:'tech'},
+  {id:'00882',name:'富邦台灣半導體',type:'tech'},
+  {id:'00830',name:'富邦臺灣先進電車',type:'tech'},
+  {id:'00890',name:'中信中國半導體',type:'tech'},
+  {id:'00904',name:'新光臺灣半導體A',type:'tech'},
+  {id:'00912',name:'中信中國科技',type:'tech'},
+  {id:'00931',name:'群益台灣科技入息',type:'tech'},
+  // ESG型
+  {id:'00850',name:'元大台灣ESG永續',type:'esg'},
+  {id:'00888',name:'富邦台灣永續',type:'esg'},
+  {id:'00908',name:'永豐台灣ESG',type:'esg'},
+  // 海外市場型
+  {id:'00646',name:'元大標普500',type:'overseas'},
+  {id:'00662',name:'富邦NASDAQ',type:'overseas'},
+  {id:'00675L',name:'富邦NASDAQ正2',type:'overseas'},
+  {id:'00852',name:'國泰中國內需',type:'overseas'},
+  {id:'00920',name:'統一恆生科技',type:'overseas'},
+  {id:'00935',name:'野村中國科技',type:'overseas'},
+  // REITs
+  {id:'01001T',name:'富邦一號',type:'reits'},
+  {id:'01002T',name:'國泰一號',type:'reits'},
+  {id:'01003T',name:'新光一號',type:'reits'},
+  {id:'01004T',name:'富邦二號',type:'reits'},
+  {id:'01005T',name:'國泰二號',type:'reits'},
+  {id:'01007T',name:'三鼎不動產',type:'reits'},
+  // 其他台股主題
+  {id:'006205',name:'富邦台灣中小',type:'other'},
+  {id:'0051',name:'元大中型100',type:'other'},
+  {id:'0052',name:'富邦科技',type:'other'},
+  {id:'0053',name:'元大電子',type:'other'},
+  {id:'0054',name:'元大台商50',type:'other'},
+  {id:'0055',name:'元大MSCI金融',type:'other'},
+  {id:'00701',name:'國泰臺灣低波',type:'other'},
+  {id:'006204',name:'富邦上櫃',type:'other'}
+];
+
+// 決定 Yahoo Finance 後綴：債券型和 REITs 用 .TWO，其餘用 .TW
+function getYahooSuffix(etf) {
+  if (etf.type === 'bond') return '.TWO';
+  return '.TW';
+}
+
+// ============================================================
+// 計分引擎
+// ============================================================
+function calcSMA(arr, period) {
+  if (arr.length < period) return null;
+  let sum = 0;
+  for (let i = 0; i < period; i++) sum += arr[i];
+  return sum / period;
+}
+
+function calcETF(data) {
+  // data: [{open,high,low,close,volume}], 第0筆=最新
+  if (!data || data.length < 60) return null;
+
+  const price = data[0].close;
+  const closes = data.map(d => d.close);
+  const volumes = data.map(d => d.volume);
+  let score = 0;
+  const details = {};
+
+  // --- 1. ATR 收縮（20分）---
+  function calcATRFromData(startIdx, period) {
+    const trs = [];
+    for (let i = startIdx; i < startIdx + period && i < data.length - 1; i++) {
+      const tr = Math.max(
+        data[i].high - data[i].low,
+        Math.abs(data[i].high - data[i + 1].close),
+        Math.abs(data[i].low - data[i + 1].close)
+      );
+      trs.push(tr);
+    }
+    if (trs.length === 0) return null;
+    return trs.reduce((a, b) => a + b, 0) / trs.length;
+  }
+
+  const atr10 = calcATRFromData(0, 10);
+  const atr20 = calcATRFromData(0, 20);
+  if (atr10 !== null && atr20 !== null && atr20 > 0) {
+    const ratio = atr10 / atr20;
+    details.atrRatio = ratio;
+    if (ratio < 0.75) {
+      score += 20;
+      details.atrStatus = '強收縮';
+    } else if (ratio < 0.90) {
+      score += 10;
+      details.atrStatus = '收縮中';
+    } else {
+      details.atrStatus = '未收縮';
+    }
+  } else {
+    details.atrStatus = 'N/A';
+    details.atrRatio = null;
+  }
+
+  // --- 2. MA 糾纏走平（15分）---
+  const ma5 = calcSMA(closes, 5);
+  const ma10 = calcSMA(closes, 10);
+  const ma20 = calcSMA(closes, 20);
+  if (ma5 && ma10 && ma20 && ma20 > 0) {
+    const mas = [ma5, ma10, ma20];
+    const maxMA = Math.max(...mas);
+    const minMA = Math.min(...mas);
+    const spread = ((maxMA - minMA) / minMA) * 100;
+    details.maSpread = spread;
+    if (spread < 3) {
+      score += 15;
+    } else if (spread < 6) {
+      score += 8;
+    }
+  } else {
+    details.maSpread = null;
+  }
+
+  // --- 3. 長期趨勢（20分）---
+  const ma50 = calcSMA(closes, 50);
+  const ma200 = calcSMA(closes, Math.min(200, data.length));
+  details.ma50 = ma50;
+  details.ma200 = ma200;
+
+  if (ma200 && price > ma200) score += 10;
+  if (ma50 && ma200 && ma50 > ma200) score += 10;
+
+  // --- 4. 回檔加碼甜蜜點（20分）---
+  if (ma50 && ma200) {
+    const hi = Math.max(ma50, ma200);
+    const lo = Math.min(ma50, ma200);
+    if (price >= lo && price <= hi) {
+      score += 20;
+      details.sweetSpot = '最佳';
+    } else if (price > hi) {
+      score += 10;
+      details.sweetSpot = '強勢';
+    } else {
+      details.sweetSpot = '等待';
+    }
+  } else if (ma50 && price > ma50) {
+    score += 10;
+    details.sweetSpot = '強勢';
+  } else {
+    details.sweetSpot = '等待';
+  }
+
+  // --- 5. 近期價格穩定度（15分）---
+  if (closes.length >= 20) {
+    const c20 = closes.slice(0, 20);
+    const mean20 = c20.reduce((a, b) => a + b, 0) / c20.length;
+    const std20 = Math.sqrt(c20.reduce((a, b) => a + (b - mean20) ** 2, 0) / c20.length);
+    const cv20 = mean20 > 0 ? (std20 / mean20) * 100 : 999;
+    details.volatility20 = cv20;
+    if (cv20 < 1.5) {
+      score += 15;
+    } else if (cv20 < 2.5) {
+      score += 8;
+    }
+  } else {
+    details.volatility20 = null;
+  }
+
+  // --- 6. 量能穩定（10分）---
+  if (volumes.length >= 60) {
+    const v20 = volumes.slice(0, 20).reduce((a, b) => a + b, 0) / 20;
+    const v60 = volumes.slice(0, 60).reduce((a, b) => a + b, 0) / 60;
+    const vRatio = v60 > 0 ? v20 / v60 : 0;
+    details.volumeRatio = vRatio;
+    if (vRatio >= 0.7 && vRatio <= 1.3) {
+      score += 10;
+    } else if (vRatio > 1.3) {
+      score += 5;
+    }
+  } else {
+    details.volumeRatio = null;
+  }
+
+  // --- 趨勢狀態 ---
+  if (ma200 && price > ma200 && ma50 && ma50 > ma200) {
+    details.trendStatus = 'Stage2';
+  } else if (ma50 && price > ma50) {
+    details.trendStatus = '多頭';
+  } else {
+    details.trendStatus = '空頭';
+  }
+
+  // --- 信號燈 ---
+  if (score >= 70) details.signal = 'green';
+  else if (score >= 40) details.signal = 'yellow';
+  else details.signal = 'red';
+
+  details.price = price;
+  details.score = score;
+
+  return details;
+}
+
+// ============================================================
+// 資料抓取
+// ============================================================
+const CORS_PROXY = 'https://corsproxy.io/?';
+const SCAN_DELAY = 350; // ms，避免被擋
+
+let scanResults = []; // 存放所有掃描結果
+let isScanning = false;
+
+async function fetchETFData(etf) {
+  const suffix = getYahooSuffix(etf);
+  const symbol = etf.id + suffix;
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2y`;
+  const proxyUrl = CORS_PROXY + encodeURIComponent(url);
+
+  try {
+    const resp = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const json = await resp.json();
+
+    const result = json.chart?.result?.[0];
+    if (!result || !result.indicators?.quote?.[0]) throw new Error('No data');
+
+    const q = result.indicators.quote[0];
+    const ohlcv = [];
+    // Yahoo 回傳最舊在前，我們需反轉成第0筆=最新
+    const len = q.close?.length || 0;
+    for (let i = len - 1; i >= 0; i--) {
+      const c = q.close[i], o = q.open[i], h = q.high[i], l = q.low[i], v = q.volume[i];
+      if (c != null && o != null && h != null && l != null) {
+        ohlcv.push({ open: o, high: h, low: l, close: c, volume: v || 0 });
+      }
+    }
+    return ohlcv;
+  } catch (e) {
+    return null;
+  }
+}
+
+// ============================================================
+// UI 互動
+// ============================================================
+
+// Info 卡片收合
+const infoHeader = document.getElementById('infoHeader');
+const infoBody = document.getElementById('infoBody');
+const infoChevron = document.getElementById('infoChevron');
+infoHeader.addEventListener('click', () => {
+  infoBody.classList.toggle('open');
+  infoChevron.classList.toggle('open');
+});
+
+// 篩選狀態
+const filters = { type: 'all', score: 0, trend: 'all' };
+
+document.querySelectorAll('.fbtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const fType = btn.dataset.filter;
+    const fVal = btn.dataset.val;
+    // 更新同群組按鈕
+    document.querySelectorAll(`.fbtn[data-filter="${fType}"]`).forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (fType === 'type') filters.type = fVal;
+    else if (fType === 'score') filters.score = parseInt(fVal);
+    else if (fType === 'trend') filters.trend = fVal;
+    renderTable();
+  });
+});
+
+// Toast 通知
+function showToast(msg, type = 'info', duration = 3000) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icons = { info: 'fa-circle-info', success: 'fa-circle-check', error: 'fa-circle-xmark' };
+  toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i> ${msg}`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    toast.style.transition = 'all .3s';
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+// 統計更新
+function updateStats() {
+  document.getElementById('statScanned').textContent = scanResults.length;
+  const highScore = scanResults.filter(r => r.details && r.details.score >= 60).length;
+  document.getElementById('statHighScore').textContent = highScore;
+  const sweet = scanResults.filter(r => r.details && r.details.sweetSpot === '最佳').length;
+  document.getElementById('statSweet').textContent = sweet;
+}
+
+// 類型標籤對應
+const TYPE_MAP = {
+  market: { label: '市值型', cls: 'market' },
+  dividend: { label: '高股息', cls: 'dividend' },
+  bond: { label: '債券', cls: 'bond' },
+  tech: { label: '科技', cls: 'tech' },
+  esg: { label: 'ESG', cls: 'esg' },
+  overseas: { label: '海外', cls: 'overseas' },
+  reits: { label: 'REITs', cls: 'reits' },
+  other: { label: '其他', cls: 'other' }
+};
+
+// 格式化數字
+function fmt(v, decimals = 2) {
+  if (v == null) return '--';
+  return v.toFixed(decimals);
+}
+
+// 渲染表格
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  let filtered = scanResults.filter(r => r.details !== null);
+
+  // 類型篩選
+  if (filters.type !== 'all') {
+    filtered = filtered.filter(r => r.etf.type === filters.type);
+  }
+  // 分數篩選
+  if (filters.score > 0) {
+    filtered = filtered.filter(r => r.details.score >= filters.score);
+  }
+  // 趨勢篩選
+  if (filters.trend !== 'all') {
+    if (filters.trend === 'sweet') {
+      filtered = filtered.filter(r => r.details.sweetSpot === '最佳');
+    } else {
+      filtered = filtered.filter(r => r.details.trendStatus === filters.trend);
+    }
+  }
+
+  // 按分數排序（高→低）
+  filtered.sort((a, b) => b.details.score - a.details.score);
+
+  document.getElementById('showCount').textContent = filtered.length;
+  document.getElementById('totalCount').textContent = scanResults.filter(r => r.details).length;
+
+  if (filtered.length === 0 && scanResults.length > 0) {
+    tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><i class="fas fa-filter"></i><p>目前篩選條件無符合的 ETF</p></div></td></tr>`;
+    return;
+  }
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><i class="fas fa-chart-line"></i><p>點擊上方按鈕開始掃描</p></div></td></tr>`;
+    return;
+  }
+
+  let html = '';
+  filtered.forEach(r => {
+    const d = r.details;
+    const etf = r.etf;
+    const tm = TYPE_MAP[etf.type] || TYPE_MAP.other;
+
+    // 信號燈
+    const sigCls = d.signal === 'green' ? 'signal-green' : d.signal === 'yellow' ? 'signal-yellow' : 'signal-red';
+
+    // 分數顏色
+    const scoreCls = d.score >= 70 ? 'score-high' : d.score >= 40 ? 'score-mid' : 'score-low';
+
+    // ATR 狀態
+    let atrCls = 'atr-none', atrText = d.atrStatus;
+    if (d.atrStatus === '強收縮') atrCls = 'atr-strong';
+    else if (d.atrStatus === '收縮中') atrCls = 'atr-mid';
+
+    // 趨勢
+    let trendCls = 'trend-bear', trendText = d.trendStatus;
+    if (d.trendStatus === 'Stage2') trendCls = 'trend-s2';
+    else if (d.trendStatus === '多頭') trendCls = 'trend-bull';
+
+    // 加碼甜蜜點
+    let sweetCls = 'sweet-wait', sweetText = d.sweetSpot;
+    if (d.sweetSpot === '最佳') sweetCls = 'sweet-best';
+    else if (d.sweetSpot === '強勢') sweetCls = 'sweet-strong';
+
+    // TradingView 連結
+    const suffix = getYahooSuffix(etf);
+    const tvSymbol = etf.id + suffix;
+    const tvUrl = `https://www.tradingview.com/chart/?symbol=TSE%3A${etf.id}`;
+
+    html += `<tr>
+      <td><span class="signal-dot ${sigCls}"></span></td>
+      <td><a href="${tvUrl}" target="_blank" rel="noopener" class="ticker-link">${etf.id}</a></td>
+      <td style="font-weight:500;">${etf.name}</td>
+      <td><span class="type-tag ${tm.cls}">${tm.label}</span></td>
+      <td style="font-variant-numeric:tabular-nums;">${fmt(d.price)}</td>
+      <td class="score-cell ${scoreCls}">${d.score}</td>
+      <td><span class="atr-tag ${atrCls}">${atrText}</span></td>
+      <td><span class="trend-tag ${trendCls}">${trendText}</span></td>
+      <td><span class="sweet-tag ${sweetCls}">${sweetText}</span></td>
+      <td style="font-variant-numeric:tabular-nums;color:var(--text2);">${d.volatility20 != null ? fmt(d.volatility20, 2) + '%' : '--'}</td>
+      <td class="ma-cell">${d.ma50 != null ? fmt(d.ma50) : '--'}</td>
+      <td class="ma-cell">${d.ma200 != null ? fmt(d.ma200) : '--'}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+// ============================================================
+// 掃描主流程
+// ============================================================
+const scanBtn = document.getElementById('scanBtn');
+const scanBtnText = document.getElementById('scanBtnText');
+const progressWrap = document.getElementById('progressWrap');
+const progressFill = document.getElementById('progressFill');
+const progressLabel = document.getElementById('progressLabel');
+const progressEta = document.getElementById('progressEta');
+
+scanBtn.addEventListener('click', startScan);
+
+async function startScan() {
+  if (isScanning) return;
+  isScanning = true;
+  scanResults = [];
+  scanBtn.disabled = true;
+  scanBtnText.textContent = '掃描中...';
+  progressWrap.classList.add('show');
+  progressFill.style.width = '0%';
+  progressLabel.textContent = '準備中...';
+  progressEta.textContent = '';
+  updateStats();
+  renderTable();
+
+  const total = ETF_LIST.length;
+  const startTime = Date.now();
+  let scanned = 0;
+  let failed = 0;
+
+  showToast(`開始掃描 ${total} 檔 ETF，預計耗時約 ${Math.round(total * SCAN_DELAY / 1000)} 秒`, 'info');
+
+  for (let i = 0; i < total; i++) {
+    const etf = ETF_LIST[i];
+    const pct = ((i + 1) / total * 100).toFixed(1);
+    progressFill.style.width = pct + '%';
+    progressLabel.textContent = `${i + 1} / ${total} — ${etf.id} ${etf.name}`;
+
+    // 預估剩餘時間
+    const elapsed = Date.now() - startTime;
+    const avgMs = elapsed / (i + 1);
+    const remainMs = avgMs * (total - i - 1);
+    const remainSec = Math.round(remainMs / 1000);
+    progressEta.textContent = `剩餘約 ${remainSec} 秒`;
+
+    const ohlcv = await fetchETFData(etf);
+
+    if (ohlcv && ohlcv.length >= 60) {
+      const details = calcETF(ohlcv);
+      scanResults.push({ etf, details });
+    } else {
+      failed++;
+      scanResults.push({ etf, details: null });
+    }
+
+    scanned++;
+    updateStats();
+
+    // 每掃完一筆即時更新表格
+    if (scanned % 5 === 0 || scanned === total) renderTable();
+
+    // 延遲避免被擋
+    if (i < total - 1) {
+      await new Promise(resolve => setTimeout(resolve, SCAN_DELAY));
+    }
+  }
+
+  const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+  document.getElementById('statTime').textContent = duration + 's';
+
+  renderTable();
+  progressLabel.textContent = `掃描完成 — 成功 ${total - failed} / 失敗 ${failed}`;
+  progressEta.textContent = `總耗時 ${duration} 秒`;
+  scanBtn.disabled = false;
+  scanBtnText.textContent = '重新掃描所有台灣 ETF';
+  isScanning = false;
+
+  const successCount = scanResults.filter(r => r.details !== null).length;
+  const highScore = scanResults.filter(r => r.details && r.details.score >= 60).length;
+  const sweetCount = scanResults.filter(r => r.details && r.details.sweetSpot === '最佳').length;
+  showToast(`掃描完成！成功 ${successCount} 檔，≥60分 ${highScore} 檔，加碼甜蜜點 ${sweetCount} 檔`, 'success', 5000);
+}
+
+// ============================================================
+// 粒子背景
+// ============================================================
+function createParticles() {
+  const container = document.getElementById('particles');
+  const count = 30;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (8 + Math.random() * 12) + 's';
+    p.style.animationDelay = (Math.random() * 10) + 's';
+    p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
+    container.appendChild(p);
+  }
+}
+createParticles();
+
+// ============================================================
+// 初始化：預設展開說明卡片
+// ============================================================
+infoBody.classList.add('open');
+infoChevron.classList.add('open');
+document.getElementById('totalCount').textContent = '0';
+document.getElementById('showCount').textContent = '0';
+</script>
+</body>
+</html>
