@@ -323,16 +323,22 @@ tbody tr:hover{background:rgba(79,126,247,.04);}
           <th>類型</th>
           <th>現價</th>
           <th>ETF分數</th>
+          <th>配息</th>
+          <th>RSI</th>
           <th>ATR收縮</th>
           <th>趨勢</th>
           <th>加碼甜蜜點</th>
-          <th>20日波動</th>
+          <th>進場訊號</th>
+          <th>出場訊號</th>
+          <th>1年報酬</th>
+          <th>費用率</th>
+          <th>台積電</th>
           <th>MA50</th>
           <th>MA200</th>
         </tr>
       </thead>
       <tbody id="tableBody">
-        <tr><td colspan="12"><div class="empty-state"><i class="fas fa-chart-line"></i><p>點擊上方按鈕開始掃描</p></div></td></tr>
+        <tr><td colspan="18"><div class="empty-state"><i class="fas fa-chart-line"></i><p>點擊上方按鈕開始掃描</p></div></td></tr>
       </tbody>
     </table>
   </div>
@@ -342,109 +348,109 @@ tbody tr:hover{background:rgba(79,126,247,.04);}
 // ============================================================
 // ETF 清單
 // ============================================================
+// divFreq: M=月配 Q=季配 S=半年 A=年配 N=不配
+// ter: 費用率% | has2330: 是否持有台積電
 const ETF_LIST = [
   // 台股市值型
-  {id:'0050',name:'元大台灣50',type:'market'},
-  {id:'006208',name:'富邦台灣50',type:'market'},
-  {id:'00692',name:'富邦公司治理',type:'market'},
-  {id:'00905',name:'新光臺灣半導體',type:'market'},
-  {id:'00922',name:'國泰台灣領袖50',type:'market'},
+  {id:'0050', name:'元大台灣50',      type:'market',  divFreq:'S', ter:0.43, has2330:true},
+  {id:'006208',name:'富邦台50',       type:'market',  divFreq:'S', ter:0.15, has2330:true},
+  {id:'00692', name:'富邦公司治理',   type:'market',  divFreq:'Q', ter:0.38, has2330:true},
+  {id:'00905', name:'新光臺灣半導體', type:'market',  divFreq:'Q', ter:0.40, has2330:true},
+  {id:'00922', name:'國泰台灣領袖50', type:'market',  divFreq:'Q', ter:0.40, has2330:true},
   // 高股息型
-  {id:'0056',name:'元大高股息',type:'dividend'},
-  {id:'00878',name:'國泰永續高股息',type:'dividend'},
-  {id:'00919',name:'群益台灣精選高息',type:'dividend'},
-  {id:'00929',name:'兆豐台灣價值高息',type:'dividend'},
-  {id:'00713',name:'元大台灣高息低波',type:'dividend'},
-  {id:'00915',name:'凱基優選高股息30',type:'dividend'},
-  {id:'00918',name:'大華優利高填息30',type:'dividend'},
-  {id:'00891',name:'中信中國高股息',type:'dividend'},
-  {id:'00900',name:'富邦特選高股息30',type:'dividend'},
-  {id:'00907',name:'永豐優息存股',type:'dividend'},
-  {id:'00930',name:'群益台灣ESG低碳高息',type:'dividend'},
-  {id:'00939',name:'統一台灣高息動能',type:'dividend'},
-  {id:'00940',name:'元大台灣價值高息',type:'dividend'},
-  {id:'00946',name:'新光優選高股息30',type:'dividend'},
-  {id:'00955',name:'野村優質高息',type:'dividend'},
-  {id:'00956',name:'台新永續高息中小',type:'dividend'},
-  {id:'00957',name:'統一優選高息',type:'dividend'},
-  {id:'00960',name:'富邦台灣優質高息',type:'dividend'},
-  {id:'00963',name:'凱基優選高息精選',type:'dividend'},
-  {id:'00966',name:'群益優選高息',type:'dividend'},
-  // 債券型
-  {id:'00679B',name:'元大美國政府20年期',type:'bond'},
-  {id:'00772B',name:'富邦美國20年期',type:'bond'},
-  {id:'00687B',name:'國泰20年期美債',type:'bond'},
-  {id:'00741B',name:'群益25年期美債',type:'bond'},
-  {id:'00833B',name:'富邦挪威主權',type:'bond'},
-  {id:'00937B',name:'統一美國20年',type:'bond'},
-  {id:'00696B',name:'元大美國20年期B',type:'bond'},
-  {id:'00720B',name:'凱基美國20年期',type:'bond'},
-  {id:'00724B',name:'中信美國20年期',type:'bond'},
-  {id:'00725B',name:'中國信託美國20年',type:'bond'},
-  {id:'00750B',name:'凱基中國債',type:'bond'},
-  {id:'00751B',name:'元大中國債',type:'bond'},
-  {id:'00753B',name:'群益中國債',type:'bond'},
-  {id:'00761B',name:'復華美國20年期',type:'bond'},
-  {id:'00777B',name:'凱基美國20年A',type:'bond'},
-  {id:'00781B',name:'兆豐美國20年期',type:'bond'},
-  {id:'00860B',name:'中信投級公司債',type:'bond'},
-  {id:'00864B',name:'群益投級公司債',type:'bond'},
-  {id:'00870B',name:'富邦投級公司債',type:'bond'},
-  {id:'00879B',name:'元大投級公司債',type:'bond'},
-  {id:'00886B',name:'國泰投級公司債',type:'bond'},
-  {id:'00895B',name:'永豐投級公司債',type:'bond'},
-  {id:'00896B',name:'統一投級公司債',type:'bond'},
-  {id:'00898B',name:'元大美國20年C',type:'bond'},
-  {id:'00899B',name:'中信美國20年B',type:'bond'},
-  {id:'00902B',name:'凱基美國20年B',type:'bond'},
-  {id:'00913B',name:'中信美國20年C',type:'bond'},
-  {id:'00933B',name:'國泰美國20年A',type:'bond'},
-  {id:'00934B',name:'富邦美國20年A',type:'bond'},
-  {id:'00936B',name:'元大美國20年D',type:'bond'},
-  {id:'00938B',name:'統一美國20年B',type:'bond'},
-  {id:'00942B',name:'群益美國20年期',type:'bond'},
-  {id:'00948B',name:'台新美國20年期',type:'bond'},
-  {id:'00950B',name:'永豐美國20年期',type:'bond'},
+  {id:'0056',  name:'元大高股息',         type:'dividend', divFreq:'Q', ter:0.87, has2330:false},
+  {id:'00878', name:'國泰永續高股息',     type:'dividend', divFreq:'M', ter:0.66, has2330:true},
+  {id:'00919', name:'群益台灣精選高息',   type:'dividend', divFreq:'M', ter:0.76, has2330:true},
+  {id:'00929', name:'兆豐台灣價值高息',   type:'dividend', divFreq:'M', ter:0.75, has2330:false},
+  {id:'00713', name:'元大台灣高息低波',   type:'dividend', divFreq:'Q', ter:0.69, has2330:false},
+  {id:'00915', name:'凱基優選高股息30',   type:'dividend', divFreq:'M', ter:0.80, has2330:true},
+  {id:'00918', name:'大華優利高填息30',   type:'dividend', divFreq:'M', ter:0.80, has2330:true},
+  {id:'00891', name:'中信中國高股息',     type:'dividend', divFreq:'Q', ter:0.85, has2330:false},
+  {id:'00900', name:'富邦特選高股息30',   type:'dividend', divFreq:'M', ter:0.78, has2330:true},
+  {id:'00907', name:'永豐優息存股',       type:'dividend', divFreq:'M', ter:0.80, has2330:false},
+  {id:'00930', name:'群益台灣ESG低碳高息',type:'dividend', divFreq:'M', ter:0.75, has2330:true},
+  {id:'00939', name:'統一台灣高息動能',   type:'dividend', divFreq:'Q', ter:0.75, has2330:true},
+  {id:'00940', name:'元大台灣價值高息',   type:'dividend', divFreq:'M', ter:0.72, has2330:true},
+  {id:'00946', name:'新光優選高股息30',   type:'dividend', divFreq:'M', ter:0.80, has2330:true},
+  {id:'00955', name:'野村優質高息',       type:'dividend', divFreq:'M', ter:0.75, has2330:true},
+  {id:'00956', name:'台新永續高息中小',   type:'dividend', divFreq:'M', ter:0.75, has2330:false},
+  {id:'00957', name:'統一優選高息',       type:'dividend', divFreq:'M', ter:0.75, has2330:true},
+  {id:'00960', name:'富邦台灣優質高息',   type:'dividend', divFreq:'M', ter:0.75, has2330:true},
+  {id:'00963', name:'凱基優選高息精選',   type:'dividend', divFreq:'M', ter:0.80, has2330:true},
+  {id:'00966', name:'群益優選高息',       type:'dividend', divFreq:'M', ter:0.75, has2330:true},
+  // 債券型（全部掛牌TSE，用.TW後綴）
+  {id:'00679B',name:'元大美國政府20年期', type:'bond', divFreq:'M', ter:0.31, has2330:false},
+  {id:'00772B',name:'富邦美國20年期',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00687B',name:'國泰20年期美債',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00741B',name:'群益25年期美債',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00833B',name:'富邦挪威主權',       type:'bond', divFreq:'M', ter:0.45, has2330:false},
+  {id:'00937B',name:'統一美國20年',       type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00696B',name:'元大美國20年期B',    type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00720B',name:'凱基美國20年期',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00724B',name:'中信美國20年期',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00725B',name:'中國信託美國20年',   type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00750B',name:'凱基中國債',         type:'bond', divFreq:'M', ter:0.45, has2330:false},
+  {id:'00751B',name:'元大中國債',         type:'bond', divFreq:'M', ter:0.45, has2330:false},
+  {id:'00753B',name:'群益中國債',         type:'bond', divFreq:'M', ter:0.45, has2330:false},
+  {id:'00761B',name:'復華美國20年期',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00777B',name:'凱基美國20年A',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00781B',name:'兆豐美國20年期',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00860B',name:'中信投級公司債',     type:'bond', divFreq:'M', ter:0.48, has2330:false},
+  {id:'00864B',name:'群益投級公司債',     type:'bond', divFreq:'M', ter:0.48, has2330:false},
+  {id:'00870B',name:'富邦投級公司債',     type:'bond', divFreq:'M', ter:0.48, has2330:false},
+  {id:'00879B',name:'元大投級公司債',     type:'bond', divFreq:'M', ter:0.48, has2330:false},
+  {id:'00886B',name:'國泰投級公司債',     type:'bond', divFreq:'M', ter:0.48, has2330:false},
+  {id:'00895B',name:'永豐投級公司債',     type:'bond', divFreq:'M', ter:0.48, has2330:false},
+  {id:'00896B',name:'統一投級公司債',     type:'bond', divFreq:'M', ter:0.48, has2330:false},
+  {id:'00898B',name:'元大美國20年C',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00899B',name:'中信美國20年B',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00902B',name:'凱基美國20年B',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00913B',name:'中信美國20年C',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00933B',name:'國泰美國20年A',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00934B',name:'富邦美國20年A',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00936B',name:'元大美國20年D',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00938B',name:'統一美國20年B',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00942B',name:'群益美國20年期',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00948B',name:'台新美國20年期',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
+  {id:'00950B',name:'永豐美國20年期',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
   // 科技/產業型
-  {id:'00881',name:'國泰台灣5G+',type:'tech'},
-  {id:'00882',name:'富邦台灣半導體',type:'tech'},
-  {id:'00830',name:'富邦臺灣先進電車',type:'tech'},
-  {id:'00890',name:'中信中國半導體',type:'tech'},
-  {id:'00904',name:'新光臺灣半導體A',type:'tech'},
-  {id:'00912',name:'中信中國科技',type:'tech'},
-  {id:'00931',name:'群益台灣科技入息',type:'tech'},
+  {id:'00881',name:'國泰台灣5G+',       type:'tech', divFreq:'S', ter:0.70, has2330:true},
+  {id:'00882',name:'富邦台灣半導體',    type:'tech', divFreq:'A', ter:0.65, has2330:true},
+  {id:'00830',name:'富邦臺灣先進電車', type:'tech', divFreq:'A', ter:0.70, has2330:false},
+  {id:'00890',name:'中信中國半導體',   type:'tech', divFreq:'Q', ter:0.85, has2330:false},
+  {id:'00912',name:'中信中國科技',     type:'tech', divFreq:'Q', ter:0.85, has2330:false},
+  {id:'00931',name:'群益台灣科技入息',type:'tech', divFreq:'M', ter:0.70, has2330:true},
   // ESG型
-  {id:'00850',name:'元大台灣ESG永續',type:'esg'},
-  {id:'00888',name:'富邦台灣永續',type:'esg'},
-  {id:'00908',name:'永豐台灣ESG',type:'esg'},
+  {id:'00850',name:'元大台灣ESG永續', type:'esg', divFreq:'Q', ter:0.54, has2330:true},
+  {id:'00888',name:'富邦台灣永續',    type:'esg', divFreq:'A', ter:0.60, has2330:true},
+  {id:'00908',name:'永豐台灣ESG',     type:'esg', divFreq:'Q', ter:0.65, has2330:true},
   // 海外市場型
-  {id:'00646',name:'元大標普500',type:'overseas'},
-  {id:'00662',name:'富邦NASDAQ',type:'overseas'},
-  {id:'00675L',name:'富邦NASDAQ正2',type:'overseas'},
-  {id:'00852',name:'國泰中國內需',type:'overseas'},
-  {id:'00920',name:'統一恆生科技',type:'overseas'},
-  {id:'00935',name:'野村中國科技',type:'overseas'},
-  // REITs
-  {id:'01001T',name:'富邦一號',type:'reits'},
-  {id:'01002T',name:'國泰一號',type:'reits'},
-  {id:'01003T',name:'新光一號',type:'reits'},
-  {id:'01004T',name:'富邦二號',type:'reits'},
-  {id:'01005T',name:'國泰二號',type:'reits'},
-  {id:'01007T',name:'三鼎不動產',type:'reits'},
+  {id:'00646',name:'元大標普500',     type:'overseas', divFreq:'A', ter:0.45, has2330:false},
+  {id:'00662',name:'富邦NASDAQ',      type:'overseas', divFreq:'A', ter:0.45, has2330:false},
+  {id:'00675L',name:'富邦NASDAQ正2', type:'overseas', divFreq:'N', ter:0.90, has2330:false},
+  {id:'00852',name:'國泰中國內需',    type:'overseas', divFreq:'Q', ter:0.65, has2330:false},
+  {id:'00920',name:'統一恆生科技',    type:'overseas', divFreq:'Q', ter:0.70, has2330:false},
+  {id:'00935',name:'野村中國科技',    type:'overseas', divFreq:'Q', ter:0.70, has2330:false},
+  // REITs（季配，掛牌TSE）
+  {id:'01001T',name:'富邦一號', type:'reits', divFreq:'S', ter:0.25, has2330:false},
+  {id:'01002T',name:'國泰一號', type:'reits', divFreq:'S', ter:0.25, has2330:false},
+  {id:'01003T',name:'新光一號', type:'reits', divFreq:'S', ter:0.25, has2330:false},
+  {id:'01004T',name:'富邦二號', type:'reits', divFreq:'S', ter:0.25, has2330:false},
+  {id:'01005T',name:'國泰二號', type:'reits', divFreq:'S', ter:0.25, has2330:false},
+  {id:'01007T',name:'三鼎',     type:'reits', divFreq:'S', ter:0.25, has2330:false},
   // 其他台股主題
-  {id:'006205',name:'富邦台灣中小',type:'other'},
-  {id:'0051',name:'元大中型100',type:'other'},
-  {id:'0052',name:'富邦科技',type:'other'},
-  {id:'0053',name:'元大電子',type:'other'},
-  {id:'0054',name:'元大台商50',type:'other'},
-  {id:'0055',name:'元大MSCI金融',type:'other'},
-  {id:'00701',name:'國泰臺灣低波',type:'other'},
-  {id:'006204',name:'富邦上櫃',type:'other'}
+  {id:'0051',  name:'元大中型100',   type:'other', divFreq:'A', ter:0.52, has2330:false},
+  {id:'0052',  name:'富邦科技',      type:'other', divFreq:'A', ter:0.46, has2330:true},
+  {id:'0053',  name:'元大電子',      type:'other', divFreq:'A', ter:0.46, has2330:true},
+  {id:'0054',  name:'元大台商50',    type:'other', divFreq:'A', ter:0.65, has2330:false},
+  {id:'0055',  name:'元大MSCI金融', type:'other', divFreq:'A', ter:0.52, has2330:false},
+  {id:'00701', name:'國泰臺灣低波', type:'other', divFreq:'Q', ter:0.66, has2330:true},
+  {id:'006204',name:'富邦上櫃',     type:'other', divFreq:'S', ter:0.23, has2330:false}
 ];
 
-// 決定 Yahoo Finance 後綴：債券型和 REITs 用 .TWO，其餘用 .TW
+// 決定 Yahoo Finance 後綴：上市 TSE 用 .TW；上櫃 OTC（006204 富邦上櫃）用 .TWO
 function getYahooSuffix(etf) {
-  if (etf.type === 'bond') return '.TWO';
+  if (etf.id === '006204') return '.TWO';
   return '.TW';
 }
 
@@ -458,7 +464,7 @@ function calcSMA(arr, period) {
   return sum / period;
 }
 
-function calcETF(data) {
+function calcETF(data, etf) {
   // data: [{open,high,low,close,volume}], 第0筆=最新
   if (!data || data.length < 60) return null;
 
@@ -523,7 +529,7 @@ function calcETF(data) {
 
   // --- 3. 長期趨勢（20分）---
   const ma50 = calcSMA(closes, 50);
-  const ma200 = calcSMA(closes, Math.min(200, data.length));
+  const ma200 = closes.length >= 200 ? calcSMA(closes, 200) : null;
   details.ma50 = ma50;
   details.ma200 = ma200;
 
@@ -531,19 +537,18 @@ function calcETF(data) {
   if (ma50 && ma200 && ma50 > ma200) score += 10;
 
   // --- 4. 回檔加碼甜蜜點（20分）---
-  if (ma50 && ma200) {
-    const hi = Math.max(ma50, ma200);
-    const lo = Math.min(ma50, ma200);
-    if (price >= lo && price <= hi) {
+  // 只在多頭結構（MA50 > MA200）才給分，避免在空頭回檔誤判為好買點
+  if (ma50 && ma200 && ma50 > ma200) {
+    if (price >= ma200 && price <= ma50) {
       score += 20;
-      details.sweetSpot = '最佳';
-    } else if (price > hi) {
+      details.sweetSpot = '最佳'; // 回踩至 MA200~MA50 區間，定期定額甜蜜點
+    } else if (price > ma50) {
       score += 10;
-      details.sweetSpot = '強勢';
+      details.sweetSpot = '強勢'; // MA50 以上，趨勢強但追高CP值較低
     } else {
-      details.sweetSpot = '等待';
+      details.sweetSpot = '等待'; // 跌破 MA200，趨勢破壞
     }
-  } else if (ma50 && price > ma50) {
+  } else if (ma50 && !ma200 && price > ma50) {
     score += 10;
     details.sweetSpot = '強勢';
   } else {
@@ -581,6 +586,24 @@ function calcETF(data) {
     details.volumeRatio = null;
   }
 
+  // --- 7. 配息頻率（10分）---
+  const divScore = {M:10, Q:6, S:3, A:1, N:0};
+  score += (etf && divScore[etf.divFreq]) || 0;
+  details.divFreq = etf ? etf.divFreq : null;
+
+  // --- 8. 費用率 TER（10分）---
+  if (etf && etf.ter != null) {
+    if (etf.ter < 0.30) score += 10;
+    else if (etf.ter < 0.50) score += 7;
+    else if (etf.ter < 0.70) score += 4;
+    else score += 1;
+  }
+  details.ter = etf ? etf.ter : null;
+
+  // --- 9. 持有台積電（5分）---
+  if (etf && etf.has2330) score += 5;
+  details.has2330 = etf ? etf.has2330 : false;
+
   // --- 趨勢狀態 ---
   if (ma200 && price > ma200 && ma50 && ma50 > ma200) {
     details.trendStatus = 'Stage2';
@@ -590,13 +613,59 @@ function calcETF(data) {
     details.trendStatus = '空頭';
   }
 
+  // --- 1年報酬率 ---
+  const ret1Y = closes.length > 252 ? +((price - closes[252]) / closes[252] * 100).toFixed(1) : null;
+  details.ret1Y = ret1Y;
+  if (ret1Y !== null) {
+    if (ret1Y > 15) score += 5;
+    else if (ret1Y > 8) score += 3;
+    else if (ret1Y > 0) score += 1;
+  }
+
+  // --- RSI(14) ---
+  function calcRSI(arr, period=14) {
+    if (arr.length < period + 1) return null;
+    let gains = 0, losses = 0;
+    for (let i = 0; i < period; i++) {
+      const chg = arr[i] - arr[i+1]; // arr[0]=newest
+      if (chg > 0) gains += chg; else losses -= chg;
+    }
+    const ag = gains / period, al = losses / period;
+    if (al === 0) return 100;
+    return Math.round(100 - 100 / (1 + ag / al));
+  }
+  const rsi = calcRSI(closes);
+  details.rsi = rsi;
+
+  // --- 進場訊號 ---
+  const isSweet = details.sweetSpot === '最佳';
+  const isAtrOk = details.atrStatus === '強收縮' || details.atrStatus === '收縮中';
+  const rsiOk   = rsi !== null && rsi >= 35 && rsi <= 60;
+  if (isSweet && isAtrOk && rsiOk) {
+    details.entrySignal = '★ 絕佳進場'; details.entryClass = 'sig-g';
+  } else if (isSweet && (isAtrOk || rsiOk)) {
+    details.entrySignal = '△ 可考慮';  details.entryClass = 'sig-o';
+  } else {
+    details.entrySignal = '— 等待';    details.entryClass = 'sig-n';
+  }
+
+  // --- 出場訊號 ---
+  const distAboveMA50 = ma50 ? (price - ma50) / ma50 * 100 : null;
+  if (rsi !== null && rsi > 75) {
+    details.exitSignal = '⚠ RSI過熱'; details.exitClass = 'sig-r';
+  } else if (distAboveMA50 !== null && distAboveMA50 > 15) {
+    details.exitSignal = '⚠ 超漲15%+'; details.exitClass = 'sig-o';
+  } else {
+    details.exitSignal = '— 正常';     details.exitClass = 'sig-n';
+  }
+
   // --- 信號燈 ---
   if (score >= 70) details.signal = 'green';
   else if (score >= 40) details.signal = 'yellow';
   else details.signal = 'red';
 
   details.price = price;
-  details.score = score;
+  details.score = Math.min(score, 100);
 
   return details;
 }
@@ -742,11 +811,11 @@ function renderTable() {
   document.getElementById('totalCount').textContent = scanResults.filter(r => r.details).length;
 
   if (filtered.length === 0 && scanResults.length > 0) {
-    tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><i class="fas fa-filter"></i><p>目前篩選條件無符合的 ETF</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="18"><div class="empty-state"><i class="fas fa-filter"></i><p>目前篩選條件無符合的 ETF</p></div></td></tr>`;
     return;
   }
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><i class="fas fa-chart-line"></i><p>點擊上方按鈕開始掃描</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="18"><div class="empty-state"><i class="fas fa-chart-line"></i><p>點擊上方按鈕開始掃描</p></div></td></tr>`;
     return;
   }
 
@@ -778,21 +847,48 @@ function renderTable() {
     else if (d.sweetSpot === '強勢') sweetCls = 'sweet-strong';
 
     // TradingView 連結
-    const suffix = getYahooSuffix(etf);
-    const tvSymbol = etf.id + suffix;
     const tvUrl = `https://www.tradingview.com/chart/?symbol=TSE%3A${etf.id}`;
+
+    // 配息頻率
+    const divMap = {M:'月配',Q:'季配',S:'半年',A:'年配',N:'不配'};
+    const divText = divMap[d.divFreq] || '--';
+    const divCls  = d.divFreq==='M'?'style="color:var(--mint);font-weight:700"'
+                  : d.divFreq==='Q'?'style="color:var(--sky)"'
+                  : 'style="color:var(--text2)"';
+
+    // RSI 顏色
+    const rsiText = d.rsi != null ? d.rsi : '--';
+    const rsiStyle = d.rsi==null ? '' : d.rsi>75 ? 'style="color:var(--red);font-weight:700"'
+                   : d.rsi>65 ? 'style="color:var(--orange);font-weight:700"'
+                   : d.rsi>=35 ? 'style="color:var(--mint)"'
+                   : 'style="color:var(--sky)"';
+
+    // 1年報酬率
+    const ret1YText = d.ret1Y != null ? (d.ret1Y>0?'+':'')+d.ret1Y+'%' : '--';
+    const ret1YStyle= d.ret1Y==null?'': d.ret1Y>0?'style="color:var(--mint)"':'style="color:var(--red)"';
+
+    // 費用率
+    const terText = d.ter != null ? d.ter+'%' : '--';
+    const terStyle= d.ter==null?'': d.ter<0.3?'style="color:var(--mint)"'
+                  : d.ter<0.5?'style="color:var(--sky)"':'style="color:var(--text2)"';
 
     html += `<tr>
       <td><span class="signal-dot ${sigCls}"></span></td>
       <td><a href="${tvUrl}" target="_blank" rel="noopener" class="ticker-link">${etf.id}</a></td>
-      <td style="font-weight:500;">${etf.name}</td>
+      <td style="font-weight:500;white-space:nowrap">${etf.name}</td>
       <td><span class="type-tag ${tm.cls}">${tm.label}</span></td>
       <td style="font-variant-numeric:tabular-nums;">${fmt(d.price)}</td>
       <td class="score-cell ${scoreCls}">${d.score}</td>
+      <td><span ${divCls}>${divText}</span></td>
+      <td><span ${rsiStyle}>${rsiText}</span></td>
       <td><span class="atr-tag ${atrCls}">${atrText}</span></td>
       <td><span class="trend-tag ${trendCls}">${trendText}</span></td>
       <td><span class="sweet-tag ${sweetCls}">${sweetText}</span></td>
-      <td style="font-variant-numeric:tabular-nums;color:var(--text2);">${d.volatility20 != null ? fmt(d.volatility20, 2) + '%' : '--'}</td>
+      <td><span class="${d.entryClass||'sig-n'}" style="font-size:.7rem;padding:2px 6px;border-radius:4px">${d.entrySignal||'—'}</span></td>
+      <td><span class="${d.exitClass||'sig-n'}" style="font-size:.7rem;padding:2px 6px;border-radius:4px">${d.exitSignal||'—'}</span></td>
+      <td><span ${ret1YStyle}>${ret1YText}</span></td>
+      <td><span ${terStyle}>${terText}</span></td>
+      <td style="font-size:.7rem">${d.has2330?'<span style="color:var(--mint)">✓</span>':'<span style="color:var(--text2)">—</span>'}</td>
       <td class="ma-cell">${d.ma50 != null ? fmt(d.ma50) : '--'}</td>
       <td class="ma-cell">${d.ma200 != null ? fmt(d.ma200) : '--'}</td>
     </tr>`;
@@ -848,7 +944,7 @@ async function startScan() {
     const ohlcv = await fetchETFData(etf);
 
     if (ohlcv && ohlcv.length >= 60) {
-      const details = calcETF(ohlcv);
+      const details = calcETF(ohlcv, etf);
       scanResults.push({ etf, details });
     } else {
       failed++;
