@@ -3394,9 +3394,9 @@ function renderTable(){
         ?(v.gainFrom52Low-v.distVcpPivot)/(1+v.distVcpPivot/100)
         :v.gainFrom52Low;
       if(gainAtPivot==null||gainAtPivot<30)return false;
-      // EPS 和 ROE：null = 無資料 = 不合格（買點需最嚴格把關）
-      if(fund.earningsGrowth==null||fund.earningsGrowth<0)return false;
-      if(fund.roe==null||fund.roe<0.12)return false;
+      // null = 無資料 = 放行，只排除明確負值
+      if(fund.earningsGrowth!=null&&fund.earningsGrowth<0)return false;
+      if(fund.roe!=null&&fund.roe<0.12)return false;
       // 營收衰退（有資料才判斷，null 放行）
       if(fund.revenueGrowth!=null&&fund.revenueGrowth<-0.05)return false;
       // 外資+投信同時賣超
