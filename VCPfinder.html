@@ -979,6 +979,7 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('score')">VCP ⇅</th>
       <th onclick="setSort('canslim',this)">CANSLIM ⇅</th>
       <th onclick="setSort('fund',this)">基本面 ⇅</th>
+      <th onclick="setSort('moat',this)" title="護城河評分：毛利率（定價力/客戶非你不買）+ ROE（打不死）+ 營業利益率（效率）+ EPS成長（持續性）。≥80=極強，股價未漲前是最佳買點。">護城河 ⇅</th>
       <th onclick="setSort('chips',this)">籌碼 ⇅</th>
       <th onclick="setSort('pivot',this)" title="買點位置：股價與近30日高點的關係。整理中→不買（等突破）。即將突破→不買（設警示）。突破→等回踩縮量才買。過熱→不買。操作訊號看右邊「訊號」欄。">買點 ⇅</th>
       <th onclick="setSort('signal',this)" title="進場訊號：✅買=回踩地量，現在可買。⏳不買=條件未到位，繼續等。🚫不買=過熱或尚未突破。操作流程：等放量突破→等回踩縮量（地量）→才買。">訊號 ⇅</th>
@@ -3001,6 +3002,7 @@ if(sortKey==='graham'){
       const mg=r=>marginMap[r.code]?.change??-Infinity;
       return sortAsc?mg(a)-mg(b):mg(b)-mg(a);
     }
+    if(sortKey==='moat'){const mv=r=>calcMoat(r.fund||null)??-1;return sortAsc?mv(a)-mv(b):mv(b)-mv(a);}
     return 0;
   });
 }
@@ -3016,6 +3018,17 @@ function calcFundScore(fund){
   if(fund.revenueGrowth!=null){tot+=15; pts+=fund.revenueGrowth>=0.1?15:fund.revenueGrowth>=0?7:0;}
   if(tot===0) return null;
   return Math.round(pts/tot*100);
+}
+function calcMoat(fund){
+  if(!fund)return null;
+  let s=0,k=0;
+  if(fund.grossMargin!=null){k++;s+=fund.grossMargin>=0.50?40:fund.grossMargin>=0.35?28:fund.grossMargin>=0.25?18:fund.grossMargin>=0.15?8:0;}
+  if(fund.roe!=null){k++;if(fund.roe<0)s-=10;else s+=fund.roe>=0.25?30:fund.roe>=0.20?22:fund.roe>=0.15?15:fund.roe>=0.08?7:0;}
+  if(fund.operatingMargin!=null){k++;s+=fund.operatingMargin>=0.20?20:fund.operatingMargin>=0.15?14:fund.operatingMargin>=0.10?8:fund.operatingMargin>=0.05?4:0;}
+  const _eg=fund.earningsGrowth!=null&&fund.earningsGrowth!==0?fund.earningsGrowth:null;
+  if(_eg!=null){k++;if(_eg<0)s-=8;else s+=_eg>=0.30?15:_eg>=0.15?10:_eg>=0.05?5:0;}
+  if(k===0)return null;
+  return Math.min(Math.max(Math.round(s),0),100);
 }
 // ─── CAN SLIM (O'Neil) ────────────────────────────────────────────────────
 // C: Current qtr EPS growth ≥25%  A: Annual ROE≥15% (sustained profits proxy)
@@ -3249,6 +3262,20 @@ function renderTable(){
     const fundLabel=fg?(fg.score!=null?`${fg.label} ${fg.score}`:fg.label):(r.ex==='TWO'?'上櫃':null);
     const fundTip=fundDetail||(r.ex==='TWO'?'<span style="color:#9ca3af">上櫃股財報需掃描後由 Yahoo Finance 補抓</span>':'<span style="color:#9ca3af">無財報資料</span>');
     const fundHTML=scoreBadge(fundLabel,fg?.cls||'sN',fundTip);
+    // 護城河評分
+    const ms=calcMoat(fund);
+    const moatLbl=ms===null?null:ms>=80?'🏰 極強':ms>=65?'⭐ 強':ms>=45?'📊 中':ms>=25?'弱':'—';
+    const moatCls=ms!=null?(ms>=80?'sA':ms>=65?'sB':ms>=45?'sO':'sN'):'sN';
+    const moatDetail=ms===null?'<span style="color:#9ca3af">無基本面資料</span>':[
+      fund.grossMargin!=null?`<div class="fund-row"><span class="fund-lbl">毛利率</span>${fmtPct2(fund.grossMargin)}<span style="font-size:.6rem;color:${fund.grossMargin>=0.50?'#34d399':fund.grossMargin>=0.35?'#a78bfa':fund.grossMargin>=0.25?'#fbbf24':'#9ca3af'}">${fund.grossMargin>=0.50?' 定價霸主':fund.grossMargin>=0.35?' 強':fund.grossMargin>=0.25?' 中':' 弱'}</span></div>`:'',
+      fund.roe!=null?`<div class="fund-row"><span class="fund-lbl">ROE</span>${fmtROE(fund.roe)}<span style="font-size:.6rem;color:${fund.roe>=0.25?'#34d399':fund.roe>=0.15?'#a78bfa':'#9ca3af'}">${fund.roe>=0.25?' 極強':fund.roe>=0.20?' 優秀':fund.roe>=0.15?' 良好':' 中等'}</span></div>`:'',
+      fund.operatingMargin!=null?`<div class="fund-row"><span class="fund-lbl">營益率</span>${fmtPct2(fund.operatingMargin)}<span style="font-size:.6rem;color:${fund.operatingMargin>=0.20?'#34d399':fund.operatingMargin>=0.10?'#fbbf24':'#9ca3af'}">${fund.operatingMargin>=0.20?' 高效':fund.operatingMargin>=0.10?' 穩健':' 低'}</span></div>`:'',
+      fund.earningsGrowth!=null&&fund.earningsGrowth!==0?`<div class="fund-row"><span class="fund-lbl">EPS↑</span>${fmtPct2(fund.earningsGrowth)}<span style="font-size:.6rem;color:${fund.earningsGrowth>=0.15?'#34d399':fund.earningsGrowth>=0?'#fbbf24':'#f87171'}">${fund.earningsGrowth>=0.15?' 護城河擴張':fund.earningsGrowth>=0?' 持平':' ⚠️衰退'}</span></div>`:'',
+      `<div style="margin-top:4px;font-size:.62rem;color:var(--text2);border-top:1px solid var(--border);padding-top:4px">${ms>=80?'極強護城河 — 客戶非你不買':ms>=65?'穩固護城河 — 競爭優勢明顯':ms>=45?'有護城河 — 持續觀察':'護城河薄弱 — 競爭風險高'}</div>`,
+    ].filter(Boolean).join('');
+    const moatCell=ms===null
+      ?'<td style="text-align:center;color:var(--text2);font-size:.65rem">—</td>'
+      :`<td>${scoreBadge(moatLbl+' '+ms,moatCls,moatDetail)}</td>`;
     // Chips badge
     const chips=chipsMap[r.code];
     const cl=chipsLabel(chips);
@@ -3353,7 +3380,7 @@ function renderTable(){
             <div style="font-size:.58rem;color:var(--text2)">${daysLeft>=0?daysLeft+'天後':'已過'}</div>
           </td>`;
         })();
-        return cs.score+`<td>${fundHTML}</td><td>${chipsHTML}</td>`+pivotCell+signalCell+grahamCell+mgCell+exDivCell+cs.seven;
+        return cs.score+`<td>${fundHTML}</td>${moatCell}<td>${chipsHTML}</td>`+pivotCell+signalCell+grahamCell+mgCell+exDivCell+cs.seven;
       })()}
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
       <td><div class="ma-row">${maHTML||'—'}</div></td>
