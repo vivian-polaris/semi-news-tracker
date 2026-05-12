@@ -3465,18 +3465,23 @@ function renderTable(){
       const fNet=parseChipNum(chipsMap[r.code]?.foreignNet);
       const tNet=parseChipNum(chipsMap[r.code]?.trustNet);
       const mg=marginMap[r.code];
+      // 硬性排除
       if(v.rsi>80||(fNet<0&&tNet<0))return-1;
+      if(v.v10!=null&&v.v10<500000)return-1;                          // 低流動性：均量<500張
+      if(v.closeRatio!=null&&v.closeRatio<0.4&&v.vRat!=null&&v.vRat>2.0)return-1; // 爆量收黑K（主力出貨）
+      if(v.vRat!=null&&v.vRat>=5.0&&v.closeRatio!=null&&v.closeRatio<0.5)return-1; // 爆天量收低（FOMO套牢）
+      // 評分
       if(fNet>0&&tNet>0)s+=30;else if(fNet>0||tNet>0)s+=15;
       if(v.pctH<=3)s+=20;else if(v.pctH<=7)s+=15;else if(v.pctH<=12)s+=10;else if(v.pctH<=20)s+=5;
-      if(v.vRat>=2.0)s+=15;else if(v.vRat>=1.5)s+=12;else if(v.vRat>=1.2)s+=8;else s+=3;
+      if(v.vRat>=3.0)s+=25;else if(v.vRat>=2.0)s+=20;else if(v.vRat>=1.5)s+=10;else if(v.vRat>=1.2)s+=5;
+      // 量比 <1.2 不加分（量縮不適合隔日沖）
       if(v.rsi>=55&&v.rsi<=70)s+=10;else if(v.rsi>=50&&v.rsi<=75)s+=5;
       if(v.score>=85)s+=10;else if(v.score>=70)s+=5;
       if(v.stage2)s+=5;
-      if(v.atrRat<0.6)s+=5;else if(v.atrRat<0.75)s+=3;
-      if(v.fin?.isExhaustion)s+=5;
-      if(v.closeRatio!=null){if(v.closeRatio>=0.75)s+=10;else if(v.closeRatio>=0.5)s+=5;else if(v.closeRatio<0.4&&v.vRat>2.0)s-=15;}
+      // 移除 ATR 加分（隔日沖需要波動，ATR收縮是VCP邏輯非隔日沖邏輯）
+      // 移除 isExhaustion 加分（耗竭是賣點，與短線動能矛盾）
+      if(v.closeRatio!=null){if(v.closeRatio>=0.75)s+=10;else if(v.closeRatio>=0.5)s+=5;}
       if(mg?.change>0)s-=15;else if(mg?.change<0)s+=8;
-      if(v.vRat>=3.0)s-=10;
       return s>=60?s:-1;
     };
 
