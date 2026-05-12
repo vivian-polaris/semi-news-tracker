@@ -1,0 +1,182 @@
+{
+  "2330": {
+    "name": "台積電",
+    "moatType": "技術壟斷",
+    "moatDesc": "全球最先進半導體製造商，2nm/3nm製程領先同業3-5年，蘋果/NVIDIA/AMD等頂端客戶無可替代",
+    "moatSources": ["製程技術壁壘", "設備累積難以複製", "客戶深度整合"],
+    "strength": 98,
+    "risk": "地緣政治風險",
+    "lastUpdated": "2026-05"
+  },
+  "3008": {
+    "name": "大立光",
+    "moatType": "技術壟斷",
+    "moatDesc": "iPhone高階鏡頭模組獨家供應商，光學設計+精密製造無人能敵，蘋果認證門檻極高",
+    "moatSources": ["光學技術壁壘", "蘋果長期認證", "精密製造良率難複製"],
+    "strength": 95,
+    "risk": "蘋果集中風險、中廠追趕",
+    "lastUpdated": "2026-05"
+  },
+  "2383": {
+    "name": "台光電",
+    "moatType": "認證壁壘",
+    "moatDesc": "M9/M8高頻CCL技術領先，AI伺服器/高速傳輸PCB指定供應商，客戶重新認證成本極高（需6-18個月）",
+    "moatSources": ["M9 CCL技術認證", "客戶切換成本高", "AI需求結構性成長"],
+    "strength": 88,
+    "risk": "競爭者技術追趕",
+    "lastUpdated": "2026-05"
+  },
+  "6488": {
+    "name": "金居",
+    "moatType": "供應壟斷",
+    "moatDesc": "M9 CCL關鍵上游原料（電解銅箔）主要供應商，台光電/南亞等CCL廠商依賴度高，替代來源少",
+    "moatSources": ["上游原料寡占", "供應鏈不可或缺", "M9規格認證門檻"],
+    "strength": 85,
+    "risk": "日商競爭、銅價波動",
+    "lastUpdated": "2026-05"
+  },
+  "3015": {
+    "name": "尖點",
+    "moatType": "市場主導",
+    "moatDesc": "台灣市佔率超過50%，主要產品在台灣細分市場形成壟斷地位，客戶高度依賴",
+    "moatSources": ["本土市場壟斷", "切換成本高", "長期客戶關係"],
+    "strength": 82,
+    "risk": "市場規模天花板",
+    "lastUpdated": "2026-05"
+  },
+  "2454": {
+    "name": "聯發科",
+    "moatType": "技術壟斷",
+    "moatDesc": "全球手機AP/Wi-Fi/藍牙晶片領導者，中高階智慧手機無線平台主要供應商，研發投入規模難以追趕",
+    "moatSources": ["IC設計技術積累", "生態系整合", "規模研發優勢"],
+    "strength": 88,
+    "risk": "高通/三星競爭",
+    "lastUpdated": "2026-05"
+  },
+  "2327": {
+    "name": "國巨",
+    "moatType": "規模優勢",
+    "moatDesc": "全球前三大被動元件(MLCC/電阻)廠商，規模與製造效率形成成本護城河，汽車/工業客戶黏性高",
+    "moatSources": ["製造規模成本優勢", "全球供應鏈佈局", "汽車級認證"],
+    "strength": 80,
+    "risk": "中廠低價競爭",
+    "lastUpdated": "2026-05"
+  },
+  "2049": {
+    "name": "上銀",
+    "moatType": "技術壟斷",
+    "moatDesc": "全球線性滑軌/滾珠螺桿領導品牌，精密加工技術與品牌認可度高，機器人/工具機客戶指定採用",
+    "moatSources": ["精密製造技術", "全球品牌認可", "工具機客戶認證"],
+    "strength": 82,
+    "risk": "日系精工競爭",
+    "lastUpdated": "2026-05"
+  },
+  "3533": {
+    "name": "嘉澤",
+    "moatType": "認證壁壘",
+    "moatDesc": "AI伺服器高速連接器(PCIe/GPU)領先廠商，NVIDIA/AMD平台認證，散熱與訊號完整性技術壁壘高",
+    "moatSources": ["AI平台認證壁壘", "高速訊號技術", "客戶切換成本"],
+    "strength": 85,
+    "risk": "競爭者進入",
+    "lastUpdated": "2026-05"
+  },
+  "6669": {
+    "name": "緯穎",
+    "moatType": "市場主導",
+    "moatDesc": "全球AI伺服器ODM領導廠商，Meta/Microsoft等超大規模雲端客戶直接合作，設計整合能力強",
+    "moatSources": ["超大規模客戶直供", "AI伺服器設計能力", "供應鏈管理"],
+    "strength": 83,
+    "risk": "客戶集中、自製趨勢",
+    "lastUpdated": "2026-05"
+  },
+  "2308": {
+    "name": "台達電",
+    "moatType": "技術壟斷",
+    "moatDesc": "全球電源供應器/散熱模組領導品牌，電力電子技術積累深厚，工業自動化/EV充電進入高價值市場",
+    "moatSources": ["電力電子技術", "全球品牌", "綠能轉型佈局"],
+    "strength": 85,
+    "risk": "中廠低價競爭",
+    "lastUpdated": "2026-05"
+  },
+  "3034": {
+    "name": "聯詠",
+    "moatType": "市場主導",
+    "moatDesc": "全球顯示器驅動IC(DDIC)前三大廠，面板廠長期合作關係，切換供應商需重新驗證成本高",
+    "moatSources": ["DDIC技術積累", "面板廠深度合作", "重新驗證壁壘"],
+    "strength": 78,
+    "risk": "瑞昱/奇景競爭",
+    "lastUpdated": "2026-05"
+  },
+  "2379": {
+    "name": "瑞昱",
+    "moatType": "市場主導",
+    "moatDesc": "全球網路晶片(Ethernet/Audio)領導品牌，PC主板必備，品牌認可度與BIOS整合壁壘高",
+    "moatSources": ["網路晶片技術", "品牌綁定", "生態系整合"],
+    "strength": 80,
+    "risk": "Intel/Broadcom競爭",
+    "lastUpdated": "2026-05"
+  },
+  "2382": {
+    "name": "廣達",
+    "moatType": "規模優勢",
+    "moatDesc": "全球最大筆電ODM廠商，AI伺服器製造能力快速擴張，與Google/Meta等超大規模客戶深度整合",
+    "moatSources": ["製造規模", "超大規模客戶關係", "AI伺服器設計"],
+    "strength": 75,
+    "risk": "鴻海/緯創競爭",
+    "lastUpdated": "2026-05"
+  },
+  "2345": {
+    "name": "智邦",
+    "moatType": "認證壁壘",
+    "moatDesc": "企業網路設備(交換機/路由器)ODM領導，AWS/Microsoft等雲端客戶指定，白牌認證門檻高",
+    "moatSources": ["雲端客戶認證", "網路設備ODM技術", "長期合作關係"],
+    "strength": 80,
+    "risk": "客戶自製化趨勢",
+    "lastUpdated": "2026-05"
+  },
+  "3037": {
+    "name": "欣興",
+    "moatType": "技術壟斷",
+    "moatDesc": "ABF載板全球領導廠商之一，高階CPU/GPU封裝基板技術壁壘高，擴產週期長（3-4年）",
+    "moatSources": ["ABF載板技術", "擴產壁壘", "Intel/AMD認證"],
+    "strength": 85,
+    "risk": "需求波動、南亞科競爭",
+    "lastUpdated": "2026-05"
+  },
+  "3711": {
+    "name": "日月光投控",
+    "moatType": "規模優勢",
+    "moatDesc": "全球最大半導體封測廠，先進封裝(SiP/CoWoS)能力全球領先，台積電合作夥伴地位不可取代",
+    "moatSources": ["封測規模第一", "先進封裝技術", "台積電生態系"],
+    "strength": 87,
+    "risk": "自主封裝趨勢",
+    "lastUpdated": "2026-05"
+  },
+  "2317": {
+    "name": "鴻海",
+    "moatType": "規模優勢",
+    "moatDesc": "全球最大電子製造服務商，製造規模與供應鏈管理能力無人能及，蘋果iPhone主要組裝廠",
+    "moatSources": ["製造規模全球第一", "蘋果深度合作", "供應鏈整合能力"],
+    "strength": 72,
+    "risk": "蘋果分散風險、AI轉型不確定",
+    "lastUpdated": "2026-05"
+  },
+  "6239": {
+    "name": "力成",
+    "moatType": "認證壁壘",
+    "moatDesc": "DRAM/NAND封測領導廠，三星/SK海力士/美光等記憶體廠認證供應商，客戶認證週期長",
+    "moatSources": ["記憶體封測技術", "全球記憶體廠認證", "切換成本高"],
+    "strength": 78,
+    "risk": "記憶體景氣循環",
+    "lastUpdated": "2026-05"
+  },
+  "3189": {
+    "name": "景碩",
+    "moatType": "技術壟斷",
+    "moatDesc": "高階封裝基板(BGA/CSP)廠商，IC設計公司客戶認證門檻高，良率與技術積累難以快速複製",
+    "moatSources": ["封裝基板技術", "IC設計客戶認證", "良率優勢"],
+    "strength": 76,
+    "risk": "欣興/景碩同質競爭",
+    "lastUpdated": "2026-05"
+  }
+}

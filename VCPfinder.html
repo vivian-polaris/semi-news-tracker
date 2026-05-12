@@ -1113,6 +1113,7 @@ let fundMin=0;
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
 let marginMap={}; // code -> {today, prev, change} 融資餘額（千股）
+let moatDb={}; // Layer 2: 人工審定護城河資料庫
 let twseDailyMap={chips:{},monthRevenue:{},income:{}}; // pre-fetched by GitHub Actions
 let stockPriceMap={};   // pre-fetched OHLCV: code -> {n,c[],h[],l[],v[]}
 let stockPriceLoaded=false;
@@ -3002,7 +3003,7 @@ if(sortKey==='graham'){
       const mg=r=>marginMap[r.code]?.change??-Infinity;
       return sortAsc?mg(a)-mg(b):mg(b)-mg(a);
     }
-    if(sortKey==='moat'){const mv=r=>calcMoat(r.fund||null)??-1;return sortAsc?mv(a)-mv(b):mv(b)-mv(a);}
+    if(sortKey==='moat'){const mv=r=>moatDb[r.code]?.strength??calcMoat(r.fund||null)??-1;return sortAsc?mv(a)-mv(b):mv(b)-mv(a);}
     return 0;
   });
 }
@@ -3262,20 +3263,37 @@ function renderTable(){
     const fundLabel=fg?(fg.score!=null?`${fg.label} ${fg.score}`:fg.label):(r.ex==='TWO'?'上櫃':null);
     const fundTip=fundDetail||(r.ex==='TWO'?'<span style="color:#9ca3af">上櫃股財報需掃描後由 Yahoo Finance 補抓</span>':'<span style="color:#9ca3af">無財報資料</span>');
     const fundHTML=scoreBadge(fundLabel,fg?.cls||'sN',fundTip);
-    // 護城河評分
-    const ms=calcMoat(fund);
-    const moatLbl=ms===null?null:ms>=80?'🏰 極強':ms>=65?'⭐ 強':ms>=45?'📊 中':ms>=25?'弱':'—';
-    const moatCls=ms!=null?(ms>=80?'sA':ms>=65?'sB':ms>=45?'sO':'sN'):'sN';
-    const moatDetail=ms===null?'<span style="color:#9ca3af">無基本面資料</span>':[
-      fund.grossMargin!=null?`<div class="fund-row"><span class="fund-lbl">毛利率</span>${fmtPct2(fund.grossMargin)}<span style="font-size:.6rem;color:${fund.grossMargin>=0.50?'#34d399':fund.grossMargin>=0.35?'#a78bfa':fund.grossMargin>=0.25?'#fbbf24':'#9ca3af'}">${fund.grossMargin>=0.50?' 定價霸主':fund.grossMargin>=0.35?' 強':fund.grossMargin>=0.25?' 中':' 弱'}</span></div>`:'',
-      fund.roe!=null?`<div class="fund-row"><span class="fund-lbl">ROE</span>${fmtROE(fund.roe)}<span style="font-size:.6rem;color:${fund.roe>=0.25?'#34d399':fund.roe>=0.15?'#a78bfa':'#9ca3af'}">${fund.roe>=0.25?' 極強':fund.roe>=0.20?' 優秀':fund.roe>=0.15?' 良好':' 中等'}</span></div>`:'',
-      fund.operatingMargin!=null?`<div class="fund-row"><span class="fund-lbl">營益率</span>${fmtPct2(fund.operatingMargin)}<span style="font-size:.6rem;color:${fund.operatingMargin>=0.20?'#34d399':fund.operatingMargin>=0.10?'#fbbf24':'#9ca3af'}">${fund.operatingMargin>=0.20?' 高效':fund.operatingMargin>=0.10?' 穩健':' 低'}</span></div>`:'',
-      fund.earningsGrowth!=null&&fund.earningsGrowth!==0?`<div class="fund-row"><span class="fund-lbl">EPS↑</span>${fmtPct2(fund.earningsGrowth)}<span style="font-size:.6rem;color:${fund.earningsGrowth>=0.15?'#34d399':fund.earningsGrowth>=0?'#fbbf24':'#f87171'}">${fund.earningsGrowth>=0.15?' 護城河擴張':fund.earningsGrowth>=0?' 持平':' ⚠️衰退'}</span></div>`:'',
-      `<div style="margin-top:4px;font-size:.62rem;color:var(--text2);border-top:1px solid var(--border);padding-top:4px">${ms>=80?'極強護城河 — 客戶非你不買':ms>=65?'穩固護城河 — 競爭優勢明顯':ms>=45?'有護城河 — 持續觀察':'護城河薄弱 — 競爭風險高'}</div>`,
-    ].filter(Boolean).join('');
-    const moatCell=ms===null
-      ?'<td style="text-align:center;color:var(--text2);font-size:.65rem">—</td>'
-      :`<td>${scoreBadge(moatLbl+' '+ms,moatCls,moatDetail)}</td>`;
+    // 護城河評分：Layer 2 (人工審定 moat_db) 優先，否則 Layer 1 (財務指標)
+    const dbM=moatDb[r.code];
+    let moatCell;
+    if(dbM){
+      const ms=dbM.strength;
+      const moatLbl=ms>=80?'🏰 極強':ms>=65?'⭐ 強':ms>=45?'📊 中':'弱';
+      const moatCls=ms>=80?'sA':ms>=65?'sB':ms>=45?'sO':'sN';
+      const moatDetail=[
+        `<div style="font-weight:700;font-size:.72rem;color:var(--purple);margin-bottom:4px">${dbM.moatType}</div>`,
+        `<div style="font-size:.7rem;line-height:1.5;margin-bottom:6px">${escH(dbM.moatDesc)}</div>`,
+        dbM.moatSources?.length?`<div style="font-size:.62rem;color:var(--text2)">${dbM.moatSources.map(escH).join(' · ')}</div>`:'',
+        dbM.risk?`<div style="font-size:.62rem;color:#f87171;margin-top:4px">⚠️ ${escH(dbM.risk)}</div>`:'',
+        `<div style="font-size:.6rem;color:var(--text2);margin-top:4px;border-top:1px solid var(--border);padding-top:4px">人工審定 ${dbM.lastUpdated||''}</div>`,
+      ].filter(Boolean).join('');
+      const safeName=r.name.replace(/'/g,'&#39;');
+      moatCell=`<td><div>${scoreBadge(moatLbl+' '+ms,moatCls,moatDetail)}<button onclick="loadMoatAnalysis('${r.code}','${safeName}')" style="display:block;width:100%;margin-top:3px;font-size:.6rem;padding:2px 4px;background:none;border:1px solid var(--purple);color:var(--purple);border-radius:3px;cursor:pointer;line-height:1.4">🔍 深度</button></div></td>`;
+    } else {
+      const ms=calcMoat(fund);
+      const moatLbl=ms===null?null:ms>=80?'🏰 極強':ms>=65?'⭐ 強':ms>=45?'📊 中':ms>=25?'弱':'—';
+      const moatCls=ms!=null?(ms>=80?'sA':ms>=65?'sB':ms>=45?'sO':'sN'):'sN';
+      const moatDetail=ms===null?'<span style="color:#9ca3af">無基本面資料</span>':[
+        fund.grossMargin!=null?`<div class="fund-row"><span class="fund-lbl">毛利率</span>${fmtPct2(fund.grossMargin)}<span style="font-size:.6rem;color:${fund.grossMargin>=0.50?'#34d399':fund.grossMargin>=0.35?'#a78bfa':fund.grossMargin>=0.25?'#fbbf24':'#9ca3af'}">${fund.grossMargin>=0.50?' 定價霸主':fund.grossMargin>=0.35?' 強':fund.grossMargin>=0.25?' 中':' 弱'}</span></div>`:'',
+        fund.roe!=null?`<div class="fund-row"><span class="fund-lbl">ROE</span>${fmtROE(fund.roe)}<span style="font-size:.6rem;color:${fund.roe>=0.25?'#34d399':fund.roe>=0.15?'#a78bfa':'#9ca3af'}">${fund.roe>=0.25?' 極強':fund.roe>=0.20?' 優秀':fund.roe>=0.15?' 良好':' 中等'}</span></div>`:'',
+        fund.operatingMargin!=null?`<div class="fund-row"><span class="fund-lbl">營益率</span>${fmtPct2(fund.operatingMargin)}<span style="font-size:.6rem;color:${fund.operatingMargin>=0.20?'#34d399':fund.operatingMargin>=0.10?'#fbbf24':'#9ca3af'}">${fund.operatingMargin>=0.20?' 高效':fund.operatingMargin>=0.10?' 穩健':' 低'}</span></div>`:'',
+        fund.earningsGrowth!=null&&fund.earningsGrowth!==0?`<div class="fund-row"><span class="fund-lbl">EPS↑</span>${fmtPct2(fund.earningsGrowth)}<span style="font-size:.6rem;color:${fund.earningsGrowth>=0.15?'#34d399':fund.earningsGrowth>=0?'#fbbf24':'#f87171'}">${fund.earningsGrowth>=0.15?' 護城河擴張':fund.earningsGrowth>=0?' 持平':' ⚠️衰退'}</span></div>`:'',
+        `<div style="margin-top:4px;font-size:.62rem;color:var(--text2);border-top:1px solid var(--border);padding-top:4px">${ms>=80?'極強護城河 — 客戶非你不買':ms>=65?'穩固護城河 — 競爭優勢明顯':ms>=45?'有護城河 — 持續觀察':'護城河薄弱 — 競爭風險高'}</div>`,
+      ].filter(Boolean).join('');
+      moatCell=ms===null
+        ?'<td style="text-align:center;color:var(--text2);font-size:.65rem">—</td>'
+        :`<td>${scoreBadge(moatLbl+' '+ms,moatCls,moatDetail)}</td>`;
+    }
     // Chips badge
     const chips=chipsMap[r.code];
     const cl=chipsLabel(chips);
@@ -4601,6 +4619,56 @@ document.head.appendChild(_style);
     hideChecklist();
   }
 })();
+</script>
+
+<!-- 護城河深度分析 Modal -->
+<div id="moatModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:var(--bg2,#1e1e2e);border:1px solid var(--border,#374151);border-radius:12px;padding:20px;max-width:500px;width:92%;position:relative;max-height:80vh;overflow-y:auto">
+    <button onclick="document.getElementById('moatModal').style.display='none'" style="position:absolute;top:12px;right:14px;background:none;border:none;color:var(--text2,#9ca3af);font-size:1.3rem;cursor:pointer;line-height:1">✕</button>
+    <div id="moatModalTitle" style="font-weight:700;margin-bottom:10px;font-size:.88rem;color:var(--text,#f3f4f6);padding-right:24px"></div>
+    <div id="moatModalDb" style="font-size:.72rem;color:var(--text2,#9ca3af);margin-bottom:10px;padding:8px;background:rgba(139,92,246,.08);border-radius:6px;border-left:3px solid var(--purple,#8b5cf6);display:none"></div>
+    <div id="moatModalBody" style="font-size:.8rem;line-height:1.75;white-space:pre-wrap;color:var(--text,#f3f4f6)"></div>
+    <div id="moatModalTime" style="font-size:.6rem;color:var(--text2,#9ca3af);margin-top:10px;border-top:1px solid var(--border,#374151);padding-top:6px"></div>
+  </div>
+</div>
+
+<script>
+// ─── 護城河深度分析（Layer 3: GLM via /api/moat）──────────────────────────
+fetch('./moat_db.json').then(r=>r.json()).then(db=>{moatDb=db;}).catch(()=>{});
+
+async function loadMoatAnalysis(code, name){
+  const modal=document.getElementById('moatModal');
+  const title=document.getElementById('moatModalTitle');
+  const dbBox=document.getElementById('moatModalDb');
+  const body=document.getElementById('moatModalBody');
+  const time=document.getElementById('moatModalTime');
+  modal.style.display='flex';
+  title.textContent=`${code} ${name} — 護城河深度分析`;
+  body.textContent='⏳ GLM 分析中，約 5-10 秒...';
+  time.textContent='';
+
+  const moatEntry=moatDb[code];
+  if(moatEntry){
+    dbBox.style.display='block';
+    dbBox.innerHTML=`<strong>${moatEntry.moatType}</strong>　${moatEntry.moatDesc}`;
+  } else {
+    dbBox.style.display='none';
+  }
+
+  try{
+    const r=await fetch('/api/moat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({code,name,moatEntry})
+    });
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j=await r.json();
+    body.textContent=j.analysis||'（無回應）';
+    time.textContent='GLM-5.1 分析・'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  }catch(e){
+    body.textContent=`⚠️ 分析失敗：${e.message}\n\n（請確認 Cloudflare BYTEPLUS_API_KEY 環境變數已設定）`;
+  }
+}
 </script>
 </body>
 </html>
