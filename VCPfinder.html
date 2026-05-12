@@ -3385,25 +3385,8 @@ function renderTable(){
     };
 
     const isQualified=r=>{
-      const v=r.vcp;
-      const fund=r.fund||{};
       const chips=chipsMap[r.code];
-      // 修正：gainFrom52Low 用「VCP 高點距低點」而非「現價距低點」
-      // 公式：gainAtPivot = (gainFrom52Low - distVcpPivot) / (1 + distVcpPivot/100)
-      const gainAtPivot=(v.gainFrom52Low!=null&&v.distVcpPivot!=null)
-        ?(v.gainFrom52Low-v.distVcpPivot)/(1+v.distVcpPivot/100)
-        :v.gainFrom52Low;
-      if(gainAtPivot==null||gainAtPivot<30)return false;
-      // null = 無資料 = 放行，只排除明確負值
-      if(fund.earningsGrowth!=null&&fund.earningsGrowth<0)return false;
-      if(fund.roe!=null&&fund.roe<0.12)return false;
-      // 營收衰退（有資料才判斷，null 放行）
-      if(fund.revenueGrowth!=null&&fund.revenueGrowth<-0.05)return false;
-      // 外資+投信同時賣超
       if(chips){const fNet=parseChipNum(chips.foreignNet),tNet=parseChipNum(chips.trustNet);if(fNet<0&&tNet<0)return false;}
-      // CANSLIM 有效欄位得分率 >= 40%（資料不足3項時跳過）
-      const cs=calcCANSLIM(v,r.fund,chips);
-      if(cs.known>=3&&cs.total/cs.known<0.4)return false;
       return true;
     };
     const buyListRaw=allResults.filter(r=>r.vcp?.pbBuy?.strong&&r.vcp.score>=60&&r.vcp.stage2===true&&isQualified(r));
@@ -3482,22 +3465,7 @@ function renderTable(){
       const fNet=parseChipNum(chipsMap[r.code]?.foreignNet);
       const tNet=parseChipNum(chipsMap[r.code]?.trustNet);
       const mg=marginMap[r.code];
-      // 修正1：移除 vRat<1.0（VCP 地量回踩本來就量縮，不該排除）
       if(v.rsi>80||(fNet<0&&tNet<0))return-1;
-      // 修正2：gainFrom52Low 改用 vcpPivot 高點計算
-      const gainAtPivot=(v.gainFrom52Low!=null&&v.distVcpPivot!=null)
-        ?(v.gainFrom52Low-v.distVcpPivot)/(1+v.distVcpPivot/100)
-        :v.gainFrom52Low;
-      if(gainAtPivot==null||gainAtPivot<30)return-1;
-      const fund=r.fund||{};
-      // null = 無資料 = 放行（Yahoo Finance 資料不全），只排除明確負值
-      if(fund.earningsGrowth!=null&&fund.earningsGrowth<0)return-1;
-      if(fund.roe!=null&&fund.roe<0.12)return-1;
-      // 修正4：補上 revenueGrowth 排除（與 isQualified 一致）
-      if(fund.revenueGrowth!=null&&fund.revenueGrowth<-0.05)return-1;
-      // 修正5：CANSLIM 改為有效欄位得分率
-      const csCheck=calcCANSLIM(v,r.fund,chipsMap[r.code]);
-      if(csCheck.known>=3&&csCheck.total/csCheck.known<0.4)return-1;
       if(fNet>0&&tNet>0)s+=30;else if(fNet>0||tNet>0)s+=15;
       if(v.pctH<=3)s+=20;else if(v.pctH<=7)s+=15;else if(v.pctH<=12)s+=10;else if(v.pctH<=20)s+=5;
       if(v.vRat>=2.0)s+=15;else if(v.vRat>=1.5)s+=12;else if(v.vRat>=1.2)s+=8;else s+=3;
