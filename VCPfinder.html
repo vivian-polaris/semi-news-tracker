@@ -3490,9 +3490,9 @@ function renderTable(){
         :v.gainFrom52Low;
       if(gainAtPivot==null||gainAtPivot<30)return-1;
       const fund=r.fund||{};
-      // 修正3：null = 無資料 = 排除；ROE 門檻提高至 12%
-      if(fund.earningsGrowth==null||fund.earningsGrowth<0)return-1;
-      if(fund.roe==null||fund.roe<0.12)return-1;
+      // null = 無資料 = 放行（Yahoo Finance 資料不全），只排除明確負值
+      if(fund.earningsGrowth!=null&&fund.earningsGrowth<0)return-1;
+      if(fund.roe!=null&&fund.roe<0.12)return-1;
       // 修正4：補上 revenueGrowth 排除（與 isQualified 一致）
       if(fund.revenueGrowth!=null&&fund.revenueGrowth<-0.05)return-1;
       // 修正5：CANSLIM 改為有效欄位得分率
@@ -3509,7 +3509,7 @@ function renderTable(){
       if(v.closeRatio!=null){if(v.closeRatio>=0.75)s+=10;else if(v.closeRatio>=0.5)s+=5;else if(v.closeRatio<0.4&&v.vRat>2.0)s-=15;}
       if(mg?.change>0)s-=15;else if(mg?.change<0)s+=8;
       if(v.vRat>=3.0)s-=10;
-      return s>=80?s:-1;
+      return s>=60?s:-1;
     };
 
     const sentMult=({'risk_on':1.1,'neutral':1.0,'risk_off':0.7})[localStorage.getItem('mktSentiment')||'neutral'];
