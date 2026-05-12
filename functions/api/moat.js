@@ -60,7 +60,10 @@ export async function onRequestPost(context) {
   }
 
   const data = await resp.json();
-  const content = data.choices?.[0]?.message?.content || '';
+  let content = data.choices?.[0]?.message?.content || '';
+  // Strip GLM thinking block if leaked into content
+  const thinkEnd = content.indexOf('</think>');
+  if (thinkEnd !== -1) content = content.slice(thinkEnd + 8).trim();
   return new Response(JSON.stringify({ analysis: content, code, name }), {
     headers: { 'Content-Type': 'application/json' }
   });

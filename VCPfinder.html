@@ -1612,8 +1612,9 @@ async function loadTrump(useCache=false){
         function sb2(url){try{const h=new URL(url).hostname.replace(/^www\./,'');for(const[k,v]of Object.entries(ABBR2)){if(h===k||h.endsWith('.'+k))return v;}return h.split('.')[0].toUpperCase();}catch(_){return'';}}
         const _di=a=>{const up=a.includes('↑'),dn=a.includes('↓');return up?{l:'↑ 正面',c:'#34d399'}:dn?{l:'↓ 注意',c:'#f87171'}:{l:'→ 中性',c:'#9ca3af'};};
         const _ca=a=>a.replace(/\s*[↑↓→][^\n]*$/,'').trim()||a;
+        const _sum=c.summary?`<div style="padding:8px 12px 7px;background:rgba(79,126,247,.08);border-bottom:1px solid var(--border);font-size:.78rem;font-weight:600;color:var(--text);line-height:1.45"><span style="font-size:.62rem;font-weight:700;color:var(--purple);margin-right:6px;letter-spacing:.05em">今日重點</span>${escH(c.summary)}</div>`:'';
         const _hdr=`<div style="display:grid;grid-template-columns:22px 1fr 58px;padding:4px 8px 5px;border-bottom:1px solid var(--border);font-size:.58rem;color:var(--text2);font-weight:700;letter-spacing:.07em;text-transform:uppercase"><div>#</div><div>新聞重點・台股影響</div><div style="text-align:center">方向</div></div>`;
-        b.innerHTML=_hdr+c.selected.map((s,i)=>{
+        b.innerHTML=_sum+_hdr+c.selected.map((s,i)=>{
           const item=s.item,analysis=s.analysis,src=item.link?sb2(item.link):'';
           const srcEl=src?` <span style="font-size:.58rem;color:var(--purple)">[${escH(src)}]</span>`:'';
           const dir=_di(analysis);const mainText=_ca(analysis);
@@ -1722,11 +1723,15 @@ async function loadTrump(useCache=false){
 輸出格式（每行一條，純數字和文字，絕對不准用其他格式）：
 編號|15字內中文說明影響台股的原因
 
+最後加一行整體摘要（25字內，告訴投資人今天最關鍵的一件事）：
+SUMMARY|今日一句話
+
 範例：
 3|Fed降息預期升溫，科技股估值受惠↑
 15|川普關稅升高，電子供應鏈成本壓力↑
+SUMMARY|美中關稅暫緩，台股科技族群短線偏多，但需注意Fed鷹派風險
 
-禁止：捏造不在清單的消息、超過15字說明、其他任何格式。
+禁止：捏造不在清單的消息、超過字數限制、其他任何格式。
 
 新聞清單：
 ${newsList}`;
@@ -1745,8 +1750,12 @@ ${newsList}`;
     return;
   }
   const selected=[];
+  let newsSummary='';
   res.split('\n').forEach(line=>{
-    const m=line.trim().match(/^(\d+)\|(.+)$/);
+    const trimmed=line.trim();
+    const sm=trimmed.match(/^SUMMARY\|(.+)$/i);
+    if(sm){newsSummary=sm[1].trim();return;}
+    const m=trimmed.match(/^(\d+)\|(.+)$/);
     if(!m)return;
     const idx=parseInt(m[1])-1;
     if(idx<0||idx>=items.length)return;
@@ -1766,8 +1775,11 @@ ${newsList}`;
     }
     const dirInfo=a=>{const up=a.includes('↑'),dn=a.includes('↓');return up?{l:'↑ 正面',c:'#34d399'}:dn?{l:'↓ 注意',c:'#f87171'}:{l:'→ 中性',c:'#9ca3af'};};
     const cleanA=a=>a.replace(/\s*[↑↓→][^\n]*$/,'').trim()||a;
+    const summaryBar=newsSummary
+      ?`<div style="padding:8px 12px 7px;background:rgba(79,126,247,.08);border-bottom:1px solid var(--border);font-size:.78rem;font-weight:600;color:var(--text);line-height:1.45"><span style="font-size:.62rem;font-weight:700;color:var(--purple);margin-right:6px;letter-spacing:.05em">今日重點</span>${escH(newsSummary)}</div>`
+      :'';
     const hdr=`<div style="display:grid;grid-template-columns:22px 1fr 58px;padding:4px 8px 5px;border-bottom:1px solid var(--border);font-size:.58rem;color:var(--text2);font-weight:700;letter-spacing:.07em;text-transform:uppercase"><div>#</div><div>新聞重點・台股影響</div><div style="text-align:center">方向</div></div>`;
-    const html=hdr+selected.map((s,i)=>{
+    const html=summaryBar+hdr+selected.map((s,i)=>{
       const {item,analysis}=s;
       const src=item.link?srcBadge(item.link):'';
       const srcEl=src?` <span style="font-size:.58rem;color:var(--purple)">[${escH(src)}]</span>`:'';
@@ -1825,8 +1837,8 @@ ${newsList}`;
       b.innerHTML=html;
     }
     // 快取
-    setAICache('trump2','',{rawText:res,srcItems:items.slice(0,40),selected});
-    lsSet('trump_stale',{selected,srcItems:items.slice(0,40),ts:Date.now()});
+    setAICache('trump2','',{rawText:res,srcItems:items.slice(0,40),selected,summary:newsSummary});
+    lsSet('trump_stale',{selected,srcItems:items.slice(0,40),summary:newsSummary,ts:Date.now()});
   } else {
     // AI沒給有效選號，直接顯示原始RSS
     if(aiDiv) aiDiv.remove();
