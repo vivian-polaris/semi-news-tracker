@@ -793,10 +793,21 @@ footer a:hover{text-decoration:underline}
   </div>
 </div>
 
-<!-- ── 隔日沖候選名單 ── -->
+<!-- ── 坡段追蹤器 ── -->
+<!-- 我的坡段持倉 -->
+<div id="slopePositionsWrap" style="display:none;background:var(--card);border:1.5px solid var(--purple);border-radius:10px;padding:14px 18px;margin-bottom:14px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div style="font-size:.78rem;font-weight:800;color:var(--purple);letter-spacing:.05em">我的坡段持倉 <span id="slopePosCount" style="font-size:.68rem;font-weight:400;color:var(--text2)"></span></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button onclick="clearClosedPositions()" style="padding:3px 10px;font-size:.62rem;font-weight:700;background:rgba(79,126,247,.15);border:1px solid var(--purple);border-radius:5px;color:var(--purple);cursor:pointer">清除已關倉</button>
+    </div>
+  </div>
+  <div id="slopePosBody"></div>
+</div>
+<!-- 坡段候選名單 -->
 <div id="dtListWrap" style="display:none;background:var(--card);border:1.5px solid var(--mint);border-radius:10px;padding:14px 18px;margin-bottom:14px">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-    <div style="font-size:.78rem;font-weight:800;color:var(--mint);letter-spacing:.05em">隔日沖候選名單 <span id="dtListCount" style="font-size:.68rem;font-weight:400;color:var(--text2)"></span></div>
+    <div style="font-size:.78rem;font-weight:800;color:var(--mint);letter-spacing:.05em">坡段候選名單 <span id="dtListCount" style="font-size:.68rem;font-weight:400;color:var(--text2)"></span></div>
     <div style="display:flex;align-items:center;gap:8px">
       <span id="dtDataNote" style="font-size:.6rem;color:var(--text2)"></span>
       <button id="dtRefreshBtn" onclick="refreshDtList()" style="padding:3px 10px;font-size:.62rem;font-weight:700;background:rgba(16,185,129,.15);border:1px solid var(--mint);border-radius:5px;color:var(--mint);cursor:pointer">↻ 更新現價</button>
@@ -4204,44 +4215,53 @@ function renderTable(){
 
   })();
 
-  // ── 隔日沖候選名單更新 ──────────────────────────────────────────────────
+  // ── 坡段候選名單更新 ────────────────────────────────────────────────────
   (()=>{
     const wrap=document.getElementById('dtListWrap');
     const body=document.getElementById('dtListBody');
     const cnt=document.getElementById('dtListCount');
     if(!wrap||!body||!allResults.length)return;
 
-    const dtCalc=r=>{
+    const sent=localStorage.getItem('mktSentiment')||'neutral';
+
+    const slopeEntryCalc=r=>{
       const v=r.vcp;
       if(!v)return-1;
+      // 硬性排除（GLM修訂版）
+      if(!v.stage2)return-1;
+      if(!v.pbBuy?.strong)return-1;
+      if(v.score<60)return-1;
+      if(v.v10!=null&&v.v10<300000)return-1;                     // 均量<300張
+      if(v.distVcpPivot==null||v.distVcpPivot<-3||v.distVcpPivot>5)return-1; // 距樞軸 -3%~+5%
+      if(v.contractions!=null&&(v.contractions<2||v.contractions>6))return-1; // 收縮2~6次
+      if(v.ma20!=null&&v.ma50!=null&&v.ma20<=v.ma50)return-1;   // 均線需多頭排列
+      if(sent==='risk_off')return-1;
       let s=0;
+      // VCP基礎分
+      if(v.score>=90)s+=35;else if(v.score>=80)s+=25;else if(v.score>=70)s+=15;else s+=5;
+      // 距樞軸距離（0~3%突破最佳）
+      if(v.distVcpPivot>=0&&v.distVcpPivot<=3)s+=20;
+      else if(v.distVcpPivot>=-3&&v.distVcpPivot<0)s+=10;
+      else if(v.distVcpPivot>3&&v.distVcpPivot<=5)s+=5;
+      // 均線強度
+      if(v.ma20&&v.ma50&&v.ma150){if(v.ma50>v.ma150)s+=15;else s+=8;}
+      // 收縮品質（2~4次最佳）
+      if(v.contractions>=2&&v.contractions<=4)s+=10;else if(v.contractions===5||v.contractions===6)s+=5;
+      // 突破量能
+      if(v.vRat>=2.0)s+=15;else if(v.vRat>=1.5)s+=8;else if(v.vRat>=1.2)s+=3;
+      // RSI動能
+      if(v.rsi>=55&&v.rsi<=75)s+=8;else if(v.rsi>75)s-=10;
+      // 籌碼
       const fNet=parseChipNum(chipsMap[r.code]?.foreignNet);
       const tNet=parseChipNum(chipsMap[r.code]?.trustNet);
-      const mg=marginMap[r.code];
-      // 硬性排除
-      if(v.rsi>80||(fNet<0&&tNet<0))return-1;
-      if(v.v10!=null&&v.v10<500000)return-1;                          // 低流動性：均量<500張
-      if(v.closeRatio!=null&&v.closeRatio<0.4&&v.vRat!=null&&v.vRat>2.0)return-1; // 爆量收黑K（主力出貨）
-      if(v.vRat!=null&&v.vRat>=5.0&&v.closeRatio!=null&&v.closeRatio<0.5)return-1; // 爆天量收低（FOMO套牢）
-      // 評分
-      if(fNet>0&&tNet>0)s+=30;else if(fNet>0||tNet>0)s+=15;
-      if(v.pctH<=3)s+=20;else if(v.pctH<=7)s+=15;else if(v.pctH<=12)s+=10;else if(v.pctH<=20)s+=5;
-      if(v.vRat>=3.0)s+=25;else if(v.vRat>=2.0)s+=20;else if(v.vRat>=1.5)s+=10;else if(v.vRat>=1.2)s+=5;
-      // 量比 <1.2 不加分（量縮不適合隔日沖）
-      if(v.rsi>=55&&v.rsi<=70)s+=10;else if(v.rsi>=50&&v.rsi<=75)s+=5;
-      if(v.score>=85)s+=10;else if(v.score>=70)s+=5;
-      if(v.stage2)s+=5;
-      // 移除 ATR 加分（隔日沖需要波動，ATR收縮是VCP邏輯非隔日沖邏輯）
-      // 移除 isExhaustion 加分（耗竭是賣點，與短線動能矛盾）
-      if(v.closeRatio!=null){if(v.closeRatio>=0.75)s+=10;else if(v.closeRatio>=0.5)s+=5;}
-      if(mg?.change>0)s-=15;else if(mg?.change<0)s+=8;
-      return s>=60?s:-1;
+      if(fNet>0&&tNet>0)s+=15;else if(fNet>0||tNet>0)s+=7;
+      return s>=50?s:-1;
     };
 
-    const sentMult=({'risk_on':1.1,'neutral':1.0,'risk_off':0.7})[localStorage.getItem('mktSentiment')||'neutral'];
     const btcBonus=window.btcSentiment||0;
+    const sentMult=({'risk_on':1.1,'neutral':1.0,'risk_off':0.7})[sent];
     let candidates=allResults
-      .map(r=>({r,s:dtCalc(r)}))
+      .map(r=>({r,s:slopeEntryCalc(r)}))
       .filter(x=>x.s>0)
       .map(x=>({...x,s:Math.max(0,Math.round((x.s+btcBonus)*sentMult))}))
       .filter(x=>x.s>0);
@@ -4260,7 +4280,7 @@ function renderTable(){
     };
     candidates=candidates.sort(dtSortFn).slice(0,10);
 
-    if(!candidates.length){wrap.style.display='none';return;}
+    if(!candidates.length){wrap.style.display='none';renderSlopePositions();return;}
     wrap.style.display='block';
     cnt.textContent=`（${candidates.length} 支）`;
 
@@ -4276,12 +4296,14 @@ function renderTable(){
         ${_thS('chips','籌碼','setDtSort',dtSortKey,dtSortAsc,'center')}
         ${_thS('margin','融資','setDtSort',dtSortKey,dtSortAsc,'center')}
         ${_thS('canslim','CANSLIM','setDtSort',dtSortKey,dtSortAsc,'center')}
-        ${_thS('dtScore','隔日沖分','setDtSort',dtSortKey,dtSortAsc,'center')}
+        ${_thS('dtScore','坡段分','setDtSort',dtSortKey,dtSortAsc,'center')}
+        <th style="padding:4px 8px;text-align:center;color:var(--text2)">操作</th>
       </tr></thead>
       <tbody>${candidates.map(({r,s},i)=>{
         const v=r.vcp;
         const scoreCol=s>=70?'#34d399':s>=50?'#fbbf24':'#9ca3af';
         const tv=`https://www.tradingview.com/chart/?symbol=${r.ex==='TWO'?'TPEX':'TWSE'}%3A${r.code}`;
+        const inPos=loadSlopePositions().some(p=>p.code===r.code&&!p.closed);
         return`<tr style="border-bottom:1px solid rgba(45,55,72,.4)" onmouseover="this.style.background='rgba(79,126,247,.06)'" onmouseout="this.style.background=''">
           <td style="padding:8px 8px;color:var(--text2);font-weight:700">${i+1}</td>
           <td style="padding:8px 8px;white-space:nowrap"><a href="${tv}" target="_blank" style="color:var(--purple);font-weight:700;text-decoration:none">${escH(r.code)}</a> <span style="font-size:.72rem;font-weight:600">${escH(r.name)}</span></td>
@@ -4294,10 +4316,14 @@ function renderTable(){
           <td style="padding:8px 8px;text-align:center">${_mgC(r.code)}</td>
           <td style="padding:8px 8px;text-align:center">${_csC(v,r.fund,r.code)}</td>
           <td style="padding:8px 8px;text-align:center;font-weight:800;color:${scoreCol}">${s}分</td>
+          <td style="padding:8px 8px;text-align:center">${inPos
+            ?'<span style="font-size:.6rem;color:var(--purple)">✓ 持倉中</span>'
+            :`<button onclick="addSlopePosition('${r.code}','${r.name.replace(/'/g,"\\'").replace(/`/g,'\\`')}','${(r.sector||'').replace(/'/g,"\\'")}',${v.price},${v.score})" style="padding:3px 8px;font-size:.6rem;font-weight:700;background:rgba(79,126,247,.15);border:1px solid var(--purple);border-radius:4px;color:var(--purple);cursor:pointer">+ 加入坡段</button>`
+          }</td>
         </tr>`;
       }).join('')}</tbody>
     </table></div>
-    <div style="margin-top:8px;font-size:.64rem;color:var(--text2);line-height:1.6">⚠ 候選名單僅供參考，進場前務必逐項對照上方 Checklist，並確認大盤當日狀況。</div>`;
+    <div style="margin-top:8px;font-size:.64rem;color:var(--text2);line-height:1.6">⚡ 坡段策略：VCP突破後波段持有，停損 -8%，目標 +20%~+50%。點「加入坡段」記錄進場，掃描後自動偵測出場信號。</div>`;
     const note=document.getElementById('dtDataNote');
     if(note){
       const live=isTradingHours();
@@ -4305,6 +4331,7 @@ function renderTable(){
         ?'<span style="color:#fbbf24">⚡ 現價盤中即時</span>・<span style="color:#9ca3af">量能用昨收計算</span>'
         :'<span style="color:#9ca3af">現價＋量能均為昨日收盤資料</span>';
     }
+    renderSlopePositions();
   })();
 }
 
@@ -5273,14 +5300,14 @@ document.head.appendChild(_style);
   }
 
   function checkNewCandidates(){
-    // 隔日沖
+    // 坡段候選
     const dtBody=document.getElementById('dtListBody');
     if(dtBody){
       const codes=[...dtBody.querySelectorAll('a[href*="tradingview"]')].map(a=>a.textContent.trim()).slice(0,5);
       const newOnes=codes.filter(c=>!prevDtCodes.includes(c));
       newOnes.forEach(c=>{
         playBeep();
-        sendAlert('隔日沖新候選', c+' 進入前5名');
+        sendAlert('坡段新候選', c+' 進入前5名');
       });
       prevDtCodes=codes;
     }
@@ -5447,6 +5474,89 @@ function showSemiTab(id){
   document.querySelectorAll('#semi-wrap .nb').forEach(btn=>btn.classList.remove('active'));
   event.target.classList.add('active');
 }
+
+// ── 坡段追蹤器：持倉管理 ────────────────────────────────────────────────────
+function loadSlopePositions(){try{return JSON.parse(localStorage.getItem('slopePositions')||'[]');}catch(e){return[];}}
+function saveSlopePositions(ps){localStorage.setItem('slopePositions',JSON.stringify(ps));}
+function addSlopePosition(code,name,sector,entryPrice,vcpScore){
+  const ps=loadSlopePositions();
+  if(ps.find(p=>p.code===code&&!p.closed)){alert(code+' 已在持倉中，請先關倉再重新加入');return;}
+  ps.push({code,name,sector,entryPrice:+entryPrice,entryDate:new Date().toISOString().slice(0,10),entryVcpScore:vcpScore,halfSold:false,closed:false,closeReason:null});
+  saveSlopePositions(ps);
+  renderSlopePositions();
+}
+function markHalfSold(code){
+  const ps=loadSlopePositions();
+  const p=ps.find(x=>x.code===code&&!x.closed);
+  if(p){p.halfSold=true;saveSlopePositions(ps);renderSlopePositions();}
+}
+function removePosition(code,reason){
+  const ps=loadSlopePositions();
+  const p=ps.find(x=>x.code===code&&!x.closed);
+  if(p){p.closed=true;p.closeReason=reason||'手動關倉';saveSlopePositions(ps);renderSlopePositions();}
+}
+function clearClosedPositions(){
+  saveSlopePositions(loadSlopePositions().filter(p=>!p.closed));
+  renderSlopePositions();
+}
+function checkSlopeExitSignal(pos,v){
+  if(!v||!v.price)return null;
+  const price=v.price,ep=pos.entryPrice;
+  const pct=(price-ep)/ep*100;
+  const holdDays=Math.round((Date.now()-new Date(pos.entryDate).getTime())/86400000);
+  // 優先級1：硬停損 -8%
+  if(pct<=-8)return{signal:'exit',reason:`硬停損 ${pct.toFixed(1)}%`,color:'#ef4444'};
+  // 優先級2：Stage2 破壞（跌破MA50）
+  if(v.ma50&&price<v.ma50)return{signal:'exit',reason:'Stage2 破壞（跌破MA50）',color:'#ef4444'};
+  // 優先級3：持有>5天且有獲利，跌破MA20出場
+  if(holdDays>5&&pct>0&&v.ma20&&price<v.ma20)return{signal:'exit',reason:`跌破MA20（持有${holdDays}天，保護利潤）`,color:'#fbbf24'};
+  // 警告：跌破MA10（動能衰退）
+  if(v.ma10&&price<v.ma10&&pct>0)return{signal:'warning',reason:'跌破MA10（動能衰退警告）',color:'#fbbf24'};
+  // +20% 部分獲利了結
+  if(pct>=20&&!pos.halfSold)return{signal:'partial',reason:`+${pct.toFixed(1)}% 建議賣出½倉，剩餘移動停損至 +5%`,color:'#34d399'};
+  return null;
+}
+function renderSlopePositions(){
+  const ps=loadSlopePositions().filter(p=>!p.closed);
+  const wrap=document.getElementById('slopePositionsWrap');
+  const body=document.getElementById('slopePosBody');
+  const cnt=document.getElementById('slopePosCount');
+  if(!wrap||!body)return;
+  if(!ps.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  if(cnt)cnt.textContent=`（${ps.length} 支）`;
+  body.innerHTML=ps.map(pos=>{
+    const row=(typeof allResults!=='undefined'?allResults:[]).find(r=>r.code===pos.code);
+    const v=row?.vcp;
+    const price=v?.price??null;
+    const pct=price!=null?((price-pos.entryPrice)/pos.entryPrice*100):null;
+    const pctCol=pct===null?'var(--text2)':pct>=0?'#34d399':'#ef4444';
+    const sig=v?checkSlopeExitSignal(pos,v):null;
+    const holdDays=Math.round((Date.now()-new Date(pos.entryDate).getTime())/86400000);
+    const borderCol=sig?.signal==='exit'?'rgba(239,68,68,.5)':sig?'rgba(251,191,36,.3)':'rgba(45,55,72,.4)';
+    const sigHtml=sig?`<div style="margin-top:6px;padding:4px 8px;background:rgba(${sig.signal==='exit'?'239,68,68':'251,191,36'},.15);border-radius:5px;font-size:.66rem;font-weight:700;color:${sig.color}">${sig.signal==='exit'?'🔴 出場信號：':sig.signal==='partial'?'🟡 部分出場：':'⚠️ 警告：'}${escH(sig.reason)}</div>`:'';
+    return`<div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px 12px;margin-bottom:8px;border:1px solid ${borderCol}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><span style="font-weight:800;color:var(--purple)">${escH(pos.code)}</span> <span style="font-size:.72rem;font-weight:600">${escH(pos.name)}</span> <span style="font-size:.62rem;color:var(--text2)">${escH(pos.sector||'')}</span></div>
+        <div style="display:flex;gap:4px">
+          ${sig?.signal==='partial'&&!pos.halfSold?`<button onclick="markHalfSold('${pos.code}')" style="padding:2px 8px;font-size:.58rem;font-weight:700;background:rgba(52,211,153,.15);border:1px solid #34d399;border-radius:4px;color:#34d399;cursor:pointer">賣½倉</button>`:''}
+          <button onclick="removePosition('${pos.code}','手動關倉')" style="padding:2px 8px;font-size:.58rem;font-weight:700;background:rgba(239,68,68,.15);border:1px solid #ef4444;border-radius:4px;color:#ef4444;cursor:pointer">關倉</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:5px;font-size:.7rem;flex-wrap:wrap">
+        <span>進場 <b>$${pos.entryPrice}</b></span>
+        <span>現價 <b>${price!=null?'$'+price:'等待掃描'}</b></span>
+        ${pct!==null?`<span>損益 <b style="color:${pctCol}">${pct>=0?'+':''}${pct.toFixed(1)}%</b></span>`:''}
+        <span>持有 <b>${holdDays}</b> 天</span>
+        ${pos.halfSold?'<span style="font-size:.62rem;color:#34d399">✓ 已賣½倉</span>':''}
+      </div>
+      ${sigHtml}
+    </div>`;
+  }).join('');
+}
+// 頁面載入時自動顯示已存持倉
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',renderSlopePositions,{once:true});}
+else{renderSlopePositions();}
 </script>
 </body>
 </html>
