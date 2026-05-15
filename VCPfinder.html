@@ -4227,24 +4227,24 @@ function renderTable(){
     const slopeEntryCalc=r=>{
       const v=r.vcp;
       if(!v)return-1;
-      // 硬性排除（GLM修訂版）
+      // 硬性排除
       if(!v.stage2)return-1;
-      if(!v.pbBuy?.strong)return-1;
+      if(!v.pbBuy?.strong)return-1;                               // pbBuy.strong 已限定 distVcpPivot < 3
       if(v.score<60)return-1;
       if(v.v10!=null&&v.v10<300000)return-1;                     // 均量<300張
-      if(v.distVcpPivot==null||v.distVcpPivot<-3||v.distVcpPivot>5)return-1; // 距樞軸 -3%~+5%
-      if(v.contractions!=null&&(v.contractions<2||v.contractions>6))return-1; // 收縮2~6次
-      if(v.ma20!=null&&v.ma50!=null&&v.ma20<=v.ma50)return-1;   // 均線需多頭排列
+      if(v.distVcpPivot==null||v.distVcpPivot<-3||v.distVcpPivot>=3)return-1; // 有效範圍 [-3,3)
+      if(v.contractions!=null&&(v.contractions<2||v.contractions>6))return-1;
+      if(v.ma20!=null&&v.ma50!=null&&v.ma20<=v.ma50)return-1;   // 均線多頭排列
+      if(v.closeRatio!=null&&v.closeRatio<0.4)return-1;          // 排除收黑K/長上影線
       if(sent==='risk_off')return-1;
       let s=0;
       // VCP基礎分
       if(v.score>=90)s+=35;else if(v.score>=80)s+=25;else if(v.score>=70)s+=15;else s+=5;
-      // 距樞軸距離（0~3%突破最佳）
-      if(v.distVcpPivot>=0&&v.distVcpPivot<=3)s+=20;
+      // 距樞軸距離（0~3%突破最佳，負值=回踩）
+      if(v.distVcpPivot>=0&&v.distVcpPivot<3)s+=20;
       else if(v.distVcpPivot>=-3&&v.distVcpPivot<0)s+=10;
-      else if(v.distVcpPivot>3&&v.distVcpPivot<=5)s+=5;
-      // 均線強度
-      if(v.ma20&&v.ma50&&v.ma150){if(v.ma50>v.ma150)s+=15;else s+=8;}
+      // 均線強度（ma50>ma150=完美多頭排列，否則只給基礎分）
+      if(v.ma20&&v.ma50&&v.ma150){if(v.ma50>v.ma150)s+=15;else s+=3;}
       // 收縮品質（2~4次最佳）
       if(v.contractions>=2&&v.contractions<=4)s+=10;else if(v.contractions===5||v.contractions===6)s+=5;
       // 突破量能
@@ -4255,11 +4255,11 @@ function renderTable(){
       const fNet=parseChipNum(chipsMap[r.code]?.foreignNet);
       const tNet=parseChipNum(chipsMap[r.code]?.trustNet);
       if(fNet>0&&tNet>0)s+=15;else if(fNet>0||tNet>0)s+=7;
-      return s>=50?s:-1;
+      return s>=65?s:-1;
     };
 
     const btcBonus=window.btcSentiment||0;
-    const sentMult=({'risk_on':1.1,'neutral':1.0,'risk_off':0.7})[sent];
+    const sentMult=({'risk_on':1.1,'neutral':1.0})[sent]||1.0;
     let candidates=allResults
       .map(r=>({r,s:slopeEntryCalc(r)}))
       .filter(x=>x.s>0)
@@ -5504,16 +5504,18 @@ function checkSlopeExitSignal(pos,v){
   const price=v.price,ep=pos.entryPrice;
   const pct=(price-ep)/ep*100;
   const holdDays=Math.round((Date.now()-new Date(pos.entryDate).getTime())/86400000);
+  // 半倉保護：賣½倉後若回落至+5%以下，保護剩餘利潤出場
+  if(pos.halfSold&&pct<=5)return{signal:'exit',reason:`半倉保護出場（回落至+${pct.toFixed(1)}%）`,color:'#f97316'};
   // 優先級1：硬停損 -8%
   if(pct<=-8)return{signal:'exit',reason:`硬停損 ${pct.toFixed(1)}%`,color:'#ef4444'};
   // 優先級2：Stage2 破壞（跌破MA50）
   if(v.ma50&&price<v.ma50)return{signal:'exit',reason:'Stage2 破壞（跌破MA50）',color:'#ef4444'};
-  // 優先級3：持有>5天且有獲利，跌破MA20出場
-  if(holdDays>5&&pct>0&&v.ma20&&price<v.ma20)return{signal:'exit',reason:`跌破MA20（持有${holdDays}天，保護利潤）`,color:'#fbbf24'};
-  // 警告：跌破MA10（動能衰退）
-  if(v.ma10&&price<v.ma10&&pct>0)return{signal:'warning',reason:'跌破MA10（動能衰退警告）',color:'#fbbf24'};
+  // 優先級3：持有>5天，跌破MA20出場（含輕微虧損，防止從小虧擴大）
+  if(holdDays>5&&pct>-5&&v.ma20&&price<v.ma20)return{signal:'exit',reason:`跌破MA20（持有${holdDays}天）`,color:'#fbbf24'};
+  // 警告：跌破MA10（任何損益狀態均需警示）
+  if(v.ma10&&price<v.ma10)return{signal:'warning',reason:'跌破MA10（動能衰退警告）',color:'#fbbf24'};
   // +20% 部分獲利了結
-  if(pct>=20&&!pos.halfSold)return{signal:'partial',reason:`+${pct.toFixed(1)}% 建議賣出½倉，剩餘移動停損至 +5%`,color:'#34d399'};
+  if(pct>=20&&!pos.halfSold)return{signal:'partial',reason:`+${pct.toFixed(1)}% 建議賣出½倉，剩餘停損移至+5%`,color:'#34d399'};
   return null;
 }
 function renderSlopePositions(){
