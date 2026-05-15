@@ -3760,7 +3760,7 @@ function calcMoat(fund){
 // M: Market uptrend – Stage 2
 function calcCANSLIM(vcp, fund, chips){
   // C：EPS YoY（0.0 = pipeline 未計算，視為無效）→ 改用月營收 YoY 替代
-  const _ceg=fund?.earningsGrowth!=null&&fund.earningsGrowth!==0?fund.earningsGrowth:null;
+  const _ceg=typeof fund?.earningsGrowth==='number'&&!isNaN(fund.earningsGrowth)?fund.earningsGrowth:null;
   const cGrowth=_ceg??fund?.revenueGrowth??null;
   const C=cGrowth!=null?cGrowth>=0.25:null;
   const A=fund?.roe!=null?fund.roe>=0.15:(fund?.operatingMargin!=null?fund.operatingMargin>=0.12:null);
@@ -3790,7 +3790,7 @@ const CS_DESC={
 function csDesc(k){return CS_DESC[k]||k;}
 function canslimBadge(vcp,fund,chips){
   const cs=calcCANSLIM(vcp,fund,chips);
-  const _ceg=fund?.earningsGrowth!=null&&fund.earningsGrowth!==0?fund.earningsGrowth:null;
+  const _ceg=typeof fund?.earningsGrowth==='number'&&!isNaN(fund.earningsGrowth)?fund.earningsGrowth:null;
   const na='<span style="color:#6b7280">無資料</span>';
   const rows=[
     {k:'C',v:cs.C,
@@ -3803,7 +3803,7 @@ function canslimBadge(vcp,fund,chips){
      crit:'需≥15%'},
     {k:'N',v:cs.N,lbl:'距高點',
      data:vcp?`<span class="sig ${vcp.pctH<5?'sig-g':vcp.pctH<15?'sig-o':'sig-r'}">-${vcp.pctH}%</span>`:na,
-     crit:'需<5%'},
+     crit:'需<15%'},
     {k:'S',v:cs.S,lbl:'縮量整理',
      data:vcp?(vcp.vRat!=null?`量比 <span class="sig ${vcp.vRat<0.7?'sig-g':vcp.vRat<0.85?'sig-o':'sig-r'}">${vcp.vRat}</span>`:'—')+(vcp.contractions>0?` · <span class="sig sig-g">${vcp.contractions}段收縮</span>`:''):na,
      crit:'量比<0.85+收縮'},
@@ -3847,7 +3847,7 @@ function csScoreBadge(total){
 function renderCSCells(vcp,fund,chips){
   const cs=calcCANSLIM(vcp,fund,chips);
   const na='—';
-  const _rceg=fund?.earningsGrowth!=null&&fund.earningsGrowth!==0?fund.earningsGrowth:null;
+  const _rceg=typeof fund?.earningsGrowth==='number'&&!isNaN(fund.earningsGrowth)?fund.earningsGrowth:null;
   const cVal=_rceg??fund?.revenueGrowth??null;
   const cLbl=cVal!=null?((cVal>=0?'+':'')+(cVal*100).toFixed(0)+'%'+(_rceg==null?'▸':'')):na;
   const C=csCell(cs.C, cLbl);
@@ -5509,10 +5509,10 @@ function checkSlopeExitSignal(pos,v){
   const price=v.price,ep=pos.entryPrice;
   const pct=(price-ep)/ep*100;
   const holdDays=Math.round((Date.now()-new Date(pos.entryDate).getTime())/86400000);
+  // 優先級1：硬停損 -8%（必須最先判斷，否則halfSold狀態會蓋過硬停損）
+  if(pct<=-8)return{signal:'exit',reason:`硬停損 ${pct.toFixed(1)}%`,color:'#ef4444'};
   // 半倉保護：賣½倉後若回落至+5%以下，保護剩餘利潤出場
   if(pos.halfSold&&pct<=5)return{signal:'exit',reason:`半倉保護出場（回落至+${pct.toFixed(1)}%）`,color:'#f97316'};
-  // 優先級1：硬停損 -8%
-  if(pct<=-8)return{signal:'exit',reason:`硬停損 ${pct.toFixed(1)}%`,color:'#ef4444'};
   // 優先級2：Stage2 破壞（跌破MA50）
   if(v.ma50&&price<v.ma50)return{signal:'exit',reason:'Stage2 破壞（跌破MA50）',color:'#ef4444'};
   // 優先級3：持有>5天，跌破MA20出場（含輕微虧損，防止從小虧擴大）
