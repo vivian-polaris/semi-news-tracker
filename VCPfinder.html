@@ -2985,11 +2985,13 @@ function calcVCP(data){
   const abM50=ma50!=null&&price>ma50;
   const perf=ma50!=null&&ma150!=null&&ma200!=null&&ma50>ma150&&ma150>ma200;
   if(abM200)score+=10;if(abM150)score+=5;if(abM50)score+=5;if(perf)score+=10;
-  if(pctH<25)score+=10;if(pctH<15)score+=10;if(pctH<8)score+=10;
+  // Q1修正：改為互斥區間，消除懸崖效應（數值一致，邏輯更清晰）
+  if(pctH<8)score+=30;else if(pctH<15)score+=20;else if(pctH<25)score+=10;
   let atrL='—',atrS='n';
   if(atrRat!=null){
-    if(atrRat<0.75){score+=30;atrL='強收縮';atrS='g';}
-    else if(atrRat<0.90){score+=15;atrL='收縮中';atrS='o';}
+    // Q2修正：ATR權重從30/15降至15/8，與量縮、均線糾纏同級，避免單一指標過重
+    if(atrRat<0.75){score+=15;atrL='強收縮';atrS='g';}
+    else if(atrRat<0.90){score+=8;atrL='收縮中';atrS='o';}
     else{atrL='未收縮';atrS='r';}
   }
   let volL='—',volS='n';
@@ -3022,7 +3024,8 @@ function calcVCP(data){
     else{score-=10;maFlatL='未糾纏';maFlatS='r';}
   }
 
-  // ── 左邊大山檢查（整理前有爆量長紅 → 非純 VCP 扣分）
+  // ── 左邊大山檢查（整理前有爆量長紅 = VCP 標準起漲特徵，應加分）
+  // Q3修正：原邏輯錯誤扣15分，VCP定義正是「大山後整理」，改為加分
   let leftMountain=false;
   const leftData=data.slice(15,Math.min(60,data.length));
   for(const d of leftData){
@@ -3030,7 +3033,7 @@ function calcVCP(data){
     const bodyPct=Math.abs(d.close-d.open)/((d.high+d.low)/2)*100;
     if(bodyPct>10&&d.close>d.open){leftMountain=true;break;}
   }
-  if(leftMountain)score-=15;
+  if(leftMountain)score+=5;
 
   // ── Pivot Point 計算 ──────────────────────────────────────────────
   const prevD=data[1];
@@ -3080,7 +3083,7 @@ function calcVCP(data){
   // 條件：近10天內突破 11-30天前高點（earlyPivot），現在回踩，今日量 < 均量50%
   // 注意：不能用 vcpPivot（自適應base頂）作為基準，改用 earlyPivot（11-30日高點）偵測近期突破
   let pbBuy=null;
-  if(vcpPivot&&distVcpPivot!=null&&distVcpPivot<3&&distVcpPivot>=-15){
+  if(vcpPivot&&distVcpPivot!=null&&distVcpPivot<3&&distVcpPivot>=-8){
     const earlyHighArr=data.slice(11,Math.min(31,data.length)).map(d=>d.high).filter(v=>v!=null&&isFinite(v));
     const earlyPivot=earlyHighArr.length>0?Math.max(...earlyHighArr):null;
     const recentBrk=earlyPivot!=null&&data.slice(1,11).some(d=>d.high&&d.high>earlyPivot);
@@ -3116,7 +3119,7 @@ function calcVCP(data){
     ma150:ma150?+ma150.toFixed(2):null,
     ma200:ma200?+ma200.toFixed(2):null,
     h52:+h52.toFixed(2),pctH:+pctH.toFixed(1),
-    abM50,abM150,abM200,perfOrd:perf,stage2:abM50&&perf,
+    abM50,abM150,abM200,perfOrd:perf,stage2:abM50&&abM150&&abM200&&perf,
     atrL,atrS,atrRat:atrRat?+atrRat.toFixed(3):null,
     volL,volS,vRat:vRat?+vRat.toFixed(2):null,v10:v10?+v10.toFixed(0):null,
     rsi,contractions,gainFrom52Low:+gainFrom52Low.toFixed(1),gain1Y:+gain1Y.toFixed(1),priorRunL,
@@ -3733,7 +3736,7 @@ function calcFundScore(fund){
   if(fund.roe!=null){tot+=30; pts+=fund.roe>=0.15?30:fund.roe>=0.08?18:fund.roe>=0?8:0;}
   if(fund.grossMargin!=null){tot+=15; pts+=fund.grossMargin>=0.3?15:fund.grossMargin>=0.15?8:fund.grossMargin>0?4:0;}
   if(fund.operatingMargin!=null){tot+=15; pts+=fund.operatingMargin>=0.15?15:fund.operatingMargin>=0.08?8:fund.operatingMargin>0?4:0;}
-  const _eg=fund.earningsGrowth!=null&&fund.earningsGrowth!==0?fund.earningsGrowth:null;
+  const _eg=typeof fund.earningsGrowth==='number'&&!isNaN(fund.earningsGrowth)?fund.earningsGrowth:null; // Q12修正：0%成長是有效值，不應被排除
   if(_eg!=null){tot+=20; pts+=_eg>=0.15?20:_eg>=0?10:0;}
   if(fund.revenueGrowth!=null){tot+=15; pts+=fund.revenueGrowth>=0.1?15:fund.revenueGrowth>=0?7:0;}
   if(tot===0) return null;
@@ -3745,7 +3748,7 @@ function calcMoat(fund){
   if(fund.grossMargin!=null){k++;s+=fund.grossMargin>=0.50?40:fund.grossMargin>=0.35?28:fund.grossMargin>=0.25?18:fund.grossMargin>=0.15?8:0;}
   if(fund.roe!=null){k++;if(fund.roe<0)s-=10;else s+=fund.roe>=0.25?30:fund.roe>=0.20?22:fund.roe>=0.15?15:fund.roe>=0.08?7:0;}
   if(fund.operatingMargin!=null){k++;s+=fund.operatingMargin>=0.20?20:fund.operatingMargin>=0.15?14:fund.operatingMargin>=0.10?8:fund.operatingMargin>=0.05?4:0;}
-  const _eg=fund.earningsGrowth!=null&&fund.earningsGrowth!==0?fund.earningsGrowth:null;
+  const _eg=typeof fund.earningsGrowth==='number'&&!isNaN(fund.earningsGrowth)?fund.earningsGrowth:null; // Q12修正：0%成長是有效值，不應被排除
   if(_eg!=null){k++;if(_eg<0)s-=8;else s+=_eg>=0.30?15:_eg>=0.15?10:_eg>=0.05?5:0;}
   if(k===0)return null;
   return Math.min(Math.max(Math.round(s),0),100);
@@ -3761,8 +3764,8 @@ function calcCANSLIM(vcp, fund, chips){
   const cGrowth=_ceg??fund?.revenueGrowth??null;
   const C=cGrowth!=null?cGrowth>=0.25:null;
   const A=fund?.roe!=null?fund.roe>=0.15:(fund?.operatingMargin!=null?fund.operatingMargin>=0.12:null);
-  const N=vcp?vcp.pctH<5:null;
-  const S=vcp?(vcp.vRat!=null?(vcp.vRat<0.85&&vcp.contractions>=1):vcp.contractions>=2):null;
+  const N=vcp?vcp.pctH<15:null; // Q9修正：O'Neil原意是即將創新高，VCP回踩通常距高10~25%，<5%過嚴
+  const S=vcp?(vcp.vRat!=null?(vcp.vRat<0.85&&vcp.contractions>=2):vcp.contractions>=2):null; // Q10修正：需>=2次收縮才算供應緊縮
   const L=vcp?vcp.score>=70:null;
   const fNet=chips?parseChipNum(chips.foreignNet)??0:null;
   const tNet=chips?parseChipNum(chips.trustNet)??0:null;
@@ -3780,7 +3783,7 @@ function csLetterHTML(key,val){
 }
 const CS_DESC={
   C:'Current EPS成長 ≥25%',A:'Annual ROE ≥15%（持續獲利）',
-  N:'Near high：距52週高點 <5%',S:'Supply tight：縮量整理',
+  N:'Near high：距52週高點 <15%',S:'Supply tight：縮量整理(2次+)',
   L:'Leader：VCP分數 ≥70',I:'Institutional：外資/投信買超',
   M:'Market uptrend：Stage 2'
 };
@@ -3874,7 +3877,7 @@ function calcFundGrade(fund){
   if(fund.roe!=null){tot+=30; pts+=fund.roe>=0.15?30:fund.roe>=0.08?18:fund.roe>=0?8:0;}
   if(fund.grossMargin!=null){tot+=15; pts+=fund.grossMargin>=0.3?15:fund.grossMargin>=0.15?8:fund.grossMargin>0?4:0;}
   if(fund.operatingMargin!=null){tot+=15; pts+=fund.operatingMargin>=0.15?15:fund.operatingMargin>=0.08?8:fund.operatingMargin>0?4:0;}
-  const _eg=fund.earningsGrowth!=null&&fund.earningsGrowth!==0?fund.earningsGrowth:null;
+  const _eg=typeof fund.earningsGrowth==='number'&&!isNaN(fund.earningsGrowth)?fund.earningsGrowth:null; // Q12修正：0%成長是有效值，不應被排除
   if(_eg!=null){tot+=20; pts+=_eg>=0.15?20:_eg>=0?10:0;}
   if(fund.revenueGrowth!=null){tot+=15; pts+=fund.revenueGrowth>=0.1?15:fund.revenueGrowth>=0?7:0;}
   if(tot===0){
@@ -4145,7 +4148,8 @@ function renderTable(){
 
     const buyStability=r=>{
       const v=r.vcp,pb=v.pbBuy;
-      return (v.score||0)*0.4+(pb?.volRatio!=null?(1-Math.min(pb.volRatio,1))*30:0)+Math.max(0,(7-Math.abs(v.distVcpPivot||0)))*2.5+((v.gainFrom52Low||0)>=60?10:(v.gainFrom52Low||0)>=40?7:(v.gainFrom52Low||0)>=30?4:0);
+      // Q6修正：pb.volRatio=0（停牌/無量）時不給分，避免無流動性股票得滿分
+      return (v.score||0)*0.4+(pb?.volRatio>0?(1-Math.min(pb.volRatio,1))*30:0)+Math.max(0,(7-Math.abs(v.distVcpPivot||0)))*2.5+((v.gainFrom52Low||0)>=60?10:(v.gainFrom52Low||0)>=40?7:(v.gainFrom52Low||0)>=30?4:0);
     };
 
     const isQualified=r=>{
@@ -4153,7 +4157,8 @@ function renderTable(){
       if(chips){const fNet=parseChipNum(chips.foreignNet),tNet=parseChipNum(chips.trustNet);if(fNet<0&&tNet<0)return false;}
       return true;
     };
-    const buyListRaw=allResults.filter(r=>r.vcp?.pbBuy?.strong&&r.vcp.score>=60&&r.vcp.stage2===true&&isQualified(r));
+    // Q7+Q8修正：補上流動性過濾(v10>=300000)與收黑K過濾(closeRatio>=0.4)
+    const buyListRaw=allResults.filter(r=>r.vcp?.pbBuy?.strong&&r.vcp.score>=60&&r.vcp.stage2===true&&isQualified(r)&&(r.vcp.v10==null||r.vcp.v10>=300000)&&(r.vcp.closeRatio==null||r.vcp.closeRatio>=0.4));
     const buySort=(a,b)=>{
       let av,bv;
       if(buySortKey==='vcpScore'){av=a.vcp?.score??0;bv=b.vcp?.score??0;}
