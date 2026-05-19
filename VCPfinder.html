@@ -3086,7 +3086,7 @@ function calcVCP(data){
   if(vcpPivot&&distVcpPivot!=null&&distVcpPivot<3&&distVcpPivot>=-8){
     const earlyHighArr=data.slice(11,Math.min(31,data.length)).map(d=>d.high).filter(v=>v!=null&&isFinite(v));
     const earlyPivot=earlyHighArr.length>0?Math.max(...earlyHighArr):null;
-    const recentBrk=earlyPivot!=null&&data.slice(1,11).some(d=>d.high&&d.high>earlyPivot);
+    const recentBrk=earlyPivot!=null&&data.slice(1,11).some(d=>d.close&&d.close>earlyPivot);
     if(recentBrk){
       const todayVol=volumes[0];
       const todayRatio=(todayVol&&v20&&v20>0)?+(todayVol/v20).toFixed(2):null;
@@ -3750,7 +3750,7 @@ function calcMoat(fund){
   if(fund.operatingMargin!=null){k++;s+=fund.operatingMargin>=0.20?20:fund.operatingMargin>=0.15?14:fund.operatingMargin>=0.10?8:fund.operatingMargin>=0.05?4:0;}
   const _eg=typeof fund.earningsGrowth==='number'&&!isNaN(fund.earningsGrowth)?fund.earningsGrowth:null; // Q12修正：0%成長是有效值，不應被排除
   if(_eg!=null){k++;if(_eg<0)s-=8;else s+=_eg>=0.30?15:_eg>=0.15?10:_eg>=0.05?5:0;}
-  if(k===0)return null;
+  if(k<2)return null;
   return Math.min(Math.max(Math.round(s),0),100);
 }
 // ─── CAN SLIM (O'Neil) ────────────────────────────────────────────────────
@@ -3770,7 +3770,8 @@ function calcCANSLIM(vcp, fund, chips){
   const fNet=chips?parseChipNum(chips.foreignNet)??0:null;
   const tNet=chips?parseChipNum(chips.trustNet)??0:null;
   const I=(fNet!==null||tNet!==null)?((fNet||0)>0||(tNet||0)>0):null;
-  const M=vcp?vcp.stage2:null;
+  const mktUp=(localStorage.getItem('mktSentiment')||'neutral')==='risk_on'||(window.taixChg!=null&&window.taixChg>0);
+  const M=vcp?mktUp:null;
   const letters={C,A,N,S,L,I,M};
   const total=Object.values(letters).filter(v=>v===true).length;
   const known=Object.values(letters).filter(v=>v!==null).length;
@@ -4372,7 +4373,7 @@ async function refreshDtList(){
     if(vcpPivotNew&&distNew!=null&&distNew<3&&distNew>=-15){
       const earlyH=highs.slice(11,Math.min(31,highs.length)).filter(v=>v!=null&&isFinite(v));
       const earlyPivot=earlyH.length>0?Math.max(...earlyH):null;
-      const recentBrk=earlyPivot!=null&&highs.slice(1,11).some(h=>h&&h>earlyPivot);
+      const recentBrk=earlyPivot!=null&&pre.c.slice(1,11).some(c=>c&&c>earlyPivot);
       if(recentBrk){
         const v20v=vols.slice(0,20).filter(v=>v>0);
         const v20avg=v20v.length?v20v.reduce((a,b)=>a+b,0)/v20v.length:null;
@@ -5047,7 +5048,7 @@ async function lookupStock() {
           if(vcpPivotNew&&distNew!=null&&distNew<3&&distNew>=-15){
             const earlyH=highs.slice(11,Math.min(31,highs.length)).filter(v=>v!=null&&isFinite(v));
             const earlyPivot=earlyH.length>0?Math.max(...earlyH):null;
-            const recentBrk=earlyPivot!=null&&highs.slice(1,11).some(h=>h&&h>earlyPivot);
+            const recentBrk=earlyPivot!=null&&pre.c.slice(1,11).some(c=>c&&c>earlyPivot);
             if(recentBrk){
               const v20valid=vols.slice(0,20).filter(v=>v>0);
               const v20avg=v20valid.length>0?v20valid.reduce((a,b)=>a+b,0)/v20valid.length:null;
@@ -5208,8 +5209,9 @@ document.head.appendChild(_style);
     // Foreign aggregate
     const fa = window.foreignAggregate;
     if(fa!=null){
-      if(fa>0){score+=1;reasons.push(`外資+${fa.toFixed(0)}億`);}
-      else if(fa<0){score-=1;reasons.push(`外資${fa.toFixed(0)}億`);}
+      if(fa>50){score+=1;reasons.push(`外資+${fa.toFixed(0)}億`);}
+      else if(fa<-50){score-=1;reasons.push(`外資${fa.toFixed(0)}億`);}
+      else{reasons.push(`外資${fa.toFixed(0)}億（中性）`);}
     }
     const val = score>=2?'risk_on':score<=-2?'risk_off':'neutral';
     const label = val==='risk_on'?'🟢 自動：風險開啟':val==='risk_off'?'🔴 自動：風險關閉':'🟡 自動：中性';
@@ -5516,7 +5518,7 @@ function checkSlopeExitSignal(pos,v){
   // 優先級2：Stage2 破壞（跌破MA50）
   if(v.ma50&&price<v.ma50)return{signal:'exit',reason:'Stage2 破壞（跌破MA50）',color:'#ef4444'};
   // 優先級3：持有>5天，跌破MA20出場（含輕微虧損，防止從小虧擴大）
-  if(holdDays>5&&pct>-5&&v.ma20&&price<v.ma20)return{signal:'exit',reason:`跌破MA20（持有${holdDays}天）`,color:'#fbbf24'};
+  if(holdDays>5&&v.ma20&&price<v.ma20)return{signal:'exit',reason:`跌破MA20（持有${holdDays}天）`,color:'#fbbf24'};
   // 警告：跌破MA10（任何損益狀態均需警示）
   if(v.ma10&&price<v.ma10)return{signal:'warning',reason:'跌破MA10（動能衰退警告）',color:'#fbbf24'};
   // +20% 部分獲利了結
