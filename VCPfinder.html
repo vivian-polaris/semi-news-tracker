@@ -975,6 +975,7 @@ footer a:hover{text-decoration:underline}
 <!-- ── Stats + Sort ── -->
 <div class="stats-bar" id="statsBar" style="display:none">
   <div class="stats-l">顯示 <strong id="showN">0</strong> / <strong id="totalN">0</strong> 支</div>
+  <span id="liveRefreshLabel" style="display:none;font-size:.6rem;color:#34d399;font-weight:700"></span>
   <button class="export-btn" onclick="exportCSV()">⬇ 匯出 CSV</button>
 </div>
 
@@ -3707,6 +3708,7 @@ function renderAll(){
   const pfBtn=document.getElementById('portfolioBtn');
   if(pfBtn)pfBtn.style.display='';
   savePortfolioToKV();
+  startAutoRefresh();
 
   // Sector pills (only rebuild if not already done by startScan)
   if(!document.querySelector('[data-sec]:not([data-sec="ALL"])')){
@@ -3718,6 +3720,48 @@ function renderAll(){
     });
   }
   renderTable();
+}
+
+// ── 盤中自動刷價（每5分鐘，只抓已篩選股票的現價）──────────────────────────
+let _autoRefreshTimer=null;
+
+async function autoRefreshPrices(){
+  if(!isTradingHours()||!allResults.length) return;
+  const filtered=getFiltered().filter(r=>r.vcp);
+  if(!filtered.length) return;
+
+  // 只抓目前顯示的股票現價
+  await prefetchLivePrices(filtered.map(r=>({code:r.code,ex:r.ex||'TSE'})));
+
+  // 把快取價格更新進 allResults
+  let updated=0;
+  allResults.forEach(r=>{
+    if(!r.vcp) return;
+    const sym=`${r.code}.${r.ex==='TWO'?'TWO':'TW'}`;
+    const cached=_liveQCache.get(sym);
+    if(cached&&Date.now()-cached.ts<LIVE_Q_TTL){
+      r.vcp.price=cached.price;
+      updated++;
+    }
+  });
+
+  if(updated>0){
+    renderTable();
+    const lbl=document.getElementById('liveRefreshLabel');
+    if(lbl){
+      const t=new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+      lbl.style.display='';
+      lbl.textContent=`⚡ 現價 ${t} 更新`;
+    }
+  }
+}
+
+function startAutoRefresh(){
+  if(_autoRefreshTimer) clearInterval(_autoRefreshTimer);
+  if(!isTradingHours()) return;
+  // 立刻跑一次，之後每5分鐘
+  autoRefreshPrices();
+  _autoRefreshTimer=setInterval(autoRefreshPrices, 5*60*1000);
 }
 
 // ── 本月投資組合：儲存今日精選到 KV ──────────────────────────────────────
