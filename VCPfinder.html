@@ -1108,7 +1108,7 @@ footer a:hover{text-decoration:underline}
     <div id="semi-wrap" style="padding:12px 0 4px">
 <div class="hero">
   <h1>台灣 AI 半導體完整生態圖</h1>
-  <p>全產業鏈 12 層次 · 40+ 檔獨立分析 · 不設限涵蓋所有領域 · 獨立判斷，非股票老師觀點 · 資料截至 2026/05</p>
+  <p>全產業鏈 12 層次 · 40+ 檔獨立分析 · 不設限涵蓋所有領域 · 獨立判斷，非股票老師觀點 · <span id="semi-data-date" style="color:#34d399">股價/本益比載入中…</span></p>
 </div>
 
 <!-- NAV -->
@@ -5614,16 +5614,34 @@ fetch('./moat_db.json').then(r=>r.json()).then(db=>{moatDb=db;}).catch(()=>{});
 function updateSemiPrices(){
   const rows=document.querySelectorAll('#semi-stbody tr');
   if(!rows.length||!stockPriceLoaded)return;
+  let updatedCount=0;
   rows.forEach(tr=>{
     const tds=tr.querySelectorAll('td');
-    if(tds.length<4)return;
+    if(tds.length<7)return;
     const code=tds[0].textContent.trim();
+    // 股價
     const pre=stockPriceMap[code];
     const p=pre?.c?.[0];
-    if(p==null)return;
-    const fmt=p>=1000?p.toLocaleString('zh-TW'):p;
-    tds[3].innerHTML=`<span style="color:#34d399;font-weight:700">${fmt}元</span><span style="font-size:.58rem;color:#9ca3af;display:block">今收</span>`;
+    if(p!=null){
+      const fmt=p>=1000?p.toLocaleString('zh-TW'):p;
+      tds[3].innerHTML=`<span style="color:#34d399;font-weight:700">${fmt}元</span><span style="font-size:.58rem;color:#9ca3af;display:block">今收</span>`;
+      updatedCount++;
+    }
+    // 本益比（TWSE BWIBBU 官方數字）
+    const pe=twseFundMap[code]?.pe;
+    if(pe!=null&&pe>0){
+      const cls=pe<15?'pe-low':pe<30?'pe-mid':'pe-high';
+      tds[6].className=cls;
+      tds[6].innerHTML=`<span style="font-weight:700">${pe.toFixed(1)}x</span><span style="font-size:.58rem;color:#9ca3af;display:block">TWSE</span>`;
+    }
   });
+  // 更新表頭日期
+  const dateEl=document.getElementById('semi-data-date');
+  if(dateEl){
+    const d=twseDailyMap?.date||stockPriceMap?.__date;
+    const dateStr=d?`股價/本益比截至 ${d}（TWSE官方）`:`股價今收（TWSE）・本益比${Object.keys(twseFundMap).length>0?'TWSE官方':'載入中'}`;
+    dateEl.innerHTML=dateStr;
+  }
 }
 
 async function loadMoatAnalysis(code, name){
