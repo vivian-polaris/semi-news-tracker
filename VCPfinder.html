@@ -1116,6 +1116,7 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('csL',this)" title="Leader VCP≥70" style="width:28px;min-width:28px;max-width:28px;text-align:center;cursor:pointer">L ⇅</th>
       <th onclick="setSort('csI',this)" title="Institutional 法人買超" style="width:28px;min-width:28px;max-width:28px;text-align:center;cursor:pointer">I ⇅</th>
       <th onclick="setSort('csM',this)" title="Market Stage2" style="width:28px;min-width:28px;max-width:28px;text-align:center;cursor:pointer">M ⇅</th>
+      <th onclick="setSort('slope',this)" title="坡段位置：MA20斜率+距MA20+RSI判斷">坡段 ⇅</th>
       <th onclick="setSort('pct')" class="th-on">距高 ⇅</th>
       <th>MA</th>
       <th>技術</th>
@@ -3132,6 +3133,14 @@ function calcVCP(data){
     else if(gain1Y<5){score-=10;}
   }
 
+  const ma20_10dAgo = closes.length >= 30 ? sma(closes.slice(10), 20) : null;
+  const ma20Slope = (ma20 && ma20_10dAgo && ma20_10dAgo > 0)
+    ? +((ma20 - ma20_10dAgo) / ma20_10dAgo * 100).toFixed(2)
+    : null;
+  const distMA20 = (ma20 && price > 0)
+    ? +((price - ma20) / ma20 * 100).toFixed(1)
+    : null;
+
   return{
     score:Math.max(0,Math.min(Math.round(score),100)),price,
     ma50:ma50?+ma50.toFixed(2):null,
@@ -3145,6 +3154,7 @@ function calcVCP(data){
     ma5:ma5?+ma5.toFixed(2):null,
     ma10:ma10?+ma10.toFixed(2):null,
     ma20:ma20?+ma20.toFixed(2):null,
+    ma20Slope, distMA20,
     maFlatL,maFlatS,leftMountain,fin,
     pp,ppR1,ppR2,ppS1,ppS2,
     vcpPivot,distVcpPivot,pivotStatus,pivotStatusCls,pivotNote,pbBuy,closeRatio
@@ -3929,6 +3939,10 @@ if(sortKey==='graham'){
       return sortAsc?mg(a)-mg(b):mg(b)-mg(a);
     }
     if(sortKey==='moat'){const mv=r=>moatDb[r.code]?.strength??calcMoat(r.fund||null)??-1;return sortAsc?mv(a)-mv(b):mv(b)-mv(a);}
+    if(sortKey==='slope'){
+      const sv=r=>{const v=r.vcp;if(!v||!v.stage2)return 0;const sl=v.ma20Slope,dm=v.distMA20,rsi=v.rsi;if(sl!=null&&sl<0)return 1;if((rsi!=null&&rsi>75)||(dm!=null&&dm>20))return 2;if((rsi!=null&&rsi>=65&&rsi<=75)||(dm!=null&&dm>=8&&dm<=20))return 3;if((sl==null||sl>=0)&&(rsi==null||(rsi>=45&&rsi<=65))&&(dm==null||(dm>=-5&&dm<=8)))return 5;return 4;};
+      return sortAsc?sv(a)-sv(b):sv(b)-sv(a);
+    }
     return 0;
   });
 }
@@ -4173,6 +4187,19 @@ function renderTable(){
       :'—';
     const cHTML=v.contractions>0?`<br><span class="contr-b">${v.contractions}段收縮</span>`:'';
     const techHTML=`${atrHTML}<br>${volHTML}`;
+    const slopeCell=(()=>{
+      if(!v.stage2)return'<td style="text-align:center;white-space:nowrap;min-width:60px"><div style="font-size:.75rem;font-weight:700">⏸ 整理等待</div><div style="font-size:.58rem;color:#9ca3af">無Stage2</div></td>';
+      const sl=v.ma20Slope,dm=v.distMA20,rsi=v.rsi;
+      if(sl!=null&&sl<0)return'<td style="text-align:center;white-space:nowrap;min-width:60px"><div style="font-size:.75rem;font-weight:700">⏸ 整理等待</div><div style="font-size:.58rem;color:#9ca3af">斜率'+(sl>=0?'+':'')+sl+'%</div></td>';
+      const fmtSl=sl!=null?(sl>=0?'+':'')+sl+'%':'--';
+      const fmtDm=dm!=null?(dm>=0?'+':'')+dm+'%':'--';
+      const sub=sl!=null?fmtSl+'/'+fmtDm:'資料不足';
+      let emoji='⏳',label='坡段未定';
+      if((rsi!=null&&rsi>75)||(dm!=null&&dm>20)){emoji='🔴';label='坡段尾巴';}
+      else if((rsi!=null&&rsi>=65&&rsi<=75)||(dm!=null&&dm>=8&&dm<=20)){emoji='🟡';label='坡段中段';}
+      else if((sl==null||sl>=0)&&(rsi==null||(rsi>=45&&rsi<=65))&&(dm==null||(dm>=-5&&dm<=8))){emoji='🟢';label='坡段開始';}
+      return'<td style="text-align:center;white-space:nowrap;min-width:60px"><div style="font-size:.75rem;font-weight:700">'+emoji+' '+label+'</div><div style="font-size:.58rem;color:#9ca3af">'+sub+'</div></td>';
+    })();
     // Fundamental score badge
     const fund=r.fund||{};
     const fg=calcFundGrade(fund);
@@ -4336,6 +4363,7 @@ function renderTable(){
         })();
         return cs.score+`<td>${fundHTML}</td>${moatCell}<td>${chipsHTML}</td>`+fhCell+pivotCell+signalCell+grahamCell+mgCell+exDivCell+cs.seven;
       })()}
+      ${slopeCell}
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
       <td><div class="ma-row">${maHTML||'—'}</div></td>
       <td style="white-space:nowrap">${techHTML}</td>
@@ -5051,27 +5079,17 @@ async function lookupStock() {
     sellSignal={emoji:'⬜',label:'繼續持有',sub:'尚無賣出訊號',color:'#9ca3af',bg:'rgba(113,113,122,.06)',border:'#6b7280'};
   }
 
-  // 坡段判斷
+  // 坡段判斷（MA20斜率+距MA20+RSI，非VCP突破點邏輯）
   const sp=(()=>{
-    const v=vcpData;
-    if(!v.stage2) return {phase:'wait',emoji:'⏸',label:'整理等待',color:'#6b7280',bg:'rgba(107,114,128,.12)',border:'#6b7280',desc:'尚未進入 Stage2 上升趨勢，不在坡段中',action:'等待 Stage2 確立後再關注'};
-    const dist=v.distVcpPivot,rsi=v.rsi,pctH=v.pctH,vRat=v.vRat;
-    // pctH<5 需同時 dist>10 才算尾巴（避免把「剛突破創新高」誤判成尾巴）
-    const isTail=(dist!=null&&dist>20)||(pctH!=null&&pctH<5&&dist!=null&&dist>10)||(rsi!=null&&rsi>80)||(vRat!=null&&vRat>3.0);
-    if(isTail){
-      const why=[];
-      if(dist!=null&&dist>20)why.push(`超突破點+${dist}%`);
-      if(pctH!=null&&pctH<5&&dist!=null&&dist>10)why.push(`距高點僅${pctH}%`);
-      if(rsi!=null&&rsi>80)why.push(`RSI ${rsi} 超買`);
-      if(vRat!=null&&vRat>3.0)why.push(`量比 ${vRat} FOMO`);
-      return {phase:'tail',emoji:'🔴',label:'坡段尾巴',color:'#f87171',bg:'rgba(220,38,38,.15)',border:'#dc2626',desc:why.join('・'),action:'考慮獲利了結・停損收緊至成本上方（預計持有 0-5 天）'};
-    }
-    const isMid=dist!=null&&dist>8&&dist<=20&&(rsi==null||(rsi>=55&&rsi<=85));
-    if(isMid) return {phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(202,138,4,.15)',border:'#d97706',desc:`突破點上方 +${dist}%${rsi!=null?`，RSI ${rsi} 動能健康`:''}`,action:'繼續持有・停損移至成本・不追加碼（預計再持有 1-3 週）'};
-    // 坡段開始：Stage2 + 接近突破點 + RSI 未過熱（移除 g52 條件，讓更多股票被正確判斷）
-    const isStart=dist!=null&&dist>=-8&&dist<=8&&(rsi==null||(rsi>=40&&rsi<=78));
-    if(isStart) return {phase:'start',emoji:'🟢',label:'坡段開始',color:'#34d399',bg:'rgba(5,150,105,.18)',border:'#059669',desc:`${dist>=0?`突破點上方 +${dist}%`:`距突破點 ${dist}%`}${rsi!=null?`，RSI ${rsi} 動能起步`:''}`,action:'可建倉・停損設突破點下方 -8%（預計持有 2-6 週）'};
-    return {phase:'unclear',emoji:'⏳',label:'坡段未定',color:'#9ca3af',bg:'rgba(113,113,122,.12)',border:'#6b7280',desc:dist!=null?`距突破點 ${dist>0?'+':''}${dist}%，位置尚不明確`:'突破點資料不足',action:'繼續觀察，等待型態明朗'};
+const v=vcpData;
+if(!v.stage2)return{phase:'wait',emoji:'⏸',label:'整理等待',color:'#6b7280',bg:'rgba(107,114,128,.12)',border:'#6b7280',desc:'尚未進入 Stage2 上升趨勢',action:'等待 Stage2 確立後再關注'};
+const sl=v.ma20Slope,dm=v.distMA20,rsi=v.rsi;
+if(sl!=null&&sl<0)return{phase:'wait',emoji:'⏸',label:'整理等待',color:'#6b7280',bg:'rgba(107,114,128,.12)',border:'#6b7280',desc:'MA20下彎（斜率'+sl+'%），趨勢未確立',action:'等待 MA20 轉正再關注'};
+const mkD=()=>{const p=[];if(sl!=null)p.push('MA20斜率'+(sl>=0?'+':'')+sl+'%');if(rsi!=null)p.push('RSI '+rsi);if(dm!=null)p.push('距MA20'+(dm>=0?'+':'')+dm+'%');return p.join('，');};
+if((rsi!=null&&rsi>75)||(dm!=null&&dm>20))return{phase:'tail',emoji:'🔴',label:'坡段尾巴',color:'#f87171',bg:'rgba(220,38,38,.15)',border:'#dc2626',desc:mkD(),action:'考慮獲利了結・停損收緊至成本上方'};
+if((rsi!=null&&rsi>=65&&rsi<=75)||(dm!=null&&dm>=8&&dm<=20))return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(202,138,4,.15)',border:'#d97706',desc:mkD(),action:'繼續持有・停損移至成本・不追加碼'};
+if((sl==null||sl>=0)&&(rsi==null||(rsi>=45&&rsi<=65))&&(dm==null||(dm>=-5&&dm<=8)))return{phase:'start',emoji:'🟢',label:'坡段開始',color:'#34d399',bg:'rgba(5,150,105,.18)',border:'#059669',desc:mkD(),action:'可建倉・停損設 MA20 下方'};
+return{phase:'unclear',emoji:'⏳',label:'坡段未定',color:'#9ca3af',bg:'rgba(113,113,122,.12)',border:'#6b7280',desc:mkD()||'資料不足',action:'繼續觀察，等待型態明朗'};
   })();
 
   res.innerHTML = `
