@@ -826,7 +826,7 @@ footer a:hover{text-decoration:underline}
         <div style="font-size:.78rem;font-weight:800;color:#34d399;letter-spacing:.05em">
           ✅ 今日買點 <span id="buyPtCount" style="font-size:.65rem;font-weight:400;color:var(--text2)"></span>
         </div>
-        <div style="font-size:.58rem;color:var(--text2)">回踩地量・現在可買</div>
+        <div style="font-size:.58rem;color:var(--text2)">隔日沖・明日開盤賣出</div>
       </div>
       <div id="buyPtBody" style="font-size:.72rem"></div>
     </div>
@@ -4150,9 +4150,20 @@ function renderTable(){
     if(!wrap||!allResults.length){if(wrap)wrap.style.display='none';return;}
 
     const buyStability=r=>{
-      const v=r.vcp,pb=v.pbBuy;
-      // Q6修正：pb.volRatio=0（停牌/無量）時不給分，避免無流動性股票得滿分
-      return (v.score||0)*0.4+(pb?.volRatio>0?(1-Math.min(pb.volRatio,1))*30:0)+Math.max(0,(7-Math.abs(v.distVcpPivot||0)))*2.5+((v.gainFrom52Low||0)>=60?10:(v.gainFrom52Low||0)>=40?7:(v.gainFrom52Low||0)>=30?4:0);
+      // 隔日沖評分：今日收盤買、明日開盤賣 → 重視收盤位置、機構籌碼、成交動能
+      const v=r.vcp;
+      const chips=chipsMap[r.code];
+      const f=chips?parseChipNum(chips.foreignNet)??0:0;
+      const t=chips?parseChipNum(chips.trustNet)??0:0;
+      const mg=marginMap[r.code];
+      let pts=0;
+      if(f>0&&t>0)pts+=30; else if(f>0||t>0)pts+=15;
+      if(v.closeRatio>=0.85)pts+=25; else if(v.closeRatio>=0.75)pts+=20; else if(v.closeRatio>=0.6)pts+=12; else if(v.closeRatio>=0.5)pts+=5;
+      if(v.rsi!=null){if(v.rsi>=55&&v.rsi<=70)pts+=15; else if(v.rsi>=50&&v.rsi<=75)pts+=8;}
+      if(v.score>=85)pts+=15; else if(v.score>=70)pts+=8; else if(v.score>=60)pts+=4;
+      if(v.vRat!=null){if(v.vRat>=2.5)pts+=15; else if(v.vRat>=2.0)pts+=12; else if(v.vRat>=1.5)pts+=8; else if(v.vRat>=1.2)pts+=4;}
+      if(mg?.change>0)pts-=15; else if(mg?.change<0)pts+=5;
+      return Math.max(0,pts);
     };
 
     const isQualified=r=>{
@@ -4160,8 +4171,18 @@ function renderTable(){
       if(chips){const fNet=parseChipNum(chips.foreignNet),tNet=parseChipNum(chips.trustNet);if(fNet<0&&tNet<0)return false;}
       return true;
     };
-    // Q7+Q8修正：補上流動性過濾(v10>=300000)與收黑K過濾(closeRatio>=0.4)
-    const buyListRaw=allResults.filter(r=>r.vcp?.pbBuy?.strong&&r.vcp.score>=60&&r.vcp.stage2===true&&isQualified(r)&&(r.vcp.v10==null||r.vcp.v10>=300000)&&(r.vcp.closeRatio==null||r.vcp.closeRatio>=0.4));
+    // 隔日沖篩選：有量（vRat>=1.2）、強勢收盤（closeRatio>=0.55）、RSI甜區、不過熱
+    const buyListRaw=allResults.filter(r=>{
+      const v=r.vcp;
+      if(!v||!v.stage2)return false;
+      if(v.score<60)return false;
+      if(v.v10!=null&&v.v10<300000)return false;
+      if(v.vRat==null||v.vRat<1.2)return false;
+      if(v.closeRatio==null||v.closeRatio<0.55)return false;
+      if(v.rsi!=null&&(v.rsi<45||v.rsi>78))return false;
+      if(v.distVcpPivot!=null&&v.distVcpPivot>10)return false;
+      return isQualified(r);
+    });
     const buySort=(a,b)=>{
       let av,bv;
       if(buySortKey==='vcpScore'){av=a.vcp?.score??0;bv=b.vcp?.score??0;}
@@ -4210,11 +4231,11 @@ function renderTable(){
               <td style="${td}text-align:center">${_chipC(r.code)}</td>
               <td style="${td}text-align:center">${_mgC(r.code)}</td>
               <td style="${td}text-align:center">${_csC(v,r.fund,r.code)}</td>
-              <td style="${td}text-align:center;font-size:.62rem;font-weight:700;color:#34d399">${v.pbBuy?.strong?'✅地量':v.pbBuy?'⏳縮量':'—'}</td>
+              <td style="${td}text-align:center;font-size:.62rem;font-weight:700;color:${v.closeRatio>=0.75?'#34d399':v.closeRatio>=0.6?'#fbbf24':'#9ca3af'}">${v.closeRatio>=0.85?'✅強收':v.closeRatio>=0.75?'✅好收':v.closeRatio>=0.6?'⏳中收':'—'}</td>
             </tr>`;
           }).join('')}</tbody>
         </table></div>
-        <div style="margin-top:6px;font-size:.6rem;color:var(--text2)">停損設進場價 −5%・跌破突破點 −8% 立即出場</div>`;
+        <div style="margin-top:6px;font-size:.6rem;color:var(--text2)">隔日沖：今日收盤買入・明日開盤即賣出，虧損不加碼</div>`;
       }else{
         buyBody.innerHTML='<div style="color:var(--text2);font-size:.68rem;padding:8px 0">目前無符合買點的股票</div>';
       }
