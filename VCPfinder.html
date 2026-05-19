@@ -4912,6 +4912,28 @@ async function lookupStock() {
     sellSignal={emoji:'⬜',label:'繼續持有',sub:'尚無賣出訊號',color:'#9ca3af',bg:'rgba(113,113,122,.06)',border:'#6b7280'};
   }
 
+  // 坡段判斷
+  const sp=(()=>{
+    const v=vcpData;
+    if(!v.stage2) return {phase:'wait',emoji:'⏸',label:'整理等待',color:'#6b7280',bg:'rgba(107,114,128,.12)',border:'#6b7280',desc:'尚未進入 Stage2 上升趨勢，不在坡段中',action:'等待 Stage2 確立後再關注'};
+    const dist=v.distVcpPivot,rsi=v.rsi,pctH=v.pctH,vRat=v.vRat;
+    const isTail=(dist!=null&&dist>20)||(pctH!=null&&pctH<5)||(rsi!=null&&rsi>80)||(vRat!=null&&vRat>3.0);
+    if(isTail){
+      const why=[];
+      if(dist!=null&&dist>20)why.push(`超突破點+${dist}%`);
+      if(pctH!=null&&pctH<5)why.push(`距高點僅${pctH}%`);
+      if(rsi!=null&&rsi>80)why.push(`RSI ${rsi} 超買`);
+      if(vRat!=null&&vRat>3.0)why.push(`量比 ${vRat} FOMO`);
+      return {phase:'tail',emoji:'🔴',label:'坡段尾巴',color:'#f87171',bg:'rgba(220,38,38,.15)',border:'#dc2626',desc:why.join('・'),action:'考慮獲利了結，停損收緊至成本上方'};
+    }
+    const isMid=dist!=null&&dist>8&&dist<=20&&rsi!=null&&rsi>=60&&rsi<=82;
+    if(isMid) return {phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(202,138,4,.15)',border:'#d97706',desc:`突破點上方 +${dist}%，RSI ${rsi} 動能健康`,action:'繼續持有，停損移至成本，不追加碼'};
+    const g52=v.gainFrom52Low;
+    const isStart=dist!=null&&dist>=-5&&dist<=8&&rsi!=null&&rsi>=45&&rsi<=74&&(g52==null||g52>=25);
+    if(isStart) return {phase:'start',emoji:'🟢',label:'坡段開始',color:'#34d399',bg:'rgba(5,150,105,.18)',border:'#059669',desc:`${dist>=0?`突破點上方 +${dist}%`:`距突破點 ${dist}%`}，RSI ${rsi} 動能起步`,action:'可建倉，停損設突破點下方 -8%'};
+    return {phase:'unclear',emoji:'⏳',label:'坡段未定',color:'#9ca3af',bg:'rgba(113,113,122,.12)',border:'#6b7280',desc:dist!=null?`距突破點 ${dist}%，位置尚不明確`:'突破點資料不足',action:'繼續觀察，等待型態明朗'};
+  })();
+
   res.innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
       <span class="tc" style="font-size:1rem">${stockInfo.code}</span>
@@ -4962,6 +4984,19 @@ async function lookupStock() {
         <div style="font-size:1.5rem;line-height:1.1;margin-bottom:2px">${sellSignal.emoji}</div>
         <div style="font-size:.88rem;font-weight:800;color:${sellSignal.color};line-height:1.2">${sellSignal.label}</div>
         <div style="font-size:.58rem;color:var(--text2);margin-top:4px;line-height:1.4">${sellSignal.sub}</div>
+      </div>
+    </div>
+
+    <!-- ── 坡段判斷 ── -->
+    <div style="background:${sp.bg};border:2px solid ${sp.border};border-radius:12px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px">
+      <div style="font-size:2rem;line-height:1;flex-shrink:0">${sp.emoji}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+          <span style="font-size:.6rem;font-weight:800;color:var(--text2);letter-spacing:.08em;text-transform:uppercase">坡段位置</span>
+          <span style="font-size:.95rem;font-weight:800;color:${sp.color}">${sp.label}</span>
+        </div>
+        <div style="font-size:.68rem;color:var(--text2);margin-bottom:4px">${sp.desc}</div>
+        <div style="font-size:.72rem;font-weight:700;color:${sp.color}">▶ ${sp.action}</div>
       </div>
     </div>
 
