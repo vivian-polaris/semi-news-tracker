@@ -299,8 +299,9 @@ header{position:relative}
   <div class="rpt-panel" id="rptPanel">
     <div class="rpt-lbl">
       <span>📊 半導體產業趨勢分析報告</span>
-      <button class="rpt-dl-btn" id="rptDlBtn" onclick="downloadReport()" style="margin-left:auto;margin-right:8px">⬇ 下載報告</button>
-      <button class="rpt-close" onclick="document.getElementById('rptPanel').className='rpt-panel'">✕ 關閉</button>
+      <button class="rpt-dl-btn" id="rptRetryBtn" onclick="generateReport()" style="margin-left:auto;margin-right:6px">↻ 重新生成</button>
+      <button class="rpt-dl-btn" id="rptDlBtn" onclick="downloadReport()" style="margin-right:8px">⬇ 下載報告</button>
+      <button class="rpt-close" onclick="document.getElementById('rptPanel').className='rpt-panel';clearTimeout(_rptRetryTimer)">✕ 關閉</button>
     </div>
     <div class="rpt-body" id="rptBody"></div>
   </div>
@@ -1199,12 +1200,12 @@ async function batchZhSumm(){
 
   const numbered=pairs.map((p,i)=>`${i+1}. ${p.title}`).join('\n');
   const raw=await callAI(
-    `你是半導體產業分析師，現在要跟完全不懂半導體的普通人解釋這些新聞。`+
-    `以下${pairs.length}條新聞標題，每條用繁體中文寫1~2句分析（40~80字），語氣口語、直接、像在跟朋友聊天。`+
-    `重點：這件事為什麼重要？它在說什麼？對一般人有沒有影響？`+
-    `規則：公司/人名保留英文（TSMC、Nvidia、Samsung、Intel…）；不要重複標題內容；不要說「這篇文章」「該新聞」；`+
-    `禁止套話（密切關注、值得注意、帶來影響、持續發展、不容忽視）；要有你的觀點，不只是陳述事實。`+
-    `只輸出編號清單，每行格式「數字. 分析」，不加其他說明：\n\n${numbered}`
+    `你是半導體產業分析師，現在用最口語的方式跟朋友說這些新聞在講什麼。`+
+    `以下${pairs.length}條新聞標題，每條用繁體中文寫1~2句話（30~60字），語氣像在傳訊息給朋友。`+
+    `每條要包含：①這件事在說什麼（白話解釋）②為什麼值得知道（對產業或投資人的意義）。`+
+    `規則：公司名保留英文（TSMC、Nvidia、Samsung、Intel…）；禁止說「這篇報導」「該新聞」；`+
+    `禁止套話（密切關注、值得注意、持續發展）；字要少，話要清楚，不要繞彎子。`+
+    `只輸出編號清單，每行格式「數字. 內容」，不加其他說明：\n\n${numbered}`
   );
 
   if(!raw || raw.startsWith('⚠️')) return;
@@ -1240,7 +1241,10 @@ function downloadReport(){
   URL.revokeObjectURL(a.href);
 }
 
+let _rptRetryTimer=null;
+
 async function generateReport(){
+  clearTimeout(_rptRetryTimer);
   const btn=document.getElementById('rptBtn');
   const panel=document.getElementById('rptPanel');
   const body=document.getElementById('rptBody');
@@ -1271,6 +1275,18 @@ async function generateReport(){
   const raw=await callAI(prompt);
 
   btn.disabled=false; btn.textContent='📊 產業報告';
+
+  if(raw==='⚠️RATE_LIMIT'){
+    let secs=35;
+    const tick=()=>{
+      secs--;
+      body.innerHTML=`<div style="color:var(--text2);font-size:.84rem">⏳ AI 呼叫次數暫時達到上限，${secs} 秒後自動重試...<br><span style="font-size:.75rem;opacity:.6">或點上方「↻ 重新生成」手動重試</span></div>`;
+      if(secs>0) _rptRetryTimer=setTimeout(tick,1000);
+      else generateReport();
+    };
+    tick();
+    return;
+  }
 
   if(!raw || raw.startsWith('⚠️')){
     body.innerHTML=`<div style="color:#f87171">${esc(raw||'生成失敗，請稍後再試')}</div>`;
@@ -1487,15 +1503,15 @@ async function callAI(prompt){
     if(!r.ok){
       const e=await r.json().catch(()=>({}));
       const msg=e.error?.message||r.status;
-      if(r.status===429) return '⚠️ 超過每分鐘限額，請稍候 30 秒再點 ↻ 重整';
+      if(r.status===429) return '⚠️RATE_LIMIT';
       return `⚠️ AI 錯誤：${msg}`;
     }
     const j=await r.json();
     const text=j.candidates?.[0]?.content?.parts?.[0]?.text||'';
     if(text.trim().length>10) return text.trim();
-    return '⚠️ AI 回覆為空，請點 ↻ 重整';
+    return '⚠️ AI 回覆為空，請點「↻ 重新生成」再試';
   }catch(e){
-    return `⚠️ 網路連線問題（${e.message}），請點 ↻ 重整`;
+    return `⚠️ 網路連線問題（${e.message}）`;
   }
 }
 
