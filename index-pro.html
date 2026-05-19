@@ -1559,31 +1559,34 @@ function _abcSaveCache(issueNum, data) {
 async function _abcLoadLatest() {
   _abcSetSt('抓取最新 ABC 週報...');
 
-  // Method 1: Substack JSON API via proxy (CORS blocks direct fetch)
+  // Method 1: rss2json.com — has proper CORS headers, no proxy needed
   let post = null;
   try {
-    const apiResp = await fetchProxy('https://alwaysbecurious.substack.com/api/v1/posts?limit=1', 10000);
-    if (apiResp.ok) {
-      const posts = await apiResp.json();
-      if (posts && posts[0]) {
-        const p = posts[0];
-        const title = p.title || '';
+    const r2j = await fetch(
+      'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent('https://alwaysbecurious.substack.com/feed'),
+      { signal: AbortSignal.timeout(10000) }
+    );
+    if (r2j.ok) {
+      const data = await r2j.json();
+      if (data.status === 'ok' && data.items && data.items[0]) {
+        const item = data.items[0];
+        const title = item.title || '';
         const numM = title.match(/#(\d+)/);
         post = {
           fullTitle: title,
           title: title.replace(/^always be curious\s*\d*\s*[:\-–]\s*/i, '').trim(),
-          url: p.canonical_url || `https://alwaysbecurious.substack.com/p/${p.slug}`,
+          url: item.link || item.guid || '',
           issueNum: numM ? '#' + numM[1] : '',
-          date: p.post_date ? new Date(p.post_date).toLocaleDateString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit'}) : ''
+          date: item.pubDate ? new Date(item.pubDate).toLocaleDateString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit'}) : ''
         };
       }
     }
   } catch {}
 
-  // Method 2: RSS via proxy
+  // Method 2: RSS via CORS proxy fallback
   if (!post || !post.url) {
     try {
-      _abcSetSt('嘗試 RSS feed...');
+      _abcSetSt('嘗試備用 RSS...');
       const r = await fetchProxy('https://alwaysbecurious.substack.com/feed');
       const rssText = await r.text();
       post = _abcParseRSS(rssText);
