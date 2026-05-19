@@ -140,6 +140,8 @@ header p{color:rgba(255,255,255,.65);font-size:.78rem;margin-top:4px;text-shadow
 .rpt-btn{padding:7px 14px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);border-radius:7px;color:var(--green);font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap}
 .rpt-btn:hover{background:rgba(16,185,129,.28)}
 .rpt-btn:disabled{opacity:.5;cursor:default}
+.rpt-dl-btn{padding:5px 12px;background:rgba(79,126,247,.15);border:1px solid rgba(79,126,247,.4);border-radius:7px;color:var(--accent);font-size:.76rem;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap}
+.rpt-dl-btn:hover{background:rgba(79,126,247,.28)}
 .ctags{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:2px}
 .badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:.65rem}
 .bn{background:rgba(59,130,246,.1);color:var(--accent);border:1px solid rgba(59,130,246,.25)}
@@ -297,6 +299,7 @@ header{position:relative}
   <div class="rpt-panel" id="rptPanel">
     <div class="rpt-lbl">
       <span>📊 半導體產業趨勢分析報告</span>
+      <button class="rpt-dl-btn" id="rptDlBtn" onclick="downloadReport()" style="margin-left:auto;margin-right:8px">⬇ 下載報告</button>
       <button class="rpt-close" onclick="document.getElementById('rptPanel').className='rpt-panel'">✕ 關閉</button>
     </div>
     <div class="rpt-body" id="rptBody"></div>
@@ -1223,6 +1226,20 @@ async function batchZhSumm(){
   }
 }
 
+let _lastReportRaw='';
+
+function downloadReport(){
+  if(!_lastReportRaw){alert('請先生成報告');return;}
+  const date=new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'-');
+  const fname=`半導體產業報告_${date}.txt`;
+  const blob=new Blob([_lastReportRaw],{type:'text/plain;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=fname;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 async function generateReport(){
   const btn=document.getElementById('rptBtn');
   const panel=document.getElementById('rptPanel');
@@ -1259,6 +1276,8 @@ async function generateReport(){
     body.innerHTML=`<div style="color:#f87171">${esc(raw||'生成失敗，請稍後再試')}</div>`;
     return;
   }
+
+  _lastReportRaw=raw;
 
   // 簡單 markdown → HTML
   body.innerHTML=raw
