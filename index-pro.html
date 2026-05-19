@@ -161,6 +161,31 @@ footer{text-align:center;padding:16px 0;color:var(--text2);font-size:.68rem;bord
 /* Header position */
 header{position:relative}
 
+/* === ABC Weekly PPT === */
+.abc-sec{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 15px;margin:10px 0 6px}
+.abc-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px}
+.abc-htitle{font-size:.9rem;font-weight:700;color:var(--text);cursor:pointer;user-select:none;display:flex;align-items:center;gap:5px}
+.abc-badge{background:var(--green);color:#fff;font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.06em}
+.abc-stline{font-size:.78rem;color:var(--text2);display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.abc-spin{display:inline-block;width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:sp .8s linear infinite;flex-shrink:0}
+.abc-cards{display:flex;flex-direction:column;gap:7px;margin:8px 0 6px}
+.abc-card{background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;border-left:3px solid var(--accent)}
+.abc-card.abc-main{border-left-color:var(--green)}
+.abc-ctitle{font-size:.84rem;font-weight:600;color:var(--text);margin-bottom:3px}
+.abc-csrc{font-size:.66rem;color:var(--accent);margin-bottom:5px}
+.abc-csrc a{color:inherit;text-decoration:none}
+.abc-csrc a:hover{text-decoration:underline}
+.abc-blist{list-style:none;padding:0}
+.abc-blist li{font-size:.76rem;color:var(--text2);line-height:1.5;padding:1px 0 1px 13px;position:relative}
+.abc-blist li::before{content:'·';position:absolute;left:3px;color:var(--green)}
+.abc-acts{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}
+.ppt-dl-btn{padding:7px 18px;background:var(--green);border:none;border-radius:6px;color:#fff;font-size:.82rem;font-weight:700;cursor:pointer;transition:opacity .2s}
+.ppt-dl-btn:hover{opacity:.85}
+.ppt-dl-btn:disabled{opacity:.35;cursor:not-allowed}
+.abc-rf-btn{padding:7px 13px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:.76rem;cursor:pointer;transition:all .2s}
+.abc-rf-btn:hover{border-color:var(--accent);color:var(--accent)}
+.abc-meta{font-size:.68rem;color:var(--text2);margin-bottom:6px}
+
 </style>
 </head>
 <body>
@@ -182,6 +207,28 @@ header{position:relative}
   </div>
   <div class="qdisp" id="qdisp"></div>
   <div class="ai-panel" id="aipanel"></div>
+
+  <!-- ABC Weekly PPT Auto-Section -->
+  <div class="abc-sec" id="abcSec">
+    <div class="abc-hd">
+      <span class="abc-htitle" onclick="abcToggleBody()">
+        📰 ABC 週報自動摘要
+        <span id="abcChevron" style="font-size:.65rem;color:var(--text2)">▼</span>
+      </span>
+      <span class="abc-badge">AUTO</span>
+    </div>
+    <div id="abcBody">
+      <div class="abc-stline" id="abcSt">
+        <span class="abc-spin" id="abcSpn"></span>
+        <span id="abcStTxt">正在載入最新週報...</span>
+      </div>
+      <div class="abc-cards" id="abcCards" style="display:none"></div>
+      <div class="abc-acts" id="abcActs" style="display:none">
+        <button class="ppt-dl-btn" id="pptDlBtn" onclick="downloadABCPPT()">⬇ 下載 PPT</button>
+        <button class="abc-rf-btn" onclick="abcRefresh()">↺ 重新抓取</button>
+      </div>
+    </div>
+  </div>
 
   <div class="lbl">來源</div>
   <div class="row" id="srcRow">
@@ -1388,6 +1435,264 @@ document.getElementById('si').addEventListener('input',e=>{
 document.getElementById('si').addEventListener('keydown',e=>{
   if(e.key==='Enter'){clearTimeout(liveTimer);doSearch(e.target.value.trim());}
 });
+
+// ================================================================
+// ABC Weekly PPT Auto-Loader
+// ================================================================
+let _abcData = null;
+let _abcOpen = true;
+
+function abcToggleBody() {
+  _abcOpen = !_abcOpen;
+  document.getElementById('abcBody').style.display = _abcOpen ? '' : 'none';
+  document.getElementById('abcChevron').textContent = _abcOpen ? '▼' : '▶';
+}
+
+function _abcSetSt(msg, spinning=true) {
+  document.getElementById('abcSt').style.display = 'flex';
+  document.getElementById('abcSpn').style.display = spinning ? 'inline-block' : 'none';
+  document.getElementById('abcStTxt').textContent = msg;
+}
+function _abcHideSt() { document.getElementById('abcSt').style.display = 'none'; }
+
+function _abcParseRSS(xml) {
+  const doc = new DOMParser().parseFromString(xml, 'text/xml');
+  const item = doc.querySelector('item');
+  if (!item) return null;
+  const title = item.querySelector('title')?.textContent || '';
+  // <link> in RSS is tricky; try multiple approaches
+  let url = '';
+  for (const n of item.childNodes) {
+    if (n.nodeName === 'link') { url = n.textContent?.trim() || n.nextSibling?.nodeValue?.trim() || ''; if (url) break; }
+  }
+  if (!url) url = item.querySelector('guid')?.textContent || '';
+  const pubDate = item.querySelector('pubDate')?.textContent || '';
+  const numM = title.match(/#(\d+)/);
+  return {
+    fullTitle: title,
+    title: title.replace(/^always be curious\s*\d*\s*[:\-–]\s*/i, '').trim(),
+    url, issueNum: numM ? '#' + numM[1] : '',
+    date: pubDate ? new Date(pubDate).toLocaleDateString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit'}) : ''
+  };
+}
+
+function _abcExtractLinks(text) {
+  const seen = new Set();
+  const skip = /substack\.com|twitter\.com|x\.com|t\.co|linkedin\.com|instagram\.com|facebook\.com|mailto:|javascript:/i;
+  const out = [];
+  const re = /\[([^\]]{3,80})\]\((https?:\/\/[^\s)]{10,})\)/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const url = m[2].split('?')[0];
+    if (seen.has(url) || skip.test(url)) continue;
+    seen.add(url);
+    out.push({ title: m[1].trim(), url: m[2] });
+    if (out.length >= 12) break;
+  }
+  return out;
+}
+
+async function _abcFetchJina(url) {
+  try {
+    const r = await fetch('https://r.jina.ai/' + url, {
+      headers: { 'X-Return-Format': 'text', 'Accept': 'text/plain' },
+      signal: AbortSignal.timeout(20000)
+    });
+    if (!r.ok) return '';
+    return await r.text();
+  } catch { return ''; }
+}
+
+async function _abcFetchContent(url, title) {
+  // 1. Try Jina AI Reader (can bypass many paywalls)
+  let content = await _abcFetchJina(url);
+  if (content && content.length > 400) return content;
+
+  // 2. Try CORS proxy direct fetch
+  try {
+    const r = await fetchProxy(url, 9000);
+    const html = await r.text();
+    const stripped = html
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ').trim();
+    if (stripped.length > 400) return stripped.slice(0, 4000);
+  } catch {}
+
+  // 3. Try Jina on DuckDuckGo search result for the title
+  try {
+    const q = encodeURIComponent(title.slice(0, 80));
+    const ddg = await fetchProxy(`https://html.duckduckgo.com/html/?q=${q}`, 8000);
+    const ddgHtml = await ddg.text();
+    const urlM = ddgHtml.match(/uddg=([^"&\s]+)/);
+    if (urlM) {
+      const found = decodeURIComponent(urlM[1]);
+      const alt = await _abcFetchJina(found);
+      if (alt && alt.length > 300) return alt;
+    }
+  } catch {}
+
+  return content || ''; // return what we have even if short
+}
+
+const _ABC_CACHE = 'abc_auto_v3';
+function _abcLoadCache() {
+  try {
+    const c = JSON.parse(localStorage.getItem(_ABC_CACHE));
+    if (!c || Date.now() - c.ts > 6*24*3600*1000) return null;
+    return c;
+  } catch { return null; }
+}
+function _abcSaveCache(issueNum, data) {
+  try { localStorage.setItem(_ABC_CACHE, JSON.stringify({ ts: Date.now(), issueNum, data })); } catch {}
+}
+
+async function _abcLoadLatest() {
+  _abcSetSt('抓取最新 ABC 週報 RSS...');
+  let rssText;
+  try {
+    const r = await fetchProxy('https://alwaysbecurious.substack.com/feed');
+    rssText = await r.text();
+  } catch (e) { _abcSetSt('⚠ RSS 失敗：' + e.message, false); return; }
+
+  const post = _abcParseRSS(rssText);
+  if (!post || !post.url) { _abcSetSt('⚠ 無法解析 RSS', false); return; }
+
+  _abcSetSt(`${post.issueNum} · 抓取主文章...`);
+  const mainContent = await _abcFetchJina(post.url);
+  const links = _abcExtractLinks(mainContent || '');
+
+  const articles = [];
+  for (let i = 0; i < links.length; i++) {
+    const lk = links[i];
+    _abcSetSt(`抓取 ${i+1}/${links.length}：${lk.title.slice(0,28)}...`);
+    const content = await _abcFetchContent(lk.url, lk.title);
+    articles.push({ title: lk.title, url: lk.url, content: content.slice(0, 2500) });
+  }
+
+  _abcSetSt('呼叫 GLM 生成摘要...');
+  let result;
+  try {
+    const resp = await fetch('/api/abc-ppt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        issueTitle: post.fullTitle, issueNum: post.issueNum, issueDate: post.date,
+        mainContent: (mainContent || '').slice(0, 3500), links: articles
+      })
+    });
+    if (!resp.ok) { const e = await resp.json().catch(()=>({})); _abcSetSt('⚠ GLM 失敗：'+(e.error||resp.status), false); return; }
+    result = await resp.json();
+    if (result.error) { _abcSetSt('⚠ '+result.error, false); return; }
+  } catch (e) { _abcSetSt('⚠ 網路錯誤：'+e.message, false); return; }
+
+  result._meta = { issueTitle: post.fullTitle, issueNum: post.issueNum, issueDate: post.date };
+  _abcSaveCache(post.issueNum, result);
+  _abcData = result;
+  _abcRender(result);
+}
+
+function _abcRender(data) {
+  _abcHideSt();
+  _abcData = data;
+  const meta = data._meta || {};
+  const cards = document.getElementById('abcCards');
+  cards.innerHTML = '';
+  const mi = document.createElement('div');
+  mi.className = 'abc-meta';
+  mi.textContent = [meta.issueNum, meta.issueDate, `${(data.slides||[]).length} 篇`].filter(Boolean).join(' · ');
+  cards.appendChild(mi);
+  (data.slides || []).forEach(sl => {
+    const card = document.createElement('div');
+    card.className = 'abc-card' + (sl.type === 'main' ? ' abc-main' : '');
+    const t = document.createElement('div'); t.className = 'abc-ctitle'; t.textContent = sl.title || '';
+    card.appendChild(t);
+    if (sl.source) {
+      const s = document.createElement('div'); s.className = 'abc-csrc';
+      const a = document.createElement('a'); a.href = sl.source; a.target = '_blank'; a.rel = 'noopener';
+      try { a.textContent = new URL(sl.source).hostname; } catch { a.textContent = sl.source.slice(0,50); }
+      s.appendChild(a); card.appendChild(s);
+    }
+    const ul = document.createElement('ul'); ul.className = 'abc-blist';
+    (sl.bullets || []).forEach(b => { const li = document.createElement('li'); li.textContent = b; ul.appendChild(li); });
+    card.appendChild(ul);
+    cards.appendChild(card);
+  });
+  cards.style.display = 'flex';
+  document.getElementById('abcActs').style.display = 'flex';
+}
+
+async function abcRefresh() {
+  localStorage.removeItem(_ABC_CACHE);
+  _abcData = null;
+  document.getElementById('abcCards').style.display = 'none';
+  document.getElementById('abcActs').style.display = 'none';
+  await _abcLoadLatest();
+}
+
+async function downloadABCPPT() {
+  if (!_abcData) return;
+  const btn = document.getElementById('pptDlBtn');
+  btn.disabled = true; btn.textContent = '⏳ 生成中...';
+  try {
+    if (!window.PptxGenJS) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js';
+        s.onload = res; s.onerror = () => rej(new Error('PptxGenJS load failed'));
+        document.head.appendChild(s);
+      });
+    }
+    const pptx = new PptxGenJS();
+    const meta = _abcData._meta || {};
+    pptx.title = meta.issueTitle || 'ABC Weekly';
+    pptx.author = 'Vivian Edge';
+    pptx.layout = 'LAYOUT_WIDE';
+
+    // Cover
+    const cov = pptx.addSlide();
+    cov.background = { color: '0d1117' };
+    cov.addText(_abcData.title || 'Always Be Curious', {
+      x:0.5, y:1.5, w:12, h:1.4, fontSize:32, bold:true, color:'e2e8f0', align:'center'
+    });
+    cov.addText(_abcData.subtitle || `${meta.issueNum||''} · ${meta.issueDate||''}`, {
+      x:0.5, y:3.1, w:12, h:0.6, fontSize:18, color:'718096', align:'center'
+    });
+    cov.addText('Vivian Edge · 半導體情報', {
+      x:0.5, y:4.5, w:12, h:0.35, fontSize:12, color:'3fb97a', align:'center'
+    });
+
+    // Content slides
+    (_abcData.slides || []).forEach(sl => {
+      const s = pptx.addSlide();
+      s.background = { color: '161b22' };
+      const accentColor = sl.type === 'main' ? '3fb97a' : '4f7ef7';
+      s.addShape(pptx.ShapeType.rect, { x:0, y:0, w:0.07, h:5.63, fill:{ color: accentColor } });
+      s.addText(sl.title || '', { x:0.35, y:0.22, w:12.6, h:0.8, fontSize:22, bold:true, color:'e2e8f0' });
+      if (sl.subtitle) {
+        s.addText(sl.subtitle, { x:0.35, y:0.95, w:12.6, h:0.38, fontSize:13, color:'94a3b8', italic:true });
+      }
+      const yB = sl.subtitle ? 1.42 : 1.1;
+      const rows = (sl.bullets||[]).map(b => ({ text:'• '+b, options:{ breakLine:true } }));
+      if (rows.length) s.addText(rows, { x:0.35, y:yB, w:12.6, h:3.2, fontSize:15, color:'a0b0c8', lineSpacingMultiple:1.4 });
+      if (sl.source) {
+        s.addText(sl.source, { x:0.35, y:5.0, w:12.6, h:0.3, fontSize:9, color:'4a5568', hyperlink:{ url:sl.source } });
+      }
+    });
+
+    const fname = `ABC_${(meta.issueNum||'weekly').replace('#','')}${meta.issueDate?'_'+meta.issueDate.replace(/\//g,'-'):''}.pptx`;
+    await pptx.writeFile({ fileName: fname });
+  } catch (e) { alert('PPT 生成失敗：' + e.message); }
+  btn.disabled = false; btn.textContent = '⬇ 下載 PPT';
+}
+
+// Auto-init ABC section
+(function initABC() {
+  const cached = _abcLoadCache();
+  if (cached && cached.data) { _abcRender(cached.data); return; }
+  _abcLoadLatest();
+})();
 
 // ================================================================
 // Init
