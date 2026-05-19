@@ -1087,6 +1087,7 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('fund',this)">基本面 ⇅</th>
       <th onclick="setSort('moat',this)" title="護城河評分：毛利率（定價力/客戶非你不買）+ ROE（打不死）+ 營業利益率（效率）+ EPS成長（持續性）。≥80=極強，股價未漲前是最佳買點。">護城河 ⇅</th>
       <th onclick="setSort('chips',this)">籌碼 ⇅</th>
+      <th onclick="setSort('foreignHits',this)" title="外資連買：今日/10日/20日/60日 各期均為外資買超的計數（4/4=四期全買，最強）">外資連買 ⇅</th>
       <th onclick="setSort('pivot',this)" title="買點位置：股價與近30日高點的關係。整理中→不買（等突破）。即將突破→不買（設警示）。突破→等回踩縮量才買。過熱→不買。操作訊號看右邊「訊號」欄。">買點 ⇅</th>
       <th onclick="setSort('signal',this)" title="進場訊號：✅買=回踩地量，現在可買。⏳不買=條件未到位，繼續等。🚫不買=過熱或尚未突破。操作流程：等放量突破→等回踩縮量（地量）→才買。">訊號 ⇅</th>
       <th onclick="setSort('graham',this)" title="葛拉漢合理價 = 現價 × √(22.5 ÷ (PE × PB))。來源：台灣證交所 BWIBBU 官方數據。低估=綠・高估=紅">估值 ⇅</th>
@@ -1819,6 +1820,7 @@ let buySortKey='stability', buySortAsc=false;
 let fundMin=0;
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
+let chipsHistMap={}; // code -> {d1,d10,d20,d60: boolean|null, hits, available}
 let marginMap={}; // code -> {today, prev, change} 融資餘額（千股）
 let moatDb={}; // Layer 2: 人工審定護城河資料庫
 let twseDailyMap={chips:{},monthRevenue:{},income:{}}; // pre-fetched by GitHub Actions
@@ -3457,6 +3459,61 @@ async function fetchChips(){
   }
 }
 
+// ─── 外資歷史籌碼（多期別） ──────────────────────────────────────────────────
+async function fetchChipsHistory(){
+  const t86ForDate=async(yyyymmdd)=>{
+    const proxies=['https://corsproxy.io/?','https://api.allorigins.win/raw?url='];
+    const base=`https://www.twse.com.tw/rwd/zh/fund/T86?date=${yyyymmdd}&response=json`;
+    for(const px of proxies){
+      try{
+        const r=await fetchTO(px+encodeURIComponent(base),7000);
+        if(!r.ok)continue;
+        const txt=await r.text();
+        if(!txt||txt.trim().startsWith('<')||txt.includes('Rate limit'))continue;
+        const j=JSON.parse(txt);
+        if(j.stat!=='OK'||!j.data?.length)continue;
+        const fields=j.fields||[];
+        const fi=fields.findIndex(f=>(f.includes('外陸資')||f.includes('外資及陸資'))&&f.includes('買賣超')&&!f.includes('自營'));
+        const fIdx=fi>0?fi:4;
+        const res={};
+        j.data.forEach(row=>{
+          if(!row)return;
+          const code=(row[0]||'').trim();
+          if(!code||!/^\d{4,6}$/.test(code))return;
+          res[code]=parseChipNum(row[fIdx]);
+        });
+        if(Object.keys(res).length>10)return res;
+      }catch(_){}
+    }
+    return null;
+  };
+  // 找 N 個日曆天前最近的交易日資料
+  const fetchNear=async(calDaysBack)=>{
+    for(let offset=0;offset<7;offset++){
+      const dt=new Date();
+      dt.setDate(dt.getDate()-calDaysBack-offset);
+      if(dt.getDay()===0||dt.getDay()===6)continue;
+      const d=dt.getFullYear()+String(dt.getMonth()+1).padStart(2,'0')+String(dt.getDate()).padStart(2,'0');
+      const res=await t86ForDate(d);
+      if(res)return res;
+    }
+    return null;
+  };
+  // 平行抓取：10交易日≈14日曆、20td≈28、60td≈84
+  const [d10data,d20data,d60data]=await Promise.all([fetchNear(14),fetchNear(28),fetchNear(84)]);
+  // 合併 chipsHistMap
+  Object.keys(chipsMap).forEach(code=>{
+    const f1=parseChipNum(chipsMap[code]?.foreignNet)??0;
+    const f10=d10data?.[code]??null;
+    const f20=d20data?.[code]??null;
+    const f60=d60data?.[code]??null;
+    const hits=[f1>0,f10!==null?f10>0:null,f20!==null?f20>0:null,f60!==null?f60>0:null].filter(x=>x===true).length;
+    const available=1+(d10data?1:0)+(d20data?1:0)+(d60data?1:0);
+    chipsHistMap[code]={d1:f1>0,d10:f10!==null?f10>0:null,d20:f20!==null?f20>0:null,d60:f60!==null?f60>0:null,hits,available};
+  });
+  renderTable();
+}
+
 // ─── Scan ─────────────────────────────────────────────────────────────────
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
 
@@ -3488,6 +3545,7 @@ async function startScan(){
   // Fetch institutional chips data once before scan
   document.getElementById('progText').textContent='取得籌碼資料（TWSE）...';
   await fetchChips();
+  fetchChipsHistory(); // 背景抓歷史多期外資，不阻塞掃描
 
   // Show table immediately so results stream in live
   document.getElementById('sumGrid').style.display='';
@@ -3709,6 +3767,10 @@ function getSorted(list){
     if(sortKey==='chips'){
       const chipsScore=r=>{const c=chipsMap[r.code];if(!c)return-1;const f=parseChipNum(c.foreignNet)||0,t=parseChipNum(c.trustNet)||0;return(f>0&&t>0)?3:(f>0)?2:(t>0)?1:0;};
       return sortAsc?chipsScore(a)-chipsScore(b):chipsScore(b)-chipsScore(a);
+    }
+    if(sortKey==='foreignHits'){
+      const fh=r=>chipsHistMap[r.code]?.hits??-1;
+      return sortAsc?fh(a)-fh(b):fh(b)-fh(a);
     }
     if(sortKey==='pivot'){
       // 突破買點 > 逼近買點 > 整理中 > 追高 > 無資料
@@ -4123,7 +4185,17 @@ function renderTable(){
             <div style="font-size:.58rem;color:var(--text2)">${daysLeft>=0?daysLeft+'天後':'已過'}</div>
           </td>`;
         })();
-        return cs.score+`<td>${fundHTML}</td>${moatCell}<td>${chipsHTML}</td>`+pivotCell+signalCell+grahamCell+mgCell+exDivCell+cs.seven;
+        const fhCell=(()=>{
+          const h=chipsHistMap[r.code];
+          if(!h)return'<td style="text-align:center;color:var(--text2);font-size:.6rem">—</td>';
+          const dot=(v,lbl)=>`<span style="font-size:.58rem;margin:0 1px;font-weight:700;color:${v===true?'#34d399':v===false?'#f87171':'#6b7280'}" title="${lbl}：${v===true?'買超':v===false?'賣超':'無資料'}">${lbl}</span>`;
+          const col=h.hits===h.available?'#34d399':h.hits>=h.available-1?'#a3e635':h.hits>=2?'#fbbf24':'#f87171';
+          return`<td style="text-align:center;white-space:nowrap" title="外資 今日/10日/20日/60日 買超狀況">
+            <div style="font-weight:800;font-size:.72rem;color:${col}">${h.hits}/${h.available}</div>
+            <div>${dot(h.d1,'今')}${dot(h.d10,'10d')}${dot(h.d20,'20d')}${dot(h.d60,'60d')}</div>
+          </td>`;
+        })();
+        return cs.score+`<td>${fundHTML}</td>${moatCell}<td>${chipsHTML}</td>`+fhCell+pivotCell+signalCell+grahamCell+mgCell+exDivCell+cs.seven;
       })()}
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
       <td><div class="ma-row">${maHTML||'—'}</div></td>
