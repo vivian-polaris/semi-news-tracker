@@ -3727,10 +3727,10 @@ let _autoRefreshTimer=null;
 
 async function autoRefreshPrices(){
   if(!isTradingHours()||!allResults.length) return;
-  const filtered=getFiltered().filter(r=>r.vcp);
+  const filtered=allResults.filter(r=>r.vcp);
   if(!filtered.length) return;
 
-  // 只抓目前顯示的股票現價
+  // 抓所有有 VCP 資料的股票現價（不管篩選條件，約 200-400 支）
   await prefetchLivePrices(filtered.map(r=>({code:r.code,ex:r.ex||'TSE'})));
 
   // 把快取價格更新進 allResults
