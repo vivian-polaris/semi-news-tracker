@@ -2881,7 +2881,7 @@ function sma(arr, n){
   if(!arr||arr.length<n)return null;
   const v=arr.slice(0,n).filter(x=>x!=null&&isFinite(x));
   if(v.length<Math.ceil(n*.8))return null;
-  return v.reduce((a,b)=>a+b,0)/v.length;
+  return v.reduce((a,b)=>a+b,0)/n;
 }
 function calcATR(data,n){
   if(!data||data.length<n+1)return null;
@@ -2935,7 +2935,7 @@ function detectRisingFin(data){
 function calcVCP(data){
   if(!data||data.length<55)return null;
   const fin=detectRisingFin(data);
-  const closes=data.map(d=>d.close),highs=data.map(d=>d.high);
+  const closes=data.map(d=>d.close),highs=data.map(d=>d.high),lows=data.map(d=>d.low);
   const volumes=data.map(d=>d.volume);
   const price=closes[0];
   if(!price||price<=0)return null;
@@ -2985,7 +2985,7 @@ function calcVCP(data){
     else if(rsi>=50&&rsi<55)score+=5;
     else if(rsi>80)score-=15;
   }
-  const contractions=abM50?countContractions(highs):0;
+  const contractions=abM50?countContractions(highs,lows):0;
   if(contractions>=3)score+=8;else if(contractions>=2)score+=4;
 
   // ── 5/10/20 MA 糾纏走平（VCP 整理必要條件）
@@ -4738,18 +4738,19 @@ function calcRSI(closes,period=14){
 }
 
 // ─── Contraction Count (VCP多段收縮偵測) ──────────────────────────────────
-function countContractions(highs){
+function countContractions(highs, lows){
   if(!highs||highs.length<30)return 0;
   const arr=[...highs].reverse().slice(0,120); // oldest→newest，使用最高價偵測峰值
+  const lowsArr=lows?[...lows].reverse().slice(0,120):null;
   const peaks=[];
   for(let i=2;i<arr.length-2;i++){
     if(arr[i]>arr[i-1]&&arr[i]>arr[i-2]&&arr[i]>arr[i+1]&&arr[i]>arr[i+2])
       peaks.push({i,v:arr[i]});
   }
-  if(peaks.length<2)return peaks.length;
-  let count=1,lastD=Infinity;
+  if(peaks.length<2)return 0;
+  let count=0,lastD=Infinity;
   for(let i=0;i<peaks.length-1;i++){
-    const seg=arr.slice(peaks[i].i,peaks[i+1].i);
+    const seg=(lowsArr?lowsArr:arr).slice(peaks[i].i,peaks[i+1].i);
     if(!seg.length)continue;
     const lo=Math.min(...seg);
     const d=(peaks[i].v-lo)/peaks[i].v*100;
