@@ -1559,12 +1559,10 @@ function _abcSaveCache(issueNum, data) {
 async function _abcLoadLatest() {
   _abcSetSt('抓取最新 ABC 週報...');
 
-  // Method 1: Substack JSON API (no proxy needed, more reliable)
+  // Method 1: Substack JSON API via proxy (CORS blocks direct fetch)
   let post = null;
   try {
-    const apiResp = await fetch('https://alwaysbecurious.substack.com/api/v1/posts?limit=1', {
-      signal: AbortSignal.timeout(10000)
-    });
+    const apiResp = await fetchProxy('https://alwaysbecurious.substack.com/api/v1/posts?limit=1', 10000);
     if (apiResp.ok) {
       const posts = await apiResp.json();
       if (posts && posts[0]) {
