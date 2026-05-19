@@ -3118,7 +3118,7 @@ function calcVCP(data){
   }
 
   return{
-    score:Math.min(Math.round(score),100),price,
+    score:Math.max(0,Math.min(Math.round(score),100)),price,
     ma50:ma50?+ma50.toFixed(2):null,
     ma150:ma150?+ma150.toFixed(2):null,
     ma200:ma200?+ma200.toFixed(2):null,
@@ -4235,6 +4235,7 @@ function renderTable(){
       if(v.score>=85)pts+=15; else if(v.score>=70)pts+=8; else if(v.score>=60)pts+=4;
       if(v.vRat!=null){if(v.vRat>=2.5)pts+=15; else if(v.vRat>=2.0)pts+=12; else if(v.vRat>=1.5)pts+=8; else if(v.vRat>=1.2)pts+=4;}
       if(mg?.change>0)pts-=15; else if(mg?.change<0)pts+=5;
+      if(v.pctH!=null){if(v.pctH<=5)pts+=15; else if(v.pctH<=12)pts+=10; else if(v.pctH<=20)pts+=5;}
       return Math.max(0,pts);
     };
 
@@ -4250,6 +4251,7 @@ function renderTable(){
       if(v.score<60)return false;
       if(v.v10!=null&&v.v10<300000)return false;
       if(v.vRat==null||v.vRat<1.2)return false;
+      if(v.vRat>3.0)return false;
       if(v.closeRatio==null||v.closeRatio<0.55)return false;
       if(v.rsi!=null&&(v.rsi<45||v.rsi>78))return false;
       if(v.distVcpPivot!=null&&v.distVcpPivot>10)return false;
