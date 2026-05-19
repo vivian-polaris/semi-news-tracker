@@ -13,43 +13,72 @@ export async function onRequestPost(context) {
 
   const parts = [];
   if (mainContent && mainContent.trim()) {
-    parts.push(`=== 主文章 ===\n標題：${issueTitle}\n\n${mainContent}`);
+    parts.push(`=== 本期主文章 ===\n標題：${issueTitle}\n\n${mainContent}`);
   }
   links.forEach((lk, i) => {
-    const body = lk.content && lk.content.trim().length > 100
+    const articleBody = lk.content && lk.content.trim().length > 80
       ? lk.content
-      : '[無法取得全文，請根據標題與你的知識庫補充重點]';
-    parts.push(`=== 推薦閱讀 ${i + 1} ===\n標題：${lk.title}\n來源：${lk.url}\n\n${body}`);
+      : '[無法取得全文，請根據標題與你的知識補充重點]';
+    const searchNote = lk.aiSearched ? '（內容來自 AI 聯網搜尋）' : '';
+    parts.push(`=== 推薦閱讀 ${i + 1} ${searchNote}===\n標題：${lk.title}\n來源：${lk.url}\n\n${articleBody}`);
   });
 
-  const prompt = `你是一位專業商業分析師，請將以下 Always Be Curious 週報整理成 PowerPoint 簡報結構。
+  const totalLinks = links.length;
 
-週報：${issueNum} · ${issueDate}
+  const prompt = `你是資深半導體產業分析師。請將以下 Always Be Curious 週報（${issueNum} · ${issueDate}）整理成完整 PowerPoint 簡報。
+
+本期共有 ${totalLinks} 篇推薦閱讀文章。
 
 ${parts.join('\n\n---\n\n')}
 
 ---
 
-請直接輸出 JSON，不要任何說明文字：
+請直接輸出 JSON（不加任何說明或 markdown fence）：
+
 {
-  "title": "週報主標題（中文，≤20字）",
+  "title": "週報主標題（繁體中文，≤20字）",
   "subtitle": "${issueNum} · ${issueDate}",
   "slides": [
     {
+      "id": 0,
+      "type": "intro",
+      "title": "本期 ${issueNum} 概覽（≤20字）",
+      "subtitle": "${issueDate} · ${totalLinks} 篇推薦閱讀",
+      "bullets": ["文章1一行核心主題", "文章2一行核心主題", ...全部${totalLinks}篇都要列],
+      "source": ""
+    },
+    {
       "id": 1,
-      "title": "文章標題（精煉中文，≤25字）",
-      "subtitle": "來源或副標（≤20字）",
-      "bullets": ["重點一（≤35字）", "重點二", "重點三", "重點四"],
-      "source": "https://...",
-      "type": "main"
+      "type": "main",
+      "title": "主文章標題（精煉中文，≤25字）",
+      "subtitle": "副標或來源（≤20字）",
+      "bullets": ["核心洞察一（≤40字）", "核心洞察二", "核心洞察三", "核心洞察四"],
+      "source": "https://..."
+    },
+    ... 每篇推薦閱讀一頁 (type: "link") ...
+    {
+      "id": ${totalLinks + 1},
+      "type": "conclusion",
+      "title": "本期總結與產業展望",
+      "subtitle": "分析師觀點",
+      "bullets": [
+        "本期最重要趨勢1（具體說明）",
+        "本期最重要趨勢2（具體說明）",
+        "值得關注的機會或風險",
+        "未來3個月預測",
+        "建議追蹤的指標或事件"
+      ],
+      "source": ""
     }
   ]
 }
 
-規則：
-- 每篇文章一頁 slide；主文 type: "main"，推薦閱讀 type: "link"
-- bullets 3-5條，繁體中文，精煉有力，直接點出核心洞察
-- 若某篇內容不足，根據標題與你的知識補充最相關重點
+嚴格規則：
+- slides 陣列：第一個必須是 type:"intro"，最後一個必須是 type:"conclusion"
+- 中間每篇推薦閱讀各佔一頁（type:"link"），主文章 type:"main"
+- intro 的 bullets 要列出全部 ${totalLinks} 篇的一行主題摘要
+- conclusion 是分析師真正的觀點、預測和建議，不是重複摘要
+- 所有文字繁體中文，公司/人名保留英文（TSMC, Nvidia, Intel...）
 - 純 JSON，不加 markdown fencing`;
 
   let resp;
@@ -79,7 +108,6 @@ ${parts.join('\n\n---\n\n')}
   let content = data.choices?.[0]?.message?.content || '';
   const ti = content.indexOf('</think>');
   if (ti !== -1) content = content.slice(ti + 8).trim();
-  // Strip markdown code fence if present
   content = content.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
   const jm = content.match(/\{[\s\S]*\}/);
   if (!jm) return new Response(JSON.stringify({ error: 'GLM non-JSON', raw: content.slice(0, 300) }), { status: 500, headers: cors });
