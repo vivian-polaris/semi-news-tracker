@@ -4456,19 +4456,25 @@ function renderTable(){
       if(sent==='risk_off')return-1;
       const sl=v.ma20Slope,dm=v.distMA20,rsi=v.rsi;
       // 必須是坡段開始相位：MA20上揚、RSI 45-65、距MA20 -5~8%
-      if(sl==null||sl<0)return-1;                                // MA20 必須上揚
-      if(rsi!=null&&(rsi<45||rsi>65))return-1;                  // RSI 超熱或過弱均排除
-      if(dm!=null&&(dm<-5||dm>8))return-1;                      // 偏離MA20不可太大
+      if(sl==null||sl<0)return-1;
+      if(rsi!=null&&(rsi<45||rsi>65))return-1;
+      if(dm!=null&&(dm<-5||dm>8))return-1;
       // 均線多頭排列（MA20 > MA50）
       if(v.ma20!=null&&v.ma50!=null&&v.ma20<=v.ma50)return-1;
       // 均量門檻
       if(v.v10!=null&&v.v10<300000)return-1;
-      let s=30; // 基礎分（已通過坡段開始條件）
+      // CANSLIM 硬性門檻 ≥ 3（排除基本面 + 籌碼 + 動能全無的股票）
+      const cs=calcCANSLIM(v,r.fund||null,chipsMap[r.code]||null);
+      if(cs.total<3)return-1;
+      // 基本面：有資料時排除最差（弱/負）
+      const fg=calcFundGrade(r.fund||{});
+      if(fg&&fg.score!=null&&fg.score<30)return-1;
+      let s=30;
       // MA20斜率強度
       if(sl>=2)s+=20;else if(sl>=1)s+=12;else s+=4;
-      // RSI最佳區間（50-60 = 動能啟動但未過熱）
+      // RSI最佳區間（50-60）
       if(rsi!=null){if(rsi>=50&&rsi<=60)s+=20;else if(rsi>=45&&rsi<=65)s+=10;}
-      // 距MA20（貼近MA20最佳：0~5%，表示剛回踩到均線支撐）
+      // 距MA20（0~5%最佳）
       if(dm!=null){if(dm>=0&&dm<=5)s+=15;else if(dm>=-5&&dm<0)s+=8;else if(dm>5&&dm<=8)s+=5;}
       // 完整多頭排列（MA50 > MA150）
       if(v.ma50!=null&&v.ma150!=null&&v.ma50>v.ma150)s+=10;
