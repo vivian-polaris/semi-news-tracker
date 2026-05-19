@@ -1456,17 +1456,25 @@ function _abcSetSt(msg, spinning=true) {
 function _abcHideSt() { document.getElementById('abcSt').style.display = 'none'; }
 
 function _abcParseRSS(xml) {
-  const doc = new DOMParser().parseFromString(xml, 'text/xml');
-  const item = doc.querySelector('item');
-  if (!item) return null;
-  const title = item.querySelector('title')?.textContent || '';
-  // <link> in RSS is tricky; try multiple approaches
+  // Use regex — more reliable than DOMParser for RSS <link> extraction
+  const itemM = xml.match(/<item[\s\S]*?<\/item>/i);
+  if (!itemM) return null;
+  const item = itemM[0];
+
+  const titleM = item.match(/<title[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i);
+  const title = titleM ? titleM[1].trim() : '';
+
+  // URL: try <link>, then <guid isPermaLink="true">, then any <guid>
   let url = '';
-  for (const n of item.childNodes) {
-    if (n.nodeName === 'link') { url = n.textContent?.trim() || n.nextSibling?.nodeValue?.trim() || ''; if (url) break; }
+  const linkM = item.match(/<link[^>]*>(https?:\/\/[^<]+)<\/link>/i);
+  if (linkM) url = linkM[1].trim();
+  if (!url) {
+    const guidM = item.match(/<guid[^>]*>(https?:\/\/[^<]+)<\/guid>/i);
+    if (guidM) url = guidM[1].trim();
   }
-  if (!url) url = item.querySelector('guid')?.textContent || '';
-  const pubDate = item.querySelector('pubDate')?.textContent || '';
+
+  const pubM = item.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/i);
+  const pubDate = pubM ? pubM[1].trim() : '';
   const numM = title.match(/#(\d+)/);
   return {
     fullTitle: title,
@@ -1549,15 +1557,42 @@ function _abcSaveCache(issueNum, data) {
 }
 
 async function _abcLoadLatest() {
-  _abcSetSt('抓取最新 ABC 週報 RSS...');
-  let rssText;
-  try {
-    const r = await fetchProxy('https://alwaysbecurious.substack.com/feed');
-    rssText = await r.text();
-  } catch (e) { _abcSetSt('⚠ RSS 失敗：' + e.message, false); return; }
+  _abcSetSt('抓取最新 ABC 週報...');
 
-  const post = _abcParseRSS(rssText);
-  if (!post || !post.url) { _abcSetSt('⚠ 無法解析 RSS', false); return; }
+  // Method 1: Substack JSON API (no proxy needed, more reliable)
+  let post = null;
+  try {
+    const apiResp = await fetch('https://alwaysbecurious.substack.com/api/v1/posts?limit=1', {
+      signal: AbortSignal.timeout(10000)
+    });
+    if (apiResp.ok) {
+      const posts = await apiResp.json();
+      if (posts && posts[0]) {
+        const p = posts[0];
+        const title = p.title || '';
+        const numM = title.match(/#(\d+)/);
+        post = {
+          fullTitle: title,
+          title: title.replace(/^always be curious\s*\d*\s*[:\-–]\s*/i, '').trim(),
+          url: p.canonical_url || `https://alwaysbecurious.substack.com/p/${p.slug}`,
+          issueNum: numM ? '#' + numM[1] : '',
+          date: p.post_date ? new Date(p.post_date).toLocaleDateString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit'}) : ''
+        };
+      }
+    }
+  } catch {}
+
+  // Method 2: RSS via proxy
+  if (!post || !post.url) {
+    try {
+      _abcSetSt('嘗試 RSS feed...');
+      const r = await fetchProxy('https://alwaysbecurious.substack.com/feed');
+      const rssText = await r.text();
+      post = _abcParseRSS(rssText);
+    } catch (e) { _abcSetSt('⚠ 抓取失敗：' + e.message, false); return; }
+  }
+
+  if (!post || !post.url) { _abcSetSt('⚠ 無法取得最新期，請稍後再試', false); return; }
 
   _abcSetSt(`${post.issueNum} · 抓取主文章...`);
   const mainContent = await _abcFetchJina(post.url);
