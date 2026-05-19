@@ -898,6 +898,7 @@ footer a:hover{text-decoration:underline}
   </div>
   <button class="scan-btn" id="scanBtn" onclick="startScan()" style="flex-shrink:0;padding:9px 20px;font-size:.85rem">開始掃描 VCP</button>
   <button id="cancelBtn" onclick="cancelScan()" style="display:none;flex-shrink:0;padding:9px 18px;background:var(--card);border:1.5px solid var(--red);border-radius:6px;color:var(--red);font-size:.82rem;font-weight:700;cursor:pointer">停止</button>
+  <button id="portfolioBtn" onclick="loadPortfolioHistory()" style="display:none;flex-shrink:0;padding:9px 16px;background:var(--card);border:1.5px solid var(--purple);border-radius:6px;color:var(--purple);font-size:.78rem;font-weight:700;cursor:pointer">📊 本月績效</button>
 </div>
 <div id="scanCacheNote" style="display:none;font-size:.72rem;color:var(--text2);margin:-2px 0 6px;padding-left:2px"></div>
 
@@ -975,6 +976,17 @@ footer a:hover{text-decoration:underline}
 <div class="stats-bar" id="statsBar" style="display:none">
   <div class="stats-l">顯示 <strong id="showN">0</strong> / <strong id="totalN">0</strong> 支</div>
   <button class="export-btn" onclick="exportCSV()">⬇ 匯出 CSV</button>
+</div>
+
+<!-- ── 本月最好投資組合 ── -->
+<div id="portfolioSection" style="display:none;margin-bottom:14px">
+  <div style="background:var(--card);border:1.5px solid var(--purple);border-radius:10px;padding:12px 14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:.78rem;font-weight:800;color:var(--purple)">📊 本月最好投資組合</div>
+      <div style="font-size:.58rem;color:var(--text2)">過去30天VCP買點・依報酬率排列・現價取自本次掃描</div>
+    </div>
+    <div id="portfolioBody" style="font-size:.72rem"></div>
+  </div>
 </div>
 
 <!-- ── Note + Legend toggle link ── -->
@@ -3691,6 +3703,11 @@ function renderAll(){
   document.getElementById('sumVcp').textContent=wd.filter(r=>r.vcp.score>=60).length;
   document.getElementById('sumStrong').textContent=wd.filter(r=>r.vcp.score>=80).length;
   document.getElementById('sumTime').textContent=new Date().toLocaleTimeString('zh-TW');
+  // 顯示「本月績效」按鈕，並靜默存今日精選到 KV
+  const pfBtn=document.getElementById('portfolioBtn');
+  if(pfBtn)pfBtn.style.display='';
+  savePortfolioToKV();
+
   // Sector pills (only rebuild if not already done by startScan)
   if(!document.querySelector('[data-sec]:not([data-sec="ALL"])')){
     const secs=[...new Set(allResults.map(s=>s.sector))].filter(s=>s).sort();
@@ -3701,6 +3718,87 @@ function renderAll(){
     });
   }
   renderTable();
+}
+
+// ── 本月投資組合：儲存今日精選到 KV ──────────────────────────────────────
+async function savePortfolioToKV(){
+  try{
+    const picks=allResults
+      .filter(r=>r.vcp&&r.vcp.stage2&&r.vcp.score>=70)
+      .sort((a,b)=>b.vcp.score-a.vcp.score)
+      .slice(0,10)
+      .map(r=>({code:r.code,name:r.name,price:r.vcp.price,score:r.vcp.score,vcpPivot:r.vcp.vcpPivot,sector:r.sector||''}));
+    if(!picks.length)return;
+    await fetch('/api/portfolio',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({picks})
+    });
+  }catch(_){}
+}
+
+// ── 載入並顯示歷史績效 ────────────────────────────────────────────────────
+async function loadPortfolioHistory(){
+  const sec=document.getElementById('portfolioSection');
+  const body=document.getElementById('portfolioBody');
+  sec.style.display='';
+  body.innerHTML='<div style="color:var(--text2);font-size:.7rem">載入中...</div>';
+  sec.scrollIntoView({behavior:'smooth',block:'start'});
+  try{
+    const res=await fetch('/api/portfolio');
+    const {history}=await res.json();
+    if(!history||!history.length){body.innerHTML='<div style="color:var(--text2)">尚無歷史紀錄（掃描後自動儲存）</div>';return;}
+
+    // Build rows: for each pick, get current price from allResults
+    const priceMap={};
+    allResults.forEach(r=>{if(r.vcp)priceMap[r.code]=r.vcp.price;});
+
+    const allPicks=[];
+    history.forEach(day=>{
+      day.picks.forEach(p=>{
+        const cur=priceMap[p.code]??null;
+        const ret=cur&&p.price>0?(cur-p.price)/p.price*100:null;
+        allPicks.push({...p,date:day.date,curPrice:cur,ret});
+      });
+    });
+
+    // De-duplicate: keep best return entry per stock
+    const best={};
+    allPicks.forEach(p=>{
+      if(!best[p.code]||(p.ret!=null&&(best[p.code].ret==null||p.ret>best[p.code].ret)))best[p.code]=p;
+    });
+    const sorted=Object.values(best).sort((a,b)=>(b.ret??-999)-(a.ret??-999));
+
+    const rows=sorted.map(p=>{
+      const retStr=p.ret!=null?`${p.ret>=0?'+':''}${p.ret.toFixed(1)}%`:'—';
+      const retCol=p.ret==null?'#9ca3af':p.ret>=5?'#34d399':p.ret>=0?'#fbbf24':'#f87171';
+      const curStr=p.curPrice!=null?p.curPrice.toFixed(2):'未掃描';
+      return`<tr>
+        <td style="padding:4px 6px;color:var(--text2)">${p.date}</td>
+        <td style="padding:4px 6px;font-weight:700;color:var(--text)">${p.code}</td>
+        <td style="padding:4px 6px;color:var(--text2)">${p.name}</td>
+        <td style="padding:4px 6px;text-align:right">${p.price.toFixed(2)}</td>
+        <td style="padding:4px 6px;text-align:right;color:${p.curPrice?'var(--text)':'#6b7280'}">${curStr}</td>
+        <td style="padding:4px 6px;text-align:right;font-weight:800;color:${retCol}">${retStr}</td>
+        <td style="padding:4px 6px;text-align:center;color:${p.score>=80?'#34d399':'#fbbf24'}">${p.score}</td>
+      </tr>`;
+    }).join('');
+
+    body.innerHTML=`<table style="width:100%;border-collapse:collapse">
+      <thead><tr style="font-size:.6rem;color:var(--text2);border-bottom:1px solid var(--border)">
+        <th style="padding:3px 6px;text-align:left;font-weight:700">買進日</th>
+        <th style="padding:3px 6px;text-align:left;font-weight:700">代號</th>
+        <th style="padding:3px 6px;text-align:left;font-weight:700">名稱</th>
+        <th style="padding:3px 6px;text-align:right;font-weight:700">入場價</th>
+        <th style="padding:3px 6px;text-align:right;font-weight:700">現價</th>
+        <th style="padding:3px 6px;text-align:right;font-weight:700">報酬率</th>
+        <th style="padding:3px 6px;text-align:center;font-weight:700">VCP分</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }catch(e){
+    body.innerHTML=`<div style="color:#f87171">載入失敗：${e.message}</div>`;
+  }
 }
 
 function getFiltered(){
