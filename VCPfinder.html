@@ -5066,13 +5066,12 @@ async function lookupStock() {
       if(vRat!=null&&vRat>3.0)why.push(`量比 ${vRat} FOMO`);
       return {phase:'tail',emoji:'🔴',label:'坡段尾巴',color:'#f87171',bg:'rgba(220,38,38,.15)',border:'#dc2626',desc:why.join('・'),action:'考慮獲利了結・停損收緊至成本上方（預計持有 0-5 天）'};
     }
-    const isMid=dist!=null&&dist>8&&dist<=20&&rsi!=null&&rsi>=60&&rsi<=82;
-    if(isMid) return {phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(202,138,4,.15)',border:'#d97706',desc:`突破點上方 +${dist}%，RSI ${rsi} 動能健康`,action:'繼續持有・停損移至成本・不追加碼（預計再持有 1-3 週）'};
-    const g52=v.gainFrom52Low;
-    // g52==null 代表資料不足，不應判為坡頭
-    const isStart=dist!=null&&dist>=-5&&dist<=8&&rsi!=null&&rsi>=45&&rsi<=74&&g52!=null&&g52>=25;
-    if(isStart) return {phase:'start',emoji:'🟢',label:'坡段開始',color:'#34d399',bg:'rgba(5,150,105,.18)',border:'#059669',desc:`${dist>=0?`突破點上方 +${dist}%`:`距突破點 ${dist}%`}，RSI ${rsi} 動能起步`,action:'可建倉・停損設突破點下方 -8%（預計持有 2-6 週）'};
-    return {phase:'unclear',emoji:'⏳',label:'坡段未定',color:'#9ca3af',bg:'rgba(113,113,122,.12)',border:'#6b7280',desc:dist!=null?`距突破點 ${dist}%，位置尚不明確`:'突破點資料不足',action:'繼續觀察，等待型態明朗'};
+    const isMid=dist!=null&&dist>8&&dist<=20&&(rsi==null||(rsi>=55&&rsi<=85));
+    if(isMid) return {phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(202,138,4,.15)',border:'#d97706',desc:`突破點上方 +${dist}%${rsi!=null?`，RSI ${rsi} 動能健康`:''}`,action:'繼續持有・停損移至成本・不追加碼（預計再持有 1-3 週）'};
+    // 坡段開始：Stage2 + 接近突破點 + RSI 未過熱（移除 g52 條件，讓更多股票被正確判斷）
+    const isStart=dist!=null&&dist>=-8&&dist<=8&&(rsi==null||(rsi>=40&&rsi<=78));
+    if(isStart) return {phase:'start',emoji:'🟢',label:'坡段開始',color:'#34d399',bg:'rgba(5,150,105,.18)',border:'#059669',desc:`${dist>=0?`突破點上方 +${dist}%`:`距突破點 ${dist}%`}${rsi!=null?`，RSI ${rsi} 動能起步`:''}`,action:'可建倉・停損設突破點下方 -8%（預計持有 2-6 週）'};
+    return {phase:'unclear',emoji:'⏳',label:'坡段未定',color:'#9ca3af',bg:'rgba(113,113,122,.12)',border:'#6b7280',desc:dist!=null?`距突破點 ${dist>0?'+':''}${dist}%，位置尚不明確`:'突破點資料不足',action:'繼續觀察，等待型態明朗'};
   })();
 
   res.innerHTML = `
