@@ -1624,7 +1624,7 @@ function _abcExtractLinks(jinaText, htmlContent = '') {
     }
   }
 
-  return out.slice(0, 20);
+  return out.slice(0, 25);
 }
 
 async function _abcFetchJina(url) {
@@ -1689,7 +1689,7 @@ async function _abcFetchContent(url, title) {
   return content || '';
 }
 
-const _ABC_CACHE = 'abc_auto_v4';
+const _ABC_CACHE = 'abc_auto_v5';
 function _abcLoadCache() {
   try {
     const c = JSON.parse(localStorage.getItem(_ABC_CACHE));
@@ -1745,6 +1745,10 @@ async function _abcLoadLatest() {
   const mainContent = await _abcFetchJina(post.url);
   // Combine Jina markdown links + RSS HTML links for maximum coverage
   const links = _abcExtractLinks(mainContent || '', post.rssHtml || '');
+  _abcSetSt(`${post.issueNum} · 找到 ${links.length} 篇推薦文章，開始逐篇抓取...`);
+
+  // 文章越多，每篇內容截短，避免 GLM 輸入過長導致輸出截斷
+  const perLimit = links.length >= 15 ? 800 : links.length >= 10 ? 1000 : 1500;
 
   const articles = [];
   for (let i = 0; i < links.length; i++) {
@@ -1753,7 +1757,7 @@ async function _abcLoadLatest() {
     const content = await _abcFetchContent(lk.url, lk.title);
     const isAI = content.startsWith('[AI Search]');
     if (isAI) _abcSetSt(`[${i+1}/${links.length}] AI搜尋補充：${lk.title.slice(0,25)}...`);
-    articles.push({ title: lk.title, url: lk.url, content: content.slice(0, 1500), aiSearched: isAI });
+    articles.push({ title: lk.title, url: lk.url, content: content.slice(0, perLimit), aiSearched: isAI });
   }
 
   _abcSetSt('呼叫 GLM 生成摘要...');
@@ -1764,7 +1768,7 @@ async function _abcLoadLatest() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         issueTitle: post.fullTitle, issueNum: post.issueNum, issueDate: post.date,
-        mainContent: (mainContent || '').slice(0, 3500), links: articles
+        mainContent: (mainContent || '').slice(0, links.length >= 15 ? 2000 : 3500), links: articles
       })
     });
     if (!resp.ok) { const e = await resp.json().catch(()=>({})); _abcSetSt('⚠ GLM 失敗：'+(e.error||resp.status), false); return; }
