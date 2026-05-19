@@ -3012,7 +3012,7 @@ function calcVCP(data){
     else if(rsi>=50&&rsi<55)score+=5;
     else if(rsi>80)score-=15;
   }
-  const contractions=countContractions(highs);
+  const contractions=abM50?countContractions(highs):0;
   if(contractions>=3)score+=8;else if(contractions>=2)score+=4;
 
   // ── 5/10/20 MA 糾纏走平（VCP 整理必要條件）
@@ -3108,10 +3108,12 @@ function calcVCP(data){
   else{priorRunL=`+${gainFrom52Low.toFixed(0)}%`;}
 
   // ── 1年績效檢查：股價需高於1年前，確認Stage 2動能 ────────────────────────
-  const price1YAgo=closes[Math.min(252,closes.length-1)];
-  const gain1Y=price1YAgo>0?(price-price1YAgo)/price1YAgo*100:0;
-  if(gain1Y<-5){score-=20;}   // 1年下跌超5%，非Stage 2
-  else if(gain1Y<5){score-=10;} // 1年幾乎沒漲，動能不足
+  const price1YAgo=closes.length>=253?closes[252]:null;
+  const gain1Y=price1YAgo!=null&&price1YAgo>0?(price-price1YAgo)/price1YAgo*100:null;
+  if(gain1Y!=null){
+    if(gain1Y<-5){score-=20;}
+    else if(gain1Y<5){score-=10;}
+  }
 
   return{
     score:Math.min(Math.round(score),100),price,
@@ -3122,7 +3124,7 @@ function calcVCP(data){
     abM50,abM150,abM200,perfOrd:perf,stage2:abM50&&abM150&&abM200&&perf,
     atrL,atrS,atrRat:atrRat?+atrRat.toFixed(3):null,
     volL,volS,vRat:vRat?+vRat.toFixed(2):null,v10:v10?+v10.toFixed(0):null,
-    rsi,contractions,gainFrom52Low:+gainFrom52Low.toFixed(1),gain1Y:+gain1Y.toFixed(1),priorRunL,
+    rsi,contractions,gainFrom52Low:+gainFrom52Low.toFixed(1),gain1Y:gain1Y!=null?+gain1Y.toFixed(1):null,priorRunL,
     ma5:ma5?+ma5.toFixed(2):null,
     ma10:ma10?+ma10.toFixed(2):null,
     ma20:ma20?+ma20.toFixed(2):null,
@@ -4520,7 +4522,7 @@ function countContractions(highs){
     if(!seg.length)continue;
     const lo=Math.min(...seg);
     const d=(peaks[i].v-lo)/peaks[i].v*100;
-    if(d<lastD&&d>0.5){count++;lastD=d;}
+    if(d<lastD&&d>0.5&&peaks[i+1].v<=peaks[i].v*1.03){count++;lastD=d;}
   }
   return Math.min(count,5);
 }
