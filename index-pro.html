@@ -126,7 +126,7 @@ header p{color:rgba(255,255,255,.65);font-size:.78rem;margin-top:4px;text-shadow
 .czh{font-size:.77rem;color:#94a3b8;line-height:1.55;margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,.06)}
 .czh:empty{display:none}
 .czh.loading{color:#3d4f6b;font-style:italic;font-size:.72rem}
-.czh.loading::before{content:'摘要生成中…'}
+.czh.loading::before{content:'分析中…'}
 /* Report panel */
 .rpt-panel{display:none;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.28);border-radius:12px;padding:16px 18px;margin:8px 0 6px;font-size:.86rem;line-height:1.8;color:var(--text)}
 .rpt-panel.show{display:block}
@@ -1196,10 +1196,12 @@ async function batchZhSumm(){
 
   const numbered=pairs.map((p,i)=>`${i+1}. ${p.title}`).join('\n');
   const raw=await callAI(
-    `你是半導體產業分析師。以下${pairs.length}條新聞標題，每條用繁體中文寫1句摘要（30~50字）。`+
-    `內容必須包含：①核心事件或數據 ②對產業的直接影響或意義。`+
-    `規則：公司/人名用英文（TSMC、Nvidia、Samsung、Intel、Trump…）；禁止套話（密切關注、值得注意、帶來影響、持續發展）。`+
-    `只輸出編號清單，每行格式「數字. 摘要」，不加其他說明：\n\n${numbered}`
+    `你是半導體產業分析師，現在要跟完全不懂半導體的普通人解釋這些新聞。`+
+    `以下${pairs.length}條新聞標題，每條用繁體中文寫1~2句分析（40~80字），語氣口語、直接、像在跟朋友聊天。`+
+    `重點：這件事為什麼重要？它在說什麼？對一般人有沒有影響？`+
+    `規則：公司/人名保留英文（TSMC、Nvidia、Samsung、Intel…）；不要重複標題內容；不要說「這篇文章」「該新聞」；`+
+    `禁止套話（密切關注、值得注意、帶來影響、持續發展、不容忽視）；要有你的觀點，不只是陳述事實。`+
+    `只輸出編號清單，每行格式「數字. 分析」，不加其他說明：\n\n${numbered}`
   );
 
   if(!raw || raw.startsWith('⚠️')) return;
@@ -1210,7 +1212,7 @@ async function batchZhSumm(){
 
   pairs.forEach((p,i)=>{
     const zh=lines[i]||'';
-    if(zh && zh.length>5 && zh.length<200){
+    if(zh && zh.length>5 && zh.length<400){
       zhCache[titleHash(p.title)]=zh;
       p.el.textContent=zh;
     }
