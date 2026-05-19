@@ -748,51 +748,6 @@ footer a:hover{text-decoration:underline}
 
 <div class="sec-div"></div>
 
-<!-- ── 隔日沖 Checklist ── -->
-<div style="background:var(--card);border:1.5px solid var(--border2);border-left:4px solid var(--mint);border-radius:10px;padding:14px 18px;margin-bottom:14px">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
-    <div style="font-size:.78rem;font-weight:800;color:var(--mint);letter-spacing:.05em">隔日沖買入 Checklist</div>
-    <div style="font-size:.62rem;color:var(--text2)">點擊展開／收合</div>
-  </div>
-  <div id="dtChecklist" style="display:none">
-    <div style="font-size:.72rem;color:var(--text2);margin-bottom:10px;line-height:1.6">
-      掃描後，依「隔日沖」欄排序，找到<strong style="color:var(--mint)">強力推薦</strong>的股票，逐項核對以下 7 點再決定買入：
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px">
-      <label style="display:flex;align-items:flex-start;gap:8px;font-size:.76rem;color:var(--text);cursor:pointer">
-        <input type="checkbox" style="margin-top:2px;accent-color:var(--mint)">
-        <span><strong style="color:var(--mint)">進場訊號 = 回踩地量買點</strong><br><span style="font-size:.65rem;color:var(--text2)">突破後拉回+地量，不追突破當下</span></span>
-      </label>
-      <label style="display:flex;align-items:flex-start;gap:8px;font-size:.76rem;color:var(--text);cursor:pointer">
-        <input type="checkbox" style="margin-top:2px;accent-color:var(--mint)">
-        <span><strong style="color:var(--mint)">距買點 ≤ 2%</strong><br><span style="font-size:.65rem;color:var(--text2)">超過2%代表追高，不要買</span></span>
-      </label>
-      <label style="display:flex;align-items:flex-start;gap:8px;font-size:.76rem;color:var(--text);cursor:pointer">
-        <input type="checkbox" style="margin-top:2px;accent-color:var(--mint)">
-        <span><strong style="color:var(--mint)">VCP 分數 ≥ 70</strong><br><span style="font-size:.65rem;color:var(--text2)">整理形態紮實才有噴出力</span></span>
-      </label>
-      <label style="display:flex;align-items:flex-start;gap:8px;font-size:.76rem;color:var(--text);cursor:pointer">
-        <input type="checkbox" style="margin-top:2px;accent-color:var(--mint)">
-        <span><strong style="color:var(--mint)">合理價 = 低估（↑ 正面）</strong><br><span style="font-size:.65rem;color:var(--text2)">Graham Number > 現價</span></span>
-      </label>
-      <label style="display:flex;align-items:flex-start;gap:8px;font-size:.76rem;color:var(--text);cursor:pointer">
-        <input type="checkbox" style="margin-top:2px;accent-color:var(--mint)">
-        <span><strong style="color:var(--mint)">融資增減 &gt; 0</strong><br><span style="font-size:.65rem;color:var(--text2)">主力在加碼，不是出貨</span></span>
-      </label>
-      <label style="display:flex;align-items:flex-start;gap:8px;font-size:.76rem;color:var(--text);cursor:pointer">
-        <input type="checkbox" style="margin-top:2px;accent-color:var(--mint)">
-        <span><strong style="color:var(--mint)">大盤今日收紅 / 不弱</strong><br><span style="font-size:.65rem;color:var(--text2)">弱勢盤隔日沖成功率大降</span></span>
-      </label>
-      <label style="display:flex;align-items:flex-start;gap:8px;font-size:.76rem;color:var(--text);cursor:pointer">
-        <input type="checkbox" style="margin-top:2px;accent-color:var(--mint)">
-        <span><strong style="color:var(--red)">停損設進場價 −5%</strong><br><span style="font-size:.65rem;color:var(--text2)">隔日開盤若跌破立即出場，不拗</span></span>
-      </label>
-    </div>
-    <div style="margin-top:12px;padding:8px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:6px;font-size:.68rem;color:#f87171;line-height:1.6">
-      ⚠ 7 點全中才進場。少一點就等下一個機會。隔日沖最大風險是隔天開盤跳空低開，嚴守停損是唯一保護。
-    </div>
-  </div>
-</div>
 
 <!-- ── 坡段追蹤器 ── -->
 <!-- 我的坡段持倉 -->
@@ -4497,36 +4452,31 @@ function renderTable(){
 
     const slopeEntryCalc=r=>{
       const v=r.vcp;
-      if(!v)return-1;
-      // 硬性排除
-      if(!v.stage2)return-1;
-      if(!v.pbBuy?.strong)return-1;                               // pbBuy.strong 已限定 distVcpPivot < 3
-      if(v.score<60)return-1;
-      if(v.v10!=null&&v.v10<300000)return-1;                     // 均量<300張
-      if(v.distVcpPivot==null||v.distVcpPivot<-3||v.distVcpPivot>=3)return-1; // 有效範圍 [-3,3)
-      if(v.contractions!=null&&(v.contractions<2||v.contractions>6))return-1;
-      if(v.ma20!=null&&v.ma50!=null&&v.ma20<=v.ma50)return-1;   // 均線多頭排列
-      if(v.closeRatio!=null&&v.closeRatio<0.4)return-1;          // 排除收黑K/長上影線
+      if(!v||!v.stage2)return-1;
       if(sent==='risk_off')return-1;
-      let s=0;
-      // VCP基礎分
-      if(v.score>=90)s+=35;else if(v.score>=80)s+=25;else if(v.score>=70)s+=15;else s+=5;
-      // 距樞軸距離（0~3%突破最佳，負值=回踩）
-      if(v.distVcpPivot>=0&&v.distVcpPivot<3)s+=20;
-      else if(v.distVcpPivot>=-3&&v.distVcpPivot<0)s+=10;
-      // 均線強度（ma50>ma150=完美多頭排列，否則只給基礎分）
-      if(v.ma20&&v.ma50&&v.ma150){if(v.ma50>v.ma150)s+=15;else s+=3;}
-      // 收縮品質（2~4次最佳）
-      if(v.contractions>=2&&v.contractions<=4)s+=10;else if(v.contractions===5||v.contractions===6)s+=5;
-      // 突破量能
-      if(v.vRat>=2.0)s+=15;else if(v.vRat>=1.5)s+=8;else if(v.vRat>=1.2)s+=3;
-      // RSI動能
-      if(v.rsi>=55&&v.rsi<=75)s+=8;else if(v.rsi>75)s-=10;
-      // 籌碼
+      const sl=v.ma20Slope,dm=v.distMA20,rsi=v.rsi;
+      // 必須是坡段開始相位：MA20上揚、RSI 45-65、距MA20 -5~8%
+      if(sl==null||sl<0)return-1;                                // MA20 必須上揚
+      if(rsi!=null&&(rsi<45||rsi>65))return-1;                  // RSI 超熱或過弱均排除
+      if(dm!=null&&(dm<-5||dm>8))return-1;                      // 偏離MA20不可太大
+      // 均線多頭排列（MA20 > MA50）
+      if(v.ma20!=null&&v.ma50!=null&&v.ma20<=v.ma50)return-1;
+      // 均量門檻
+      if(v.v10!=null&&v.v10<300000)return-1;
+      let s=30; // 基礎分（已通過坡段開始條件）
+      // MA20斜率強度
+      if(sl>=2)s+=20;else if(sl>=1)s+=12;else s+=4;
+      // RSI最佳區間（50-60 = 動能啟動但未過熱）
+      if(rsi!=null){if(rsi>=50&&rsi<=60)s+=20;else if(rsi>=45&&rsi<=65)s+=10;}
+      // 距MA20（貼近MA20最佳：0~5%，表示剛回踩到均線支撐）
+      if(dm!=null){if(dm>=0&&dm<=5)s+=15;else if(dm>=-5&&dm<0)s+=8;else if(dm>5&&dm<=8)s+=5;}
+      // 完整多頭排列（MA50 > MA150）
+      if(v.ma50!=null&&v.ma150!=null&&v.ma50>v.ma150)s+=10;
+      // 籌碼支撐
       const fNet=parseChipNum(chipsMap[r.code]?.foreignNet);
       const tNet=parseChipNum(chipsMap[r.code]?.trustNet);
       if(fNet>0&&tNet>0)s+=15;else if(fNet>0||tNet>0)s+=7;
-      return s>=65?s:-1;
+      return s;
     };
 
     const btcBonus=window.btcSentiment||0;
@@ -4594,7 +4544,7 @@ function renderTable(){
         </tr>`;
       }).join('')}</tbody>
     </table></div>
-    <div style="margin-top:8px;font-size:.64rem;color:var(--text2);line-height:1.6">⚡ 坡段策略：VCP突破後波段持有，停損 -8%，目標 +20%~+50%。點「加入坡段」記錄進場，掃描後自動偵測出場信號。</div>`;
+    <div style="margin-top:8px;font-size:.64rem;color:var(--text2);line-height:1.6">⚡ 坡段策略：MA20上揚＋RSI 45-65＋貼近MA20，為坡段剛啟動的最佳買點。停損 -8%，目標 +20%~+50%。點「加入坡段」記錄進場，掃描後自動偵測出場信號。</div>`;
     const note=document.getElementById('dtDataNote');
     if(note){
       const live=isTradingHours();
@@ -5289,11 +5239,11 @@ return{phase:'unclear',emoji:'⏳',label:'坡段未定',color:'#9ca3af',bg:'rgba
             renderTable();
           }
         }catch(_){}
-        // ② 背景非同步刷新（取最新籌碼），完成後再渲染
+        // ② 背景非同步刷新（取最新籌碼＋歷史外資），完成後再渲染
         (async()=>{
           await loadTWSEDaily();
           await fetchChips();
-          if(Object.keys(chipsMap).length>0) renderTable();
+          if(Object.keys(chipsMap).length>0){renderTable();fetchChipsHistory();}
         })();
       }
     }
@@ -5641,16 +5591,7 @@ document.head.appendChild(_style);
   }
   window.toggleMonitor = toggleMonitor;
 
-  const hideChecklist = () => {
-    const el = document.getElementById('dtChecklist');
-    if (el) el.style.display = 'none';
-  };
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', hideChecklist, { once: true });
-  } else {
-    hideChecklist();
-  }
 })();
 </script>
 
