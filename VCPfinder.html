@@ -3813,33 +3813,28 @@ async function loadPortfolioHistory(){
     });
     const sorted=Object.values(best).sort((a,b)=>(b.ret??-999)-(a.ret??-999));
 
-    const rows=sorted.map(p=>{
+    const cards=sorted.map(p=>{
       const retStr=p.ret!=null?`${p.ret>=0?'+':''}${p.ret.toFixed(1)}%`:'—';
       const retCol=p.ret==null?'#9ca3af':p.ret>=5?'#34d399':p.ret>=0?'#fbbf24':'#f87171';
-      const curStr=p.curPrice!=null?p.curPrice.toFixed(2):'未掃描';
-      return`<tr>
-        <td style="padding:4px 6px;color:var(--text2)">${p.date}</td>
-        <td style="padding:4px 6px;font-weight:700;color:var(--text)">${p.code}</td>
-        <td style="padding:4px 6px;color:var(--text2)">${p.name}</td>
-        <td style="padding:4px 6px;text-align:right">${p.price.toFixed(2)}</td>
-        <td style="padding:4px 6px;text-align:right;color:${p.curPrice?'var(--text)':'#6b7280'}">${curStr}</td>
-        <td style="padding:4px 6px;text-align:right;font-weight:800;color:${retCol}">${retStr}</td>
-        <td style="padding:4px 6px;text-align:center;color:${p.score>=80?'#34d399':'#fbbf24'}">${p.score}</td>
-      </tr>`;
+      const retBg=p.ret==null?'transparent':p.ret>=5?'rgba(5,150,105,.12)':p.ret>=0?'rgba(202,138,4,.10)':'rgba(220,38,38,.10)';
+      const curStr=p.curPrice!=null?p.curPrice.toFixed(2):'—';
+      const dateShort=p.date.slice(5); // MM-DD
+      return`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:0 0 36px;font-size:.55rem;color:var(--text2);text-align:center;line-height:1.3">${dateShort}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:baseline;gap:5px">
+            <span style="font-size:.82rem;font-weight:800;color:var(--text)">${p.code}</span>
+            <span style="font-size:.65rem;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80px">${p.name}</span>
+          </div>
+          <div style="font-size:.58rem;color:var(--text2);margin-top:1px">入場 ${p.price.toFixed(2)} → 現在 ${curStr} ・ VCP ${p.score}分</div>
+        </div>
+        <div style="flex:0 0 52px;text-align:right;background:${retBg};border-radius:6px;padding:4px 6px">
+          <div style="font-size:.95rem;font-weight:800;color:${retCol}">${retStr}</div>
+        </div>
+      </div>`;
     }).join('');
 
-    body.innerHTML=`<table style="width:100%;border-collapse:collapse">
-      <thead><tr style="font-size:.6rem;color:var(--text2);border-bottom:1px solid var(--border)">
-        <th style="padding:3px 6px;text-align:left;font-weight:700">買進日</th>
-        <th style="padding:3px 6px;text-align:left;font-weight:700">代號</th>
-        <th style="padding:3px 6px;text-align:left;font-weight:700">名稱</th>
-        <th style="padding:3px 6px;text-align:right;font-weight:700">入場價</th>
-        <th style="padding:3px 6px;text-align:right;font-weight:700">現價</th>
-        <th style="padding:3px 6px;text-align:right;font-weight:700">報酬率</th>
-        <th style="padding:3px 6px;text-align:center;font-weight:700">VCP分</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+    body.innerHTML=cards||'<div style="color:var(--text2);font-size:.7rem">尚無紀錄</div>';
   }catch(e){
     body.innerHTML=`<div style="color:#f87171">載入失敗：${e.message}</div>`;
   }
