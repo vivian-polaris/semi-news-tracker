@@ -3159,25 +3159,37 @@ function isTradingHours(){
   return min>=60&&min<=330;
 }
 const _liveQCache=new Map(); // sym -> {price, ts}
-const LIVE_Q_TTL=3*60*1000; // 3 分鐘快取（盤中價格每 3 分鐘刷新）
+const LIVE_Q_TTL=1*60*1000; // 1 分鐘快取
 
 async function fetchLiveQuoteBatch(syms){
+  const ts=Date.now();
+  // Primary: Cloudflare Function → TWSE 官方即時 API（無 Yahoo rate limit 問題）
+  try{
+    const r=await fetchTO(`/api/price?syms=${encodeURIComponent(syms.join(','))}`,6000);
+    if(r.ok){
+      const prices=await r.json();
+      let got=0;
+      syms.forEach(sym=>{
+        const code=sym.split('.')[0];
+        if(prices[code]>0){_liveQCache.set(sym,{price:prices[code],ts});got++;}
+      });
+      if(got>0)return;
+    }
+  }catch(_){}
+  // Fallback: Yahoo Finance via CORS proxy
   const joined=syms.join(',');
-  const base=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(joined)}&_t=${Date.now()}`;
-  for(const px of ['https://corsproxy.io/?','https://api.allorigins.win/raw?url=','https://api.codetabs.com/v1/proxy?quest=']){
+  const base=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(joined)}&_t=${ts}`;
+  for(const px of ['https://corsproxy.io/?','https://api.allorigins.win/raw?url=']){
     try{
       const r=await fetchTO(px+encodeURIComponent(base),4000);
-      if(!r.ok) continue;
+      if(!r.ok)continue;
       const j=await r.json();
       const results=j?.quoteResponse?.result||[];
       let got=0;
       results.forEach(q=>{
-        if(q?.regularMarketPrice>0&&q?.symbol){
-          _liveQCache.set(q.symbol,{price:q.regularMarketPrice,ts:Date.now()});
-          got++;
-        }
+        if(q?.regularMarketPrice>0&&q?.symbol){_liveQCache.set(q.symbol,{price:q.regularMarketPrice,ts});got++;}
       });
-      if(got>0) return;
+      if(got>0)return;
     }catch(_){}
   }
 }
@@ -3189,11 +3201,11 @@ async function prefetchLivePrices(stocks){
     .map(s=>`${s.code}.${s.ex==='TWO'?'TWO':'TW'}`)
     .filter(sym=>{const c=_liveQCache.get(sym);return !c||now-c.ts>LIVE_Q_TTL;});
   if(!syms.length) return;
-  // 每批 20 個，5 批並行
+  // 每批 100 個（Cloudflare Function 可承受），2 批並行
   const batches=[];
-  for(let i=0;i<syms.length;i+=20) batches.push(syms.slice(i,i+20));
-  for(let i=0;i<batches.length;i+=5)
-    await Promise.all(batches.slice(i,i+5).map(b=>fetchLiveQuoteBatch(b).catch(()=>{})));
+  for(let i=0;i<syms.length;i+=100) batches.push(syms.slice(i,i+100));
+  for(let i=0;i<batches.length;i+=2)
+    await Promise.all(batches.slice(i,i+2).map(b=>fetchLiveQuoteBatch(b).catch(()=>{})));
 }
 
 async function fetchYahoo(sym){
@@ -5355,12 +5367,12 @@ return{phase:'unclear',emoji:'⏳',label:'坡段未定',color:'#9ca3af',bg:'rgba
     }
   },60*1000);
 
-  // 盤中每 3 分鐘輪詢即時價格，更新 allResults 並重渲染
+  // 盤中每 1 分鐘輪詢即時價格（Cloudflare Function → TWSE，無 Yahoo rate limit）
   setInterval(async()=>{
     if(!isTradingHours()||!allResults.length||scanning)return;
     const syms=allResults.filter(r=>r.vcp).map(r=>`${r.code}.${r.ex==='TWO'?'TWO':'TW'}`);
     if(!syms.length)return;
-    await fetchLiveQuoteBatch(syms);
+    await prefetchLivePrices(allResults.filter(r=>r.vcp));
     let updated=0;
     allResults.forEach(r=>{
       if(!r.vcp)return;
@@ -5371,7 +5383,7 @@ return{phase:'unclear',emoji:'⏳',label:'坡段未定',color:'#9ca3af',bg:'rgba
       }
     });
     if(updated>0)renderTable();
-  },3*60*1000);
+  },1*60*1000);
 
   // Hotkey: Alt+R = 重新整理 AI 快訊（不清除 API key）
   document.addEventListener('keydown',e=>{
