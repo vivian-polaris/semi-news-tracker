@@ -73,11 +73,13 @@ ${parts.join('\n\n---\n\n')}
   ]
 }
 
-嚴格規則：
-- slides 陣列：第一個必須是 type:"intro"，最後一個必須是 type:"conclusion"
-- 中間每篇推薦閱讀各佔一頁（type:"link"），主文章 type:"main"
-- intro 的 bullets 要列出全部 ${totalLinks} 篇的一行主題摘要
-- conclusion 是分析師真正的觀點、預測和建議，不是重複摘要
+嚴格規則（違反任何一條視為輸出無效）：
+- slides 總數必須等於 ${totalLinks + 2}（1 intro + ${totalLinks} 篇文章 + 1 conclusion）
+- 第一頁 type:"intro"，最後一頁 type:"conclusion"，中間每篇推薦閱讀各佔一頁
+- 每篇推薦閱讀都必須有自己的一頁，哪怕原文無法取得，也要根據標題和你的知識寫出 3-4 條重點
+- 主文章 type:"main"，其餘推薦閱讀 type:"link"
+- intro 的 bullets 必須列出全部 ${totalLinks} 篇的一行核心主題
+- conclusion 是分析師的真實觀點和預測，不是重複摘要
 - 所有文字繁體中文，公司/人名保留英文（TSMC, Nvidia, Intel...）
 - 純 JSON，不加 markdown fencing`;
 

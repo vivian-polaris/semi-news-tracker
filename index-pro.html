@@ -1188,31 +1188,29 @@ function passOutlet(n){
 // ================================================================
 function titleHash(s){let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h=h&h;}return Math.abs(h).toString(36);}
 const zhCache={};
+const _zhBusy=new Set(); // 追蹤正在處理中的元素 id，避免重複提交
 let zhTimer=null;
 
 async function batchZhSumm(){
-  // 只挑尚未在處理中的 loading 元素，每批 10 條
-  const els=[...document.querySelectorAll('.czh.loading:not([data-proc])')].slice(0,10);
+  const els=[...document.querySelectorAll('.czh.loading')]
+    .filter(el=>!_zhBusy.has(el.id))
+    .slice(0,10);
   if(!els.length) return;
 
-  // 標記為「處理中」，讓下一批不重複選到
-  els.forEach(el=>el.setAttribute('data-proc','1'));
-
+  els.forEach(el=>_zhBusy.add(el.id));
   const pairs=els.map(el=>({el,title:decodeURIComponent(el.dataset.t||'')})).filter(p=>p.title);
-  if(!pairs.length){ els.forEach(el=>{el.classList.remove('loading');el.removeAttribute('data-proc');}); return; }
+  if(!pairs.length){ els.forEach(el=>{_zhBusy.delete(el.id);el.classList.remove('loading');}); return; }
 
-  const numbered=pairs.map((p,i)=>`${i+1}. ${p.title}`).join('\n');
   const raw=await callAI(
-    `你是半導體產業分析師，現在用最口語的方式跟朋友說這些新聞在講什麼。`+
-    `以下${pairs.length}條新聞標題，每條用繁體中文寫1~2句話（30~60字），語氣像在傳訊息給朋友。`+
-    `每條要包含：①這件事在說什麼（白話解釋）②為什麼值得知道（對產業或投資人的意義）。`+
-    `規則：公司名保留英文（TSMC、Nvidia、Samsung、Intel…）；禁止說「這篇報導」「該新聞」；`+
-    `禁止套話（密切關注、值得注意、持續發展）；字要少，話要清楚，不要繞彎子。`+
-    `只輸出編號清單，每行格式「數字. 內容」，不加其他說明：\n\n${numbered}`
+    `你是半導體產業分析師，用最口語的方式跟朋友說這些新聞在講什麼。`+
+    `以下${pairs.length}條新聞標題，每條用繁體中文寫1~2句話（30~60字），語氣像傳訊息給朋友。`+
+    `每條要包含：①這件事在說什麼 ②為什麼值得知道。`+
+    `公司名保留英文（TSMC、Nvidia、Samsung、Intel…）；禁止套話（密切關注、值得注意、持續發展）。`+
+    `只輸出編號清單，格式「數字. 內容」，不加其他說明：\n\n`+
+    pairs.map((p,i)=>`${i+1}. ${p.title}`).join('\n')
   );
 
-  // AI 回來後才移除 loading，無論成功或失敗
-  pairs.forEach(p=>{ p.el.classList.remove('loading'); p.el.removeAttribute('data-proc'); });
+  pairs.forEach(p=>{ p.el.classList.remove('loading'); _zhBusy.delete(p.el.id); });
 
   if(raw && !raw.startsWith('⚠️')){
     const lines=raw.split('\n')
@@ -1220,17 +1218,11 @@ async function batchZhSumm(){
       .map(l=>l.replace(/^\d+[\.\、\)：:]\s*/,'').trim());
     pairs.forEach((p,i)=>{
       const zh=lines[i]||'';
-      if(zh && zh.length>5 && zh.length<400){
-        zhCache[titleHash(p.title)]=zh;
-        p.el.textContent=zh;
-      }
+      if(zh.length>5 && zh.length<400){ zhCache[titleHash(p.title)]=zh; p.el.textContent=zh; }
     });
   }
 
-  // 如果還有待處理的，繼續下一批
-  if(document.querySelectorAll('.czh.loading').length){
-    zhTimer=setTimeout(batchZhSumm,2500);
-  }
+  if(document.querySelectorAll('.czh.loading').length) zhTimer=setTimeout(batchZhSumm,2500);
 }
 
 let _lastReportRaw='';
@@ -1638,129 +1630,103 @@ async function _abcFetchJina(url) {
   } catch { return ''; }
 }
 
-async function _abcFetchContent(url, title) {
-  // 1. Try Jina AI Reader (bypasses many paywalls)
-  let content = await _abcFetchJina(url);
-  if (content && content.length > 400) return content;
+async function _abcFetchContent(url) {
+  // Method 1: Jina AI Reader（穿越 paywall，轉 markdown）
+  const jina = await _abcFetchJina(url);
+  if (jina && jina.length > 300) return jina.slice(0, 800);
 
-  // 2. Try CORS proxy direct fetch
+  // Method 2: CORS proxy + 剝除 HTML
   try {
-    const r = await fetchProxy(url, 9000);
+    const r = await fetchProxy(url, 8000);
     const html = await r.text();
-    const stripped = html
+    const text = html
       .replace(/<script[\s\S]*?<\/script>/gi, '')
       .replace(/<style[\s\S]*?<\/style>/gi, '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s+/g, ' ').trim();
-    if (stripped.length > 400) return stripped.slice(0, 4000);
+    if (text.length > 300) return text.slice(0, 800);
   } catch {}
 
-  // 3. Try Jina on DuckDuckGo search result for the title
-  try {
-    const q = encodeURIComponent(title.slice(0, 80));
-    const ddg = await fetchProxy(`https://html.duckduckgo.com/html/?q=${q}`, 8000);
-    const ddgHtml = await ddg.text();
-    const urlM = ddgHtml.match(/uddg=([^"&\s]+)/);
-    if (urlM) {
-      const found = decodeURIComponent(urlM[1]);
-      const alt = await _abcFetchJina(found);
-      if (alt && alt.length > 300) return alt;
-    }
-  } catch {}
-
-  // 4. AI web search fallback — paywall or inaccessible, search by title
-  try {
-    const r = await fetch(AI_WORKER, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt: `You are a semiconductor/tech research analyst. Research and summarize this article in 200 words covering: main argument, key data/numbers, and industry impact. Article title: "${title}" (URL: ${url}). If you can find the actual article online, use it. Otherwise use your knowledge about this topic.`,
-        useSearch: true
-      }),
-      signal: AbortSignal.timeout(28000)
-    });
-    if (r.ok) {
-      const j = await r.json();
-      const text = j.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      if (text.length > 100) return '[AI Search] ' + text.slice(0, 1800);
-    }
-  } catch {}
-
-  return content || '';
+  // 都失敗 → 回傳空字串，GLM 會根據標題補充重點
+  return '';
 }
 
 const _ABC_CACHE = 'abc_auto_v5';
+
 function _abcLoadCache() {
   try {
     const c = JSON.parse(localStorage.getItem(_ABC_CACHE));
-    if (!c || Date.now() - c.ts > 6*24*3600*1000) return null;
+    if (!c || !c.issueNum || !c.data) return null;
     return c;
   } catch { return null; }
 }
+
 function _abcSaveCache(issueNum, data) {
-  try { localStorage.setItem(_ABC_CACHE, JSON.stringify({ ts: Date.now(), issueNum, data })); } catch {}
+  try { localStorage.setItem(_ABC_CACHE, JSON.stringify({ issueNum, data })); } catch {}
 }
 
-async function _abcLoadLatest() {
-  _abcSetSt('抓取最新 ABC 週報...');
-
-  // Method 1: rss2json.com — has proper CORS headers, no proxy needed
-  let post = null;
+async function _abcFetchPost() {
+  // 優先: rss2json.com（有 CORS，不需 proxy）
   try {
-    const r2j = await fetch(
+    const r = await fetch(
       'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent('https://alwaysbecurious.substack.com/feed'),
       { signal: AbortSignal.timeout(10000) }
     );
-    if (r2j.ok) {
-      const data = await r2j.json();
-      if (data.status === 'ok' && data.items && data.items[0]) {
-        const item = data.items[0];
+    if (r.ok) {
+      const d = await r.json();
+      if (d.status === 'ok' && d.items?.[0]) {
+        const item = d.items[0];
         const title = item.title || '';
         const numM = title.match(/#(\d+)/);
-        post = {
+        return {
           fullTitle: title,
-          title: title.replace(/^always be curious\s*\d*\s*[:\-–]\s*/i, '').trim(),
           url: item.link || item.guid || '',
-          issueNum: numM ? '#' + numM[1] : '',
+          issueNum: numM ? '#' + numM[1] : title.slice(0, 20),
           date: item.pubDate ? new Date(item.pubDate).toLocaleDateString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit'}) : '',
-          rssHtml: item.content || item.description || ''  // full HTML from RSS for link extraction
+          rssHtml: item.content || item.description || ''
         };
       }
     }
   } catch {}
 
-  // Method 2: RSS via CORS proxy fallback
-  if (!post || !post.url) {
-    try {
-      _abcSetSt('嘗試備用 RSS...');
-      const r = await fetchProxy('https://alwaysbecurious.substack.com/feed');
-      const rssText = await r.text();
-      post = _abcParseRSS(rssText);
-    } catch (e) { _abcSetSt('⚠ 抓取失敗：' + e.message, false); return; }
+  // 備援: CORS proxy RSS
+  try {
+    const r = await fetchProxy('https://alwaysbecurious.substack.com/feed');
+    return _abcParseRSS(await r.text());
+  } catch { return null; }
+}
+
+async function _abcLoadLatest() {
+  _abcSetSt('抓取最新 ABC 週報...');
+
+  const post = await _abcFetchPost();
+  if (!post?.url) { _abcSetSt('⚠ 無法取得最新期，請稍後再試', false); return; }
+
+  // 快取命中：同一期直接渲染，不重複抓取
+  const cached = _abcLoadCache();
+  if (cached?.issueNum === post.issueNum && cached?.data) {
+    _abcRender(cached.data);
+    return;
   }
 
-  if (!post || !post.url) { _abcSetSt('⚠ 無法取得最新期，請稍後再試', false); return; }
-
-  _abcSetSt(`${post.issueNum} · 抓取主文章...`);
+  // 抓主文章 + 提取連結
+  _abcSetSt(`${post.issueNum} · 讀取主文章...`);
   const mainContent = await _abcFetchJina(post.url);
-  // Combine Jina markdown links + RSS HTML links for maximum coverage
   const links = _abcExtractLinks(mainContent || '', post.rssHtml || '');
-  _abcSetSt(`${post.issueNum} · 找到 ${links.length} 篇推薦文章，開始逐篇抓取...`);
+  if (!links.length) { _abcSetSt('⚠ 找不到推薦文章連結', false); return; }
 
-  // 文章越多，每篇內容截短，避免 GLM 輸入過長導致輸出截斷
-  const perLimit = links.length >= 15 ? 800 : links.length >= 10 ? 1000 : 1500;
+  _abcSetSt(`${post.issueNum} · 找到 ${links.length} 篇，並行抓取中...`);
 
-  const articles = [];
-  for (let i = 0; i < links.length; i++) {
-    const lk = links[i];
-    _abcSetSt(`[${i+1}/${links.length}] 抓取：${lk.title.slice(0,30)}...`);
-    const content = await _abcFetchContent(lk.url, lk.title);
-    const isAI = content.startsWith('[AI Search]');
-    if (isAI) _abcSetSt(`[${i+1}/${links.length}] AI搜尋補充：${lk.title.slice(0,25)}...`);
-    articles.push({ title: lk.title, url: lk.url, content: content.slice(0, perLimit), aiSearched: isAI });
-  }
+  // 並行抓取所有文章（比串行快 3-5 倍）
+  const articles = await Promise.all(
+    links.map(async lk => {
+      const content = await _abcFetchContent(lk.url);
+      return { title: lk.title, url: lk.url, content };
+    })
+  );
 
-  _abcSetSt('呼叫 GLM 生成摘要...');
+  _abcSetSt(`${post.issueNum} · 已抓取 ${articles.length} 篇，呼叫 GLM...`);
+
   let result;
   try {
     const resp = await fetch('/api/abc-ppt', {
@@ -1768,13 +1734,17 @@ async function _abcLoadLatest() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         issueTitle: post.fullTitle, issueNum: post.issueNum, issueDate: post.date,
-        mainContent: (mainContent || '').slice(0, links.length >= 15 ? 2000 : 3500), links: articles
+        mainContent: (mainContent || '').slice(0, 2000), links: articles
       })
     });
-    if (!resp.ok) { const e = await resp.json().catch(()=>({})); _abcSetSt('⚠ GLM 失敗：'+(e.error||resp.status), false); return; }
+    if (!resp.ok) {
+      const e = await resp.json().catch(() => ({}));
+      _abcSetSt('⚠ GLM 失敗：' + (e.error || resp.status), false);
+      return;
+    }
     result = await resp.json();
-    if (result.error) { _abcSetSt('⚠ '+result.error, false); return; }
-  } catch (e) { _abcSetSt('⚠ 網路錯誤：'+e.message, false); return; }
+    if (result.error) { _abcSetSt('⚠ ' + result.error, false); return; }
+  } catch (e) { _abcSetSt('⚠ 網路錯誤：' + e.message, false); return; }
 
   result._meta = { issueTitle: post.fullTitle, issueNum: post.issueNum, issueDate: post.date };
   _abcSaveCache(post.issueNum, result);
@@ -1943,12 +1913,8 @@ async function downloadABCPPT() {
   btn.disabled = false; btn.textContent = '⬇ 下載 PPT';
 }
 
-// Auto-init ABC section
-(function initABC() {
-  const cached = _abcLoadCache();
-  if (cached && cached.data) { _abcRender(cached.data); return; }
-  _abcLoadLatest();
-})();
+// Auto-init ABC section（快取判斷在 _abcLoadLatest 內部，按 issueNum 決定）
+(function(){ _abcLoadLatest(); })();
 
 // ================================================================
 // Init
