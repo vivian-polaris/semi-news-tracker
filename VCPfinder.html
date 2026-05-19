@@ -4171,7 +4171,7 @@ function renderTable(){
         <td class="tc"><a href="${tv}" target="_blank">${r.code}</a></td>
         <td class="tn">${r.name}</td>
         <td><span class="ex-label" style="font-size:.6rem;color:var(--text2);display:block;margin-bottom:2px">${r.ex==='TWO'?'上櫃':'上市'}</span>${r.sector?`<span class="tsec">${r.sector}</span>`:''}</td>
-        <td colspan="17" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
+        <td colspan="18" style="color:#9ca3af;font-size:.75rem">⚠️ 無法取得數據（可能需要 VPN）</td>
       </tr>`;
     }
     const g=grade(v.score),s=sc(v.score);
@@ -4397,10 +4397,10 @@ function renderTable(){
       const mg=marginMap[r.code];
       let pts=0;
       if(f>0&&t>0)pts+=30; else if(f>0||t>0)pts+=15;
-      if(v.closeRatio>=0.85)pts+=25; else if(v.closeRatio>=0.75)pts+=20; else if(v.closeRatio>=0.6)pts+=12; else if(v.closeRatio>=0.5)pts+=5;
+      if(v.closeRatio>=0.85)pts+=35; else if(v.closeRatio>=0.75)pts+=25; else if(v.closeRatio>=0.6)pts+=12; else if(v.closeRatio>=0.5)pts+=5;
       if(v.rsi!=null){if(v.rsi>=55&&v.rsi<=70)pts+=15; else if(v.rsi>=50&&v.rsi<=75)pts+=8;}
-      if(v.score>=85)pts+=15; else if(v.score>=70)pts+=8; else if(v.score>=60)pts+=4;
-      if(v.vRat!=null){if(v.vRat>=2.5)pts+=15; else if(v.vRat>=2.0)pts+=12; else if(v.vRat>=1.5)pts+=8; else if(v.vRat>=1.2)pts+=4;}
+      if(v.score>=85)pts+=10; else if(v.score>=70)pts+=6; else if(v.score>=45)pts+=2;
+      if(v.vRat!=null){if(v.vRat>=2.5)pts+=20; else if(v.vRat>=2.0)pts+=16; else if(v.vRat>=1.5)pts+=10; else if(v.vRat>=1.2)pts+=5;}
       if(mg?.change>0)pts-=15; else if(mg?.change<0)pts+=5;
       if(v.pctH!=null){if(v.pctH<=5)pts+=15; else if(v.pctH<=12)pts+=10; else if(v.pctH<=20)pts+=5;}
       return Math.max(0,pts);
@@ -4415,13 +4415,12 @@ function renderTable(){
     const buyListRaw=allResults.filter(r=>{
       const v=r.vcp;
       if(!v||!v.stage2)return false;
-      if(v.score<60)return false;
+      if(v.score<45)return false;
       if(v.v10!=null&&v.v10<300000)return false;
       if(v.vRat==null||v.vRat<1.2)return false;
       if(v.vRat>3.0)return false;
       if(v.closeRatio==null||v.closeRatio<0.55)return false;
       if(v.rsi!=null&&(v.rsi<45||v.rsi>78))return false;
-      if(v.distVcpPivot!=null&&v.distVcpPivot>10)return false;
       return isQualified(r);
     });
     const buySort=(a,b)=>{
