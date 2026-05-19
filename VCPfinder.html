@@ -1143,11 +1143,11 @@ footer a:hover{text-decoration:underline}
 <div style="margin-bottom:14px">
   <div class="sec-toggle" onclick="toggleSec('semi')" id="semiToggle">
     <div class="sec-toggle-left">
-      <span class="sec-toggle-icon">??儭?/span>
-      <span class="sec-toggle-title">?啁AI??擃???</span>
-      <span class="sec-toggle-badge">12撅斗活 46瑼?/span>
+      <span class="sec-toggle-icon">🤖</span>
+      <span class="sec-toggle-title">台灣 AI 半導體生態</span>
+      <span class="sec-toggle-badge">12 層次 · 46 檔</span>
     </div>
-    <span class="sec-chevron" id="semiChevron">??/span>
+    <span class="sec-chevron" id="semiChevron">▼</span>
   </div>
   <div class="sec-body" id="semiSecBody">
     <div id="semi-wrap" style="padding:12px 0 4px">
@@ -4411,7 +4411,7 @@ function renderTable(){
       if(chips){const fNet=parseChipNum(chips.foreignNet)??0,tNet=parseChipNum(chips.trustNet)??0;if(!(fNet>0||tNet>0))return false;}
       return true;
     };
-    // 隔日沖篩選：有量（vRat>=1.2）、強勢收盤（closeRatio>=0.55）、RSI甜區、不過熱
+    // 隔日沖篩選：有量（vRat>=1.2）、強勢收盤（closeRatio>=0.55）、RSI甜區、不過熱、CANSLIM≥3
     const buyListRaw=allResults.filter(r=>{
       const v=r.vcp;
       if(!v||!v.stage2)return false;
@@ -4421,6 +4421,8 @@ function renderTable(){
       if(v.vRat>3.0)return false;
       if(v.closeRatio==null||v.closeRatio<0.55)return false;
       if(v.rsi!=null&&(v.rsi<45||v.rsi>78))return false;
+      const cs=calcCANSLIM(v,r.fund||null,chipsMap[r.code]||null);
+      if(cs.total<3)return false;
       return isQualified(r);
     });
     const buySort=(a,b)=>{
