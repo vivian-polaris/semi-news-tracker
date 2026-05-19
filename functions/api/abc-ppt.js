@@ -61,7 +61,7 @@ ${parts.join('\n\n---\n\n')}
         model: 'glm-5.1',
         messages: [{ role: 'user', content: prompt }],
         thinking: { type: 'disabled' },
-        max_tokens: 8192,
+        max_tokens: 24000,
         temperature: 0.3,
         stream: false
       })
