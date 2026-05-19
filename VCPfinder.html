@@ -5259,6 +5259,7 @@ return{phase:'unclear',emoji:'⏳',label:'坡段未定',color:'#9ca3af',bg:'rgba
   loadExDiv2026().catch(()=>{});
   loadConfCalendar().catch(()=>{});
   Promise.all([loadTWSEDaily(), loadStockPrices()]).finally(()=>{
+    updateSemiPrices();
     loadTrump(true);
     loadClock(true);
     // 用最新 stocks_tse/otc.json 更新快取結果的現價（修正舊快取顯示舊股價的問題）
@@ -5609,6 +5610,21 @@ document.head.appendChild(_style);
 <script>
 // ─── 護城河深度分析（Layer 3: GLM via /api/moat）──────────────────────────
 fetch('./moat_db.json').then(r=>r.json()).then(db=>{moatDb=db;}).catch(()=>{});
+
+function updateSemiPrices(){
+  const rows=document.querySelectorAll('#semi-stbody tr');
+  if(!rows.length||!stockPriceLoaded)return;
+  rows.forEach(tr=>{
+    const tds=tr.querySelectorAll('td');
+    if(tds.length<4)return;
+    const code=tds[0].textContent.trim();
+    const pre=stockPriceMap[code];
+    const p=pre?.c?.[0];
+    if(p==null)return;
+    const fmt=p>=1000?p.toLocaleString('zh-TW'):p;
+    tds[3].innerHTML=`<span style="color:#34d399;font-weight:700">${fmt}元</span><span style="font-size:.58rem;color:#9ca3af;display:block">今收</span>`;
+  });
+}
 
 async function loadMoatAnalysis(code, name){
   const modal=document.getElementById('moatModal');
