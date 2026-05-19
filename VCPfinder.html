@@ -654,6 +654,7 @@ footer a:hover{text-decoration:underline}
 <div class="lcard" style="margin:10px 0 12px">
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
     <span style="font-size:.75rem;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:.06em">個股快查</span>
+    <span style="font-size:.6rem;color:var(--text2);background:var(--tag);padding:2px 8px;border-radius:8px">坡頭買・坡尾賣・持有 1-4 週</span>
   </div>
   <div class="scan-row" style="gap:8px">
     <input id="lookupInput" type="text" placeholder="代號或名稱（如 2603 或 長榮）"
@@ -826,7 +827,7 @@ footer a:hover{text-decoration:underline}
         <div style="font-size:.78rem;font-weight:800;color:#34d399;letter-spacing:.05em">
           ✅ 今日買點 <span id="buyPtCount" style="font-size:.65rem;font-weight:400;color:var(--text2)"></span>
         </div>
-        <div style="font-size:.58rem;color:var(--text2)">隔日沖・明日開盤賣出</div>
+        <div style="font-size:.58rem;color:var(--text2)">隔日沖・今日收盤買・明日開盤賣・持有 <strong style="color:#34d399">1 天</strong></div>
       </div>
       <div id="buyPtBody" style="font-size:.72rem"></div>
     </div>
@@ -839,6 +840,7 @@ footer a:hover{text-decoration:underline}
 <div class="scan-section-title">
   VCP 掃描
   <span id="scanSrcLabel" style="font-size:.68rem;color:var(--text2);font-weight:400;letter-spacing:0">全台灣 TSE+OTC ~1700支 · Yahoo Finance</span>
+  <span style="font-size:.6rem;color:var(--text2);background:var(--tag);padding:2px 8px;border-radius:8px;font-weight:400;letter-spacing:0">突破回踩縮量買・持有 2-8 週</span>
 </div>
 
 <div class="scan-box">
@@ -4925,14 +4927,14 @@ async function lookupStock() {
       if(pctH!=null&&pctH<5&&dist!=null&&dist>10)why.push(`距高點僅${pctH}%`);
       if(rsi!=null&&rsi>80)why.push(`RSI ${rsi} 超買`);
       if(vRat!=null&&vRat>3.0)why.push(`量比 ${vRat} FOMO`);
-      return {phase:'tail',emoji:'🔴',label:'坡段尾巴',color:'#f87171',bg:'rgba(220,38,38,.15)',border:'#dc2626',desc:why.join('・'),action:'考慮獲利了結，停損收緊至成本上方'};
+      return {phase:'tail',emoji:'🔴',label:'坡段尾巴',color:'#f87171',bg:'rgba(220,38,38,.15)',border:'#dc2626',desc:why.join('・'),action:'考慮獲利了結・停損收緊至成本上方（預計持有 0-5 天）'};
     }
     const isMid=dist!=null&&dist>8&&dist<=20&&rsi!=null&&rsi>=60&&rsi<=82;
-    if(isMid) return {phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(202,138,4,.15)',border:'#d97706',desc:`突破點上方 +${dist}%，RSI ${rsi} 動能健康`,action:'繼續持有，停損移至成本，不追加碼'};
+    if(isMid) return {phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(202,138,4,.15)',border:'#d97706',desc:`突破點上方 +${dist}%，RSI ${rsi} 動能健康`,action:'繼續持有・停損移至成本・不追加碼（預計再持有 1-3 週）'};
     const g52=v.gainFrom52Low;
     // g52==null 代表資料不足，不應判為坡頭
     const isStart=dist!=null&&dist>=-5&&dist<=8&&rsi!=null&&rsi>=45&&rsi<=74&&g52!=null&&g52>=25;
-    if(isStart) return {phase:'start',emoji:'🟢',label:'坡段開始',color:'#34d399',bg:'rgba(5,150,105,.18)',border:'#059669',desc:`${dist>=0?`突破點上方 +${dist}%`:`距突破點 ${dist}%`}，RSI ${rsi} 動能起步`,action:'可建倉，停損設突破點下方 -8%'};
+    if(isStart) return {phase:'start',emoji:'🟢',label:'坡段開始',color:'#34d399',bg:'rgba(5,150,105,.18)',border:'#059669',desc:`${dist>=0?`突破點上方 +${dist}%`:`距突破點 ${dist}%`}，RSI ${rsi} 動能起步`,action:'可建倉・停損設突破點下方 -8%（預計持有 2-6 週）'};
     return {phase:'unclear',emoji:'⏳',label:'坡段未定',color:'#9ca3af',bg:'rgba(113,113,122,.12)',border:'#6b7280',desc:dist!=null?`距突破點 ${dist}%，位置尚不明確`:'突破點資料不足',action:'繼續觀察，等待型態明朗'};
   })();
 
