@@ -4408,7 +4408,7 @@ function renderTable(){
 
     const isQualified=r=>{
       const chips=chipsMap[r.code];
-      if(chips){const fNet=parseChipNum(chips.foreignNet),tNet=parseChipNum(chips.trustNet);if(fNet<0&&tNet<0)return false;}
+      if(chips){const fNet=parseChipNum(chips.foreignNet)??0,tNet=parseChipNum(chips.trustNet)??0;if(!(fNet>0||tNet>0))return false;}
       return true;
     };
     // 隔日沖篩選：有量（vRat>=1.2）、強勢收盤（closeRatio>=0.55）、RSI甜區、不過熱
