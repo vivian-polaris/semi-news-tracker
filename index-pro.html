@@ -125,8 +125,8 @@ header p{color:rgba(255,255,255,.65);font-size:.78rem;margin-top:4px;text-shadow
 .csumm{font-size:.76rem;color:var(--text2);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .czh{font-size:.77rem;color:#94a3b8;line-height:1.55;margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,.06)}
 .czh:empty{display:none}
-.czh.loading{color:#3d4f6b;font-style:italic;font-size:.72rem}
-.czh.loading::before{content:'分析中…'}
+.czh.loading{display:block;color:#3d4f6b;font-style:italic;font-size:.72rem}
+.czh.loading::before{content:'摘要生成中…'}
 /* Report panel */
 .rpt-panel{display:none;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.28);border-radius:12px;padding:16px 18px;margin:8px 0 6px;font-size:.86rem;line-height:1.8;color:var(--text)}
 .rpt-panel.show{display:block}
@@ -1191,12 +1191,15 @@ const zhCache={};
 let zhTimer=null;
 
 async function batchZhSumm(){
-  const els=[...document.querySelectorAll('.czh.loading')].slice(0,5);
+  // 只挑尚未在處理中的 loading 元素，每批 10 條
+  const els=[...document.querySelectorAll('.czh.loading:not([data-proc])')].slice(0,10);
   if(!els.length) return;
-  els.forEach(el=>el.classList.remove('loading'));
+
+  // 標記為「處理中」，讓下一批不重複選到
+  els.forEach(el=>el.setAttribute('data-proc','1'));
 
   const pairs=els.map(el=>({el,title:decodeURIComponent(el.dataset.t||'')})).filter(p=>p.title);
-  if(!pairs.length) return;
+  if(!pairs.length){ els.forEach(el=>{el.classList.remove('loading');el.removeAttribute('data-proc');}); return; }
 
   const numbered=pairs.map((p,i)=>`${i+1}. ${p.title}`).join('\n');
   const raw=await callAI(
@@ -1208,22 +1211,25 @@ async function batchZhSumm(){
     `只輸出編號清單，每行格式「數字. 內容」，不加其他說明：\n\n${numbered}`
   );
 
-  if(!raw || raw.startsWith('⚠️')) return;
+  // AI 回來後才移除 loading，無論成功或失敗
+  pairs.forEach(p=>{ p.el.classList.remove('loading'); p.el.removeAttribute('data-proc'); });
 
-  const lines=raw.split('\n')
-    .filter(l=>/^\d+[\.\、\)：:]\s*\S/.test(l.trim()))
-    .map(l=>l.replace(/^\d+[\.\、\)：:]\s*/,'').trim());
+  if(raw && !raw.startsWith('⚠️')){
+    const lines=raw.split('\n')
+      .filter(l=>/^\d+[\.\、\)：:]\s*\S/.test(l.trim()))
+      .map(l=>l.replace(/^\d+[\.\、\)：:]\s*/,'').trim());
+    pairs.forEach((p,i)=>{
+      const zh=lines[i]||'';
+      if(zh && zh.length>5 && zh.length<400){
+        zhCache[titleHash(p.title)]=zh;
+        p.el.textContent=zh;
+      }
+    });
+  }
 
-  pairs.forEach((p,i)=>{
-    const zh=lines[i]||'';
-    if(zh && zh.length>5 && zh.length<400){
-      zhCache[titleHash(p.title)]=zh;
-      p.el.textContent=zh;
-    }
-  });
-
+  // 如果還有待處理的，繼續下一批
   if(document.querySelectorAll('.czh.loading').length){
-    zhTimer=setTimeout(batchZhSumm,3500);
+    zhTimer=setTimeout(batchZhSumm,2500);
   }
 }
 
@@ -1310,8 +1316,8 @@ async function generateReport(){
 
 function scheduleZhSumm(){
   clearTimeout(zhTimer);
-  // 8 秒 debounce：新聞分批載入會多次呼叫 render()，等全部穩定後才跑
-  zhTimer=setTimeout(batchZhSumm,8000);
+  // 3 秒 debounce：等新聞穩定後才跑，避免 render() 多次觸發重複呼叫
+  zhTimer=setTimeout(batchZhSumm,3000);
 }
 
 function render(){
