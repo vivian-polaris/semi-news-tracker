@@ -123,9 +123,23 @@ header p{color:rgba(255,255,255,.65);font-size:.78rem;margin-top:4px;text-shadow
 .nlist .ctitle{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .ngrid .ctitle{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .csumm{font-size:.76rem;color:var(--text2);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.czh{font-size:.76rem;color:#94a3b8;line-height:1.45;margin-top:3px}
+.czh{font-size:.77rem;color:#94a3b8;line-height:1.55;margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,.06)}
 .czh:empty{display:none}
-.czh.loading{color:#2d3748;font-style:italic;font-size:.68rem}
+.czh.loading{color:#3d4f6b;font-style:italic;font-size:.72rem}
+.czh.loading::before{content:'摘要生成中…'}
+/* Report panel */
+.rpt-panel{display:none;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.28);border-radius:12px;padding:16px 18px;margin:8px 0 6px;font-size:.86rem;line-height:1.8;color:var(--text)}
+.rpt-panel.show{display:block}
+.rpt-lbl{font-size:.72rem;font-weight:700;color:var(--green);letter-spacing:.05em;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.rpt-close{margin-left:auto;cursor:pointer;font-size:.8rem;color:var(--text2);background:none;border:none;padding:0}
+.rpt-body h3,.rpt-body h4{color:var(--text);margin:12px 0 4px;font-size:.9rem}
+.rpt-body p{margin:4px 0 8px;color:var(--text2)}
+.rpt-body ul{margin:4px 0 8px;padding-left:16px;color:var(--text2)}
+.rpt-body li{margin:3px 0}
+.rpt-body strong{color:var(--text)}
+.rpt-btn{padding:7px 14px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);border-radius:7px;color:var(--green);font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap}
+.rpt-btn:hover{background:rgba(16,185,129,.28)}
+.rpt-btn:disabled{opacity:.5;cursor:default}
 .ctags{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:2px}
 .badge{display:inline-block;padding:2px 7px;border-radius:3px;font-size:.65rem}
 .bn{background:rgba(59,130,246,.1);color:var(--accent);border:1px solid rgba(59,130,246,.25)}
@@ -276,7 +290,16 @@ header{position:relative}
       <button class="smbtn on" data-so="time" onclick="setSort('time')">最新</button>
       <button class="smbtn"    data-so="src"  onclick="setSort('src')">來源</button>
       <button class="viewbtn"  id="viewbtn"   onclick="toggleView()">⊞ 卡片</button>
+      <button class="rpt-btn"  id="rptBtn"    onclick="generateReport()">📊 產業報告</button>
     </div>
+  </div>
+
+  <div class="rpt-panel" id="rptPanel">
+    <div class="rpt-lbl">
+      <span>📊 半導體產業趨勢分析報告</span>
+      <button class="rpt-close" onclick="document.getElementById('rptPanel').className='rpt-panel'">✕ 關閉</button>
+    </div>
+    <div class="rpt-body" id="rptBody"></div>
   </div>
 
   <div class="nlist" id="nlist">
@@ -1164,42 +1187,88 @@ const zhCache={};
 let zhTimer=null;
 
 async function batchZhSumm(){
-  const els=[...document.querySelectorAll('.czh.loading')].slice(0,6); // 每批 6 條，減少 token 和解析問題
+  const els=[...document.querySelectorAll('.czh.loading')].slice(0,5);
   if(!els.length) return;
   els.forEach(el=>el.classList.remove('loading'));
-
-  if(!getKey()) return; // 無 key 就不處理（元素已空白，CSS:empty 隱藏）
 
   const pairs=els.map(el=>({el,title:decodeURIComponent(el.dataset.t||'')})).filter(p=>p.title);
   if(!pairs.length) return;
 
   const numbered=pairs.map((p,i)=>`${i+1}. ${p.title}`).join('\n');
   const raw=await callAI(
-    `以下${pairs.length}條半導體/科技新聞標題，每條寫12字以內重點。規則：人名地名公司名用英文（TSMC、Nvidia、Apple、Trump、China等），其他繁體中文。格式「誰＋做什麼＋數字/結果」。`+
-    `例：「TSMC 2nm良率達80%」「Nvidia H200漲價15%」「Apple砍Samsung訂單」「Trump對China加徵34%關稅」。`+
-    `絕對禁止：密切關注、緊張情勢、持續發展、值得注意、帶來影響、備受矚目。`+
-    `只輸出數字清單：\n1. 摘要\n2. 摘要\n\n${numbered}`
+    `你是半導體產業分析師。以下${pairs.length}條新聞標題，每條用繁體中文寫1句摘要（30~50字）。`+
+    `內容必須包含：①核心事件或數據 ②對產業的直接影響或意義。`+
+    `規則：公司/人名用英文（TSMC、Nvidia、Samsung、Intel、Trump…）；禁止套話（密切關注、值得注意、帶來影響、持續發展）。`+
+    `只輸出編號清單，每行格式「數字. 摘要」，不加其他說明：\n\n${numbered}`
   );
 
-  if(!raw || raw.startsWith('⚠️') || raw.startsWith('🔑')) return;
+  if(!raw || raw.startsWith('⚠️')) return;
 
-  // 解析：跳過沒有數字開頭的行（preamble），取有 "數字." 開頭的行
   const lines=raw.split('\n')
     .filter(l=>/^\d+[\.\、\)：:]\s*\S/.test(l.trim()))
-    .map(l=>l.replace(/^\d+[\.\、\)：:]\s*/,'').replace(/\[|\]/g,'').trim());
+    .map(l=>l.replace(/^\d+[\.\、\)：:]\s*/,'').trim());
 
   pairs.forEach((p,i)=>{
     const zh=lines[i]||'';
-    if(zh && zh.length>2 && zh.length<80){
+    if(zh && zh.length>5 && zh.length<200){
       zhCache[titleHash(p.title)]=zh;
       p.el.textContent=zh;
     }
-    // 失敗時保持空白（CSS:empty 自動隱藏）
   });
 
   if(document.querySelectorAll('.czh.loading').length){
-    zhTimer=setTimeout(batchZhSumm,4000);
+    zhTimer=setTimeout(batchZhSumm,3500);
   }
+}
+
+async function generateReport(){
+  const btn=document.getElementById('rptBtn');
+  const panel=document.getElementById('rptPanel');
+  const body=document.getElementById('rptBody');
+
+  // 收集所有目前可見的新聞標題
+  const titles=[...document.querySelectorAll('#nlist .ctitle a')]
+    .map(a=>a.textContent.trim()).filter(Boolean).slice(0,40);
+  if(!titles.length){alert('目前沒有新聞可供分析');return;}
+
+  btn.disabled=true; btn.textContent='⏳ 分析中...';
+  panel.className='rpt-panel show';
+  body.innerHTML='<div style="color:var(--text2);font-size:.84rem">正在分析 '+titles.length+' 則新聞，生成產業報告...</div>';
+
+  const prompt=
+    `你是資深半導體產業分析師，擁有20年供應鏈與技術研究經驗。`+
+    `以下是今日 ${titles.length} 則半導體相關新聞標題：\n\n`+
+    titles.map((t,i)=>`${i+1}. ${t}`).join('\n')+
+    `\n\n請根據以上新聞，用繁體中文撰寫一份「半導體產業趨勢分析報告」。`+
+    `報告結構：\n`+
+    `### 一、本週核心事件摘要（3-5個最重要的事件，每個2-3句說明影響）\n`+
+    `### 二、技術與供應鏈趨勢分析（從新聞中歸納出2-3個結構性趨勢）\n`+
+    `### 三、地緣政治與市場風險（貿易戰、出口管制、產能轉移等）\n`+
+    `### 四、分析師預測（未來3-6個月，你認為最可能發生的3件事，並說明理由）\n`+
+    `### 五、值得關注的機會與警訊\n\n`+
+    `注意：這是分析報告不是摘要。要有你的觀點、判斷和預測，不是只複述新聞。`+
+    `公司/人名用英文，數字要具體，禁止模糊套話。`;
+
+  const raw=await callAI(prompt);
+
+  btn.disabled=false; btn.textContent='📊 產業報告';
+
+  if(!raw || raw.startsWith('⚠️')){
+    body.innerHTML=`<div style="color:#f87171">${esc(raw||'生成失敗，請稍後再試')}</div>`;
+    return;
+  }
+
+  // 簡單 markdown → HTML
+  body.innerHTML=raw
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/###\s(.+)/g,'<h4>$1</h4>')
+    .replace(/##\s(.+)/g,'<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^[-•]\s(.+)/gm,'<li>$1</li>')
+    .replace(/(<li>[\s\S]+?<\/li>)/g,'<ul>$1</ul>')
+    .replace(/\n{2,}/g,'</p><p>')
+    .replace(/^(.)/,'<p>$1')
+    .replace(/(.)$/,'$1</p>');
 }
 
 function scheduleZhSumm(){
