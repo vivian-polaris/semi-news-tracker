@@ -948,18 +948,18 @@ footer a:hover{text-decoration:underline}
   </div>
   <div class="filter-row">
     <span class="flabel">基本面</span>
-    <span class="pill g-on" id="fundMinAll" onclick="setFundMin(0,this)">全部</span>
+    <span class="pill" id="fundMinAll" onclick="setFundMin(0,this)">全部</span>
     <span class="pill" id="fundMinHas" onclick="setFundMin(-1,this)">有資料</span>
     <span class="pill" id="fundMin70" onclick="setFundMin(70,this)">僅優（≥70）</span>
-    <span class="pill" id="fundMin80" onclick="setFundMin(80,this)">≥ 80</span>
+    <span class="pill g-on" id="fundMin80" onclick="setFundMin(80,this)">≥ 80</span>
     <span class="pill" id="fundMin90" onclick="setFundMin(90,this)">≥ 90</span>
   </div>
   <div class="filter-row">
     <span class="flabel">CAN SLIM</span>
     <span class="pill" id="csMin0" onclick="setCANSLIM(0,this)">全部</span>
     <span class="pill" id="csMin3" onclick="setCANSLIM(3,this)">≥ 3項</span>
-    <span class="pill g-on" id="csMin4" onclick="setCANSLIM(4,this)">≥ 4項 🌸</span>
-    <span class="pill" id="csMin5" onclick="setCANSLIM(5,this)">≥ 5項 ⭐</span>
+    <span class="pill" id="csMin4" onclick="setCANSLIM(4,this)">≥ 4項 🌸</span>
+    <span class="pill g-on" id="csMin5" onclick="setCANSLIM(5,this)">≥ 5項 ⭐</span>
     <span class="pill" id="csMin6" onclick="setCANSLIM(6,this)">≥ 6項</span>
   </div>
   <div class="filter-row" id="signalRow">
@@ -1827,13 +1827,13 @@ const CACHE_VER=4; // 每次改篩選邏輯就加 1，自動讓舊快取失效
 let allResults=[], scoreMin=80, pctMax=999, secFilter=new Set([...DEFAULT_SEC_FILTER]), exFilter='ALL', signalFilter='ALL';
 const exDivMap2026={};  // code -> "MM/DD" 除息日
 const confByDate={};    // "YYYY-MM-DD" -> Set of stock codes with 法說會
-let canslimMin=4;
+let canslimMin=5;
 const SEMI_SECTORS=new Set(['半導體','封測','IC設計','記憶體','PCB','散熱','伺服器','連接器','被動元件']);
 let onlyStage2=false, hideErr=true, sortKey='score', sortAsc=false, scanning=false;
 let hideDoubleShort=true;
 let dtSortKey='dtScore', dtSortAsc=false;
 let buySortKey='stability', buySortAsc=false;
-let fundMin=0;
+let fundMin=80;
 let scanCancelled=false, scanSrc='all';
 let chipsMap={}; // code -> {foreignNet, trustNet, dealerNet} from TWSE T86
 let chipsHistMap={}; // code -> {d1,d10,d20,d60: boolean|null, hits, available}
