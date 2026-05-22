@@ -1797,6 +1797,7 @@ let moatDb={}; // Layer 2: 人工審定護城河資料庫
 let twseDailyMap={chips:{},monthRevenue:{},income:{}}; // pre-fetched by GitHub Actions
 let stockPriceMap={};   // pre-fetched OHLCV: code -> {n,c[],h[],l[],v[]}
 let stockPriceLoaded=false;
+let _tsePriceDate='', _otcPriceDate=''; // 實際資料日期，用來判斷是否過舊
 
 // ─── Key helpers ──────────────────────────────────────────────────────────
 const getKey=()=>localStorage.getItem('groq_key')||'';
@@ -1938,14 +1939,32 @@ async function loadStockPrices(){
       fetchTO(`./stocks_otc.json?v=${v}`,30000).catch(()=>null),
     ]);
     let count=0;
-    if(r1?.ok){const d=await r1.json();if(d.stocks){Object.assign(stockPriceMap,d.stocks);count+=Object.keys(d.stocks).length;}}
-    if(r2?.ok){const d=await r2.json();if(d.stocks){Object.assign(stockPriceMap,d.stocks);count+=Object.keys(d.stocks).length;}}
+    if(r1?.ok){const d=await r1.json();if(d.stocks){Object.assign(stockPriceMap,d.stocks);count+=Object.keys(d.stocks).length;_tsePriceDate=d._price_date||d.date||'';}}
+    if(r2?.ok){const d=await r2.json();if(d.stocks){Object.assign(stockPriceMap,d.stocks);count+=Object.keys(d.stocks).length;_otcPriceDate=d._price_date||d.date||'';}}
     if(count>0){
       stockPriceLoaded=true;
-      const el=document.getElementById('fetchApiStatus');
-      if(el) el.textContent=`✅ 股價快取：${count} 支（前一交易日）`;
+      _checkPriceStaleness();
     }
   }catch(_){}
+}
+
+function _checkPriceStaleness(){
+  // 上市/上櫃資料截至日期距今超過 2 個自然日 → 視為過舊，顯示紅色警告
+  const todayTW=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+  const twoDaysAgo=new Date(Date.now()+8*3600000-2*86400000).toISOString().slice(0,10);
+  const tseStale=_tsePriceDate&&_tsePriceDate<twoDaysAgo;
+  const otcStale=_otcPriceDate&&_otcPriceDate<twoDaysAgo;
+  const el=document.getElementById('fetchApiStatus');
+  if(!el)return;
+  if(tseStale||otcStale){
+    const parts=[];
+    if(tseStale) parts.push(`上市截至 ${_tsePriceDate}`);
+    if(otcStale) parts.push(`上櫃截至 ${_otcPriceDate}`);
+    el.innerHTML=`<span style="color:#f87171;font-weight:700">⚠️ 股價資料過舊：${parts.join('・')} — 非最新收盤</span>`;
+  } else {
+    const tseLabel=_tsePriceDate||'—', otcLabel=_otcPriceDate||'—';
+    el.textContent=`✅ 股價快取：上市 ${tseLabel}・上櫃 ${otcLabel}`;
+  }
 }
 async function testGroq(){
   const k=document.getElementById('groqInput').value.trim()||getKey();

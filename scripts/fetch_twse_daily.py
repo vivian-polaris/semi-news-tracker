@@ -386,46 +386,41 @@ def fetch_twse_prices_today():
 
 
 def fetch_tpex_prices_today():
-    """TPEX 每日收盤行情（網頁 JSON 端點，有完整 OHLCV）"""
-    tz = datetime.timezone(datetime.timedelta(hours=8))
-    today = datetime.datetime.now(tz)
-    for delta in range(7):
-        dt = today - datetime.timedelta(days=delta)
-        if dt.weekday() >= 5:
+    """TPEX 每日收盤行情（openapi，與 fetch_otc_stocks 同端點，完整 OHLCV）"""
+    data = get('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes')
+    if not data or not isinstance(data, list):
+        print('  [WARN] TPEX openapi 收盤行情取得失敗')
+        return {}
+    # 從回傳資料讀取實際日期（民國年格式 '1150521' → 2026-05-21）
+    price_date = None
+    raw_date = str(data[0].get('Date', '') if data else '').strip()
+    if len(raw_date) == 7:
+        try:
+            roc_y, mo, dy = int(raw_date[:3]), int(raw_date[3:5]), int(raw_date[5:7])
+            price_date = f'{roc_y + 1911}-{mo:02d}-{dy:02d}'
+        except Exception:
+            pass
+    result = {}
+    for r in data:
+        code = str(r.get('SecuritiesCompanyCode') or '').strip()
+        if not re.match(r'^\d{4}$', code):
             continue
-        date_str_tpex = dt.strftime('%Y/%m/%d')
-        url = (f'https://www.tpex.org.tw/web/stock/aftertrading/daily_close_quotes/'
-               f'stk_quote_result.php?l=zh-tw&d={date_str_tpex}&s=0,asc&o=json')
-        data = get(url)
-        if not data or not data.get('aaData'):
+        c = _flt(r.get('Close'))
+        if not c or c <= 0:
             continue
-        fields = data.get('fields', [])
-        rows   = data.get('aaData', [])
-        def fi(name, default):
-            try: return fields.index(name)
-            except ValueError: return default
-        ci  = fi('代號', 0);  clo = fi('收盤', 2)
-        opn = fi('開盤', 4);  hi  = fi('最高', 5)
-        lo  = fi('最低', 6);  vol = fi('成交股數', 7)
-        result = {}
-        for row in rows:
-            if not row or len(row) <= max(ci, clo, hi, lo): continue
-            code = str(row[ci]).strip()
-            if not re.match(r'^\d{4}$', code): continue
-            c = _flt(row[clo])
-            if not c or c <= 0: continue
-            h = _flt(row[hi]) or c
-            l = _flt(row[lo]) or c
-            o = _flt(row[opn]) if len(row) > opn else c
-            o = o or c
-            try: v = int(str(row[vol]).replace(',', '')) if len(row) > vol else 0
-            except Exception: v = 0
-            result[code] = {'c': round(c, 2), 'h': round(h, 2), 'l': round(l, 2), 'o': round(o, 2), 'v': v}
-        if len(result) > 100:
-            print(f'  TPEX 收盤行情 ({date_str_tpex})：{len(result)} 支')
-            return result
-    print('  [WARN] TPEX 收盤行情取得失敗')
-    return {}
+        h = _flt(r.get('High')) or c
+        l = _flt(r.get('Low'))  or c
+        o = _flt(r.get('Open')) or c
+        try:
+            v = int(str(r.get('TradingShares') or '0').replace(',', ''))
+        except Exception:
+            v = 0
+        result[code] = {'c': round(c, 2), 'h': round(h, 2), 'l': round(l, 2), 'o': round(o, 2), 'v': v}
+    if len(result) > 100:
+        print(f'  TPEX openapi 收盤行情（{price_date}）：{len(result)} 支')
+        return result, price_date
+    print('  [WARN] TPEX openapi 解析失敗（回傳 {len(result)} 支）')
+    return {}, None
 
 
 def update_price_history(existing, today_prices, name_map):
@@ -600,18 +595,23 @@ def main():
 
     # 用 TWSE/TPEX 官方 API 批次抓今日 OHLCV（取代 Yahoo Finance 個股逐一抓取）
     twse_today = fetch_twse_prices_today()
-    tpex_today = fetch_tpex_prices_today()
+    tpex_today, tpex_price_date = fetch_tpex_prices_today()
 
     # 若官方 API 回傳資料不足（市場休假/API 故障），保留舊資料
-    tse_prices = update_price_history(existing_tse_price, twse_today, name_map) if len(twse_today) > 100 else existing_tse_price
-    otc_prices = update_price_history(existing_otc_price, tpex_today, name_map) if len(tpex_today) > 100 else existing_otc_price
-    if len(twse_today) <= 100:
+    tse_ok = len(twse_today) > 100
+    otc_ok = len(tpex_today) > 100
+    tse_prices = update_price_history(existing_tse_price, twse_today, name_map) if tse_ok else existing_tse_price
+    otc_prices = update_price_history(existing_otc_price, tpex_today, name_map) if otc_ok else existing_otc_price
+    if not tse_ok:
         print(f'  ⚠️ TWSE 今日資料不足（{len(twse_today)}），保留舊資料')
-    if len(tpex_today) <= 100:
+    if not otc_ok:
         print(f'  ⚠️ TPEX 今日資料不足（{len(tpex_today)}），保留舊資料')
 
-    atomic_write('stocks_tse.json', {'date': date_str, 'stocks': tse_prices})
-    atomic_write('stocks_otc.json', {'date': date_str, 'stocks': otc_prices})
+    # _price_date 記錄實際資料日期（非腳本執行日），讓前端能判斷是否過舊
+    tse_price_date = last_trading_date_tw() if tse_ok else existing.get('_tse_price_date', '')
+    otc_price_date_final = tpex_price_date if otc_ok else existing.get('_otc_price_date', '')
+    atomic_write('stocks_tse.json', {'date': date_str, '_price_date': tse_price_date, 'stocks': tse_prices})
+    atomic_write('stocks_otc.json', {'date': date_str, '_price_date': otc_price_date_final, 'stocks': otc_prices})
     print(f'  stocks_tse.json: {len(tse_prices)} stocks')
     print(f'  stocks_otc.json: {len(otc_prices)} stocks')
 
@@ -627,18 +627,20 @@ def main():
             news = old_news
 
     output = {
-        'date':         date_str,
-        'sectors':      sectors,
-        'tseStocks':    tse_stocks or [{'code': code, 'name': info['n']} for code, info in tse_prices.items()],
-        'otcStocks':    otc_stocks or [{'code': c, 'name': d.get('n', c)} for c, d in otc_prices.items()],
-        'chips':        chips,
-        'bwibbu':       bwibbu,
-        'monthRevenue': month_revenue,
-        'income':        income,
-        'incomePrev':    income_prev,
-        'incomeHistory': income_history,
-        'margin':        margin,
-        'news':          news,
+        'date':            date_str,
+        '_tse_price_date': tse_price_date,
+        '_otc_price_date': otc_price_date_final,
+        'sectors':         sectors,
+        'tseStocks':       tse_stocks or [{'code': code, 'name': info['n']} for code, info in tse_prices.items()],
+        'otcStocks':       otc_stocks or [{'code': c, 'name': d.get('n', c)} for c, d in otc_prices.items()],
+        'chips':           chips,
+        'bwibbu':          bwibbu,
+        'monthRevenue':    month_revenue,
+        'income':          income,
+        'incomePrev':      income_prev,
+        'incomeHistory':   income_history,
+        'margin':          margin,
+        'news':            news,
     }
 
     atomic_write('twse_daily.json', output)
