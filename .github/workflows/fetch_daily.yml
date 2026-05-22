@@ -15,6 +15,8 @@ on:
     - cron: "30 5 * * *"  # 13:30 TW 收盤
     # 台灣時間 14:15 (06:15 UTC) — 收盤後 45 分，官方收盤資料已確定
     - cron: "15 6 * * *"  # 14:15 TW
+    # 備援：14:45 TW (06:45 UTC) — 若 14:15 TWSE API 尚未更新則此次補抓
+    - cron: "45 6 * * *"  # 14:45 TW
   workflow_dispatch:
 
 permissions:

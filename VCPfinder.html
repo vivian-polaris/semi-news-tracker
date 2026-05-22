@@ -4582,7 +4582,7 @@ async function refreshDtList(){
   if(!allResults.length){alert('請先執行 VCP 掃描');return;}
   const btn=document.getElementById('dtRefreshBtn');
   if(btn){btn.textContent='更新中…';btn.disabled=true;}
-  // 1. 抓最新現價（盤中用 Yahoo 即時，盤後用 stocks json）
+  // 1. 抓最新現價（盤中用即時 API，盤後重載 stocks json 確保拿到 GH Actions 14:15 收盤更新）
   if(isTradingHours()){
     const syms=allResults.filter(r=>r.vcp).map(r=>`${r.code}.${r.ex==='TWO'?'TWO':'TW'}`);
     const batches=[];for(let i=0;i<syms.length;i+=20)batches.push(syms.slice(i,i+20));
@@ -4593,6 +4593,22 @@ async function refreshDtList(){
       const sym=`${r.code}.${r.ex==='TWO'?'TWO':'TW'}`;
       const cached=_liveQCache.get(sym);
       if(cached&&Date.now()-cached.ts<LIVE_Q_TTL*2) r.vcp.price=cached.price;
+    });
+  } else {
+    // 盤後：用分鐘級 cache-buster 強制重載 stocks json，拿到 GH Actions 更新後的官方收盤價
+    const v=new Date().toISOString().slice(0,16);
+    try{
+      const [r1,r2]=await Promise.all([
+        fetchTO(`./stocks_tse.json?v=${v}`,15000).catch(()=>null),
+        fetchTO(`./stocks_otc.json?v=${v}`,15000).catch(()=>null),
+      ]);
+      if(r1?.ok){const d=await r1.json();if(d?.stocks)Object.assign(stockPriceMap,d.stocks);}
+      if(r2?.ok){const d=await r2.json();if(d?.stocks)Object.assign(stockPriceMap,d.stocks);}
+    }catch(_){}
+    // 用最新 stockPriceMap 同步所有結果的收盤價
+    allResults.forEach(r=>{
+      const pre=stockPriceMap[r.code];
+      if(pre?.c?.length&&r.vcp) r.vcp.price=pre.c[0];
     });
   }
   // 2. 用 stockPriceMap 重算 pbBuy（量能仍為昨收，盤中量無法即時取得）
@@ -5351,6 +5367,33 @@ return{phase:'unclear',emoji:'⏳',label:'坡段未定',color:'#9ca3af',bg:'rgba
       }
     }
   });
+
+  // 盤後定期重載收盤價（每 5 分鐘，UTC 05:30–07:30 = TW 13:30–15:30）
+  // 確保 GH Actions 14:15/14:45 更新後瀏覽器能自動拿到正確收盤價
+  let _postCloseLastLoad=0;
+  setInterval(async()=>{
+    const now=new Date();
+    const utcMin=now.getUTCHours()*60+now.getUTCMinutes();
+    const inPostCloseWindow=utcMin>=330&&utcMin<=450; // 13:30–15:30 TW
+    if(!inPostCloseWindow||isTradingHours()||!allResults.length||scanning) return;
+    if(now.getTime()-_postCloseLastLoad<5*60*1000) return; // 5 分鐘冷卻
+    _postCloseLastLoad=now.getTime();
+    const v=new Date().toISOString().slice(0,16);
+    try{
+      const [r1,r2]=await Promise.all([
+        fetchTO(`./stocks_tse.json?v=${v}`,15000).catch(()=>null),
+        fetchTO(`./stocks_otc.json?v=${v}`,15000).catch(()=>null),
+      ]);
+      let updated=0;
+      if(r1?.ok){const d=await r1.json();if(d?.stocks)Object.assign(stockPriceMap,d.stocks);}
+      if(r2?.ok){const d=await r2.json();if(d?.stocks)Object.assign(stockPriceMap,d.stocks);}
+      allResults.forEach(r=>{
+        const pre=stockPriceMap[r.code];
+        if(pre?.c?.length&&r.vcp&&r.vcp.price!==pre.c[0]){r.vcp.price=pre.c[0];updated++;}
+      });
+      if(updated>0) renderTable();
+    }catch(_){}
+  },5*60*1000);
 
   // 13:30 盤後自動更新（GLM 生成，Claude 修正 allResults + !scanning）
   let _afterCloseRefreshed=false;
