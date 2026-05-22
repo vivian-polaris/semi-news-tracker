@@ -4390,6 +4390,8 @@ function renderTable(){
       if(v.rsi!=null&&(v.rsi<45||v.rsi>78))return false;
       const cs=calcCANSLIM(v,r.fund||null,chipsMap[r.code]||null);
       if(cs.total<3)return false;
+      const fs=calcFundScore(r.fund||{});
+      if(fs===null||fs<30)return false;
       return isQualified(r);
     });
     const buySort=(a,b)=>{
@@ -4478,9 +4480,9 @@ function renderTable(){
       // CANSLIM 硬性門檻 ≥ 3（排除基本面 + 籌碼 + 動能全無的股票）
       const cs=calcCANSLIM(v,r.fund||null,chipsMap[r.code]||null);
       if(cs.total<3)return-1;
-      // 基本面：有資料時排除最差（弱/負）
-      const fg=calcFundGrade(r.fund||{});
-      if(fg&&fg.score!=null&&fg.score<30)return-1;
+      // 基本面：無資料或分數過低直接排除
+      const fs=calcFundScore(r.fund||{});
+      if(fs===null||fs<40)return-1;
       let s=30;
       // MA20斜率強度
       if(sl>=2)s+=20;else if(sl>=1)s+=12;else s+=4;

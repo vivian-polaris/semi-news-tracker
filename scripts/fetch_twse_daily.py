@@ -14,9 +14,8 @@ Data collected:
   - income   : {code -> eps/revenue/operatingIncome/netIncome/year/quarter} TSE+OTC
 """
 
-import json, sys, time, datetime, re, xml.etree.ElementTree as ET
+import json, sys, os, time, datetime, re, xml.etree.ElementTree as ET
 import requests
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 SESSION = requests.Session()
 SESSION.headers.update({'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'})
@@ -204,7 +203,11 @@ def fetch_month_revenue():
     # Revenue is reported by the 10th of the following month
     # Try current and previous month
     for mo_delta in range(3):
-        dt = today.replace(day=1) - datetime.timedelta(days=mo_delta * 28)
+        # 正確月份回溯（避免 28 天計算跨月誤差）
+        mo = today.month - mo_delta
+        yr = today.year
+        while mo <= 0: mo += 12; yr -= 1
+        dt = today.replace(year=yr, month=mo, day=1)
         year_tw = dt.year - 1911
         month   = dt.month
         # TSE monthly revenue
@@ -260,41 +263,9 @@ def fetch_income():
     income = parse_income_rows(get(url))
     print(f'  TSE income current: {len(income)}')
 
-    # 抓前一年同季資料（計算 YoY EPS 成長）
-    if income:
-        sample = next(iter(income.values()))
-        cur_year = int(sample.get('year', 0) or 0)
-        cur_qtr  = sample.get('quarter', '')
-        prev_year = cur_year - 1
-        if prev_year > 100 and cur_qtr:
-            # TWSE 有提供歷史季報的另一個端點格式
-            prev_url = f'https://openapi.twse.com.tw/v1/opendata/t187ap14_L?year={prev_year}&season={cur_qtr}'
-            prev_data = get(prev_url)
-            if not prev_data:
-                # 嘗試 MOPS API（公開資訊觀測站）
-                tw_year = prev_year  # 民國年
-                season_map = {'1':'Q1','2':'Q2','3':'Q3','4':'Q4'}
-                mops_url = f'https://mops.twse.com.tw/mops/web/ajax_t05st09?encodeURIComponent=1&step=1&firstin=1&off=1&keyword4=&code1=&TYPEK=sii&co_id=&year={tw_year}&season={cur_qtr}'
-                prev_data = get(mops_url)
-            prev_income = parse_income_rows(prev_data) if prev_data else {}
-            # 驗證 prev_income 確實是去年資料（API 可能忽略 year 參數回傳今年資料）
-            if prev_income:
-                first_prev = next(iter(prev_income.values()))
-                if first_prev.get('year') == str(cur_year):
-                    print(f'  ⚠️ API 回傳當年度資料（{cur_year}），非去年（{prev_year}），跳過 YoY 計算')
-                    prev_income = {}
-            # 計算 YoY EPS 成長率
-            yoy_count = 0
-            for code, cur in income.items():
-                prev = prev_income.get(code)
-                if prev and prev.get('eps') and cur.get('eps'):
-                    p_eps, c_eps = prev['eps'], cur['eps']
-                    if p_eps != 0:
-                        cur['earningsGrowth'] = round((c_eps - p_eps) / abs(p_eps), 4)
-                        yoy_count += 1
-            print(f'  prev year income ({prev_year}Q{cur_qtr}): {len(prev_income)}, YoY computed: {yoy_count}')
-    else:
+    if not income:
         print('  ⚠️ t187ap14_L failed or empty')
+    # YoY EPS 成長率改由 main() 的 incomeHistory 機制計算（逐季累積，跨年比對）
 
     print(f'  Total income: {len(income)}')
     return income
@@ -303,6 +274,9 @@ def fetch_income():
 # ── 6. Financial News (Google News RSS) ──────────────────────────────────────
 def fetch_margin():
     """融資融券餘額 MI_MARGN → {code: {today, prev, change}}"""
+    def parse_num(v):
+        try: return int(str(v or '').replace(',', ''))
+        except: return 0
     margin = {}
     data = get('https://openapi.twse.com.tw/v1/marginTrading/MI_MARGN')
     if data:
@@ -310,14 +284,9 @@ def fetch_margin():
             code = str(row.get('股票代號') or '').strip()
             if not code:
                 continue
-            def parse_num(v):
-                try:
-                    return int(str(v or '').replace(',', ''))
-                except:
-                    return 0
-            today = parse_num(row.get('融資今日餘額'))
-            prev  = parse_num(row.get('融資前日餘額'))
-            margin[code] = {'today': today, 'prev': prev, 'change': today - prev}
+            t = parse_num(row.get('融資今日餘額'))
+            p = parse_num(row.get('融資前日餘額'))
+            margin[code] = {'today': t, 'prev': p, 'change': t - p}
         print(f'  margin: {len(margin)} stocks from MI_MARGN')
     else:
         print('  [WARN] MI_MARGN fetch failed')
@@ -417,30 +386,46 @@ def fetch_twse_prices_today():
 
 
 def fetch_tpex_prices_today():
-    """TPEX 官方 API 一次取得所有上櫃股票今日 OHLCV"""
-    data = get('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes')
-    result = {}
-    if not data or not isinstance(data, list):
-        print('  [WARN] TPEX mainboard_daily_close_quotes 取得失敗')
-        return result
-    for r in data:
-        code = str(r.get('SecuritiesCompanyCode') or '').strip()
-        if not re.match(r'^\d{4}$', code):
+    """TPEX 每日收盤行情（網頁 JSON 端點，有完整 OHLCV）"""
+    tz = datetime.timezone(datetime.timedelta(hours=8))
+    today = datetime.datetime.now(tz)
+    for delta in range(7):
+        dt = today - datetime.timedelta(days=delta)
+        if dt.weekday() >= 5:
             continue
-        c = _flt(r.get('Close') or r.get('ClosingPrice') or r.get('收盤') or r.get('收盤價'))
-        if not c or c <= 0:
+        date_str_tpex = dt.strftime('%Y/%m/%d')
+        url = (f'https://www.tpex.org.tw/web/stock/aftertrading/daily_close_quotes/'
+               f'stk_quote_result.php?l=zh-tw&d={date_str_tpex}&s=0,asc&o=json')
+        data = get(url)
+        if not data or not data.get('aaData'):
             continue
-        h = _flt(r.get('High') or r.get('HighestPrice') or r.get('最高')) or c
-        l = _flt(r.get('Low')  or r.get('LowestPrice')  or r.get('最低')) or c
-        o = _flt(r.get('Open') or r.get('OpeningPrice') or r.get('開盤')) or c
-        try:
-            raw_vol = str(r.get('TradingShares') or r.get('TradeVolume') or r.get('成交股數') or '0').replace(',', '')
-            v = int(float(raw_vol))
-        except Exception:
-            v = 0
-        result[code] = {'c': round(c, 2), 'h': round(h, 2), 'l': round(l, 2), 'o': round(o, 2), 'v': v}
-    print(f'  TPEX 官方今日價格：{len(result)} 支')
-    return result
+        fields = data.get('fields', [])
+        rows   = data.get('aaData', [])
+        def fi(name, default):
+            try: return fields.index(name)
+            except ValueError: return default
+        ci  = fi('代號', 0);  clo = fi('收盤', 2)
+        opn = fi('開盤', 4);  hi  = fi('最高', 5)
+        lo  = fi('最低', 6);  vol = fi('成交股數', 7)
+        result = {}
+        for row in rows:
+            if not row or len(row) <= max(ci, clo, hi, lo): continue
+            code = str(row[ci]).strip()
+            if not re.match(r'^\d{4}$', code): continue
+            c = _flt(row[clo])
+            if not c or c <= 0: continue
+            h = _flt(row[hi]) or c
+            l = _flt(row[lo]) or c
+            o = _flt(row[opn]) if len(row) > opn else c
+            o = o or c
+            try: v = int(str(row[vol]).replace(',', '')) if len(row) > vol else 0
+            except Exception: v = 0
+            result[code] = {'c': round(c, 2), 'h': round(h, 2), 'l': round(l, 2), 'o': round(o, 2), 'v': v}
+        if len(result) > 100:
+            print(f'  TPEX 收盤行情 ({date_str_tpex})：{len(result)} 支')
+            return result
+    print('  [WARN] TPEX 收盤行情取得失敗')
+    return {}
 
 
 def update_price_history(existing, today_prices, name_map):
@@ -451,9 +436,7 @@ def update_price_history(existing, today_prices, name_map):
     用 _d 欄位記錄最近一根的台灣日期，防止同日重複 append。
     """
     out = dict(existing)
-    today_tw = datetime.datetime.now(
-        datetime.timezone(datetime.timedelta(hours=8))
-    ).strftime('%Y-%m-%d')
+    today_tw = last_trading_date_tw()  # 週末執行時用週五日期，避免假 K 棒
     new_day = intraday = new_stock = 0
 
     for code, today in today_prices.items():
@@ -490,9 +473,9 @@ def update_price_history(existing, today_prices, name_map):
 
 def _flt(v):
     if v is None: return None
-    try:
-        f = float(str(v).replace(',', ''))
-        return f if f != 0 else None
+    s = str(v).strip().replace(',', '')
+    if s in ('', '-', '--', 'N/A', 'NA', 'n/a'): return None
+    try: return float(s)
     except: return None
 
 def _int(v):
@@ -502,10 +485,25 @@ def _int(v):
 
 def _int2(v):
     if v is None: return None
-    try:
-        i = int(float(str(v).replace(',', '')))  # handle "149804135.00" style
-        return i if i != 0 else None
+    s = str(v).strip().replace(',', '')
+    if s in ('', '-', '--', 'N/A', 'NA'): return None
+    try: return int(float(s))
     except: return None
+
+def last_trading_date_tw():
+    """最近的台灣交易日（週六→週五，週日→週五），避免週末執行產生假日期"""
+    tz = datetime.timezone(datetime.timedelta(hours=8))
+    dt = datetime.datetime.now(tz)
+    if dt.weekday() == 5: dt -= datetime.timedelta(days=1)   # Sat → Fri
+    elif dt.weekday() == 6: dt -= datetime.timedelta(days=2)  # Sun → Fri
+    return dt.strftime('%Y-%m-%d')
+
+def atomic_write(path, data):
+    """原子寫入 JSON：先寫暫存檔再 rename，防止中途中斷毀損資料"""
+    tmp = path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
+    os.replace(tmp, path)
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
@@ -558,25 +556,31 @@ def main():
             print(f'  ⚠️ 新資料不足（{len(income)}），保留舊資料（{len(old_inc)}）')
             income = old_inc
 
-    # 歷史季報輪替：quarter 改變時，把上一期存進 incomePrev，累積 YoY EPS 對比
-    existing_income = existing.get('income', {})
-    existing_qtr = next(iter(existing_income.values()), {}).get('quarter')
-    current_qtr  = next(iter(income.values()), {}).get('quarter')
-    if existing_qtr and current_qtr and existing_qtr != current_qtr:
-        income_prev = existing_income
-        print(f'  季報更新：{existing_qtr} → {current_qtr}，舊資料存入 incomePrev')
-    else:
-        income_prev = existing.get('incomePrev', {})
-
-    # 計算 YoY EPS 成長率（需同季對比）
-    for code, cur in income.items():
-        prev = income_prev.get(code)
-        if prev and prev.get('quarter') == cur.get('quarter') and prev.get('eps') and cur.get('eps'):
-            p_eps, c_eps = prev['eps'], cur['eps']
-            if p_eps != 0:
-                cur['earningsGrowth'] = round((c_eps - p_eps) / abs(p_eps), 4)
-    yoy_count = sum(1 for v in income.values() if v.get('earningsGrowth') is not None)
-    print(f'  YoY EPS growth computed: {yoy_count} stocks')
+    # incomeHistory：按 (年度Q季) 累積最多 8 季資料，跨年正確比對 YoY EPS
+    income_history = existing.get('incomeHistory', {})
+    income_prev    = existing.get('incomePrev', {})  # 保留舊欄位，向後相容
+    yoy_count = 0
+    if income:
+        sample   = next(iter(income.values()))
+        cur_year = int(sample.get('year', 0) or 0)
+        cur_qtr  = str(sample.get('quarter', '') or '')
+        cur_q_key = f'{cur_year}Q{cur_qtr}'
+        for code, rec in income.items():
+            if code not in income_history:
+                income_history[code] = {}
+            income_history[code][cur_q_key] = {'eps': rec.get('eps'), 'revenue': rec.get('revenue')}
+            # 保留最近 8 季
+            all_keys = sorted(income_history[code].keys(), reverse=True)
+            income_history[code] = {k: income_history[code][k] for k in all_keys[:8]}
+            # YoY：去年同季
+            prev_q_key = f'{cur_year - 1}Q{cur_qtr}'
+            prev = income_history[code].get(prev_q_key)
+            if prev and prev.get('eps') is not None and rec.get('eps') is not None:
+                p_eps = prev['eps']
+                if p_eps is not None and p_eps != 0:
+                    rec['earningsGrowth'] = round((rec['eps'] - p_eps) / abs(p_eps), 4)
+                    yoy_count += 1
+        print(f'  incomeHistory YoY computed: {yoy_count} stocks（{cur_q_key} vs {cur_year-1}Q{cur_qtr}）')
 
     print('\n6. Stock Prices (OHLCV)...')
     # 讀取舊的價格快取
@@ -606,10 +610,8 @@ def main():
     if len(tpex_today) <= 100:
         print(f'  ⚠️ TPEX 今日資料不足（{len(tpex_today)}），保留舊資料')
 
-    with open('stocks_tse.json', 'w', encoding='utf-8') as f:
-        json.dump({'date': date_str, 'stocks': tse_prices}, f, ensure_ascii=False, separators=(',', ':'))
-    with open('stocks_otc.json', 'w', encoding='utf-8') as f:
-        json.dump({'date': date_str, 'stocks': otc_prices}, f, ensure_ascii=False, separators=(',', ':'))
+    atomic_write('stocks_tse.json', {'date': date_str, 'stocks': tse_prices})
+    atomic_write('stocks_otc.json', {'date': date_str, 'stocks': otc_prices})
     print(f'  stocks_tse.json: {len(tse_prices)} stocks')
     print(f'  stocks_otc.json: {len(otc_prices)} stocks')
 
@@ -632,14 +634,14 @@ def main():
         'chips':        chips,
         'bwibbu':       bwibbu,
         'monthRevenue': month_revenue,
-        'income':       income,
-        'incomePrev':   income_prev,
-        'margin':       margin,
-        'news':         news,
+        'income':        income,
+        'incomePrev':    income_prev,
+        'incomeHistory': income_history,
+        'margin':        margin,
+        'news':          news,
     }
 
-    with open('twse_daily.json', 'w', encoding='utf-8') as f:
-        json.dump(output, f, ensure_ascii=False, separators=(',', ':'))
+    atomic_write('twse_daily.json', output)
 
     print(f'\n✅ twse_daily.json written:')
     print(f'   sectors={len(sectors)}, otcStocks={len(otc_stocks)}, chips={len(chips)}, bwibbu={len(bwibbu)}')
