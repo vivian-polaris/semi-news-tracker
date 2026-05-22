@@ -4382,7 +4382,7 @@ function renderTable(){
     const buyListRaw=allResults.filter(r=>{
       const v=r.vcp;
       if(!v||!v.stage2)return false;
-      if(v.score<45)return false;
+      if(v.score<80)return false;
       if(v.v10!=null&&v.v10<300000)return false;
       if(v.vRat==null||v.vRat<1.2)return false;
       if(v.vRat>3.0)return false;
@@ -4391,7 +4391,7 @@ function renderTable(){
       const cs=calcCANSLIM(v,r.fund||null,chipsMap[r.code]||null);
       if(cs.total<3)return false;
       const fs=calcFundScore(r.fund||{});
-      if(fs===null||fs<30)return false;
+      if(fs===null||fs<70)return false;
       return isQualified(r);
     });
     const buySort=(a,b)=>{
@@ -4468,6 +4468,7 @@ function renderTable(){
       const v=r.vcp;
       if(!v||!v.stage2)return-1;
       if(sent==='risk_off')return-1;
+      if(v.score<80)return-1;
       const sl=v.ma20Slope,dm=v.distMA20,rsi=v.rsi;
       // 必須是坡段開始相位：MA20上揚、RSI 45-65、距MA20 -5~8%
       if(sl==null||sl<0)return-1;
@@ -4480,9 +4481,9 @@ function renderTable(){
       // CANSLIM 硬性門檻 ≥ 3（排除基本面 + 籌碼 + 動能全無的股票）
       const cs=calcCANSLIM(v,r.fund||null,chipsMap[r.code]||null);
       if(cs.total<3)return-1;
-      // 基本面：無資料或分數過低直接排除
+      // 基本面：只保留「優」（≥70），刪除中/弱/無資料
       const fs=calcFundScore(r.fund||{});
-      if(fs===null||fs<40)return-1;
+      if(fs===null||fs<70)return-1;
       let s=30;
       // MA20斜率強度
       if(sl>=2)s+=20;else if(sl>=1)s+=12;else s+=4;
