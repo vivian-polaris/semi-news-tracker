@@ -388,76 +388,105 @@ def fetch_news():
     print(f'  Total news items: {len(all_items)}')
     return all_items
 
-# ── 7. Stock Price OHLCV（批次抓取，存為靜態 JSON）──────────────────────────
-def fetch_single_stock(args):
-    code, ex = args
-    sym = f'{code}.{ex}'
-    for domain in ['query1', 'query2']:
-        url = f'https://{domain}.finance.yahoo.com/v8/finance/chart/{sym}?interval=1d&range=1y&includePrePost=false'
-        for attempt in range(2):
-            try:
-                r = SESSION.get(url, timeout=12)
-                if r.status_code == 429:
-                    time.sleep(2 ** attempt)
-                    continue
-                if not r.ok:
-                    break
-                j = r.json()
-                res = j.get('chart', {}).get('result', [None])[0]
-                if not res or not res.get('timestamp'):
-                    break
-                q = res['indicators']['quote'][0]
-                ts_list = res['timestamp']
-                closes  = q.get('close',  [])
-                highs   = q.get('high',   [])
-                lows    = q.get('low',    [])
-                volumes = q.get('volume', [])
-                rows = []
-                for i, ts in enumerate(ts_list):
-                    c = closes[i]  if i < len(closes)  else None
-                    if not c or c <= 0: continue
-                    h = highs[i]   if i < len(highs)   else c
-                    l = lows[i]    if i < len(lows)    else c
-                    v = volumes[i] if i < len(volumes) else 0
-                    rows.append((ts, round(float(c),2), round(float(h or c),2),
-                                     round(float(l or c),2), int(v or 0)))
-                if len(rows) < 30:
-                    break
-                rows.sort(key=lambda x: x[0], reverse=True)
-                rows = rows[:252]
-                name = (res.get('meta',{}).get('longName') or
-                        res.get('meta',{}).get('shortName') or '')[:15]
-                return code, {'n': name,
-                              'c': [r[1] for r in rows],
-                              'h': [r[2] for r in rows],
-                              'l': [r[3] for r in rows],
-                              'v': [r[4] for r in rows]}
-            except Exception:
-                if attempt == 0: time.sleep(0.5)
-    return code, None
+# ── 7. Stock Price OHLCV（TWSE/TPEX 官方 API 批次抓取，取代 Yahoo Finance）──────
+def fetch_twse_prices_today():
+    """TWSE 官方 API 一次取得所有上市股票今日 OHLCV（不需逐股請求，無 rate-limit 風險）"""
+    data = get('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL')
+    result = {}
+    if not data or not isinstance(data, list):
+        print('  [WARN] TWSE STOCK_DAY_ALL 取得失敗')
+        return result
+    for r in data:
+        code = str(r.get('Code') or r.get('code') or '').strip()
+        if not re.match(r'^\d{4,6}$', code):
+            continue
+        c = _flt(r.get('ClosingPrice') or r.get('收盤價') or r.get('close'))
+        if not c or c <= 0:
+            continue
+        h = _flt(r.get('HighestPrice') or r.get('最高價') or r.get('high')) or c
+        l = _flt(r.get('LowestPrice')  or r.get('最低價') or r.get('low'))  or c
+        o = _flt(r.get('OpeningPrice') or r.get('開盤價') or r.get('open')) or c
+        try:
+            raw_vol = str(r.get('TradeVolume') or r.get('成交股數') or r.get('volume') or '0').replace(',', '')
+            v = int(float(raw_vol))
+        except Exception:
+            v = 0
+        result[code] = {'c': round(c, 2), 'h': round(h, 2), 'l': round(l, 2), 'o': round(o, 2), 'v': v}
+    print(f'  TWSE 官方今日價格：{len(result)} 支')
+    return result
 
-def fetch_all_prices(stock_list, existing_tse=None, existing_otc=None, max_workers=25):
-    tse_out = dict(existing_tse or {})
-    otc_out = dict(existing_otc or {})
-    total = len(stock_list)
-    done = success = 0
-    args = [(s['code'], s['ex']) for s in stock_list]
-    with ThreadPoolExecutor(max_workers=max_workers) as ex:
-        futures = {ex.submit(fetch_single_stock, a): a for a in args}
-        for fut in as_completed(futures):
-            code, data = fut.result()
-            done += 1
-            ex_type = futures[fut][1]
-            if data:
-                success += 1
-                if ex_type == 'TW':
-                    tse_out[code] = data
-                else:
-                    otc_out[code] = data
-            if done % 200 == 0:
-                print(f'  price progress: {done}/{total}，成功 {success}')
-    print(f'  price done: {success}/{total} 支成功，TSE={len(tse_out)}，OTC={len(otc_out)}')
-    return tse_out, otc_out
+
+def fetch_tpex_prices_today():
+    """TPEX 官方 API 一次取得所有上櫃股票今日 OHLCV"""
+    data = get('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes')
+    result = {}
+    if not data or not isinstance(data, list):
+        print('  [WARN] TPEX mainboard_daily_close_quotes 取得失敗')
+        return result
+    for r in data:
+        code = str(r.get('SecuritiesCompanyCode') or '').strip()
+        if not re.match(r'^\d{4}$', code):
+            continue
+        c = _flt(r.get('Close') or r.get('ClosingPrice') or r.get('收盤') or r.get('收盤價'))
+        if not c or c <= 0:
+            continue
+        h = _flt(r.get('High') or r.get('HighestPrice') or r.get('最高')) or c
+        l = _flt(r.get('Low')  or r.get('LowestPrice')  or r.get('最低')) or c
+        o = _flt(r.get('Open') or r.get('OpeningPrice') or r.get('開盤')) or c
+        try:
+            raw_vol = str(r.get('TradingShares') or r.get('TradeVolume') or r.get('成交股數') or '0').replace(',', '')
+            v = int(float(raw_vol))
+        except Exception:
+            v = 0
+        result[code] = {'c': round(c, 2), 'h': round(h, 2), 'l': round(l, 2), 'o': round(o, 2), 'v': v}
+    print(f'  TPEX 官方今日價格：{len(result)} 支')
+    return result
+
+
+def update_price_history(existing, today_prices, name_map):
+    """
+    增量更新歷史 OHLCV：
+    - 同日多次執行 → 取代第一根（即時價格更新，不重複 prepend）
+    - 新交易日 → prepend 新的一根，保留最多 252 根
+    用 _d 欄位記錄最近一根的台灣日期，防止同日重複 append。
+    """
+    out = dict(existing)
+    today_tw = datetime.datetime.now(
+        datetime.timezone(datetime.timedelta(hours=8))
+    ).strftime('%Y-%m-%d')
+    new_day = intraday = new_stock = 0
+
+    for code, today in today_prices.items():
+        name = name_map.get(code, code)
+        if code in out:
+            hist = out[code]
+            if hist.get('_d') == today_tw:
+                # 同日：取代第一根（即時更新當日高低收量）
+                hist['c'] = [today['c']] + (hist.get('c') or [])[1:]
+                hist['h'] = [today['h']] + (hist.get('h') or [])[1:]
+                hist['l'] = [today['l']] + (hist.get('l') or [])[1:]
+                hist['v'] = [today['v']] + (hist.get('v') or [])[1:]
+                intraday += 1
+            else:
+                # 新交易日：prepend
+                hist['c'] = [today['c']] + (hist.get('c') or [])[:251]
+                hist['h'] = [today['h']] + (hist.get('h') or [])[:251]
+                hist['l'] = [today['l']] + (hist.get('l') or [])[:251]
+                hist['v'] = [today['v']] + (hist.get('v') or [])[:251]
+                hist['_d'] = today_tw
+                new_day += 1
+            if name and name != code:
+                hist['n'] = name
+        else:
+            out[code] = {
+                'n': name, '_d': today_tw,
+                'c': [today['c']], 'h': [today['h']],
+                'l': [today['l']], 'v': [today['v']],
+            }
+            new_stock += 1
+
+    print(f'  price history: 新交易日={new_day}，即時更新={intraday}，新股={new_stock}，合計={len(out)}')
+    return out
 
 def _flt(v):
     if v is None: return None
@@ -550,7 +579,7 @@ def main():
     print(f'  YoY EPS growth computed: {yoy_count} stocks')
 
     print('\n6. Stock Prices (OHLCV)...')
-    # 讀取舊的價格快取，失敗的股票保留舊資料
+    # 讀取舊的價格快取
     existing_tse_price, existing_otc_price = {}, {}
     try:
         with open('stocks_tse.json', encoding='utf-8') as f:
@@ -563,34 +592,19 @@ def main():
         print(f'  existing OTC price: {len(existing_otc_price)}')
     except Exception: pass
 
-    # 建立股票清單：TSE from bwibbu, OTC from otc_stocks（備援：sectors - bwibbu）
-    tse_codes = set(c for c in bwibbu.keys() if re.match(r'^\d{4,6}$', c))
-    tse_list = [{'code': c, 'ex': 'TW'} for c in tse_codes]
-    if otc_stocks:
-        otc_list = [{'code': s['code'], 'ex': 'TWO'} for s in otc_stocks if re.match(r'^\d{4,6}$', s.get('code',''))]
-    else:
-        # 備援：sectors 裡不屬於 TSE 的代號，通常是 OTC
-        otc_codes = [c for c in sectors.keys() if re.match(r'^\d{4,6}$', c) and c not in tse_codes]
-        otc_list = [{'code': c, 'ex': 'TWO'} for c in otc_codes]
-        print(f'  OTC 備援：從 sectors 推算 {len(otc_list)} 支')
-    all_stock_list = tse_list + otc_list
-    print(f'  stock list: TSE={len(tse_list)}, OTC={len(otc_list)}, total={len(all_stock_list)}')
-
-    tse_prices, otc_prices = fetch_all_prices(
-        all_stock_list,
-        existing_tse=existing_tse_price,
-        existing_otc=existing_otc_price,
-    )
-
-    # 用 TWSE/TPEX 的中文名覆蓋 Yahoo Finance 回傳的英文名
     name_map = {s['code']: s['name'] for s in tse_stocks + otc_stocks if s.get('name') and s['name'] != s['code']}
-    for code, data in tse_prices.items():
-        if code in name_map:
-            data['n'] = name_map[code]
-    for code, data in otc_prices.items():
-        if code in name_map:
-            data['n'] = name_map[code]
-    print(f'  Chinese names applied: {len(name_map)} stocks')
+
+    # 用 TWSE/TPEX 官方 API 批次抓今日 OHLCV（取代 Yahoo Finance 個股逐一抓取）
+    twse_today = fetch_twse_prices_today()
+    tpex_today = fetch_tpex_prices_today()
+
+    # 若官方 API 回傳資料不足（市場休假/API 故障），保留舊資料
+    tse_prices = update_price_history(existing_tse_price, twse_today, name_map) if len(twse_today) > 100 else existing_tse_price
+    otc_prices = update_price_history(existing_otc_price, tpex_today, name_map) if len(tpex_today) > 100 else existing_otc_price
+    if len(twse_today) <= 100:
+        print(f'  ⚠️ TWSE 今日資料不足（{len(twse_today)}），保留舊資料')
+    if len(tpex_today) <= 100:
+        print(f'  ⚠️ TPEX 今日資料不足（{len(tpex_today)}），保留舊資料')
 
     with open('stocks_tse.json', 'w', encoding='utf-8') as f:
         json.dump({'date': date_str, 'stocks': tse_prices}, f, ensure_ascii=False, separators=(',', ':'))
