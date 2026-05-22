@@ -277,6 +277,12 @@ def fetch_income():
                 mops_url = f'https://mops.twse.com.tw/mops/web/ajax_t05st09?encodeURIComponent=1&step=1&firstin=1&off=1&keyword4=&code1=&TYPEK=sii&co_id=&year={tw_year}&season={cur_qtr}'
                 prev_data = get(mops_url)
             prev_income = parse_income_rows(prev_data) if prev_data else {}
+            # 驗證 prev_income 確實是去年資料（API 可能忽略 year 參數回傳今年資料）
+            if prev_income:
+                first_prev = next(iter(prev_income.values()))
+                if first_prev.get('year') == str(cur_year):
+                    print(f'  ⚠️ API 回傳當年度資料（{cur_year}），非去年（{prev_year}），跳過 YoY 計算')
+                    prev_income = {}
             # 計算 YoY EPS 成長率
             yoy_count = 0
             for code, cur in income.items():
