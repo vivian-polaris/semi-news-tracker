@@ -3340,10 +3340,12 @@ function quickFund(sym){
   if(inc||mr){
     const rev=inc?.revenue||0;
     const oi=inc?.operatingIncome||0;
+    // revYoY cap at 500%：排除建設股完工認列極大值（不影響真正高成長股判斷）
+    const rawRg=mr?.yoy!=null?(mr.yoy/100):null;
     return{
       roe:null,grossMargin:null,
       operatingMargin:rev>0?+(oi/rev).toFixed(4):null,
-      revenueGrowth:mr?.yoy!=null?(mr.yoy/100):null,
+      revenueGrowth:rawRg!=null?Math.min(rawRg,5.0):null,
       earningsGrowth:inc?.earningsGrowth??null,
       pe:bwi?.pe??null,pb:bwi?.pb??null,divYield:bwi?.divYield??null,
     };
@@ -3363,10 +3365,11 @@ async function fetchFundamentals(sym){
   if(inc||mr){
     const rev=inc?.revenue||0;
     const oi=inc?.operatingIncome||0;
+    const rawRg=mr?.yoy!=null?(mr.yoy/100):null;
     const result={
       roe:null,grossMargin:null,
       operatingMargin:rev>0?+(oi/rev).toFixed(4):null,
-      revenueGrowth:mr?.yoy!=null?(mr.yoy/100):null,
+      revenueGrowth:rawRg!=null?Math.min(rawRg,5.0):null,
       earningsGrowth:inc?.earningsGrowth??null,
       pe:bwi?.pe??null,pb:bwi?.pb??null,divYield:bwi?.divYield??null,
     };
