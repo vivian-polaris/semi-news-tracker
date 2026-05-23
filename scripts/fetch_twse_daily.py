@@ -18,16 +18,33 @@ import json, sys, os, time, datetime, re, xml.etree.ElementTree as ET
 import requests
 
 SESSION = requests.Session()
-SESSION.headers.update({'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'})
+SESSION.headers.update({
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
+    'Referer': 'https://www.twse.com.tw/',
+})
 
-def get(url, timeout=30):
-    try:
-        r = SESSION.get(url, timeout=timeout)
-        r.raise_for_status()
-        return r.json()
-    except Exception as e:
-        print(f'  [WARN] GET failed {url[:80]}: {e}')
-        return None
+def get(url, timeout=30, retries=3):
+    delays = [5, 15, 30]
+    for attempt in range(retries):
+        try:
+            r = SESSION.get(url, timeout=timeout)
+            if r.status_code == 429:
+                wait = delays[min(attempt, len(delays)-1)]
+                print(f'  [WARN] 429 rate-limited {url[:60]}, wait {wait}s (attempt {attempt+1}/{retries})')
+                time.sleep(wait)
+                continue
+            r.raise_for_status()
+            return r.json()
+        except Exception as e:
+            if attempt < retries - 1:
+                wait = delays[attempt]
+                print(f'  [WARN] GET failed (attempt {attempt+1}/{retries}) {url[:60]}: {e}, retry in {wait}s')
+                time.sleep(wait)
+            else:
+                print(f'  [ERROR] GET gave up after {retries} attempts {url[:60]}: {e}')
+    return None
 
 # ── Industry code → name table (TWSE/TPEX 產業別代碼) ──────────────────────────
 IND_CODE = {

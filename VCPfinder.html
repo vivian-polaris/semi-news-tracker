@@ -4421,12 +4421,12 @@ function renderTable(){
       if(v.v10!=null&&v.v10<300000)return false;
       if(v.vRat==null||v.vRat<1.2)return false;
       if(v.vRat>3.0)return false;
-      if(v.closeRatio==null||v.closeRatio<0.55)return false;
+      if(v.closeRatio==null||v.closeRatio<0.65)return false;
       if(v.rsi!=null&&(v.rsi<45||v.rsi>78))return false;
       const cs=calcCANSLIM(v,r.fund||null,chipsMap[r.code]||null);
-      if(cs.total<3)return false;
+      if(cs.total<4)return false;
       const fs=calcFundScore(r.fund||{});
-      if(fs===null||fs<70)return false;
+      if(fs===null||fs<80)return false;
       return isQualified(r);
     });
     const buySort=(a,b)=>{
