@@ -228,9 +228,8 @@ def fetch_month_revenue():
             if added > 100:
                 break
 
-    # OTC monthly revenue: TPEX openapi 無法使用（返回 HTML），TWSE t187ap05_L ?market=OTC 參數無效
-    # t187ap05_L 無參數版本已包含少數高市值上櫃公司，其餘上櫃股票基本面由前端 Yahoo Finance 補抓
-    print(f'  OTC revenue: skipped (TPEX API unavailable)')
+    # 注意：t187ap05_L 已同時包含上市（TSE）和上櫃（OTC）的月營收資料
+    # 不需要額外抓取 OTC 端點
 
     print(f'  Total revenue: {len(rev)}')
     return rev
@@ -258,15 +257,13 @@ def parse_income_rows(data):
 
 def fetch_income():
     income = {}
-    # 抓當季資料
+    # 注意：t187ap14_L 已同時包含上市（TSE）和上櫃（OTC）的季報資料
     url = 'https://openapi.twse.com.tw/v1/opendata/t187ap14_L'
     income = parse_income_rows(get(url))
-    print(f'  TSE income current: {len(income)}')
-
+    print(f'  Income (TSE+OTC): {len(income)}')
     if not income:
         print('  ⚠️ t187ap14_L failed or empty')
     # YoY EPS 成長率改由 main() 的 incomeHistory 機制計算（逐季累積，跨年比對）
-
     print(f'  Total income: {len(income)}')
     return income
 
@@ -364,7 +361,7 @@ def fetch_twse_prices_today():
     result = {}
     if not data or not isinstance(data, list):
         print('  [WARN] TWSE STOCK_DAY_ALL 取得失敗')
-        return result
+        return result, None
     for r in data:
         code = str(r.get('Code') or r.get('code') or '').strip()
         if not re.match(r'^\d{4,6}$', code):
@@ -381,8 +378,18 @@ def fetch_twse_prices_today():
         except Exception:
             v = 0
         result[code] = {'c': round(c, 2), 'h': round(h, 2), 'l': round(l, 2), 'o': round(o, 2), 'v': v}
-    print(f'  TWSE 官方今日價格：{len(result)} 支')
-    return result
+    # 從 FMTQIK 取得實際交易日期（STOCK_DAY_ALL 無日期欄位）
+    price_date = None
+    fmtqik = get('https://openapi.twse.com.tw/v1/exchangeReport/FMTQIK')
+    if fmtqik and isinstance(fmtqik, list) and len(fmtqik) > 0:
+        raw_date = str(fmtqik[-1].get('Date', '') or '').strip()
+        m = re.match(r'(\d{2,3})/(\d{2})/(\d{2})', raw_date)
+        if m:
+            price_date = f'{int(m.group(1)) + 1911}-{m.group(2)}-{m.group(3)}'
+        elif re.match(r'\d{4}-\d{2}-\d{2}', raw_date):
+            price_date = raw_date
+    print(f'  TWSE 官方今日價格：{len(result)} 支（交易日期：{price_date}）')
+    return result, price_date
 
 
 def fetch_tpex_prices_today():
@@ -551,16 +558,17 @@ def main():
             print(f'  ⚠️ 新資料不足（{len(income)}），保留舊資料（{len(old_inc)}）')
             income = old_inc
 
-    # incomeHistory：按 (年度Q季) 累積最多 8 季資料，跨年正確比對 YoY EPS
+    # incomeHistory：按 {年}Q{季} 累積最多 8 季，跨年正確比對 YoY EPS（含 OTC）
     income_history = existing.get('incomeHistory', {})
     income_prev    = existing.get('incomePrev', {})  # 保留舊欄位，向後相容
     yoy_count = 0
     if income:
-        sample   = next(iter(income.values()))
-        cur_year = int(sample.get('year', 0) or 0)
-        cur_qtr  = str(sample.get('quarter', '') or '')
-        cur_q_key = f'{cur_year}Q{cur_qtr}'
         for code, rec in income.items():
+            rec_year = int(rec.get('year', 0) or 0)
+            rec_qtr  = str(rec.get('quarter', '') or '')
+            if not rec_year or not rec_qtr:
+                continue
+            cur_q_key = f'{rec_year}Q{rec_qtr}'
             if code not in income_history:
                 income_history[code] = {}
             income_history[code][cur_q_key] = {'eps': rec.get('eps'), 'revenue': rec.get('revenue')}
@@ -568,14 +576,17 @@ def main():
             all_keys = sorted(income_history[code].keys(), reverse=True)
             income_history[code] = {k: income_history[code][k] for k in all_keys[:8]}
             # YoY：去年同季
-            prev_q_key = f'{cur_year - 1}Q{cur_qtr}'
+            prev_q_key = f'{rec_year - 1}Q{rec_qtr}'
             prev = income_history[code].get(prev_q_key)
             if prev and prev.get('eps') is not None and rec.get('eps') is not None:
                 p_eps = prev['eps']
                 if p_eps is not None and p_eps != 0:
                     rec['earningsGrowth'] = round((rec['eps'] - p_eps) / abs(p_eps), 4)
                     yoy_count += 1
-        print(f'  incomeHistory YoY computed: {yoy_count} stocks（{cur_q_key} vs {cur_year-1}Q{cur_qtr}）')
+        sample = next(iter(income.values()))
+        log_year = int(sample.get('year', 0) or 0)
+        log_qtr  = str(sample.get('quarter', '') or '')
+        print(f'  incomeHistory YoY computed: {yoy_count} stocks（{log_year}Q{log_qtr} vs {log_year-1}Q{log_qtr}）')
 
     print('\n6. Stock Prices (OHLCV)...')
     # 讀取舊的價格快取
@@ -594,7 +605,7 @@ def main():
     name_map = {s['code']: s['name'] for s in tse_stocks + otc_stocks if s.get('name') and s['name'] != s['code']}
 
     # 用 TWSE/TPEX 官方 API 批次抓今日 OHLCV（取代 Yahoo Finance 個股逐一抓取）
-    twse_today = fetch_twse_prices_today()
+    twse_today, twse_price_date_api = fetch_twse_prices_today()
     tpex_today, tpex_price_date = fetch_tpex_prices_today()
 
     # 若官方 API 回傳資料不足（市場休假/API 故障），保留舊資料
@@ -608,7 +619,7 @@ def main():
         print(f'  ⚠️ TPEX 今日資料不足（{len(tpex_today)}），保留舊資料')
 
     # _price_date 記錄實際資料日期（非腳本執行日），讓前端能判斷是否過舊
-    tse_price_date = last_trading_date_tw() if tse_ok else existing.get('_tse_price_date', '')
+    tse_price_date = (twse_price_date_api or last_trading_date_tw()) if tse_ok else existing.get('_tse_price_date', '')
     otc_price_date_final = tpex_price_date if otc_ok else existing.get('_otc_price_date', '')
     atomic_write('stocks_tse.json', {'date': date_str, '_price_date': tse_price_date, 'stocks': tse_prices})
     atomic_write('stocks_otc.json', {'date': date_str, '_price_date': otc_price_date_final, 'stocks': otc_prices})

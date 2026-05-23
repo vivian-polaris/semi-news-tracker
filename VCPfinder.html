@@ -1930,8 +1930,9 @@ async function loadExDiv2026(){
   }
 }
 
-async function loadStockPrices(){
-  if(stockPriceLoaded)return;
+async function loadStockPrices(force){
+  if(stockPriceLoaded && !force)return;
+  if(force) stockPriceLoaded=false;
   const v=new Date().toISOString().slice(0,13);
   try{
     const [r1,r2]=await Promise.all([
@@ -1949,11 +1950,24 @@ async function loadStockPrices(){
 }
 
 function _checkPriceStaleness(){
-  // 上市/上櫃資料截至日期距今超過 2 個自然日 → 視為過舊，顯示紅色警告
-  const todayTW=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
-  const twoDaysAgo=new Date(Date.now()+8*3600000-2*86400000).toISOString().slice(0,10);
-  const tseStale=_tsePriceDate&&_tsePriceDate<twoDaysAgo;
-  const otcStale=_otcPriceDate&&_otcPriceDate<twoDaysAgo;
+  // 交易日感知的資料新鮮度檢查：自然日 ≤4 天視為不過舊（覆蓋週五→週一=3天差距）
+  // 超過 4 自然日時，再用交易日計算（扣掉週末），若交易日距離 >1 才視為過舊
+  function isStale(priceDate){
+    if(!priceDate) return false;
+    const parts=priceDate.split('-').map(Number);
+    const pd=new Date(parts[0],parts[1]-1,parts[2]);
+    const now=new Date(Date.now()+8*3600000);
+    const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    const diffDays=Math.round((today-pd)/86400000);
+    if(diffDays<=0) return false;
+    if(diffDays<=4) return false; // 週五→週一=3天，週四→週一=4天
+    let weekends=0;
+    const d=new Date(pd);
+    for(let i=0;i<diffDays;i++){d.setDate(d.getDate()+1);const dow=d.getDay();if(dow===0||dow===6)weekends++;}
+    return(diffDays-weekends)>1;
+  }
+  const tseStale=isStale(_tsePriceDate);
+  const otcStale=isStale(_otcPriceDate);
   const el=document.getElementById('fetchApiStatus');
   if(!el)return;
   if(tseStale||otcStale){
@@ -1962,8 +1976,7 @@ function _checkPriceStaleness(){
     if(otcStale) parts.push(`上櫃截至 ${_otcPriceDate}`);
     el.innerHTML=`<span style="color:#f87171;font-weight:700">⚠️ 股價資料過舊：${parts.join('・')} — 非最新收盤</span>`;
   } else {
-    const tseLabel=_tsePriceDate||'—', otcLabel=_otcPriceDate||'—';
-    el.textContent=`✅ 股價快取：上市 ${tseLabel}・上櫃 ${otcLabel}`;
+    el.textContent=`✅ 股價快取：上市 ${_tsePriceDate||'—'}・上櫃 ${_otcPriceDate||'—'}`;
   }
 }
 async function testGroq(){
