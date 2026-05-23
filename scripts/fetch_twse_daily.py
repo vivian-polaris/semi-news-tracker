@@ -379,13 +379,16 @@ def fetch_twse_prices_today():
             v = 0
         result[code] = {'c': round(c, 2), 'h': round(h, 2), 'l': round(l, 2), 'o': round(o, 2), 'v': v}
     # 從 FMTQIK 取得實際交易日期（STOCK_DAY_ALL 無日期欄位）
+    # FMTQIK Date 格式：'1150522'（民國年7位）→ 2026-05-22
     price_date = None
     fmtqik = get('https://openapi.twse.com.tw/v1/exchangeReport/FMTQIK')
     if fmtqik and isinstance(fmtqik, list) and len(fmtqik) > 0:
         raw_date = str(fmtqik[-1].get('Date', '') or '').strip()
-        m = re.match(r'(\d{2,3})/(\d{2})/(\d{2})', raw_date)
-        if m:
-            price_date = f'{int(m.group(1)) + 1911}-{m.group(2)}-{m.group(3)}'
+        if len(raw_date) == 7 and raw_date.isdigit():
+            try:
+                price_date = f'{int(raw_date[:3]) + 1911}-{raw_date[3:5]}-{raw_date[5:7]}'
+            except Exception:
+                pass
         elif re.match(r'\d{4}-\d{2}-\d{2}', raw_date):
             price_date = raw_date
     print(f'  TWSE 官方今日價格：{len(result)} 支（交易日期：{price_date}）')
