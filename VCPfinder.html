@@ -1960,7 +1960,7 @@ function _checkPriceStaleness(){
     const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
     const diffDays=Math.round((today-pd)/86400000);
     if(diffDays<=0) return false;
-    if(diffDays<=4) return false; // 週五→週一=3天，週四→週一=4天
+    if(diffDays<=3) return false; // 週五→週一=3天；4天以上交給交易日計算
     let weekends=0;
     const d=new Date(pd);
     for(let i=0;i<diffDays;i++){d.setDate(d.getDate()+1);const dow=d.getDay();if(dow===0||dow===6)weekends++;}

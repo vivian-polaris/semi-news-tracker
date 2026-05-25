@@ -450,15 +450,17 @@ def fetch_tpex_prices_today():
     return {}, None
 
 
-def update_price_history(existing, today_prices, name_map):
+def update_price_history(existing, today_prices, name_map, trading_date=None):
     """
     增量更新歷史 OHLCV：
     - 同日多次執行 → 取代第一根（即時價格更新，不重複 prepend）
     - 新交易日 → prepend 新的一根，保留最多 252 根
     用 _d 欄位記錄最近一根的台灣日期，防止同日重複 append。
+    trading_date: 實際交易日期（來自 FMTQIK 或 intraday today_date），
+                  必須傳入，不再靠 last_trading_date_tw() 推算（假日會誤判）。
     """
     out = dict(existing)
-    today_tw = last_trading_date_tw()  # 週末執行時用週五日期，避免假 K 棒
+    today_tw = trading_date if trading_date else last_trading_date_tw()
     new_day = intraday = new_stock = 0
 
     for code, today in today_prices.items():
@@ -851,16 +853,26 @@ def main():
     # 若官方 API 回傳資料不足（市場休假/API 故障），保留舊資料
     tse_ok = len(twse_today) > 100
     otc_ok = len(tpex_today) > 100
-    tse_prices = update_price_history(existing_tse_price, twse_today, name_map) if tse_ok else existing_tse_price
-    otc_prices = update_price_history(existing_otc_price, tpex_today, name_map) if otc_ok else existing_otc_price
+
+    # _price_date：用 FMTQIK 回傳的實際交易日（最可靠），intraday 用 today_date
+    tse_price_date = (twse_price_date_api or last_trading_date_tw()) if tse_ok else existing.get('_tse_price_date', '')
+
+    # TPEX 的 Date 欄位有時回傳查詢日（非實際交易日），若 TPEX date > TSE FMTQIK date 則
+    # 以 TSE date 為準（兩市場共用同一休市曆）
+    raw_otc_date = tpex_price_date if otc_ok else existing.get('_otc_price_date', '')
+    if tse_price_date and raw_otc_date and raw_otc_date > tse_price_date:
+        print(f'  ⚠️ TPEX date ({raw_otc_date}) > TSE FMTQIK date ({tse_price_date})，以 TSE date 為準（假日判斷）')
+        otc_price_date_final = tse_price_date
+    else:
+        otc_price_date_final = raw_otc_date
+
+    # 傳入實際交易日，避免假日時 _d 被誤標為假日日期
+    tse_prices = update_price_history(existing_tse_price, twse_today, name_map, trading_date=tse_price_date) if tse_ok else existing_tse_price
+    otc_prices = update_price_history(existing_otc_price, tpex_today, name_map, trading_date=otc_price_date_final) if otc_ok else existing_otc_price
     if not tse_ok:
         print(f'  ⚠️ TWSE 今日資料不足（{len(twse_today)}），保留舊資料')
     if not otc_ok:
         print(f'  ⚠️ TPEX 今日資料不足（{len(tpex_today)}），保留舊資料')
-
-    # _price_date 記錄實際資料日期（非腳本執行日），讓前端能判斷是否過舊
-    tse_price_date = (twse_price_date_api or last_trading_date_tw()) if tse_ok else existing.get('_tse_price_date', '')
-    otc_price_date_final = tpex_price_date if otc_ok else existing.get('_otc_price_date', '')
     atomic_write('stocks_tse.json', {'date': date_str, '_price_date': tse_price_date, 'stocks': tse_prices})
     atomic_write('stocks_otc.json', {'date': date_str, '_price_date': otc_price_date_final, 'stocks': otc_prices})
     print(f'  stocks_tse.json: {len(tse_prices)} stocks')
