@@ -40,9 +40,10 @@ export async function onRequestGet(context) {
     const prices = {};
     (data.msgArray || []).forEach(item => {
       if (!item.c) return;
-      // z = current price, y = prev close (fallback when market closed or not yet traded)
-      const p = parseFloat(item.z) > 0 ? parseFloat(item.z) : parseFloat(item.y);
-      if (p > 0) prices[item.c] = p;
+      // Only return z (current transaction price). Never fall back to y (yesterday's close)
+      // — returning y would silently cache stale data as "current price" in the browser.
+      const z = parseFloat(item.z);
+      if (z > 0) prices[item.c] = z;
     });
 
     return new Response(JSON.stringify(prices), { headers: CORS });

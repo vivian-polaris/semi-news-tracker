@@ -520,6 +520,76 @@ def last_trading_date_tw():
     elif dt.weekday() == 6: dt -= datetime.timedelta(days=2)  # Sun → Fri
     return dt.strftime('%Y-%m-%d')
 
+def is_trading_hours_tw():
+    """是否在台灣股市交易時間內（週一~週五 09:00–13:30 TW）"""
+    tz = datetime.timezone(datetime.timedelta(hours=8))
+    now = datetime.datetime.now(tz)
+    if now.weekday() >= 5:
+        return False
+    t = now.hour * 60 + now.minute
+    return 9 * 60 <= t <= 13 * 30
+
+def fetch_twse_mis_prices(all_stocks):
+    """
+    盤中：使用 mis.twse.com.tw 取得即時成交價（z 欄位）。
+    all_stocks: [{code, ex}]，ex='TW' for TSE，ex='TWO' for OTC。
+    回傳 {code: {c,h,l,o,v}}，只包含 z > 0（已成交）的股票。
+    """
+    mis = requests.Session()
+    mis.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Referer': 'https://mis.twse.com.tw/stock/fibest.jsp',
+        'Accept': 'application/json, text/plain, */*',
+    })
+    result = {}
+    batch_size = 100
+    batches = [all_stocks[i:i+batch_size] for i in range(0, len(all_stocks), batch_size)]
+    print(f'  mis.twse: {len(all_stocks)} 支 / {len(batches)} 批次')
+    for idx, batch in enumerate(batches):
+        ex_ch = '|'.join(
+            f"{'otc' if s.get('ex') == 'TWO' else 'tse'}_{s['code']}.tw"
+            for s in batch
+        )
+        url = (f"https://mis.twse.com.tw/stock/api/getStockInfo.jsp"
+               f"?ex_ch={requests.utils.quote(ex_ch)}&json=1&delay=0&_={int(time.time()*1000)}")
+        try:
+            r = mis.get(url, timeout=10)
+            if r.status_code != 200:
+                print(f'  [WARN] mis batch {idx+1} HTTP {r.status_code}')
+                continue
+            data = r.json()
+            for item in (data.get('msgArray') or []):
+                code = str(item.get('c') or '').strip()
+                if not code:
+                    continue
+                try:
+                    z = float(str(item.get('z') or '-').strip())
+                except (ValueError, TypeError):
+                    continue
+                if z <= 0:
+                    continue
+                def _fv(v, default):
+                    try: return float(str(v or '-').strip())
+                    except: return default
+                h = _fv(item.get('h'), z)
+                l = _fv(item.get('l'), z)
+                o = _fv(item.get('o'), z)
+                # mis.twse v = 成交量（張），STOCK_DAY_ALL v = 成交股數（股）。1張=1000股。
+                try:
+                    v = int(float(str(item.get('v') or '0').replace(',', ''))) * 1000
+                except (ValueError, TypeError):
+                    v = 0
+                result[code] = {
+                    'c': round(z, 2), 'h': round(h, 2),
+                    'l': round(l, 2), 'o': round(o, 2), 'v': v
+                }
+        except Exception as e:
+            print(f'  [WARN] mis batch {idx+1} exception: {e}')
+        if idx < len(batches) - 1:
+            time.sleep(0.4)
+    print(f'  mis.twse.com.tw 即時成交：{len(result)} 支有效（z>0）')
+    return result
+
 def atomic_write(path, data):
     """原子寫入 JSON：先寫暫存檔再 rename，防止中途中斷毀損資料"""
     tmp = path + '.tmp'
@@ -624,9 +694,36 @@ def main():
 
     name_map = {s['code']: s['name'] for s in tse_stocks + otc_stocks if s.get('name') and s['name'] != s['code']}
 
-    # 用 TWSE/TPEX 官方 API 批次抓今日 OHLCV（取代 Yahoo Finance 個股逐一抓取）
-    twse_today, twse_price_date_api = fetch_twse_prices_today()
-    tpex_today, tpex_price_date = fetch_tpex_prices_today()
+    # 盤中：優先用 mis.twse.com.tw 即時成交價（同 Cloudflare Function 的資料源）
+    # 盤後：用官方每日收盤行情 STOCK_DAY_ALL / tpex_mainboard_daily_close_quotes
+    twse_today, twse_price_date_api = {}, None
+    tpex_today, tpex_price_date = {}, None
+
+    if is_trading_hours_tw():
+        print('  盤中模式：嘗試 mis.twse.com.tw 即時報價...')
+        all_for_mis = ([{'code': s['code'], 'ex': 'TW'}  for s in tse_stocks] +
+                       [{'code': s['code'], 'ex': 'TWO'} for s in otc_stocks])
+        realtime = fetch_twse_mis_prices(all_for_mis)
+        tse_codes = {s['code'] for s in tse_stocks}
+        otc_codes = {s['code'] for s in otc_stocks}
+        rt_tse = {k: v for k, v in realtime.items() if k in tse_codes}
+        rt_otc = {k: v for k, v in realtime.items() if k in otc_codes}
+        today_date = last_trading_date_tw()
+        if len(rt_tse) > 100:
+            twse_today, twse_price_date_api = rt_tse, today_date
+            print(f'  ✅ 即時 TSE：{len(rt_tse)} 支')
+        else:
+            print(f'  ⚠️ 即時 TSE 不足（{len(rt_tse)}），改用官方每日 API')
+            twse_today, twse_price_date_api = fetch_twse_prices_today()
+        if len(rt_otc) > 100:
+            tpex_today, tpex_price_date = rt_otc, today_date
+            print(f'  ✅ 即時 OTC：{len(rt_otc)} 支')
+        else:
+            print(f'  ⚠️ 即時 OTC 不足（{len(rt_otc)}），改用官方每日 API')
+            tpex_today, tpex_price_date = fetch_tpex_prices_today()
+    else:
+        twse_today, twse_price_date_api = fetch_twse_prices_today()
+        tpex_today, tpex_price_date = fetch_tpex_prices_today()
 
     # 若官方 API 回傳資料不足（市場休假/API 故障），保留舊資料
     tse_ok = len(twse_today) > 100

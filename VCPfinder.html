@@ -3195,21 +3195,23 @@ const LIVE_Q_TTL=1*60*1000; // 1 分鐘快取
 
 async function fetchLiveQuoteBatch(syms){
   const ts=Date.now();
+  const found=new Set();
   // Primary: Cloudflare Function → TWSE 官方即時 API（無 Yahoo rate limit 問題）
   try{
     const r=await fetchTO(`/api/price?syms=${encodeURIComponent(syms.join(','))}`,6000);
     if(r.ok){
       const prices=await r.json();
-      let got=0;
       syms.forEach(sym=>{
         const code=sym.split('.')[0];
-        if(prices[code]>0){_liveQCache.set(sym,{price:prices[code],ts});got++;}
+        if(prices[code]>0){_liveQCache.set(sym,{price:prices[code],ts});found.add(sym);}
       });
-      if(got>0)return;
+      if(found.size===syms.length)return; // 全部找到，不需 Yahoo
     }
   }catch(_){}
-  // Fallback: Yahoo Finance via CORS proxy
-  const joined=syms.join(',');
+  // Fallback: Yahoo Finance via CORS proxy（只補查 TWSE 未回傳的股票）
+  const missing=found.size>0?syms.filter(s=>!found.has(s)):syms;
+  if(!missing.length)return;
+  const joined=missing.join(',');
   const base=`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(joined)}&_t=${ts}`;
   for(const px of ['https://corsproxy.io/?','https://api.allorigins.win/raw?url=']){
     try{
@@ -3757,14 +3759,19 @@ async function autoRefreshPrices(){
     }
   });
 
+  const lbl=document.getElementById('liveRefreshLabel');
   if(updated>0){
     renderTable();
-    const lbl=document.getElementById('liveRefreshLabel');
     if(lbl){
       const t=new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
       lbl.style.display='';
-      lbl.textContent=`⚡ 現價 ${t} 更新`;
+      lbl.style.color='#34d399';
+      lbl.textContent=`⚡ 現價 ${t} 更新（${updated} 支）`;
     }
+  } else if(isTradingHours()&&lbl){
+    lbl.style.display='';
+    lbl.style.color='var(--orange)';
+    lbl.textContent='⚠️ 盤中但無法取得即時價，顯示靜態資料';
   }
 }
 
