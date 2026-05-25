@@ -534,6 +534,12 @@ def fetch_twse_mis_prices(all_stocks):
     盤中：使用 mis.twse.com.tw 取得即時成交價（z 欄位）。
     all_stocks: [{code, ex}]，ex='TW' for TSE，ex='TWO' for OTC。
     回傳 {code: {c,h,l,o,v}}，只包含 z > 0（已成交）的股票。
+
+    GLM 調查確認：
+    - batch_size 必須 ≤ 15（100 支會超過 URL 長度限制導致 414/500）
+    - v 欄位已是「股」(shares)，不需乘 1000
+    - 需先 warm-up session 取得 Cookie
+    - sleep 1.0s（Azure IP 容易被 TWSE rate-limit）
     """
     mis = requests.Session()
     mis.headers.update({
@@ -541,10 +547,20 @@ def fetch_twse_mis_prices(all_stocks):
         'Referer': 'https://mis.twse.com.tw/stock/fibest.jsp',
         'Accept': 'application/json, text/plain, */*',
     })
+    # Warm-up session to obtain session cookies (reduces block risk)
+    try:
+        mis.get('https://mis.twse.com.tw/stock/', timeout=8)
+    except Exception:
+        pass
+
+    def _fv(v, default):
+        try: return float(str(v or '-').strip())
+        except: return default
+
     result = {}
-    batch_size = 100
+    batch_size = 15  # GLM confirmed: 100 causes 414 URI Too Long on TWSE
     batches = [all_stocks[i:i+batch_size] for i in range(0, len(all_stocks), batch_size)]
-    print(f'  mis.twse: {len(all_stocks)} 支 / {len(batches)} 批次')
+    print(f'  mis.twse: {len(all_stocks)} 支 / {len(batches)} 批次（batch_size={batch_size}）')
     for idx, batch in enumerate(batches):
         ex_ch = '|'.join(
             f"{'otc' if s.get('ex') == 'TWO' else 'tse'}_{s['code']}.tw"
@@ -552,42 +568,48 @@ def fetch_twse_mis_prices(all_stocks):
         )
         url = (f"https://mis.twse.com.tw/stock/api/getStockInfo.jsp"
                f"?ex_ch={requests.utils.quote(ex_ch)}&json=1&delay=0&_={int(time.time()*1000)}")
-        try:
-            r = mis.get(url, timeout=10)
-            if r.status_code != 200:
-                print(f'  [WARN] mis batch {idx+1} HTTP {r.status_code}')
-                continue
-            data = r.json()
-            for item in (data.get('msgArray') or []):
-                code = str(item.get('c') or '').strip()
-                if not code:
+        success = False
+        for attempt in range(2):
+            try:
+                r = mis.get(url, timeout=10)
+                if r.status_code != 200:
+                    print(f'  [WARN] mis batch {idx+1} attempt {attempt+1} HTTP {r.status_code}')
+                    if attempt == 0: time.sleep(2)
                     continue
-                try:
-                    z = float(str(item.get('z') or '-').strip())
-                except (ValueError, TypeError):
-                    continue
-                if z <= 0:
-                    continue
-                def _fv(v, default):
-                    try: return float(str(v or '-').strip())
-                    except: return default
-                h = _fv(item.get('h'), z)
-                l = _fv(item.get('l'), z)
-                o = _fv(item.get('o'), z)
-                # mis.twse v = 成交量（張），STOCK_DAY_ALL v = 成交股數（股）。1張=1000股。
-                try:
-                    v = int(float(str(item.get('v') or '0').replace(',', ''))) * 1000
-                except (ValueError, TypeError):
-                    v = 0
-                result[code] = {
-                    'c': round(z, 2), 'h': round(h, 2),
-                    'l': round(l, 2), 'o': round(o, 2), 'v': v
-                }
-        except Exception as e:
-            print(f'  [WARN] mis batch {idx+1} exception: {e}')
+                data = r.json()
+                for item in (data.get('msgArray') or []):
+                    code = str(item.get('c') or '').strip()
+                    if not code:
+                        continue
+                    try:
+                        z = float(str(item.get('z') or '-').strip())
+                    except (ValueError, TypeError):
+                        continue
+                    if z <= 0:
+                        continue  # z='-' or 0: skip entirely, never use y (yesterday's close)
+                    h = _fv(item.get('h'), z)
+                    l = _fv(item.get('l'), z)
+                    o = _fv(item.get('o'), z)
+                    # v is already in shares (股), NOT lots (張) — no *1000 needed
+                    try:
+                        v = int(float(str(item.get('v') or '0').replace(',', '')))
+                    except (ValueError, TypeError):
+                        v = 0
+                    result[code] = {
+                        'c': round(z, 2), 'h': round(h, 2),
+                        'l': round(l, 2), 'o': round(o, 2), 'v': v
+                    }
+                success = True
+                break
+            except Exception as e:
+                print(f'  [WARN] mis batch {idx+1} attempt {attempt+1} exception: {e}')
+                if attempt == 0: time.sleep(2)
+        if not success:
+            print(f'  [ERROR] mis batch {idx+1} failed after 2 attempts')
         if idx < len(batches) - 1:
-            time.sleep(0.4)
-    print(f'  mis.twse.com.tw 即時成交：{len(result)} 支有效（z>0）')
+            time.sleep(1.0)  # 1.0s rate limit (Azure IPs risk TWSE blocking)
+    pct = round(len(result)/len(all_stocks)*100) if all_stocks else 0
+    print(f'  mis.twse.com.tw 即時成交：{len(result)}/{len(all_stocks)} 支（{pct}%）')
     return result
 
 def atomic_write(path, data):
