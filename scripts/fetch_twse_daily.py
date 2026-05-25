@@ -612,6 +612,78 @@ def fetch_twse_mis_prices(all_stocks):
     print(f'  mis.twse.com.tw 即時成交：{len(result)}/{len(all_stocks)} 支（{pct}%）')
     return result
 
+
+def fetch_intraday_yahoo(all_stocks):
+    """
+    盤中：使用 Yahoo Finance v7 quote API 取得即時 OHLCV。
+    all_stocks: [{code, ex}]，ex='TW' or 'TWO'。
+    回傳 {code: {c,h,l,o,v}}，c = regularMarketPrice（即時成交價）。
+    從 GitHub Actions server-side 呼叫（無 CORS 限制）。
+    batch_size=50, sleep=2s（GLM 建議，降低 429/999 風險）。
+    """
+    YAHOO_HEADERS = {
+        'User-Agent': ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                       'AppleWebKit/537.36 (KHTML, like Gecko) '
+                       'Chrome/120.0.0.0 Safari/537.36'),
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
+    }
+    symbols = [f"{s['code']}.{s['ex']}" for s in all_stocks]
+    code_map = {f"{s['code']}.{s['ex']}": s['code'] for s in all_stocks}
+    result = {}
+    batch_size = 50
+    batches = [symbols[i:i+batch_size] for i in range(0, len(symbols), batch_size)]
+    print(f'  Yahoo Finance: {len(symbols)} 支 / {len(batches)} 批次')
+
+    for idx, batch in enumerate(batches):
+        url = ('https://query1.finance.yahoo.com/v7/finance/quote'
+               f'?symbols={",".join(batch)}&_t={int(time.time()*1000)}')
+        success = False
+        for attempt in range(3):
+            try:
+                r = requests.get(url, headers=YAHOO_HEADERS, timeout=15)
+                if r.status_code in (429, 999):
+                    wait = (attempt + 1) * 10
+                    print(f'  [WARN] Yahoo batch {idx+1} HTTP {r.status_code}, wait {wait}s')
+                    time.sleep(wait)
+                    continue
+                if not r.ok:
+                    print(f'  [WARN] Yahoo batch {idx+1} HTTP {r.status_code}')
+                    break
+                quotes = r.json().get('quoteResponse', {}).get('result', [])
+                for q in quotes:
+                    sym = q.get('symbol', '')
+                    code = code_map.get(sym)
+                    if not code:
+                        continue
+                    c = q.get('regularMarketPrice')
+                    if not c or c <= 0:
+                        continue
+                    h = q.get('regularMarketDayHigh') or c
+                    l = q.get('regularMarketDayLow') or c
+                    o = q.get('regularMarketOpen') or c
+                    v = q.get('regularMarketVolume') or 0
+                    result[code] = {
+                        'c': round(float(c), 2), 'h': round(float(h), 2),
+                        'l': round(float(l), 2), 'o': round(float(o), 2),
+                        'v': int(v)
+                    }
+                success = True
+                break
+            except Exception as e:
+                print(f'  [WARN] Yahoo batch {idx+1} attempt {attempt+1}: {e}')
+                if attempt < 2:
+                    time.sleep(5)
+        if not success:
+            print(f'  [ERROR] Yahoo batch {idx+1} failed after 3 attempts')
+        if idx < len(batches) - 1:
+            time.sleep(2.0)
+
+    pct = round(len(result)/len(all_stocks)*100) if all_stocks else 0
+    print(f'  Yahoo Finance 即時價格：{len(result)}/{len(all_stocks)} 支（{pct}%）')
+    return result
+
+
 def atomic_write(path, data):
     """原子寫入 JSON：先寫暫存檔再 rename，防止中途中斷毀損資料"""
     tmp = path + '.tmp'
@@ -716,34 +788,63 @@ def main():
 
     name_map = {s['code']: s['name'] for s in tse_stocks + otc_stocks if s.get('name') and s['name'] != s['code']}
 
-    # 盤中：優先用 mis.twse.com.tw 即時成交價（同 Cloudflare Function 的資料源）
-    # 盤後：用官方每日收盤行情 STOCK_DAY_ALL / tpex_mainboard_daily_close_quotes
+    # ── 盤中價格取得策略（三層 fallback，確保永遠取到即時成交價）──────────
+    # 層 1：Yahoo Finance server-side（主力，無 CORS，從 GitHub Actions 可靠）
+    # 層 2：mis.twse.com.tw（備援，Azure IP 可能被封）
+    # 層 3：STOCK_DAY_ALL（最後手段，盤中只有昨收，不理想）
     twse_today, twse_price_date_api = {}, None
     tpex_today, tpex_price_date = {}, None
 
     if is_trading_hours_tw():
-        print('  盤中模式：嘗試 mis.twse.com.tw 即時報價...')
-        all_for_mis = ([{'code': s['code'], 'ex': 'TW'}  for s in tse_stocks] +
-                       [{'code': s['code'], 'ex': 'TWO'} for s in otc_stocks])
-        realtime = fetch_twse_mis_prices(all_for_mis)
+        today_date = last_trading_date_tw()
+        all_for_yahoo = ([{'code': s['code'], 'ex': 'TW'}  for s in tse_stocks] +
+                         [{'code': s['code'], 'ex': 'TWO'} for s in otc_stocks])
         tse_codes = {s['code'] for s in tse_stocks}
         otc_codes = {s['code'] for s in otc_stocks}
-        rt_tse = {k: v for k, v in realtime.items() if k in tse_codes}
-        rt_otc = {k: v for k, v in realtime.items() if k in otc_codes}
-        today_date = last_trading_date_tw()
-        if len(rt_tse) > 100:
-            twse_today, twse_price_date_api = rt_tse, today_date
-            print(f'  ✅ 即時 TSE：{len(rt_tse)} 支')
+
+        # 層 1：Yahoo Finance
+        print('  盤中模式（層1）：Yahoo Finance server-side 即時報價...')
+        yahoo_all = fetch_intraday_yahoo(all_for_yahoo)
+        yahoo_tse = {k: v for k, v in yahoo_all.items() if k in tse_codes}
+        yahoo_otc = {k: v for k, v in yahoo_all.items() if k in otc_codes}
+        yahoo_ok_tse = len(yahoo_tse) > 100
+        yahoo_ok_otc = len(yahoo_otc) > 100
+        if yahoo_ok_tse:
+            twse_today, twse_price_date_api = yahoo_tse, today_date
+            print(f'  ✅ Yahoo TSE 即時：{len(yahoo_tse)} 支')
         else:
-            print(f'  ⚠️ 即時 TSE 不足（{len(rt_tse)}），改用官方每日 API')
-            twse_today, twse_price_date_api = fetch_twse_prices_today()
-        if len(rt_otc) > 100:
-            tpex_today, tpex_price_date = rt_otc, today_date
-            print(f'  ✅ 即時 OTC：{len(rt_otc)} 支')
+            print(f'  ⚠️ Yahoo TSE 不足（{len(yahoo_tse)}），進入層2')
+        if yahoo_ok_otc:
+            tpex_today, tpex_price_date = yahoo_otc, today_date
+            print(f'  ✅ Yahoo OTC 即時：{len(yahoo_otc)} 支')
         else:
-            print(f'  ⚠️ 即時 OTC 不足（{len(rt_otc)}），改用官方每日 API')
-            tpex_today, tpex_price_date = fetch_tpex_prices_today()
+            print(f'  ⚠️ Yahoo OTC 不足（{len(yahoo_otc)}），進入層2')
+
+        # 層 2：mis.twse.com.tw（只補 Yahoo 失敗的市場）
+        need_mis = (not yahoo_ok_tse) or (not yahoo_ok_otc)
+        if need_mis:
+            print('  盤中模式（層2）：mis.twse.com.tw 備援...')
+            mis_stocks = ([] if yahoo_ok_tse else [{'code': s['code'], 'ex': 'TW'}  for s in tse_stocks]) + \
+                         ([] if yahoo_ok_otc else [{'code': s['code'], 'ex': 'TWO'} for s in otc_stocks])
+            mis_all = fetch_twse_mis_prices(mis_stocks)
+            if not yahoo_ok_tse:
+                mis_tse = {k: v for k, v in mis_all.items() if k in tse_codes}
+                if len(mis_tse) > 100:
+                    twse_today, twse_price_date_api = mis_tse, today_date
+                    print(f'  ✅ MIS TSE 即時：{len(mis_tse)} 支')
+                else:
+                    print(f'  ⚠️ MIS TSE 不足（{len(mis_tse)}），進入層3（昨收）')
+                    twse_today, twse_price_date_api = fetch_twse_prices_today()
+            if not yahoo_ok_otc:
+                mis_otc = {k: v for k, v in mis_all.items() if k in otc_codes}
+                if len(mis_otc) > 100:
+                    tpex_today, tpex_price_date = mis_otc, today_date
+                    print(f'  ✅ MIS OTC 即時：{len(mis_otc)} 支')
+                else:
+                    print(f'  ⚠️ MIS OTC 不足（{len(mis_otc)}），進入層3（昨收）')
+                    tpex_today, tpex_price_date = fetch_tpex_prices_today()
     else:
+        # 盤後：官方每日收盤行情（STOCK_DAY_ALL，正式收盤價）
         twse_today, twse_price_date_api = fetch_twse_prices_today()
         tpex_today, tpex_price_date = fetch_tpex_prices_today()
 
