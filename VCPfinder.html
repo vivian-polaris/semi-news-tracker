@@ -443,6 +443,10 @@ footer a:hover{text-decoration:underline}
   #dtListWrap{padding:8px 10px!important;overflow-x:auto!important}
   #dtListBody table{font-size:.68rem!important;min-width:480px}
   #dtListBody th,#dtListBody td{padding:4px 6px!important;white-space:nowrap}
+  /* 盤中大跌外資未動 */
+  #dipWrap{padding:8px 10px!important;overflow-x:auto!important}
+  #dipBody table{font-size:.68rem!important;min-width:480px}
+  #dipBody th,#dipBody td{padding:4px 6px!important;white-space:nowrap}
   .two-col-row>div{min-width:0}
   .news-card,.inv-card{overflow:hidden}
   /* toggle border radius when open */
@@ -789,6 +793,15 @@ footer a:hover{text-decoration:underline}
 
 
   </div>
+</div>
+
+<!-- ── 盤中大跌外資未動 ── -->
+<div id="dipWrap" style="display:none;background:var(--card);border:1.5px solid var(--red);border-radius:10px;padding:14px 18px;margin-bottom:14px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div style="font-size:.78rem;font-weight:800;color:var(--red);letter-spacing:.05em">📉 盤中大跌・外資昨大買 <span id="dipCount" style="font-size:.68rem;font-weight:400;color:var(--text2)"></span></div>
+    <span style="font-size:.6rem;color:var(--text2)">跌幅 ≥5%・昨日外資淨買超・盤中才顯示</span>
+  </div>
+  <div id="dipBody"></div>
 </div>
 
 <!-- ── VCP 掃描 ── -->
@@ -3107,18 +3120,11 @@ function calcVCP(data){
   // 無此升幅代表股票只是橫盤低波動，非真正VCP整理
   const gainFrom52Low=(lo52>0&&vcpPivot>0)?(vcpPivot-lo52)/lo52*100:0;
   let priorRunL='—';
-  if(gainFrom52Low<20){score-=35;priorRunL='先前升幅不足';}
-  else if(gainFrom52Low<30){score-=20;priorRunL='先前升幅偏低';}
-  else if(gainFrom52Low>=60){score+=5;priorRunL='先前強勢';}
+  if(gainFrom52Low>=60){score+=5;priorRunL='先前強勢';}
   else{priorRunL=`+${gainFrom52Low.toFixed(0)}%`;}
 
-  // ── 1年績效檢查：股價需高於1年前，確認Stage 2動能 ────────────────────────
   const price1YAgo=closes.length>=253?closes[252]:null;
   const gain1Y=price1YAgo!=null&&price1YAgo>0?(price-price1YAgo)/price1YAgo*100:null;
-  if(gain1Y!=null){
-    if(gain1Y<-5){score-=20;}
-    else if(gain1Y<5){score-=10;}
-  }
 
   const ma20_10dAgo = closes.length >= 30 ? sma(closes.slice(10), 20) : null;
   const ma20Slope = (ma20 && ma20_10dAgo && ma20_10dAgo > 0)
@@ -3997,7 +4003,7 @@ function calcCANSLIM(vcp, fund, chips){
   const tNet=chips?parseChipNum(chips.trustNet)??0:null;
   const I=(fNet!==null||tNet!==null)?((fNet||0)>0||(tNet||0)>0):null;
   const mktUp=(localStorage.getItem('mktSentiment')||'neutral')==='risk_on'||(window.taixChg!=null&&window.taixChg>0);
-  const M=vcp?mktUp:null;
+  const M=vcp?(vcp.stage2&&mktUp):null;
   const letters={C,A,N,S,L,I,M};
   const total=Object.values(letters).filter(v=>v===true).length;
   const known=Object.values(letters).filter(v=>v!==null).length;
@@ -4509,15 +4515,9 @@ function renderTable(){
     const slopeEntryCalc=r=>{
       const v=r.vcp;
       if(!v||!v.stage2)return-1;
-      if(sent==='risk_off')return-1;
       if(v.score<80)return-1;
       const sl=v.ma20Slope,dm=v.distMA20,rsi=v.rsi;
-      // 必須是坡段開始相位：MA20上揚、RSI 45-65、距MA20 -5~8%
       if(sl==null||sl<0)return-1;
-      if(rsi!=null&&(rsi<45||rsi>65))return-1;
-      if(dm!=null&&(dm<-5||dm>8))return-1;
-      // 均線多頭排列（MA20 > MA50）
-      if(v.ma20!=null&&v.ma50!=null&&v.ma20<=v.ma50)return-1;
       // 均量門檻
       if(v.v10!=null&&v.v10<300000)return-1;
       // CANSLIM 硬性門檻 ≥ 3（排除基本面 + 籌碼 + 動能全無的股票）
@@ -4616,6 +4616,64 @@ function renderTable(){
         :'<span style="color:#9ca3af">現價＋量能均為昨日收盤資料</span>';
     }
     renderSlopePositions();
+  })();
+
+  // ── 盤中大跌外資未動 ─────────────────────────────────────────────────────
+  (()=>{
+    const wrap=document.getElementById('dipWrap');
+    const body=document.getElementById('dipBody');
+    const cnt=document.getElementById('dipCount');
+    if(!wrap||!body) return;
+    if(!isTradingHours()||!allResults.length){wrap.style.display='none';return;}
+    const candidates=allResults
+      .filter(r=>{
+        if(!r.vcp||!r.vcp.price) return false;
+        const prevClose=stockPriceMap[r.code]?.c?.[0];
+        if(!prevClose) return false;
+        const dropPct=(r.vcp.price-prevClose)/prevClose*100;
+        if(dropPct>-5) return false;
+        return (parseChipNum(chipsMap[r.code]?.foreignNet)??0)>0;
+      })
+      .map(r=>{
+        const prevClose=stockPriceMap[r.code].c[0];
+        const dropPct=(r.vcp.price-prevClose)/prevClose*100;
+        const fNet=parseChipNum(chipsMap[r.code].foreignNet)??0;
+        return {r,dropPct,fNet};
+      })
+      .sort((a,b)=>a.dropPct-b.dropPct)
+      .slice(0,15);
+    if(!candidates.length){wrap.style.display='none';return;}
+    wrap.style.display='block';
+    cnt.textContent=`（${candidates.length} 支）`;
+    const fmtFNet=n=>n>=10000?`+${(n/10000).toFixed(1)}萬`:n>=1000?`+${(n/1000).toFixed(1)}千`:`+${n}`;
+    body.innerHTML=`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.76rem">
+      <thead><tr style="border-bottom:1px solid var(--border);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em">
+        <th style="padding:4px 8px;text-align:left;color:var(--text2)">#</th>
+        <th style="padding:4px 8px;text-align:left;color:var(--text2)">代號/名稱</th>
+        <th style="padding:4px 8px;text-align:right;color:var(--text2)">現價</th>
+        <th style="padding:4px 8px;text-align:right;color:var(--text2)">今日跌幅</th>
+        <th style="padding:4px 8px;text-align:center;color:var(--text2)">VCP</th>
+        <th style="padding:4px 8px;text-align:center;color:var(--text2)">外資昨買</th>
+        <th style="padding:4px 8px;text-align:center;color:var(--text2)">MA排列</th>
+        <th style="padding:4px 8px;text-align:center;color:var(--text2)">CANSLIM</th>
+      </tr></thead>
+      <tbody>${candidates.map(({r,dropPct,fNet},i)=>{
+        const v=r.vcp;
+        const tv=`https://www.tradingview.com/chart/?symbol=${r.ex==='TWO'?'TPEX':'TWSE'}%3A${r.code}`;
+        const dropCol=dropPct<=-8?'#f87171':dropPct<=-5?'#f97316':'#9ca3af';
+        return`<tr style="border-bottom:1px solid rgba(45,55,72,.4)" onmouseover="this.style.background='rgba(224,92,92,.06)'" onmouseout="this.style.background=''">
+          <td style="padding:8px 8px;color:var(--text2);font-weight:700">${i+1}</td>
+          <td style="padding:8px 8px;white-space:nowrap"><a href="${tv}" target="_blank" style="color:var(--purple);font-weight:700;text-decoration:none">${escH(r.code)}</a> <span style="font-size:.72rem;font-weight:600">${escH(r.name)}</span><br><span style="font-size:.58rem;color:var(--text2)">${escH(r.sector||'—')}</span></td>
+          <td style="padding:8px 8px;text-align:right;font-weight:600">$${v.price}</td>
+          <td style="padding:8px 8px;text-align:right;font-weight:800;color:${dropCol}">${dropPct.toFixed(1)}%</td>
+          <td style="padding:8px 8px;text-align:center"><span style="font-size:.72rem;font-weight:800;color:${_vcpCol(v.score)}">${v.score}</span></td>
+          <td style="padding:8px 8px;text-align:center;font-size:.7rem;font-weight:700;color:#34d399">${fmtFNet(fNet)}</td>
+          <td style="padding:8px 8px;text-align:center">${_maC(v)||'—'}</td>
+          <td style="padding:8px 8px;text-align:center">${_csC(v,r.fund,r.code)}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>
+    <div style="margin-top:8px;font-size:.6rem;color:var(--text2);line-height:1.6">⚡ 昨日外資淨買超・今日盤中跌幅 ≥5%。外資資料為昨收 T86，非今日即時方向。請結合技術面判斷是否良性拉回。每 5 分鐘自動刷新。</div>`;
   })();
 }
 
@@ -4977,26 +5035,20 @@ async function lookupStock() {
   else if (vcpData.atrRat != null && vcpData.atrRat > 0.92) sellPts += 8;
   const sellScore = Math.min(Math.round(sellPts), 100);
 
-  // ── 隔日沖評分（與dtCalc邏輯一致）─────────────────────────────────────
+  // ── 隔日沖評分（與主表 buyStability 公式完全一致）────────────────────────
   const lkMg = marginMap[stockInfo.code];
-  const lkSentMult = ({'risk_on':1.1,'neutral':1.0,'risk_off':0.7})[localStorage.getItem('mktSentiment')||'neutral'];
-  const lkBtcBonus = window.btcSentiment||0;
   let dtPts = 0, dtValid = true;
-  if(vcpData.rsi>80||vcpData.vRat<1.0||(lkBothSell)) dtValid=false;
+  if(vcpData.rsi>80||vcpData.vRat<1.0||lkBothSell) dtValid=false;
   if(dtValid){
     if(lkBothBuy)dtPts+=30; else if(lkOneBuy)dtPts+=15;
-    if(vcpData.pctH<=3)dtPts+=20; else if(vcpData.pctH<=7)dtPts+=15; else if(vcpData.pctH<=12)dtPts+=10; else if(vcpData.pctH<=20)dtPts+=5;
-    if(vcpData.vRat>=2.0)dtPts+=15; else if(vcpData.vRat>=1.5)dtPts+=12; else if(vcpData.vRat>=1.2)dtPts+=8; else if(vcpData.vRat>=1.0)dtPts+=3;
-    if(vcpData.rsi>=55&&vcpData.rsi<=70)dtPts+=10; else if(vcpData.rsi>=50&&vcpData.rsi<=75)dtPts+=5;
-    if(vcpData.score>=85)dtPts+=10; else if(vcpData.score>=70)dtPts+=5;
-    if(vcpData.stage2)dtPts+=5;
-    if(vcpData.atrRat<0.6)dtPts+=5; else if(vcpData.atrRat<0.75)dtPts+=3;
-    if(vcpData.fin?.isExhaustion)dtPts+=5;
-    if(vcpData.closeRatio>=0.75)dtPts+=10; else if(vcpData.closeRatio>=0.5)dtPts+=5; else if(vcpData.closeRatio<0.4&&vcpData.vRat>2.0)dtPts-=15;
-    if(lkMg?.change>0)dtPts-=15; else if(lkMg?.change<0)dtPts+=8;
-    if(vcpData.vRat>=3.0)dtPts-=10;
+    if(vcpData.closeRatio>=0.85)dtPts+=35; else if(vcpData.closeRatio>=0.75)dtPts+=25; else if(vcpData.closeRatio>=0.6)dtPts+=12; else if(vcpData.closeRatio>=0.5)dtPts+=5;
+    if(vcpData.rsi!=null){if(vcpData.rsi>=55&&vcpData.rsi<=70)dtPts+=15; else if(vcpData.rsi>=50&&vcpData.rsi<=75)dtPts+=8;}
+    if(vcpData.score>=85)dtPts+=10; else if(vcpData.score>=70)dtPts+=6; else if(vcpData.score>=45)dtPts+=2;
+    if(vcpData.vRat!=null){if(vcpData.vRat>=2.5)dtPts+=20; else if(vcpData.vRat>=2.0)dtPts+=16; else if(vcpData.vRat>=1.5)dtPts+=10; else if(vcpData.vRat>=1.2)dtPts+=5;}
+    if(lkMg?.change>0)dtPts-=15; else if(lkMg?.change<0)dtPts+=5;
+    if(vcpData.pctH!=null){if(vcpData.pctH<=5)dtPts+=15; else if(vcpData.pctH<=12)dtPts+=10; else if(vcpData.pctH<=20)dtPts+=5;}
   }
-  const dtScore = dtValid ? Math.max(0,Math.round((dtPts+lkBtcBonus)*lkSentMult)) : 0;
+  const dtScore = dtValid ? Math.max(0, dtPts) : 0;
   const dtCls = dtScore>=70?'sA':dtScore>=60?'sB':dtScore>=45?'sC':'sD';
 
   // ── 一句評語 ──────────────────────────────────────────────────────────
@@ -5079,8 +5131,8 @@ async function lookupStock() {
     buySignal={emoji:'🔴',label:'現在不能買',sub:isRsiOverbought?'RSI超買（>80）':isFomo?'散戶FOMO量比>3':'技術或籌碼異常',color:'#f87171',bg:'rgba(220,38,38,.12)',border:'#dc2626'};
   }else if(lkBothBuy&&buyScore>=70&&vcpData.stage2&&isNearBreak){
     buySignal={emoji:'🟢',label:'現在可以買',sub:'外資投信同買＋VCP強勢＋接近突破',color:'#34d399',bg:'rgba(5,150,105,.18)',border:'#059669'};
-  }else if((lkBothBuy&&buyScore>=60)||(lkOneBuy&&buyScore>=65&&isNearBreak)){
-    buySignal={emoji:'✅',label:'可以考慮買',sub:'機構買超＋VCP符合條件',color:'#fff',bg:'rgba(5,150,105,.10)',border:'#34d399'};
+  }else if((lkBothBuy||lkOneBuy)&&buyScore>=60){
+    buySignal={emoji:'✅',label:'可以考慮買',sub:'法人買超＋VCP符合條件',color:'#fff',bg:'rgba(5,150,105,.10)',border:'#34d399'};
   }else if(vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>=0&&vcpData.distVcpPivot<=3){
     buySignal={emoji:'⏳',label:'突破了，等回踩',sub:'不追當下，等縮量回踩再買',color:'#9ca3af',bg:'rgba(113,113,122,.08)',border:'#6b7280'};
   }else{
@@ -5102,8 +5154,8 @@ async function lookupStock() {
   // 賣訊號
   if((isRsiOverbought||sellScore>=65)&&lkBothSell){
     sellSignal={emoji:'🔴',label:'現在應該賣',sub:'外資投信雙賣＋超買訊號齊發',color:'#f87171',bg:'rgba(220,38,38,.18)',border:'#dc2626'};
-  }else if(isRsiOverbought||(isOverbought&&sellScore>=55)){
-    sellSignal={emoji:'🔴',label:'建議賣出',sub:isRsiOverbought?`RSI ${vcpData.rsi} 嚴重超買`:`超突破點+${vcpData.distVcpPivot}%，過熱`,color:'#f87171',bg:'rgba(220,38,38,.12)',border:'#dc2626'};
+  }else if(isRsiOverbought||(vcpData.distVcpPivot!=null&&vcpData.distVcpPivot>20)){
+    sellSignal={emoji:'🔴',label:'建議賣出',sub:isRsiOverbought?`RSI ${vcpData.rsi} 嚴重超買`:`超突破點+${vcpData.distVcpPivot}%，嚴重過熱`,color:'#f87171',bg:'rgba(220,38,38,.12)',border:'#dc2626'};
   }else if(sellScore>=55||lkBothSell){
     sellSignal={emoji:'⚠️',label:'考慮減碼',sub:lkBothSell?'外資投信雙賣超':`賣出壓力 ${sellScore}分`,color:'#fbbf24',bg:'rgba(202,138,4,.12)',border:'#d97706'};
   }else{
