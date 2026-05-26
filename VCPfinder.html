@@ -3126,7 +3126,7 @@ function calcVCP(data){
   const price1YAgo=closes.length>=253?closes[252]:null;
   const gain1Y=price1YAgo!=null&&price1YAgo>0?(price-price1YAgo)/price1YAgo*100:null;
 
-  const ma20_10dAgo = closes.length >= 30 ? sma(closes.slice(10), 20) : null;
+  const ma20_10dAgo = closes.length >= 25 ? sma(closes.slice(5), 20) : null;
   const ma20Slope = (ma20 && ma20_10dAgo && ma20_10dAgo > 0)
     ? +((ma20 - ma20_10dAgo) / ma20_10dAgo * 100).toFixed(2)
     : null;
