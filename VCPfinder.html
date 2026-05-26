@@ -3896,7 +3896,7 @@ function getFiltered(){
     {const vt=r.vcp.v10>0?r.vcp.v10:0,pt=r.vcp.price;if(vt<(pt>=50?1000000:3000000))return false;}
     // 訊號 filter
     if(signalFilter==='BUY'&&!r.vcp.pbBuy?.strong)return false;
-    if(signalFilter==='SELL'&&!(r.vcp.distVcpPivot>8))return false;
+    if(signalFilter==='SELL'&&!(r.vcp.distVcpPivot>20))return false;
     if(signalFilter==='CONF_TOMORROW'){
       const tw=new Date(Date.now()+8*3600000);
       tw.setUTCDate(tw.getUTCDate()+1);
