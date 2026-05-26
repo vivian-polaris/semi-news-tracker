@@ -1,0 +1,39 @@
+name: VCP Daily Scan + Email
+
+on:
+  schedule:
+    - cron: '30 6 * * 1-5'   # Mon-Fri 06:30 UTC = 14:30 Taipei (after market close)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scan-and-email:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install --quiet requests yfinance pandas
+
+      - name: Run VCP scan
+        run: python scripts/scan_vcp.py
+
+      - name: Commit vcp_daily.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add vcp_daily.json
+          git diff --cached --quiet || git commit -m "data: update vcp_daily.json [skip ci]"
+          git push
+
+      - name: Send email report
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: python scripts/vcp_email_report.py
