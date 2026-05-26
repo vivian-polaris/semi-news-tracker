@@ -17,12 +17,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: pip
 
-      - name: Install dependencies
-        run: pip install --quiet requests yfinance pandas
-
-      - name: Run VCP scan
+      - name: Run VCP scan (reads stocks_tse.json + stocks_otc.json)
         run: python scripts/scan_vcp.py
 
       - name: Commit vcp_daily.json
@@ -36,4 +32,6 @@ jobs:
       - name: Send email report
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-        run: python scripts/vcp_email_report.py
+        run: |
+          pip install --quiet requests
+          python scripts/vcp_email_report.py

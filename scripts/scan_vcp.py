@@ -1,258 +1,399 @@
 #!/usr/bin/env python3
 """
-Daily VCP Scanner for Taiwan Stocks
-Runs after market close via GitHub Actions.
-Fetches all TSE + OTC stocks, calculates VCP score, writes vcp_daily.json.
+VCP Scanner — reads stocks_tse.json + stocks_otc.json
+Algorithm is a 1:1 port of calcVCP() in VCPfinder.html.
+Results will match what VCPfinder shows in the browser.
 """
 
-import json, time, datetime, sys, math
-import requests
-import yfinance as yf
-import pandas as pd
+import json, math, datetime, sys
+from pathlib import Path
 
-# ── Config ──────────────────────────────────────────────────────────────────
-BATCH_SIZE     = 10      # parallel downloads via yfinance
-REQUEST_DELAY  = 0.5     # seconds between batches
-MIN_SCORE_SAVE = 30      # only save stocks with VCP score >= this
+MIN_SCORE_SAVE = 40
 
-# ── Fetch Taiwan stock list ──────────────────────────────────────────────────
-def fetch_tse_stocks():
-    url = 'https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL'
-    try:
-        r = requests.get(url, timeout=20, headers={'User-Agent': 'Mozilla/5.0'})
-        data = r.json()
-        stocks = []
-        for s in data:
-            code = str(s.get('Code', '')).strip()
-            name = str(s.get('Name', code)).strip()
-            if len(code) == 4 and code.isdigit():
-                stocks.append({'code': code, 'name': name, 'sector': '上市', 'ex': 'TW'})
-        print(f'  TSE: {len(stocks)} stocks')
-        return stocks
-    except Exception as e:
-        print(f'  TSE API error: {e}')
-        return []
+# ── Helper functions (ported from VCPfinder.html) ────────────────────────────
 
-def fetch_otc_stocks():
-    urls = [
-        'https://www.tpex.org.tw/openapi/v1/tpex_mainboard_perday_quotation',
-        'https://www.tpex.org.tw/openapi/v1/tpex_mainboard_quotes',
+def sma(arr, n):
+    if not arr or len(arr) < n:
+        return None
+    v = [x for x in arr[:n] if x is not None and math.isfinite(x)]
+    if len(v) < math.ceil(n * 0.8):
+        return None
+    return sum(v) / n
+
+def calc_atr(data, n):
+    if not data or len(data) < n + 1:
+        return None
+    s, c = 0, 0
+    for i in range(n):
+        if i + 1 >= len(data):
+            break
+        h, l, pc = data[i].get('high'), data[i].get('low'), data[i+1].get('close')
+        if h is None or l is None or pc is None:
+            continue
+        s += max(h - l, abs(h - pc), abs(l - pc))
+        c += 1
+    return s / c if c > 0 else None
+
+def calc_rsi(closes, period=14):
+    if not closes or len(closes) < period + 1:
+        return None
+    arr = list(reversed(closes))  # oldest → newest
+    g = l = 0
+    for i in range(1, period + 1):
+        d = arr[i] - arr[i-1]
+        if d > 0: g += d
+        else:     l -= d
+    ag, al = g / period, l / period
+    for i in range(period + 1, len(arr)):
+        d = arr[i] - arr[i-1]
+        ag = (ag * (period - 1) + max(0, d)) / period
+        al = (al * (period - 1) + max(0, -d)) / period
+    if al == 0:
+        return 100
+    return round(100 - (100 / (1 + ag / al)))
+
+def count_contractions(highs, lows):
+    if not highs or len(highs) < 30:
+        return 0
+    arr = list(reversed(highs))[:120]   # oldest → newest
+    la  = list(reversed(lows))[:120] if lows else None
+    peaks = [
+        {'i': i, 'v': arr[i]}
+        for i in range(2, len(arr) - 2)
+        if arr[i] > arr[i-1] and arr[i] > arr[i-2] and arr[i] > arr[i+1] and arr[i] > arr[i+2]
     ]
-    for url in urls:
-        try:
-            r = requests.get(url, timeout=20, headers={'User-Agent': 'Mozilla/5.0'})
-            data = r.json()
-            if not isinstance(data, list) or not data:
-                continue
-            sample = data[0]
-            code_key = next((k for k in sample if 'code' in k.lower() or 'securities' in k.lower()), None)
-            name_key = next((k for k in sample if 'name' in k.lower() or 'company' in k.lower()), None)
-            if not code_key:
-                continue
-            stocks = []
-            for s in data:
-                code = str(s.get(code_key, '')).strip()
-                name = str(s.get(name_key, code) if name_key else code).strip()
-                if len(code) == 4 and code.isdigit():
-                    stocks.append({'code': code, 'name': name, 'sector': '上櫃', 'ex': 'TWO'})
-            print(f'  OTC: {len(stocks)} stocks')
-            return stocks
-        except Exception as e:
-            print(f'  OTC API error: {e}')
-    print('  OTC: all APIs failed')
-    return []
+    if len(peaks) < 2:
+        return 0
+    count, last_d = 0, float('inf')
+    for i in range(len(peaks) - 1):
+        seg = (la if la else arr)[peaks[i]['i']:peaks[i+1]['i']]
+        if not seg:
+            continue
+        lo = min(seg)
+        d  = (peaks[i]['v'] - lo) / peaks[i]['v'] * 100
+        if d < last_d and d > 0.5 and peaks[i+1]['v'] <= peaks[i]['v'] * 1.03:
+            count += 1
+            last_d = d
+    return min(count, 5)
 
-# ── VCP Calculation ──────────────────────────────────────────────────────────
-def sma(series, n):
-    if len(series) < int(n * 0.8):
+def detect_rising_fin(data):
+    if not data or len(data) < 12:
         return None
-    return series[:n].mean()
+    best = None
+    for end_day in range(1, 9):
+        count = total_gain = 0
+        has_limit = False
+        run_vols = []
+        for j in range(end_day, end_day + 8):
+            if j >= len(data) - 1:
+                break
+            dc = data[j].get('close')
+            pc = data[j+1].get('close')
+            if dc is None or pc is None:
+                break
+            gain = (dc - pc) / pc * 100
+            if gain >= 3:
+                count += 1; total_gain += gain
+                if gain >= 8: has_limit = True
+                if data[j].get('volume'): run_vols.append(data[j]['volume'])
+            else:
+                break
+        if count >= 3:
+            best = {'end_day': end_day, 'count': count, 'total_gain': round(total_gain, 1),
+                    'has_limit': has_limit, 'run_vols': run_vols}
+            break
+    if not best:
+        return None
+    streak_high = data[best['end_day']].get('close') if best['end_day'] < len(data) else None
+    price = data[0].get('close')
+    if not streak_high or not price:
+        return None
+    pullback = (streak_high - price) / streak_high * 100
+    if not (1 <= pullback <= 25):
+        return None
+    avg_run_vol = sum(best['run_vols']) / len(best['run_vols']) if best['run_vols'] else None
+    recent_vol  = data[0].get('volume') or (data[1].get('volume') if len(data) > 1 else None)
+    vol_ratio   = round(recent_vol / avg_run_vol, 2) if avg_run_vol and recent_vol else None
+    is_exh  = vol_ratio is not None and vol_ratio < 0.4
+    is_shrk = vol_ratio is not None and vol_ratio < 0.6
+    sc = (40 if best['count'] >= 5 else 30) + (20 if best['has_limit'] else 10) \
+       + (30 if is_exh else 15 if is_shrk else 0) + (10 if 3 <= pullback <= 10 else 0)
+    return {
+        'streakDays': best['count'], 'hasLimit': best['has_limit'],
+        'totalGain': best['total_gain'], 'pullback': round(pullback, 1),
+        'volRatio': vol_ratio, 'isExhaustion': is_exh, 'isShrink': is_shrk, 'finScore': sc,
+    }
 
-def calc_vcp(df):
-    if df is None or len(df) < 55:
-        return None
-    df = df.dropna(subset=['close'])
-    if len(df) < 55:
-        return None
+# ── Main VCP scoring (1:1 port of VCPfinder.html calcVCP) ───────────────────
 
-    closes = df['close'].values
-    highs  = df['high'].values
-    vols   = df['volume'].values
-    price  = closes[0]
+def calc_vcp(data):
+    if not data or len(data) < 55:
+        return None
+    fin    = detect_rising_fin(data)
+    closes  = [d.get('close')  for d in data]
+    highs   = [d.get('high')   for d in data]
+    lows    = [d.get('low')    for d in data]
+    volumes = [d.get('volume') or 0 for d in data]
+    price   = closes[0]
     if not price or price <= 0:
         return None
 
-    ma50  = sma(pd.Series(closes), 50)
-    ma150 = sma(pd.Series(closes), 150) if len(closes) >= 150 else None
-    ma200 = sma(pd.Series(closes), 200) if len(closes) >= 200 else None
+    ma5   = sma(closes,  5)
+    ma10  = sma(closes, 10)
+    ma20  = sma(closes, 20)
+    ma50  = sma(closes, 50)
+    ma150 = sma(closes, 150) if len(closes) >= 150 else None
+    ma200 = sma(closes, 200) if len(closes) >= 200 else None
 
-    valid_highs = [h for h in highs[:min(252, len(highs))] if h and not math.isnan(h)]
-    h52 = max(valid_highs) if valid_highs else price
+    valid_h = [h for h in highs[:min(252, len(highs))] if h is not None and math.isfinite(h)]
+    valid_l = [l for l in lows[:min(252, len(lows))]   if l is not None and math.isfinite(l)]
+    h52  = max(valid_h) if valid_h else price
+    lo52 = min(valid_l) if valid_l else price
     pct_h = ((h52 - price) / h52 * 100) if h52 > 0 else 999
 
-    # ATR contraction (10 vs 20 day)
-    def atr_n(n):
-        tr_list = []
-        for i in range(n):
-            if i+1 >= len(df): break
-            h, l, pc = df['high'].iloc[i], df['low'].iloc[i], df['close'].iloc[i+1]
-            if any(v is None or (isinstance(v, float) and math.isnan(v)) for v in [h, l, pc]): continue
-            tr_list.append(max(h-l, abs(h-pc), abs(l-pc)))
-        return sum(tr_list)/len(tr_list) if tr_list else None
+    atr10 = calc_atr(data, 10)
+    atr20 = calc_atr(data, 20)
+    atr_rat = atr10 / atr20 if (atr10 and atr20 and atr20 > 0) else None
 
-    atr_s = atr_n(10) if len(df) >= 11 else None
-    atr_l = atr_n(20) if len(df) >= 21 else None
-    atr_ratio = (atr_s / atr_l) if (atr_s and atr_l and atr_l > 0) else None
+    v5  = sma(volumes[:5],  5)  if len(volumes) >= 5  else None
+    v10 = sma(volumes[:10], 10) if len(volumes) >= 10 else None
+    v20 = sma(volumes[:20], 20) if len(volumes) >= 20 else None
+    v_rat = v5 / v20 if (v5 and v20 and v20 > 0) else None
 
-    # Volume contraction
-    v5  = float(pd.Series(vols[:5]).mean())  if len(vols) >= 5  else None
-    v20 = float(pd.Series(vols[:20]).mean()) if len(vols) >= 20 else None
-    v_ratio = (v5 / v20) if (v5 and v20 and v20 > 0) else None
-
-    # Score
     score = 0
     ab200 = ma200 is not None and price > ma200
     ab150 = ma150 is not None and price > ma150
     ab50  = ma50  is not None and price > ma50
-    perf  = bool(ma50 and ma150 and ma200 and ma50 > ma150 and ma150 > ma200)
+    perf  = ma50 is not None and ma150 is not None and ma200 is not None \
+            and ma50 > ma150 and ma150 > ma200
 
     if ab200: score += 10
     if ab150: score += 5
     if ab50:  score += 5
     if perf:  score += 10
-    if pct_h < 25: score += 10
-    if pct_h < 15: score += 10
 
-    atr_label, atr_sig = '—', 'n'
-    if atr_ratio is not None:
-        if atr_ratio < 0.75:   score += 30; atr_label = '強收縮'; atr_sig = 'g'
-        elif atr_ratio < 0.90: score += 15; atr_label = '收縮中'; atr_sig = 'o'
-        else:                  atr_label = '未收縮'; atr_sig = 'r'
+    if   pct_h < 8:  score += 30
+    elif pct_h < 15: score += 20
+    elif pct_h < 25: score += 10
 
-    vol_label, vol_sig = '—', 'n'
-    if v_ratio is not None:
-        if v_ratio < 0.70:   score += 20; vol_label = '強縮量'; vol_sig = 'g'
-        elif v_ratio < 0.85: score += 10; vol_label = '縮量';   vol_sig = 'o'
-        else:                vol_label = '量持平'; vol_sig = 'r'
+    atr_l = '—'; atr_s = 'n'
+    if atr_rat is not None:
+        if   atr_rat < 0.75: score += 15; atr_l = '強收縮'; atr_s = 'g'
+        elif atr_rat < 0.90: score += 8;  atr_l = '收縮中'; atr_s = 'o'
+        else:                              atr_l = '未收縮'; atr_s = 'r'
+
+    vol_l = '—'; vol_s = 'n'
+    if v_rat is not None:
+        if   v_rat < 0.70: score += 20; vol_l = '強縮量'; vol_s = 'g'
+        elif v_rat < 0.85: score += 10; vol_l = '縮量';   vol_s = 'o'
+        else:                            vol_l = '量持平'; vol_s = 'r'
+
+    d0 = data[0]
+    close_ratio = None
+    if d0.get('high') and d0.get('low') and d0['high'] > d0['low']:
+        close_ratio = round((price - d0['low']) / (d0['high'] - d0['low']), 2)
+
+    if ma20 and ma50 and ma20 > ma50:
+        score += 5
+
+    rsi = calc_rsi(closes, 14)
+    if rsi is not None:
+        if 55 <= rsi <= 68: score += 10
+        elif 50 <= rsi < 55: score += 5
+
+    contractions = count_contractions(highs, lows) if ab50 else 0
+    if   contractions >= 3: score += 8
+    elif contractions >= 2: score += 4
+
+    ma_flat_l = '—'; ma_flat_s = 'n'
+    if ma5 and ma10 and ma20 and ma20 > 0:
+        ma_spread = (max(ma5, ma10, ma20) - min(ma5, ma10, ma20)) / ma20 * 100
+        if   ma_spread < 3: score += 20; ma_flat_l = '強糾纏'; ma_flat_s = 'g'
+        elif ma_spread < 6: score += 10; ma_flat_l = '糾纏中'; ma_flat_s = 'o'
+        else:                            ma_flat_l = '未糾纏'; ma_flat_s = 'r'
+
+    left_mountain = False
+    for d in data[15:min(60, len(data))]:
+        op, cl, hi, lo = d.get('open'), d.get('close'), d.get('high'), d.get('low')
+        if not all([op, cl, hi, lo]):
+            continue
+        if (hi + lo) / 2 > 0 and abs(cl - op) / ((hi + lo) / 2) * 100 > 10 and cl > op:
+            left_mountain = True; break
+    if left_mountain:
+        score += 5
+
+    # Pivot
+    prev = data[1] if len(data) > 1 else None
+    pp = r1 = r2 = s1 = s2 = None
+    if prev and prev.get('high') and prev.get('low') and prev.get('close'):
+        pp = round((prev['high'] + prev['low'] + prev['close']) / 3, 2)
+        r1 = round(2*pp - prev['low'], 2)
+        r2 = round(pp + (prev['high'] - prev['low']), 2)
+        s1 = round(2*pp - prev['high'], 2)
+        s2 = round(pp - (prev['high'] - prev['low']), 2)
+
+    def _maxh(start, end):
+        arr = [d.get('high') for d in data[start:min(end, len(data))]]
+        arr = [v for v in arr if v is not None and math.isfinite(v)]
+        return max(arr) if arr else None
+
+    m30 = _maxh(1, 31); m20 = _maxh(1, 21); m10 = _maxh(1, 11)
+    vcp_pivot = round(m10, 2) if (m30 and m10 and m30 > m10 * 1.08 and m10) \
+                else (round(m20, 2) if m20 else None)
+    dist_vcp  = round((price - vcp_pivot) / vcp_pivot * 100, 1) if vcp_pivot and price > 0 else None
+
+    pivot_status = '—'; pivot_cls = 'n'
+    if dist_vcp is not None:
+        vol0 = volumes[0] if volumes else 0
+        has_vol = bool(vol0 and v20 and vol0 > v20 * 1.3)
+        if   0  < dist_vcp <= 3: pivot_status = '突破放量→等回踩' if has_vol else '突破→等縮量回踩'; pivot_cls = 'g' if has_vol else 'o'
+        elif 3  < dist_vcp <= 8: pivot_status = '超買→不買等踩';   pivot_cls = 'o'
+        elif dist_vcp > 8:       pivot_status = '過熱→不買';        pivot_cls = 'r'
+        elif -2 <= dist_vcp < 0: pivot_status = '即將突破→待觀察'; pivot_cls = 'o'
+        else:                    pivot_status = '整理中→不買';       pivot_cls = 'n'
+
+    gain52 = (vcp_pivot - lo52) / lo52 * 100 if (lo52 > 0 and vcp_pivot and vcp_pivot > 0) else 0
+    prior_run_l = '先前強勢' if gain52 >= 60 else f'+{gain52:.0f}%'
+    if gain52 >= 60: score += 5
+
+    price_1y = closes[252] if len(closes) >= 253 else None
+    gain_1y  = round((price - price_1y) / price_1y * 100, 1) if price_1y and price_1y > 0 else None
+
+    ma20_old   = sma(closes[5:], 20) if len(closes) >= 25 else None
+    ma20_slope = round((ma20 - ma20_old) / ma20_old * 100, 2) if (ma20 and ma20_old and ma20_old > 0) else None
+    dist_ma20  = round((price - ma20) / ma20 * 100, 1) if ma20 else None
+
+    pb_buy = None
+    if vcp_pivot and dist_vcp is not None and -8 <= dist_vcp < 3:
+        early = [d.get('high') for d in data[11:min(31, len(data))]]
+        early = [v for v in early if v is not None and math.isfinite(v)]
+        ep = max(early) if early else None
+        if ep and any(d.get('close') and d['close'] > ep for d in data[1:11]):
+            tv = volumes[0] if volumes else None
+            tr = round(tv / v20, 2) if (tv and v20 and v20 > 0) else None
+            if tr is not None and tr < 0.5:
+                pb_buy = {'volRatio': tr, 'isFloor': tr < 0.3, 'dist': dist_vcp, 'strong': tr < 0.3 and dist_vcp >= -7}
 
     return {
-        'score':   min(round(score), 100),
-        'price':   round(float(price), 2),
-        'ma50':    round(float(ma50), 2)  if ma50  else None,
-        'ma150':   round(float(ma150), 2) if ma150 else None,
-        'ma200':   round(float(ma200), 2) if ma200 else None,
-        'h52':     round(float(h52), 2),
-        'pctH':    round(float(pct_h), 1),
-        'abM50':   bool(ab50),
-        'abM150':  bool(ab150),
-        'abM200':  bool(ab200),
-        'stage2':  bool(ab50 and ab150 and ab200),
-        'perfOrd': bool(perf),
-        'atrL':    atr_label,
-        'atrS':    atr_sig,
-        'atrRat':  round(float(atr_ratio), 3) if atr_ratio else None,
-        'volL':    vol_label,
-        'volS':    vol_sig,
-        'vRat':    round(float(v_ratio), 2)  if v_ratio  else None,
+        'score':    max(0, round(score)),
+        'price':    round(float(price), 2),
+        'ma50':     round(float(ma50),  2) if ma50  else None,
+        'ma150':    round(float(ma150), 2) if ma150 else None,
+        'ma200':    round(float(ma200), 2) if ma200 else None,
+        'h52':      round(float(h52),   2),
+        'pctH':     round(float(pct_h), 1),
+        'abM50':    bool(ab50), 'abM150': bool(ab150), 'abM200': bool(ab200),
+        'stage2':   bool(ab50 and ab150 and ab200 and perf),
+        'perfOrd':  bool(perf),
+        'atrL': atr_l, 'atrS': atr_s,
+        'atrRat':   round(float(atr_rat), 3) if atr_rat else None,
+        'volL': vol_l, 'volS': vol_s,
+        'vRat':     round(float(v_rat), 2) if v_rat else None,
+        'v10':      round(float(v10)) if v10 else None,
+        'rsi': rsi, 'contractions': contractions,
+        'gainFrom52Low': round(float(gain52), 1),
+        'gain1Y': gain_1y, 'priorRunL': prior_run_l,
+        'ma5':  round(float(ma5),  2) if ma5  else None,
+        'ma10': round(float(ma10), 2) if ma10 else None,
+        'ma20': round(float(ma20), 2) if ma20 else None,
+        'ma20Slope': ma20_slope, 'distMA20': dist_ma20,
+        'maFlatL': ma_flat_l, 'maFlatS': ma_flat_s,
+        'leftMountain': left_mountain, 'fin': fin,
+        'closeRatio': close_ratio,
+        'pp': pp, 'ppR1': r1, 'ppR2': r2, 'ppS1': s1, 'ppS2': s2,
+        'vcpPivot': vcp_pivot, 'distVcpPivot': dist_vcp,
+        'pivotStatus': pivot_status, 'pivotStatusCls': pivot_cls,
+        'pbBuy': pb_buy,
     }
 
-# ── Batch download via yfinance ──────────────────────────────────────────────
-def download_batch(symbols):
-    results = {}
-    try:
-        raw = yf.download(
-            symbols, period='1y', interval='1d',
-            auto_adjust=True, progress=False, threads=True, timeout=30
-        )
-        if raw.empty:
-            return results
-        if isinstance(raw.columns, pd.MultiIndex):
-            for sym in symbols:
-                try:
-                    lvl = raw.columns.get_level_values(1)
-                    if sym not in lvl: continue
-                    df = raw.xs(sym, axis=1, level=1).copy()
-                    if df.empty: continue
-                    df.columns = [c.lower() for c in df.columns]
-                    df = df.sort_index(ascending=False).reset_index(drop=True)
-                    results[sym] = df
-                except Exception:
-                    pass
-        else:
-            sym = symbols[0]
-            df = raw.copy()
-            df.columns = [c.lower() for c in df.columns]
-            df = df.sort_index(ascending=False).reset_index(drop=True)
-            results[sym] = df
-    except Exception as e:
-        print(f'    batch error: {e}')
-    return results
+# ── Load JSON → data array ────────────────────────────────────────────────────
 
-# ── Main ─────────────────────────────────────────────────────────────────────
+def load_stocks(path):
+    with open(path, encoding='utf-8') as f:
+        d = json.load(f)
+    return d.get('stocks', {}), d.get('_price_date', '')
+
+def to_data(entry):
+    c = entry.get('c', [])
+    h = entry.get('h', [])
+    l = entry.get('l', [])
+    v = entry.get('v', [])
+    return [
+        {
+            'close':  c[i],
+            'high':   h[i] if i < len(h) else c[i],
+            'low':    l[i] if i < len(l) else c[i],
+            'volume': v[i] if i < len(v) else 0,
+        }
+        for i in range(len(c))
+    ]
+
+# ── Main ──────────────────────────────────────────────────────────────────────
+
 def main():
-    start_time = time.time()
-    tz_tw = datetime.timezone(datetime.timedelta(hours=8))
+    tz_tw  = datetime.timezone(datetime.timedelta(hours=8))
     now_tw = datetime.datetime.now(tz_tw)
-    print('=== Taiwan VCP Daily Scanner ===')
+    print('=== VCP Scanner (VCPfinder-compatible algorithm) ===')
     print(f'Start: {now_tw.strftime("%Y-%m-%d %H:%M")} (Taipei)')
 
-    print('\n1. Fetching stock list...')
-    tse = fetch_tse_stocks()
-    otc = fetch_otc_stocks()
-    all_raw = tse + otc
+    base     = Path(__file__).parent.parent
+    tse_path = base / 'stocks_tse.json'
+    otc_path = base / 'stocks_otc.json'
 
-    seen = set()
-    stocks = []
-    for s in all_raw:
-        if s['code'] not in seen:
-            seen.add(s['code'])
-            stocks.append(s)
-    print(f'   Total unique stocks: {len(stocks)}')
+    if not tse_path.exists():
+        print('ERROR: stocks_tse.json not found'); sys.exit(1)
 
-    print(f'\n2. Scanning {len(stocks)} stocks for VCP...')
+    tse_stocks, price_date = load_stocks(tse_path)
+    otc_stocks, _          = load_stocks(otc_path) if otc_path.exists() else ({}, '')
+    print(f'Data: TSE={len(tse_stocks)}, OTC={len(otc_stocks)}, price_date={price_date}')
+
+    all_stocks = {}
+    for code, entry in tse_stocks.items():
+        all_stocks[code] = {**entry, 'ex': 'TW',  'sector': '上市'}
+    for code, entry in otc_stocks.items():
+        if code not in all_stocks:
+            all_stocks[code] = {**entry, 'ex': 'TWO', 'sector': '上櫃'}
+
     results = []
-    total = len(stocks)
-    done = failed = 0
+    failed = 0
+    total  = len(all_stocks)
 
-    for i in range(0, total, BATCH_SIZE):
-        batch = stocks[i:i+BATCH_SIZE]
-        syms  = [f"{s['code']}.{s['ex']}" for s in batch]
-        data_map = download_batch(syms)
+    for i, (code, entry) in enumerate(all_stocks.items()):
+        data = to_data(entry)
+        vcp  = calc_vcp(data)
+        if vcp is None:
+            failed += 1
+        elif vcp['score'] >= MIN_SCORE_SAVE:
+            results.append({
+                'code':   code,
+                'name':   entry.get('n', code),
+                'sector': entry.get('sector', ''),
+                'ex':     entry.get('ex', 'TW'),
+                'sym':    f"{code}.{entry.get('ex', 'TW')}",
+                'vcp':    vcp,
+            })
+        if (i + 1) % 500 == 0 or (i + 1) == total:
+            pct = (i + 1) / total * 100
+            sys.stdout.write(f'\r  {i+1}/{total} ({pct:.0f}%) | VCP>={MIN_SCORE_SAVE}: {len(results)} | no data: {failed}   ')
+            sys.stdout.flush()
 
-        for s in batch:
-            sym = f"{s['code']}.{s['ex']}"
-            df  = data_map.get(sym)
-            vcp = calc_vcp(df) if df is not None else None
-            if vcp is None:
-                failed += 1
-            elif vcp['score'] >= MIN_SCORE_SAVE:
-                results.append({**s, 'sym': sym, 'vcp': vcp})
-            done += 1
-
-        pct = done / total * 100
-        sys.stdout.write(f'\r   {done}/{total} ({pct:.0f}%) | VCP≥{MIN_SCORE_SAVE}: {len(results)} | No data: {failed}   ')
-        sys.stdout.flush()
-        time.sleep(REQUEST_DELAY)
-
-    print(f'\n\n   Done! scanned={done-failed}, vcp_candidates={len(results)}, failed={failed}')
-
+    print(f'\nDone: scanned={total-failed}, candidates={len(results)}, failed={failed}')
     results.sort(key=lambda r: r['vcp']['score'], reverse=True)
 
-    now_tw = datetime.datetime.now(tz_tw)
+    scan_date = price_date or now_tw.strftime('%Y-%m-%d')
     output = {
-        'scanDate':      now_tw.strftime('%Y-%m-%d'),
+        'scanDate':      scan_date,
         'scanTime':      now_tw.strftime('%H:%M'),
-        'totalScanned':  done - failed,
+        'totalScanned':  total - failed,
         'totalStocks':   total,
         'vcpCandidates': len(results),
         'stocks':        results,
     }
 
-    with open('vcp_daily.json', 'w', encoding='utf-8') as f:
+    out_path = base / 'vcp_daily.json'
+    with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(output, f, ensure_ascii=False, separators=(',', ':'))
-
-    elapsed = time.time() - start_time
-    print(f'   Saved vcp_daily.json ({len(results)} records, {elapsed/60:.1f} min total)')
+    print(f'Saved: {out_path}  ({len(results)} records)')
 
 if __name__ == '__main__':
     main()
