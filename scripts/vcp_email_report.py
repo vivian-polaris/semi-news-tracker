@@ -161,9 +161,13 @@ def send_via_resend(subject, html):
             'Content-Type':  'application/json',
         },
     )
-    with urllib.request.urlopen(req) as resp:
-        result = json.loads(resp.read())
-    return result.get('id', '?')
+    try:
+        with urllib.request.urlopen(req) as resp:
+            result = json.loads(resp.read())
+        return result.get('id', '?')
+    except urllib.error.HTTPError as e:
+        body = e.read().decode('utf-8', errors='replace')
+        raise RuntimeError(f'Resend API {e.code}: {body}') from None
 
 def main():
     data      = load_vcp()
