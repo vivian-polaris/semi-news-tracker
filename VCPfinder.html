@@ -3028,7 +3028,6 @@ function calcVCP(data){
   if(rsi!=null){
     if(rsi>=55&&rsi<=68)score+=10;
     else if(rsi>=50&&rsi<55)score+=5;
-    else if(rsi>80)score-=15;
   }
   const contractions=abM50?countContractions(highs,lows):0;
   if(contractions>=3)score+=8;else if(contractions>=2)score+=4;
@@ -3039,7 +3038,7 @@ function calcVCP(data){
     const maSpread=(Math.max(ma5,ma10,ma20)-Math.min(ma5,ma10,ma20))/ma20*100;
     if(maSpread<3){score+=20;maFlatL='強糾纏';maFlatS='g';}
     else if(maSpread<6){score+=10;maFlatL='糾纏中';maFlatS='o';}
-    else{score-=10;maFlatL='未糾纏';maFlatS='r';}
+    else{maFlatL='未糾纏';maFlatS='r';}
   }
 
   // ── 左邊大山檢查（整理前有爆量長紅 = VCP 標準起漲特徵，應加分）
@@ -3135,7 +3134,7 @@ function calcVCP(data){
     : null;
 
   return{
-    score:Math.max(0,Math.min(Math.round(score),100)),price,
+    score:Math.max(0,Math.round(score)),price,
     ma50:ma50?+ma50.toFixed(2):null,
     ma150:ma150?+ma150.toFixed(2):null,
     ma200:ma200?+ma200.toFixed(2):null,
@@ -4113,19 +4112,7 @@ function calcFundGrade(fund){
   const _eg=typeof fund.earningsGrowth==='number'&&!isNaN(fund.earningsGrowth)?fund.earningsGrowth:null; // Q12修正：0%成長是有效值，不應被排除
   if(_eg!=null){tot+=20; pts+=_eg>=0.15?20:_eg>=0?10:0;}
   if(fund.revenueGrowth!=null){tot+=15; pts+=fund.revenueGrowth>=0.1?15:fund.revenueGrowth>=0?7:0;}
-  if(tot===0){
-    // 無獲利數據，改用 PE/PB/殖利率 做簡易評分
-    if(fund.pe!=null||fund.pb!=null||fund.divYield!=null){
-      let vpts=0,vtot=0;
-      if(fund.pe!=null&&fund.pe>0){vtot+=30;vpts+=fund.pe<12?30:fund.pe<18?20:fund.pe<25?12:fund.pe<35?5:0;}
-      if(fund.pb!=null&&fund.pb>0){vtot+=20;vpts+=fund.pb<1?20:fund.pb<2?14:fund.pb<3?8:fund.pb<5?3:0;}
-      if(fund.divYield!=null){vtot+=10;vpts+=fund.divYield>=4?10:fund.divYield>=2?6:fund.divYield>0?2:0;}
-      if(vtot===0) return{label:'估值',cls:'sN',score:null};
-      const vs=Math.round(vpts/vtot*100);
-      return vs>=70?{label:`估值優 ${vs}`,cls:'sA',score:vs}:vs>=45?{label:`估值中 ${vs}`,cls:'sB',score:vs}:{label:`估值弱 ${vs}`,cls:'sC',score:vs};
-    }
-    return null;
-  }
+  if(tot===0) return null;
   const score=Math.round(pts/tot*100);
   return score>=70?{label:'優',cls:'sA',score}:score>=45?{label:'中',cls:'sB',score}:{label:'弱',cls:'sC',score};
 }
@@ -4209,7 +4196,7 @@ function renderTable(){
       const fmtSl=sl!=null?(sl>=0?'+':'')+sl+'%':'--';
       const fmtDm=dm!=null?(dm>=0?'+':'')+dm+'%':'--';
       const sub=sl!=null?fmtSl+'/'+fmtDm:'資料不足';
-      let emoji='⏳',label='坡段未定';
+      let emoji='🟡',label='坡段中段';
       if((rsi!=null&&rsi>75)||(dm!=null&&dm>20)){emoji='🔴';label='坡段尾巴';}
       else if((rsi!=null&&rsi>=65&&rsi<=75)||(dm!=null&&dm>=8&&dm<=20)){emoji='🟡';label='坡段中段';}
       else if((sl==null||sl>=0)&&(rsi==null||(rsi>=45&&rsi<=65))&&(dm==null||(dm>=-5&&dm<=8))){emoji='🟢';label='坡段開始';}
@@ -4510,8 +4497,6 @@ function renderTable(){
     const cnt=document.getElementById('dtListCount');
     if(!wrap||!body||!allResults.length)return;
 
-    const sent=localStorage.getItem('mktSentiment')||'neutral';
-
     const slopeEntryCalc=r=>{
       const v=r.vcp;
       if(!v||!v.stage2)return-1;
@@ -4542,12 +4527,8 @@ function renderTable(){
       return s;
     };
 
-    const btcBonus=window.btcSentiment||0;
-    const sentMult=({'risk_on':1.1,'neutral':1.0})[sent]||1.0;
     let candidates=allResults
       .map(r=>({r,s:slopeEntryCalc(r)}))
-      .filter(x=>x.s>0)
-      .map(x=>({...x,s:Math.max(0,Math.round((x.s+btcBonus)*sentMult))}))
       .filter(x=>x.s>0);
 
     const dtSortFn=(a,b)=>{
@@ -5172,7 +5153,7 @@ const mkD=()=>{const p=[];if(sl!=null)p.push('MA20斜率'+(sl>=0?'+':'')+sl+'%')
 if((rsi!=null&&rsi>75)||(dm!=null&&dm>20))return{phase:'tail',emoji:'🔴',label:'坡段尾巴',color:'#f87171',bg:'rgba(220,38,38,.15)',border:'#dc2626',desc:mkD(),action:'考慮獲利了結・停損收緊至成本上方'};
 if((rsi!=null&&rsi>=65&&rsi<=75)||(dm!=null&&dm>=8&&dm<=20))return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(202,138,4,.15)',border:'#d97706',desc:mkD(),action:'繼續持有・停損移至成本・不追加碼'};
 if((sl==null||sl>=0)&&(rsi==null||(rsi>=45&&rsi<=65))&&(dm==null||(dm>=-5&&dm<=8)))return{phase:'start',emoji:'🟢',label:'坡段開始',color:'#34d399',bg:'rgba(5,150,105,.18)',border:'#059669',desc:mkD(),action:'可建倉・停損設 MA20 下方'};
-return{phase:'unclear',emoji:'⏳',label:'坡段未定',color:'#9ca3af',bg:'rgba(113,113,122,.12)',border:'#6b7280',desc:mkD()||'資料不足',action:'繼續觀察，等待型態明朗'};
+return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(202,138,4,.15)',border:'#d97706',desc:mkD()||'資料不足',action:'繼續持有・停損移至成本・不追加碼'};
   })();
 
   res.innerHTML = `
