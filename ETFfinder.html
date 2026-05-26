@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
@@ -19,8 +19,6 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-seri
 ::-webkit-scrollbar-track{background:var(--bg2);}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 ::-webkit-scrollbar-thumb:hover{background:var(--text2);}
-
-/* Header */
 .hero{position:relative;overflow:hidden;min-height:280px;display:flex;align-items:center;justify-content:center;flex-direction:column;}
 .hero-bg{position:absolute;inset:0;background:url('https://images.pexels.com/photos/31295155/pexels-photo-31295155.jpeg?auto=compress&cs=tinysrgb&w=1600') center/cover no-repeat;filter:brightness(.3) saturate(.6);}
 .hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,17,23,.2) 0%,rgba(13,17,23,.95) 100%);}
@@ -28,8 +26,6 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-seri
 .hero-title{font-size:clamp(2rem,5vw,3.2rem);font-weight:900;letter-spacing:-.02em;background:linear-gradient(135deg,#7aa2f7,#3fb97a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;}
 .hero-sub{font-size:clamp(.85rem,2vw,1.05rem);color:var(--text2);font-weight:300;letter-spacing:.04em;}
 .hero-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;background:rgba(79,126,247,.12);border:1px solid rgba(79,126,247,.25);font-size:.78rem;color:var(--pink);margin-top:12px;}
-
-/* Stats Cards */
 .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;max-width:1400px;margin:0 auto;padding:0 20px;margin-top:-30px;position:relative;z-index:5;}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 16px;text-align:center;transition:border-color .3s,transform .2s;}
 .stat-card:hover{border-color:var(--border2);transform:translateY(-2px);}
@@ -38,9 +34,8 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-seri
 .stat-card.scanned .stat-val{color:var(--pink);}
 .stat-card.high-score .stat-val{color:var(--mint);}
 .stat-card.sweet .stat-val{color:var(--orange);}
+.stat-card.foreign-buy .stat-val{color:var(--red);}
 .stat-card.time .stat-val{color:var(--sky);font-size:1.1rem;}
-
-/* Info Card */
 .info-card{max-width:1400px;margin:16px auto;padding:0 20px;}
 .info-inner{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
 .info-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;user-select:none;transition:background .2s;}
@@ -49,14 +44,12 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-seri
 .info-header .chevron{transition:transform .3s;color:var(--text2);font-size:.75rem;}
 .info-header .chevron.open{transform:rotate(180deg);}
 .info-body{max-height:0;overflow:hidden;transition:max-height .4s ease;padding:0 18px;}
-.info-body.open{max-height:600px;padding:0 18px 16px;}
+.info-body.open{max-height:700px;padding:0 18px 16px;}
 .info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-top:8px;}
 .info-item{display:flex;gap:10px;padding:8px 10px;border-radius:8px;background:var(--bg2);border:1px solid var(--border);}
 .info-item .ii-icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0;}
 .info-item .ii-text{font-size:.76rem;color:var(--text2);line-height:1.5;}
 .info-item .ii-text strong{color:var(--text);font-weight:500;}
-
-/* Controls */
 .controls{max-width:1400px;margin:16px auto;padding:0 20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
 .filter-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .filter-group .fg-label{font-size:.72rem;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-right:2px;white-space:nowrap;}
@@ -69,10 +62,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-seri
 .fbtn.type-purple.active{background:rgba(79,126,247,.12);border-color:var(--purple);color:var(--purple);}
 .fbtn.type-red.active{background:rgba(224,92,92,.12);border-color:var(--red);color:var(--red);}
 .fbtn.type-yellow.active{background:rgba(212,168,75,.12);border-color:var(--yellow);color:var(--yellow);}
-
 .divider{width:1px;height:28px;background:var(--border);margin:0 6px;}
-
-/* Scan Button */
 .scan-area{max-width:1400px;margin:16px auto;padding:0 20px;}
 .scan-btn{display:inline-flex;align-items:center;gap:10px;padding:14px 32px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--purple),#6c5ce7);color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .25s;box-shadow:0 4px 20px rgba(79,126,247,.3);position:relative;overflow:hidden;}
 .scan-btn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(79,126,247,.45);}
@@ -81,16 +71,12 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-seri
 .scan-btn .btn-ripple{position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);transform:translateX(-100%);animation:ripple 2s infinite;}
 @keyframes ripple{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
 .scan-btn:disabled .btn-ripple{animation:none;}
-
-/* Progress */
 .progress-wrap{margin-top:12px;display:none;}
 .progress-wrap.show{display:block;}
 .progress-bar{width:100%;height:6px;background:var(--bg2);border-radius:3px;overflow:hidden;}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--mint));border-radius:3px;transition:width .3s;width:0%;}
 .progress-text{display:flex;justify-content:space-between;margin-top:6px;font-size:.75rem;color:var(--text2);}
 .progress-eta{color:var(--pink);}
-
-/* Table */
 .table-area{max-width:1400px;margin:20px auto;padding:0 20px 60px;}
 .table-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
 .table-count{font-size:.78rem;color:var(--text2);}
@@ -113,27 +99,22 @@ tbody tr:hover{background:rgba(79,126,247,.04);}
 .type-tag.overseas{background:rgba(212,168,75,.15);color:var(--yellow);}
 .type-tag.reits{background:rgba(122,162,247,.15);color:var(--pink);}
 .type-tag.other{background:rgba(113,128,150,.15);color:var(--text2);}
-
 .score-cell{font-weight:900;font-size:.95rem;}
 .score-high{color:var(--mint);}
 .score-mid{color:var(--orange);}
 .score-low{color:var(--red);}
-
 .atr-tag{font-size:.72rem;padding:3px 8px;border-radius:5px;font-weight:600;}
 .atr-strong{background:rgba(63,185,122,.15);color:var(--mint);}
 .atr-mid{background:rgba(212,168,75,.15);color:var(--orange);}
 .atr-none{background:rgba(113,128,150,.1);color:var(--text2);}
-
 .trend-tag{font-size:.72rem;padding:3px 8px;border-radius:5px;font-weight:600;}
 .trend-s2{background:rgba(63,185,122,.15);color:var(--mint);}
 .trend-bull{background:rgba(74,144,196,.15);color:var(--sky);}
 .trend-bear{background:rgba(224,92,92,.15);color:var(--red);}
-
 .sweet-tag{font-size:.72rem;padding:3px 8px;border-radius:5px;font-weight:600;}
 .sweet-best{background:rgba(63,185,122,.2);color:var(--mint);}
 .sweet-strong{background:rgba(74,144,196,.15);color:var(--sky);}
 .sweet-wait{background:rgba(224,92,92,.12);color:var(--red);}
-
 .signal-dot{width:12px;height:12px;border-radius:50%;display:inline-block;position:relative;}
 .signal-dot::after{content:'';position:absolute;inset:-3px;border-radius:50%;animation:pulse 2s infinite;}
 .signal-green{background:var(--mint);}
@@ -143,26 +124,18 @@ tbody tr:hover{background:rgba(79,126,247,.04);}
 .signal-red{background:var(--red);}
 .signal-red::after{border:2px solid var(--red);}
 @keyframes pulse{0%,100%{opacity:0;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
-
 .ma-cell{font-size:.76rem;color:var(--text2);}
-
 .empty-state{text-align:center;padding:60px 20px;color:var(--text2);}
 .empty-state i{font-size:2.5rem;margin-bottom:12px;opacity:.3;display:block;}
 .empty-state p{font-size:.88rem;}
-
-/* Loading Skeleton */
 .skeleton{background:linear-gradient(90deg,var(--card2) 25%,var(--bg2) 50%,var(--card2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px;height:16px;}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
-/* Toast */
 .toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
 .toast{padding:12px 18px;border-radius:10px;font-size:.82rem;color:var(--text);background:var(--card2);border:1px solid var(--border);box-shadow:0 8px 24px rgba(0,0,0,.4);animation:slideIn .3s ease;display:flex;align-items:center;gap:8px;max-width:360px;}
 .toast.success{border-color:rgba(63,185,122,.4);}
 .toast.error{border-color:rgba(224,92,92,.4);}
 .toast.info{border-color:rgba(79,126,247,.4);}
 @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-
-/* Responsive */
 @media(max-width:768px){
   .stats-row{grid-template-columns:repeat(2,1fr);}
   .controls{flex-direction:column;align-items:flex-start;}
@@ -174,34 +147,35 @@ tbody tr:hover{background:rgba(79,126,247,.04);}
   .stats-row{grid-template-columns:1fr 1fr;}
   .stat-card .stat-val{font-size:1.4rem;}
 }
-
-/* Floating particles */
 .particles{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
 .particle{position:absolute;width:2px;height:2px;background:rgba(122,162,247,.3);border-radius:50%;animation:float linear infinite;}
 @keyframes float{0%{transform:translateY(100vh) scale(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-10vh) scale(1);opacity:0}}
-
-/* Glow effect */
 .glow-line{height:1px;background:linear-gradient(90deg,transparent,var(--purple),var(--mint),transparent);opacity:.3;margin:0 20px;max-width:1400px;margin-left:auto;margin-right:auto;}
+/* 外資抄底雷達 */
+.fcp-tag{font-size:.72rem;padding:3px 8px;border-radius:5px;font-weight:700;}
+.fcp-hot{background:rgba(224,92,92,.2);color:var(--red);}
+.fcp-mid{background:rgba(212,168,75,.15);color:var(--orange);}
+.fcp-low{background:rgba(113,128,150,.1);color:var(--text2);}
+.fdays-high{color:var(--red);font-weight:900;}
+.fdays-mid{color:var(--orange);font-weight:700;}
+.fdays-low{color:var(--text2);}
 </style>
 </head>
 <body>
 
-<!-- Toast Container -->
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- Header -->
 <header class="hero">
   <div class="hero-bg"></div>
   <div class="hero-overlay"></div>
   <div class="particles" id="particles"></div>
   <div class="hero-content">
     <div class="hero-title">ETFfinder</div>
-    <div class="hero-sub">台股 ETF 量化掃描系統 — VCP / Stage2 / 加碼甜蜜點 一鍵偵測</div>
-    <div class="hero-badge"><i class="fas fa-satellite-dish"></i> 資料來源：Yahoo Finance</div>
+    <div class="hero-sub">台股 ETF 量化掃描系統 — VCP / Stage2 / 加碼甜蜜點 / 外資抄底 一鍵偵測</div>
+    <div class="hero-badge"><i class="fas fa-satellite-dish"></i> 資料來源：Yahoo Finance + TWSE</div>
   </div>
 </header>
 
-<!-- Stats -->
 <div class="stats-row" id="statsRow">
   <div class="stat-card scanned">
     <div class="stat-val" id="statScanned">0</div>
@@ -209,11 +183,15 @@ tbody tr:hover{background:rgba(79,126,247,.04);}
   </div>
   <div class="stat-card high-score">
     <div class="stat-val" id="statHighScore">0</div>
-    <div class="stat-label">分數 ≥ 60</div>
+    <div class="stat-label">分數 &ge; 60</div>
   </div>
   <div class="stat-card sweet">
     <div class="stat-val" id="statSweet">0</div>
     <div class="stat-label">加碼甜蜜點</div>
+  </div>
+  <div class="stat-card foreign-buy">
+    <div class="stat-val" id="statForeignBuy">--</div>
+    <div class="stat-label">外資連買 5天+</div>
   </div>
   <div class="stat-card time">
     <div class="stat-val" id="statTime">--</div>
@@ -221,7 +199,6 @@ tbody tr:hover{background:rgba(79,126,247,.04);}
   </div>
 </div>
 
-<!-- Info Card -->
 <div class="info-card">
   <div class="info-inner">
     <div class="info-header" id="infoHeader">
@@ -254,6 +231,10 @@ tbody tr:hover{background:rgba(79,126,247,.04);}
           <div class="ii-icon" style="background:rgba(122,162,247,.15);color:var(--pink);">V</div>
           <div class="ii-text"><strong>量能穩定</strong>：V20/V60 介於 0.7~1.3，代表近期量能沒有異常縮減或暴增，走勢健康。</div>
         </div>
+        <div class="info-item">
+          <div class="ii-icon" style="background:rgba(224,92,92,.2);color:var(--red);font-size:1rem;">🐋</div>
+          <div class="ii-text"><strong>外資抄底雷達</strong>：呼叫 TWSE T86 API 抓取近10個交易日外陸資買賣超。外資連買天數多＋RSI低＋價格跌 = 外資越跌越買，CP值最高。外資CP分 = 連買天數(35)+加速(15)+RSI超賣(25)+費用率(10)+配息(8)+MA200支撐(7)。</div>
+        </div>
       </div>
     </div>
   </div>
@@ -261,7 +242,6 @@ tbody tr:hover{background:rgba(79,126,247,.04);}
 
 <div class="glow-line" style="margin-top:16px;"></div>
 
-<!-- Controls -->
 <div class="controls">
   <div class="filter-group">
     <span class="fg-label">類型</span>
@@ -277,10 +257,10 @@ tbody tr:hover{background:rgba(79,126,247,.04);}
   <div class="filter-group">
     <span class="fg-label">分數</span>
     <button class="fbtn active" data-filter="score" data-val="0">全部</button>
-    <button class="fbtn" data-filter="score" data-val="40">≥40</button>
-    <button class="fbtn" data-filter="score" data-val="60">≥60</button>
-    <button class="fbtn" data-filter="score" data-val="70">≥70</button>
-    <button class="fbtn" data-filter="score" data-val="80">≥80</button>
+    <button class="fbtn" data-filter="score" data-val="40">&ge;40</button>
+    <button class="fbtn" data-filter="score" data-val="60">&ge;60</button>
+    <button class="fbtn" data-filter="score" data-val="70">&ge;70</button>
+    <button class="fbtn" data-filter="score" data-val="80">&ge;80</button>
   </div>
   <div class="divider"></div>
   <div class="filter-group">
@@ -292,7 +272,6 @@ tbody tr:hover{background:rgba(79,126,247,.04);}
   </div>
 </div>
 
-<!-- Scan Button -->
 <div class="scan-area">
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
     <button class="scan-btn" id="scanBtn" style="flex:1;min-width:200px">
@@ -308,6 +287,10 @@ tbody tr:hover{background:rgba(79,126,247,.04);}
       style="padding:12px 20px;border-radius:12px;border:2px solid var(--mint);background:transparent;color:var(--mint);font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap">
       💰 穩定收益模式
     </button>
+    <button id="modeForeignBtn" onclick="setMode('foreignDip')"
+      style="padding:12px 20px;border-radius:12px;border:2px solid var(--red);background:transparent;color:var(--red);font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap">
+      🐋 外資抄底雷達
+    </button>
   </div>
   <div class="progress-wrap" id="progressWrap">
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
@@ -318,37 +301,42 @@ tbody tr:hover{background:rgba(79,126,247,.04);}
   </div>
 </div>
 
-<!-- Table -->
 <div class="table-area">
   <div class="table-top">
     <div class="table-count">顯示 <span id="showCount">0</span> / <span id="totalCount">0</span> 檔 ETF</div>
+    <div id="foreignModeLabel" style="display:none;font-size:.78rem;color:var(--red);font-weight:700;">
+      🐋 外資抄底雷達模式 — 按外資CP值排序（連買≥3天＋淨買超>0＋RSI&lt;55）
+    </div>
   </div>
   <div class="table-wrap" style="max-height:70vh;overflow-y:auto;">
-    <table>
+    <table id="mainTable">
       <thead>
-        <tr>
+        <tr id="theadRow">
           <th>信號</th>
           <th>代號</th>
           <th>名稱</th>
           <th>類型</th>
           <th>現價</th>
-          <th>ETF分數</th>
+          <th id="thScore">ETF分數</th>
+          <th id="thFcp" style="display:none">外資CP分</th>
           <th>配息</th>
           <th>RSI</th>
-          <th>ATR收縮</th>
-          <th>趨勢</th>
-          <th>加碼甜蜜點</th>
-          <th>進場訊號</th>
-          <th>出場訊號</th>
+          <th id="thAtr">ATR收縮</th>
+          <th id="thFdays" style="display:none">外資連買天</th>
+          <th id="thTrend">趨勢</th>
+          <th id="thFnet" style="display:none">外資淨買(張)</th>
+          <th id="thSweet">加碼甜蜜點</th>
+          <th id="thEntry">進場訊號</th>
+          <th id="thExit">出場訊號</th>
           <th>1年報酬</th>
           <th>費用率</th>
-          <th>台積電</th>
+          <th id="thTsmc">台積電</th>
           <th>MA50</th>
           <th>MA200</th>
         </tr>
       </thead>
       <tbody id="tableBody">
-        <tr><td colspan="18"><div class="empty-state"><i class="fas fa-chart-line"></i><p>點擊上方按鈕開始掃描</p></div></td></tr>
+        <tr><td colspan="21"><div class="empty-state"><i class="fas fa-chart-line"></i><p>點擊上方按鈕開始掃描</p></div></td></tr>
       </tbody>
     </table>
   </div>
@@ -358,732 +346,714 @@ tbody tr:hover{background:rgba(79,126,247,.04);}
 // ============================================================
 // ETF 清單
 // ============================================================
-// divFreq: M=月配 Q=季配 S=半年 A=年配 N=不配
-// ter: 費用率% | has2330: 是否持有台積電
 const ETF_LIST = [
-  // 台股市值型
-  {id:'0050', name:'元大台灣50',      type:'market',  divFreq:'S', ter:0.43, has2330:true},
-  {id:'006208',name:'富邦台50',       type:'market',  divFreq:'S', ter:0.15, has2330:true},
-  {id:'00692', name:'富邦公司治理',   type:'market',  divFreq:'Q', ter:0.38, has2330:true},
-  {id:'00905', name:'新光臺灣半導體', type:'market',  divFreq:'Q', ter:0.40, has2330:true},
-  {id:'00922', name:'國泰台灣領袖50', type:'market',  divFreq:'Q', ter:0.40, has2330:true},
-  // 高股息型
-  {id:'0056',  name:'元大高股息',         type:'dividend', divFreq:'Q', ter:0.87, has2330:false},
-  {id:'00878', name:'國泰永續高股息',     type:'dividend', divFreq:'M', ter:0.66, has2330:true},
-  {id:'00919', name:'群益台灣精選高息',   type:'dividend', divFreq:'M', ter:0.76, has2330:true},
-  {id:'00929', name:'兆豐台灣價值高息',   type:'dividend', divFreq:'M', ter:0.75, has2330:false},
-  {id:'00713', name:'元大台灣高息低波',   type:'dividend', divFreq:'Q', ter:0.69, has2330:false},
-  {id:'00915', name:'凱基優選高股息30',   type:'dividend', divFreq:'M', ter:0.80, has2330:true},
-  {id:'00918', name:'大華優利高填息30',   type:'dividend', divFreq:'M', ter:0.80, has2330:true},
-  {id:'00891', name:'中信中國高股息',     type:'dividend', divFreq:'Q', ter:0.85, has2330:false},
-  {id:'00900', name:'富邦特選高股息30',   type:'dividend', divFreq:'M', ter:0.78, has2330:true},
-  {id:'00907', name:'永豐優息存股',       type:'dividend', divFreq:'M', ter:0.80, has2330:false},
-  {id:'00930', name:'群益台灣ESG低碳高息',type:'dividend', divFreq:'M', ter:0.75, has2330:true},
-  {id:'00939', name:'統一台灣高息動能',   type:'dividend', divFreq:'Q', ter:0.75, has2330:true},
-  {id:'00940', name:'元大台灣價值高息',   type:'dividend', divFreq:'M', ter:0.72, has2330:true},
-  {id:'00946', name:'新光優選高股息30',   type:'dividend', divFreq:'M', ter:0.80, has2330:true},
-  {id:'00955', name:'野村優質高息',       type:'dividend', divFreq:'M', ter:0.75, has2330:true},
-  {id:'00956', name:'台新永續高息中小',   type:'dividend', divFreq:'M', ter:0.75, has2330:false},
-  {id:'00957', name:'統一優選高息',       type:'dividend', divFreq:'M', ter:0.75, has2330:true},
-  {id:'00960', name:'富邦台灣優質高息',   type:'dividend', divFreq:'M', ter:0.75, has2330:true},
-  {id:'00963', name:'凱基優選高息精選',   type:'dividend', divFreq:'M', ter:0.80, has2330:true},
-  {id:'00966', name:'群益優選高息',       type:'dividend', divFreq:'M', ter:0.75, has2330:true},
-  // 債券型（全部掛牌TSE，用.TW後綴）
-  {id:'00679B',name:'元大美國政府20年期', type:'bond', divFreq:'M', ter:0.31, has2330:false},
-  {id:'00772B',name:'富邦美國20年期',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00687B',name:'國泰20年期美債',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00741B',name:'群益25年期美債',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00833B',name:'富邦挪威主權',       type:'bond', divFreq:'M', ter:0.45, has2330:false},
-  {id:'00937B',name:'統一美國20年',       type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00696B',name:'元大美國20年期B',    type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00720B',name:'凱基美國20年期',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00724B',name:'中信美國20年期',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00725B',name:'中國信託美國20年',   type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00750B',name:'凱基中國債',         type:'bond', divFreq:'M', ter:0.45, has2330:false},
-  {id:'00751B',name:'元大中國債',         type:'bond', divFreq:'M', ter:0.45, has2330:false},
-  {id:'00753B',name:'群益中國債',         type:'bond', divFreq:'M', ter:0.45, has2330:false},
-  {id:'00761B',name:'復華美國20年期',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00777B',name:'凱基美國20年A',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00781B',name:'兆豐美國20年期',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00860B',name:'中信投級公司債',     type:'bond', divFreq:'M', ter:0.48, has2330:false},
-  {id:'00864B',name:'群益投級公司債',     type:'bond', divFreq:'M', ter:0.48, has2330:false},
-  {id:'00870B',name:'富邦投級公司債',     type:'bond', divFreq:'M', ter:0.48, has2330:false},
-  {id:'00879B',name:'元大投級公司債',     type:'bond', divFreq:'M', ter:0.48, has2330:false},
-  {id:'00886B',name:'國泰投級公司債',     type:'bond', divFreq:'M', ter:0.48, has2330:false},
-  {id:'00895B',name:'永豐投級公司債',     type:'bond', divFreq:'M', ter:0.48, has2330:false},
-  {id:'00896B',name:'統一投級公司債',     type:'bond', divFreq:'M', ter:0.48, has2330:false},
-  {id:'00898B',name:'元大美國20年C',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00899B',name:'中信美國20年B',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00902B',name:'凱基美國20年B',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00913B',name:'中信美國20年C',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00933B',name:'國泰美國20年A',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00934B',name:'富邦美國20年A',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00936B',name:'元大美國20年D',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00938B',name:'統一美國20年B',      type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00942B',name:'群益美國20年期',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00948B',name:'台新美國20年期',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  {id:'00950B',name:'永豐美國20年期',     type:'bond', divFreq:'M', ter:0.40, has2330:false},
-  // 科技/產業型
-  {id:'00881',name:'國泰台灣5G+',       type:'tech', divFreq:'S', ter:0.70, has2330:true},
-  {id:'00882',name:'富邦台灣半導體',    type:'tech', divFreq:'A', ter:0.65, has2330:true},
-  {id:'00830',name:'富邦臺灣先進電車', type:'tech', divFreq:'A', ter:0.70, has2330:false},
-  {id:'00890',name:'中信中國半導體',   type:'tech', divFreq:'Q', ter:0.85, has2330:false},
-  {id:'00912',name:'中信中國科技',     type:'tech', divFreq:'Q', ter:0.85, has2330:false},
-  {id:'00931',name:'群益台灣科技入息',type:'tech', divFreq:'M', ter:0.70, has2330:true},
-  // ESG型
-  {id:'00850',name:'元大台灣ESG永續', type:'esg', divFreq:'Q', ter:0.54, has2330:true},
-  {id:'00888',name:'富邦台灣永續',    type:'esg', divFreq:'A', ter:0.60, has2330:true},
-  {id:'00908',name:'永豐台灣ESG',     type:'esg', divFreq:'Q', ter:0.65, has2330:true},
-  // 海外市場型
-  {id:'00646',name:'元大標普500',     type:'overseas', divFreq:'A', ter:0.45, has2330:false},
-  {id:'00662',name:'富邦NASDAQ',      type:'overseas', divFreq:'A', ter:0.45, has2330:false},
-  {id:'00675L',name:'富邦NASDAQ正2', type:'overseas', divFreq:'N', ter:0.90, has2330:false},
-  {id:'00852',name:'國泰中國內需',    type:'overseas', divFreq:'Q', ter:0.65, has2330:false},
-  {id:'00920',name:'統一恆生科技',    type:'overseas', divFreq:'Q', ter:0.70, has2330:false},
-  {id:'00935',name:'野村中國科技',    type:'overseas', divFreq:'Q', ter:0.70, has2330:false},
-  // REITs（季配，掛牌TSE）
-  {id:'01001T',name:'富邦一號', type:'reits', divFreq:'S', ter:0.25, has2330:false},
-  {id:'01002T',name:'國泰一號', type:'reits', divFreq:'S', ter:0.25, has2330:false},
-  {id:'01003T',name:'新光一號', type:'reits', divFreq:'S', ter:0.25, has2330:false},
-  {id:'01004T',name:'富邦二號', type:'reits', divFreq:'S', ter:0.25, has2330:false},
-  {id:'01005T',name:'國泰二號', type:'reits', divFreq:'S', ter:0.25, has2330:false},
-  {id:'01007T',name:'三鼎',     type:'reits', divFreq:'S', ter:0.25, has2330:false},
-  // 其他台股主題
-  {id:'0051',  name:'元大中型100',   type:'other', divFreq:'A', ter:0.52, has2330:false},
-  {id:'0052',  name:'富邦科技',      type:'other', divFreq:'A', ter:0.46, has2330:true},
-  {id:'0053',  name:'元大電子',      type:'other', divFreq:'A', ter:0.46, has2330:true},
-  {id:'0054',  name:'元大台商50',    type:'other', divFreq:'A', ter:0.65, has2330:false},
-  {id:'0055',  name:'元大MSCI金融', type:'other', divFreq:'A', ter:0.52, has2330:false},
-  {id:'00701', name:'國泰臺灣低波', type:'other', divFreq:'Q', ter:0.66, has2330:true},
-  {id:'006204',name:'富邦上櫃',     type:'other', divFreq:'S', ter:0.23, has2330:false}
+  {id:'0050',   name:'元大台灣50',           type:'market',   divFreq:'S', ter:0.43, has2330:true},
+  {id:'006208', name:'富邦台50',              type:'market',   divFreq:'S', ter:0.15, has2330:true},
+  {id:'00692',  name:'富邦公司治理',          type:'market',   divFreq:'Q', ter:0.38, has2330:true},
+  {id:'00905',  name:'新光臺灣半導體',        type:'market',   divFreq:'Q', ter:0.40, has2330:true},
+  {id:'00922',  name:'國泰台灣領袖50',        type:'market',   divFreq:'Q', ter:0.40, has2330:true},
+  {id:'0056',   name:'元大高股息',            type:'dividend', divFreq:'Q', ter:0.87, has2330:false},
+  {id:'00878',  name:'國泰永續高股息',        type:'dividend', divFreq:'M', ter:0.66, has2330:true},
+  {id:'00919',  name:'群益台灣精選高息',      type:'dividend', divFreq:'M', ter:0.76, has2330:true},
+  {id:'00929',  name:'兆豐台灣價值高息',      type:'dividend', divFreq:'M', ter:0.75, has2330:false},
+  {id:'00713',  name:'元大台灣高息低波',      type:'dividend', divFreq:'Q', ter:0.69, has2330:false},
+  {id:'00915',  name:'凱基優選高股息30',      type:'dividend', divFreq:'M', ter:0.80, has2330:true},
+  {id:'00918',  name:'大華優利高填息30',      type:'dividend', divFreq:'M', ter:0.80, has2330:true},
+  {id:'00891',  name:'中信中國高股息',        type:'dividend', divFreq:'Q', ter:0.85, has2330:false},
+  {id:'00900',  name:'富邦特選高股息30',      type:'dividend', divFreq:'M', ter:0.78, has2330:true},
+  {id:'00907',  name:'永豐優息存股',          type:'dividend', divFreq:'M', ter:0.80, has2330:false},
+  {id:'00930',  name:'群益台灣ESG低碳高息',  type:'dividend', divFreq:'M', ter:0.75, has2330:true},
+  {id:'00939',  name:'統一台灣高息動能',      type:'dividend', divFreq:'Q', ter:0.75, has2330:true},
+  {id:'00940',  name:'元大台灣價值高息',      type:'dividend', divFreq:'M', ter:0.72, has2330:true},
+  {id:'00946',  name:'新光優選高股息30',      type:'dividend', divFreq:'M', ter:0.80, has2330:true},
+  {id:'00955',  name:'野村優質高息',          type:'dividend', divFreq:'M', ter:0.75, has2330:true},
+  {id:'00956',  name:'台新永續高息中小',      type:'dividend', divFreq:'M', ter:0.75, has2330:false},
+  {id:'00957',  name:'統一優選高息',          type:'dividend', divFreq:'M', ter:0.75, has2330:true},
+  {id:'00960',  name:'富邦台灣優質高息',      type:'dividend', divFreq:'M', ter:0.75, has2330:true},
+  {id:'00963',  name:'凱基優選高息精選',      type:'dividend', divFreq:'M', ter:0.80, has2330:true},
+  {id:'00966',  name:'群益優選高息',          type:'dividend', divFreq:'M', ter:0.75, has2330:true},
+  {id:'00679B', name:'元大美國政府20年期',    type:'bond',     divFreq:'M', ter:0.31, has2330:false},
+  {id:'00772B', name:'富邦美國20年期',        type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00687B', name:'國泰20年期美債',        type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00741B', name:'群益25年期美債',        type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00833B', name:'富邦挪威主權',          type:'bond',     divFreq:'M', ter:0.45, has2330:false},
+  {id:'00937B', name:'統一美國20年',          type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00696B', name:'元大美國20年期B',       type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00720B', name:'凱基美國20年期',        type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00724B', name:'中信美國20年期',        type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00725B', name:'中國信託美國20年',      type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00750B', name:'凱基中國債',            type:'bond',     divFreq:'M', ter:0.45, has2330:false},
+  {id:'00751B', name:'元大中國債',            type:'bond',     divFreq:'M', ter:0.45, has2330:false},
+  {id:'00753B', name:'群益中國債',            type:'bond',     divFreq:'M', ter:0.45, has2330:false},
+  {id:'00761B', name:'復華美國20年期',        type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00777B', name:'凱基美國20年A',         type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00781B', name:'兆豐美國20年期',        type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00860B', name:'中信投級公司債',        type:'bond',     divFreq:'M', ter:0.48, has2330:false},
+  {id:'00864B', name:'群益投級公司債',        type:'bond',     divFreq:'M', ter:0.48, has2330:false},
+  {id:'00870B', name:'富邦投級公司債',        type:'bond',     divFreq:'M', ter:0.48, has2330:false},
+  {id:'00879B', name:'元大投級公司債',        type:'bond',     divFreq:'M', ter:0.48, has2330:false},
+  {id:'00886B', name:'國泰投級公司債',        type:'bond',     divFreq:'M', ter:0.48, has2330:false},
+  {id:'00895B', name:'永豐投級公司債',        type:'bond',     divFreq:'M', ter:0.48, has2330:false},
+  {id:'00896B', name:'統一投級公司債',        type:'bond',     divFreq:'M', ter:0.48, has2330:false},
+  {id:'00898B', name:'元大美國20年C',         type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00899B', name:'中信美國20年B',         type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00902B', name:'凱基美國20年B',         type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00913B', name:'中信美國20年C',         type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00933B', name:'國泰美國20年A',         type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00934B', name:'富邦美國20年A',         type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00936B', name:'元大美國20年D',         type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00938B', name:'統一美國20年B',         type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00942B', name:'群益美國20年期',        type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00948B', name:'台新美國20年期',        type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00950B', name:'永豐美國20年期',        type:'bond',     divFreq:'M', ter:0.40, has2330:false},
+  {id:'00881',  name:'國泰台灣5G+',           type:'tech',     divFreq:'S', ter:0.70, has2330:true},
+  {id:'00882',  name:'富邦台灣半導體',        type:'tech',     divFreq:'A', ter:0.65, has2330:true},
+  {id:'00830',  name:'富邦臺灣先進電車',      type:'tech',     divFreq:'A', ter:0.70, has2330:false},
+  {id:'00890',  name:'中信中國半導體',        type:'tech',     divFreq:'Q', ter:0.85, has2330:false},
+  {id:'00912',  name:'中信中國科技',          type:'tech',     divFreq:'Q', ter:0.85, has2330:false},
+  {id:'00931',  name:'群益台灣科技入息',      type:'tech',     divFreq:'M', ter:0.70, has2330:true},
+  {id:'00850',  name:'元大台灣ESG永續',       type:'esg',      divFreq:'Q', ter:0.54, has2330:true},
+  {id:'00888',  name:'富邦台灣永續',          type:'esg',      divFreq:'A', ter:0.60, has2330:true},
+  {id:'00908',  name:'永豐台灣ESG',           type:'esg',      divFreq:'Q', ter:0.65, has2330:true},
+  {id:'00646',  name:'元大標普500',           type:'overseas', divFreq:'A', ter:0.45, has2330:false},
+  {id:'00662',  name:'富邦NASDAQ',            type:'overseas', divFreq:'A', ter:0.45, has2330:false},
+  {id:'00675L', name:'富邦NASDAQ正2',         type:'overseas', divFreq:'N', ter:0.90, has2330:false},
+  {id:'00852',  name:'國泰中國內需',          type:'overseas', divFreq:'Q', ter:0.65, has2330:false},
+  {id:'00920',  name:'統一恆生科技',          type:'overseas', divFreq:'Q', ter:0.70, has2330:false},
+  {id:'00935',  name:'野村中國科技',          type:'overseas', divFreq:'Q', ter:0.70, has2330:false},
+  {id:'01001T', name:'富邦一號',              type:'reits',    divFreq:'S', ter:0.25, has2330:false},
+  {id:'01002T', name:'國泰一號',              type:'reits',    divFreq:'S', ter:0.25, has2330:false},
+  {id:'01003T', name:'新光一號',              type:'reits',    divFreq:'S', ter:0.25, has2330:false},
+  {id:'01004T', name:'富邦二號',              type:'reits',    divFreq:'S', ter:0.25, has2330:false},
+  {id:'01005T', name:'國泰二號',              type:'reits',    divFreq:'S', ter:0.25, has2330:false},
+  {id:'01007T', name:'三鼎',                  type:'reits',    divFreq:'S', ter:0.25, has2330:false},
+  {id:'0051',   name:'元大中型100',           type:'other',    divFreq:'A', ter:0.52, has2330:false},
+  {id:'0052',   name:'富邦科技',              type:'other',    divFreq:'A', ter:0.46, has2330:true},
+  {id:'0053',   name:'元大電子',              type:'other',    divFreq:'A', ter:0.46, has2330:true},
+  {id:'0054',   name:'元大台商50',            type:'other',    divFreq:'A', ter:0.65, has2330:false},
+  {id:'0055',   name:'元大MSCI金融',          type:'other',    divFreq:'A', ter:0.52, has2330:false},
+  {id:'00701',  name:'國泰臺灣低波',          type:'other',    divFreq:'Q', ter:0.66, has2330:true},
+  {id:'006204', name:'富邦上櫃',              type:'other',    divFreq:'S', ter:0.23, has2330:false}
 ];
 
-// 決定 Yahoo Finance 後綴：上市 TSE 用 .TW；上櫃 OTC（006204 富邦上櫃）用 .TWO
 function getYahooSuffix(etf) {
   if (etf.id === '006204') return '.TWO';
   return '.TW';
 }
 
 // ============================================================
-// 計分引擎
+// 計分引擎（原有邏輯）
 // ============================================================
 function calcSMA(arr, period) {
   if (arr.length < period) return null;
-  let sum = 0;
-  for (let i = 0; i < period; i++) sum += arr[i];
+  var sum = 0;
+  for (var i = 0; i < period; i++) sum += arr[i];
   return sum / period;
 }
 
 function calcETF(data, etf) {
-  // data: [{open,high,low,close,volume}], 第0筆=最新
   if (!data || data.length < 60) return null;
+  var price = data[0].close;
+  var closes = data.map(function(d) { return d.close; });
+  var volumes = data.map(function(d) { return d.volume; });
+  var score = 0;
+  var details = {};
 
-  const price = data[0].close;
-  const closes = data.map(d => d.close);
-  const volumes = data.map(d => d.volume);
-  let score = 0;
-  const details = {};
-
-  // --- 1. ATR 收縮（20分）---
-  function calcATRFromData(startIdx, period) {
-    const trs = [];
-    for (let i = startIdx; i < startIdx + period && i < data.length - 1; i++) {
-      const tr = Math.max(
+  function calcATR(startIdx, period) {
+    var trs = [];
+    for (var i = startIdx; i < startIdx + period && i < data.length - 1; i++) {
+      var tr = Math.max(
         data[i].high - data[i].low,
-        Math.abs(data[i].high - data[i + 1].close),
-        Math.abs(data[i].low - data[i + 1].close)
+        Math.abs(data[i].high - data[i+1].close),
+        Math.abs(data[i].low  - data[i+1].close)
       );
       trs.push(tr);
     }
-    if (trs.length === 0) return null;
-    return trs.reduce((a, b) => a + b, 0) / trs.length;
+    if (!trs.length) return null;
+    return trs.reduce(function(a,b){return a+b;},0) / trs.length;
   }
-
-  const atr10 = calcATRFromData(0, 10);
-  const atr20 = calcATRFromData(0, 20);
+  var atr10 = calcATR(0,10), atr20 = calcATR(0,20);
   if (atr10 !== null && atr20 !== null && atr20 > 0) {
-    const ratio = atr10 / atr20;
+    var ratio = atr10/atr20;
     details.atrRatio = ratio;
-    if (ratio < 0.75) {
-      score += 20;
-      details.atrStatus = '強收縮';
-    } else if (ratio < 0.90) {
-      score += 10;
-      details.atrStatus = '收縮中';
-    } else {
-      details.atrStatus = '未收縮';
-    }
-  } else {
-    details.atrStatus = 'N/A';
-    details.atrRatio = null;
-  }
+    if (ratio < 0.75)      { score += 20; details.atrStatus = '強收縮'; }
+    else if (ratio < 0.90) { score += 10; details.atrStatus = '收縮中'; }
+    else                   {              details.atrStatus = '未收縮'; }
+  } else { details.atrStatus = 'N/A'; details.atrRatio = null; }
 
-  // --- 2. MA 糾纏走平（15分）---
-  const ma5 = calcSMA(closes, 5);
-  const ma10 = calcSMA(closes, 10);
-  const ma20 = calcSMA(closes, 20);
-  if (ma5 && ma10 && ma20 && ma20 > 0) {
-    const mas = [ma5, ma10, ma20];
-    const maxMA = Math.max(...mas);
-    const minMA = Math.min(...mas);
-    const spread = ((maxMA - minMA) / minMA) * 100;
+  var ma5=calcSMA(closes,5), ma10=calcSMA(closes,10), ma20=calcSMA(closes,20);
+  if (ma5 && ma10 && ma20 && ma20>0) {
+    var spread = (Math.max(ma5,ma10,ma20)-Math.min(ma5,ma10,ma20))/Math.min(ma5,ma10,ma20)*100;
     details.maSpread = spread;
-    if (spread < 3) {
-      score += 15;
-    } else if (spread < 6) {
-      score += 8;
-    }
-  } else {
-    details.maSpread = null;
-  }
+    if (spread < 3) score += 15; else if (spread < 6) score += 8;
+  } else { details.maSpread = null; }
 
-  // --- 3. 長期趨勢（20分）---
-  const ma50 = calcSMA(closes, 50);
-  const ma200 = closes.length >= 200 ? calcSMA(closes, 200) : null;
-  details.ma50 = ma50;
-  details.ma200 = ma200;
-
+  var ma50  = calcSMA(closes, 50);
+  var ma200 = closes.length >= 200 ? calcSMA(closes, 200) : null;
+  details.ma50 = ma50; details.ma200 = ma200;
   if (ma200 && price > ma200) score += 10;
   if (ma50 && ma200 && ma50 > ma200) score += 10;
 
-  // --- 4. 回檔加碼甜蜜點（20分）---
-  // 只在多頭結構（MA50 > MA200）才給分，避免在空頭回檔誤判為好買點
   if (ma50 && ma200 && ma50 > ma200) {
-    if (price >= ma200 && price <= ma50) {
-      score += 20;
-      details.sweetSpot = '最佳'; // 回踩至 MA200~MA50 區間，定期定額甜蜜點
-    } else if (price > ma50) {
-      score += 10;
-      details.sweetSpot = '強勢'; // MA50 以上，趨勢強但追高CP值較低
-    } else {
-      details.sweetSpot = '等待'; // 跌破 MA200，趨勢破壞
-    }
+    if (price >= ma200 && price <= ma50)  { score += 20; details.sweetSpot = '最佳'; }
+    else if (price > ma50)                { score += 10; details.sweetSpot = '強勢'; }
+    else                                  {              details.sweetSpot = '等待'; }
   } else if (ma50 && !ma200 && price > ma50) {
-    score += 10;
-    details.sweetSpot = '強勢';
-  } else {
-    details.sweetSpot = '等待';
-  }
+    score += 10; details.sweetSpot = '強勢';
+  } else { details.sweetSpot = '等待'; }
 
-  // --- 5. 近期價格穩定度（15分）---
   if (closes.length >= 20) {
-    const c20 = closes.slice(0, 20);
-    const mean20 = c20.reduce((a, b) => a + b, 0) / c20.length;
-    const std20 = Math.sqrt(c20.reduce((a, b) => a + (b - mean20) ** 2, 0) / c20.length);
-    const cv20 = mean20 > 0 ? (std20 / mean20) * 100 : 999;
+    var c20 = closes.slice(0,20);
+    var mean20 = c20.reduce(function(a,b){return a+b;},0)/20;
+    var std20 = Math.sqrt(c20.reduce(function(a,b){return a+Math.pow(b-mean20,2);},0)/20);
+    var cv20 = mean20>0 ? std20/mean20*100 : 999;
     details.volatility20 = cv20;
-    if (cv20 < 1.5) {
-      score += 15;
-    } else if (cv20 < 2.5) {
-      score += 8;
-    }
-  } else {
-    details.volatility20 = null;
-  }
+    if (cv20 < 1.5) score += 15; else if (cv20 < 2.5) score += 8;
+  } else { details.volatility20 = null; }
 
-  // --- 6. 量能穩定（10分）---
   if (volumes.length >= 60) {
-    const v20 = volumes.slice(0, 20).reduce((a, b) => a + b, 0) / 20;
-    const v60 = volumes.slice(0, 60).reduce((a, b) => a + b, 0) / 60;
-    const vRatio = v60 > 0 ? v20 / v60 : 0;
+    var v20 = volumes.slice(0,20).reduce(function(a,b){return a+b;},0)/20;
+    var v60 = volumes.slice(0,60).reduce(function(a,b){return a+b;},0)/60;
+    var vRatio = v60>0 ? v20/v60 : 0;
     details.volumeRatio = vRatio;
-    if (vRatio >= 0.7 && vRatio <= 1.3) {
-      score += 10;
-    } else if (vRatio > 1.3) {
-      score += 5;
-    }
-  } else {
-    details.volumeRatio = null;
-  }
+    if (vRatio>=0.7 && vRatio<=1.3) score += 10; else if (vRatio>1.3) score += 5;
+  } else { details.volumeRatio = null; }
 
-  // --- 7. 配息頻率（10分）---
-  const divScore = {M:10, Q:6, S:3, A:1, N:0};
-  score += (etf && divScore[etf.divFreq]) || 0;
+  var ds = {M:10,Q:6,S:3,A:1,N:0};
+  score += (etf && ds[etf.divFreq]) || 0;
   details.divFreq = etf ? etf.divFreq : null;
 
-  // --- 8. 費用率 TER（10分）---
   if (etf && etf.ter != null) {
-    if (etf.ter < 0.30) score += 10;
-    else if (etf.ter < 0.50) score += 7;
-    else if (etf.ter < 0.70) score += 4;
-    else score += 1;
+    if (etf.ter<0.30) score+=10; else if (etf.ter<0.50) score+=7;
+    else if (etf.ter<0.70) score+=4; else score+=1;
   }
   details.ter = etf ? etf.ter : null;
-
-  // --- 9. 持有台積電（5分）---
   if (etf && etf.has2330) score += 5;
   details.has2330 = etf ? etf.has2330 : false;
 
-  // --- 趨勢狀態 ---
-  if (ma200 && price > ma200 && ma50 && ma50 > ma200) {
-    details.trendStatus = 'Stage2';
-  } else if (ma50 && price > ma50) {
-    details.trendStatus = '多頭';
-  } else {
-    details.trendStatus = '空頭';
-  }
+  if (ma200 && price>ma200 && ma50 && ma50>ma200) details.trendStatus='Stage2';
+  else if (ma50 && price>ma50) details.trendStatus='多頭';
+  else details.trendStatus='空頭';
 
-  // --- 1年報酬率 ---
-  const ret1Y = closes.length > 252 ? +((price - closes[252]) / closes[252] * 100).toFixed(1) : null;
+  var ret1Y = closes.length>252 ? +((price-closes[252])/closes[252]*100).toFixed(1) : null;
   details.ret1Y = ret1Y;
-  if (ret1Y !== null) {
-    if (ret1Y > 15) score += 5;
-    else if (ret1Y > 8) score += 3;
-    else if (ret1Y > 0) score += 1;
-  }
+  if (ret1Y!==null) { if(ret1Y>15) score+=5; else if(ret1Y>8) score+=3; else if(ret1Y>0) score+=1; }
 
-  // --- RSI(14) ---
-  function calcRSI(arr, period=14) {
-    if (arr.length < period + 1) return null;
-    let gains = 0, losses = 0;
-    for (let i = 0; i < period; i++) {
-      const chg = arr[i] - arr[i+1]; // arr[0]=newest
-      if (chg > 0) gains += chg; else losses -= chg;
-    }
-    const ag = gains / period, al = losses / period;
-    if (al === 0) return 100;
-    return Math.round(100 - 100 / (1 + ag / al));
+  function calcRSI(arr, period) {
+    period = period||14;
+    if (arr.length<period+1) return null;
+    var g=0, l=0;
+    for (var i=0;i<period;i++) { var c=arr[i]-arr[i+1]; if(c>0) g+=c; else l-=c; }
+    var ag=g/period, al=l/period;
+    if (al===0) return 100;
+    return Math.round(100-100/(1+ag/al));
   }
-  const rsi = calcRSI(closes);
+  var rsi = calcRSI(closes);
   details.rsi = rsi;
 
-  // --- 進場訊號 ---
-  const isSweet = details.sweetSpot === '最佳';
-  const isAtrOk = details.atrStatus === '強收縮' || details.atrStatus === '收縮中';
-  const rsiOk   = rsi !== null && rsi >= 35 && rsi <= 60;
-  if (isSweet && isAtrOk && rsiOk) {
-    details.entrySignal = '★ 絕佳進場'; details.entryClass = 'sig-g';
-  } else if (isSweet && (isAtrOk || rsiOk)) {
-    details.entrySignal = '△ 可考慮';  details.entryClass = 'sig-o';
-  } else {
-    details.entrySignal = '— 等待';    details.entryClass = 'sig-n';
-  }
+  var isSweet = details.sweetSpot==='最佳';
+  var isAtrOk = details.atrStatus==='強收縮'||details.atrStatus==='收縮中';
+  var rsiOk   = rsi!==null && rsi>=35 && rsi<=60;
+  if (isSweet&&isAtrOk&&rsiOk)          { details.entrySignal='★ 絕佳進場'; details.entryClass='sig-g'; }
+  else if (isSweet&&(isAtrOk||rsiOk))   { details.entrySignal='△ 可考慮';  details.entryClass='sig-o'; }
+  else                                   { details.entrySignal='— 等待';    details.entryClass='sig-n'; }
 
-  // --- 出場訊號 ---
-  const distAboveMA50 = ma50 ? (price - ma50) / ma50 * 100 : null;
-  if (rsi !== null && rsi > 75) {
-    details.exitSignal = '⚠ RSI過熱'; details.exitClass = 'sig-r';
-  } else if (distAboveMA50 !== null && distAboveMA50 > 15) {
-    details.exitSignal = '⚠ 超漲15%+'; details.exitClass = 'sig-o';
-  } else {
-    details.exitSignal = '— 正常';     details.exitClass = 'sig-n';
-  }
+  var distAboveMA50 = ma50 ? (price-ma50)/ma50*100 : null;
+  if (rsi!==null && rsi>75)                         { details.exitSignal='⚠ RSI過熱';   details.exitClass='sig-r'; }
+  else if (distAboveMA50!==null && distAboveMA50>15) { details.exitSignal='⚠ 超漲15%+'; details.exitClass='sig-o'; }
+  else                                               { details.exitSignal='— 正常';      details.exitClass='sig-n'; }
 
-  // --- 信號燈 ---
-  if (score >= 70) details.signal = 'green';
-  else if (score >= 40) details.signal = 'yellow';
-  else details.signal = 'red';
+  details.signal = score>=70?'green':score>=40?'yellow':'red';
+  details.price  = price;
+  details.score  = Math.min(score,100);
 
-  details.price = price;
-  details.score = Math.min(score, 100);
-
+  // 外資欄位（掃描後填入）
+  details.foreignConsecutiveDays = null;
+  details.foreignNet10d          = null;
+  details.foreignCpScore         = null;
+  details.foreignAccelerating    = null;
   return details;
 }
 
 // ============================================================
-// 資料抓取（多 proxy 備援，與 VCPfinder 相同架構）
+// Yahoo Finance 抓取
 // ============================================================
-const PROXIES = [
+var PROXIES = [
   'https://corsproxy.io/?',
   'https://api.allorigins.win/raw?url=',
   'https://api.codetabs.com/v1/proxy?quest=',
   'https://thingproxy.freeboard.io/fetch/',
-  'https://corsproxy.io/?',  // 第二輪再試一次
+  'https://corsproxy.io/?'
 ];
-const SCAN_DELAY = 400;
+var SCAN_DELAY = 400;
+var scanResults = [];
+var isScanning  = false;
+var isForeignMode = false;
 
-let scanResults = [];
-let isScanning = false;
-
-// timeout-aware fetch
-function fetchTO(url, ms=12000) {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('timeout')), ms);
-    fetch(url).then(r => { clearTimeout(timer); resolve(r); })
-              .catch(e => { clearTimeout(timer); reject(e); });
+function fetchTO(url, ms) {
+  ms = ms||12000;
+  return new Promise(function(resolve,reject){
+    var t = setTimeout(function(){reject(new Error('timeout'));},ms);
+    fetch(url).then(function(r){clearTimeout(t);resolve(r);}
+    ).catch(function(e){clearTimeout(t);reject(e);});
   });
 }
 
-// 解析 Yahoo Finance chart JSON → OHLCV 陣列（第0筆=最新）
 function parseYahooChart(json) {
-  const r = json?.chart?.result?.[0];
-  if (!r?.timestamp) return null;
-  const q = r.indicators?.quote?.[0] ?? {};
-  const arr = r.timestamp.map((t, i) => ({
-    open: q.open?.[i] ?? null, high: q.high?.[i] ?? null,
-    low:  q.low?.[i]  ?? null, close: q.close?.[i] ?? null,
-    volume: q.volume?.[i] ?? 0
-  })).filter(d => d.close !== null && d.close > 0);
-  arr.reverse(); // 最新在前
-  return arr.length > 0 ? arr : null;
+  var r = json&&json.chart&&json.chart.result&&json.chart.result[0];
+  if (!r||!r.timestamp) return null;
+  var q = (r.indicators&&r.indicators.quote&&r.indicators.quote[0])||{};
+  var arr = r.timestamp.map(function(t,i){
+    return {
+      open:  (q.open  &&q.open[i]  !=null)?q.open[i]:null,
+      high:  (q.high  &&q.high[i]  !=null)?q.high[i]:null,
+      low:   (q.low   &&q.low[i]   !=null)?q.low[i]:null,
+      close: (q.close &&q.close[i] !=null)?q.close[i]:null,
+      volume:(q.volume&&q.volume[i]!=null)?q.volume[i]:0
+    };
+  }).filter(function(d){return d.close!==null&&d.close>0;});
+  arr.reverse();
+  return arr.length?arr:null;
 }
 
 async function fetchETFData(etf) {
-  const sym = etf.id + getYahooSuffix(etf);
-  // 嘗試多個 endpoint（2y 主 → 2y 備 → 1y 備）
-  const bases = [
-    `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2y&includePrePost=false`,
-    `https://query2.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=2y&includePrePost=false`,
-    `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1y&includePrePost=false`,
+  var sym = etf.id+getYahooSuffix(etf);
+  var bases=[
+    'https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'?interval=1d&range=2y&includePrePost=false',
+    'https://query2.finance.yahoo.com/v8/finance/chart/'+sym+'?interval=1d&range=2y&includePrePost=false',
+    'https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'?interval=1d&range=1y&includePrePost=false'
   ];
-  for (const base of bases) {
-    for (const px of PROXIES) {
+  for (var bi=0;bi<bases.length;bi++) {
+    for (var pi=0;pi<PROXIES.length;pi++) {
       try {
-        const res = await fetchTO(px + encodeURIComponent(base), 12000);
+        var res = await fetchTO(PROXIES[pi]+encodeURIComponent(bases[bi]),12000);
         if (!res.ok) continue;
-        const text = await res.text();
-        if (!text || text.trim().startsWith('<') || text.includes('Rate limit')) continue;
-        const json = JSON.parse(text);
-        const ohlcv = parseYahooChart(json);
+        var text = await res.text();
+        if (!text||text.trim()[0]==='<'||text.indexOf('Rate limit')!==-1) continue;
+        var json = JSON.parse(text);
+        var ohlcv = parseYahooChart(json);
         if (ohlcv) return ohlcv;
-      } catch(_) {}
+      } catch(e){}
     }
   }
-  // 最後備援：localStorage 快取
   try {
-    const cached = JSON.parse(localStorage.getItem('etf_'+sym));
-    if (cached && cached.data && Date.now() - cached.ts < 86400000*3) return cached.data;
-  } catch(_) {}
+    var cached = JSON.parse(localStorage.getItem('etf_'+sym));
+    if (cached&&cached.data&&Date.now()-cached.ts<86400000*3) return cached.data;
+  } catch(e){}
   return null;
 }
 
-// 掃完後快取到 localStorage
-function cacheETF(etf, ohlcv) {
+function cacheETF(etf,ohlcv){
   try {
-    const sym = etf.id + getYahooSuffix(etf);
-    localStorage.setItem('etf_'+sym, JSON.stringify({data: ohlcv.slice(0,260), ts: Date.now()}));
-  } catch(_) {}
+    var sym = etf.id+getYahooSuffix(etf);
+    localStorage.setItem('etf_'+sym,JSON.stringify({data:ohlcv.slice(0,260),ts:Date.now()}));
+  } catch(e){}
 }
 
 // ============================================================
-// UI 互動
+// 外資抄底雷達 — TWSE T86
 // ============================================================
+function getLastNTradingDates(n) {
+  var dates=[], d=new Date();
+  d.setDate(d.getDate()-1); // 昨天起算（今日市場可能未收盤）
+  while (dates.length<n) {
+    var dow=d.getDay();
+    if (dow!==0&&dow!==6) {
+      var yyyy=d.getFullYear();
+      var mm=String(d.getMonth()+1).padStart(2,'0');  // 正確：padStart(length,char)
+      var dd=String(d.getDate()).padStart(2,'0');
+      dates.push(''+yyyy+mm+dd);
+    }
+    d.setDate(d.getDate()-1);
+  }
+  return dates; // 最新日在前
+}
 
-// Info 卡片收合
-const infoHeader = document.getElementById('infoHeader');
-const infoBody = document.getElementById('infoBody');
-const infoChevron = document.getElementById('infoChevron');
-infoHeader.addEventListener('click', () => {
-  infoBody.classList.toggle('open');
-  infoChevron.classList.toggle('open');
+async function fetchForeignDataOneDay(dateStr) {
+  var url='https://www.twse.com.tw/rwd/zh/fund/T86?date='+dateStr+'&selectType=ALLBUT0999&response=json';
+  for (var pi=0;pi<PROXIES.length;pi++) {
+    try {
+      var res=await fetchTO(PROXIES[pi]+encodeURIComponent(url),15000);
+      if (!res.ok) continue;
+      var text=await res.text();
+      if (!text||text.trim()[0]==='<') continue;
+      var json=JSON.parse(text);
+      if (json.stat!=='OK'||!json.data||!json.fields) continue;
+      // 動態找到「外陸資買賣超股數」欄位 index
+      var netIdx=-1;
+      for (var fi=0;fi<json.fields.length;fi++) {
+        if (json.fields[fi].indexOf('外陸資')!==-1&&json.fields[fi].indexOf('買賣超')!==-1) {
+          netIdx=fi; break;
+        }
+      }
+      if (netIdx===-1) continue;
+      var map=new Map();
+      for (var ri=0;ri<json.data.length;ri++) {
+        var row=json.data[ri];
+        var code=row[0].trim();
+        var net=parseInt(row[netIdx].replace(/,/g,''),10);
+        if (!isNaN(net)) map.set(code,net);
+      }
+      return map;
+    } catch(e){}
+  }
+  return null;
+}
+
+function calcForeignCpScore(details, info, etf) {
+  if (!info) return 0;
+  var score=0;
+  var d=info.consecutiveDays;
+  if      (d>=10) score+=35;
+  else if (d>= 7) score+=28;
+  else if (d>= 5) score+=20;
+  else if (d>= 3) score+=12;
+  else if (d>= 1) score+=5;
+
+  if (info.accelerating===true)  score+=15;
+  else if (info.accelerating===null) score+=5;
+
+  var rsi=details&&details.rsi;
+  if (rsi!=null) {
+    if      (rsi<30) score+=25;
+    else if (rsi<35) score+=20;
+    else if (rsi<40) score+=14;
+    else if (rsi<45) score+=8;
+    else if (rsi<50) score+=3;
+  }
+
+  if (etf&&etf.ter!=null) {
+    if (etf.ter<0.30) score+=10; else if(etf.ter<0.50) score+=7;
+    else if(etf.ter<0.70) score+=4; else score+=1;
+  }
+  var ds2={M:8,Q:5,S:2,A:1,N:0};
+  score+=(etf&&ds2[etf.divFreq])||0;
+
+  if (details&&details.ma200&&details.price) {
+    var dist=Math.abs(details.price-details.ma200)/details.ma200*100;
+    if (dist<=5) score+=7; else if(dist<=10) score+=3;
+  }
+  return Math.min(score,100);
+}
+
+async function buildForeignData() {
+  var dates=getLastNTradingDates(10);
+  var dailyMaps=[];
+  for (var i=0;i<dates.length;i++) {
+    document.getElementById('progressLabel').textContent='抓取外資資料... 第'+(i+1)+'/'+dates.length+'天 ('+dates[i]+')';
+    document.getElementById('progressFill').style.width=(((i+1)/dates.length)*100).toFixed(1)+'%';
+    dailyMaps.push(await fetchForeignDataOneDay(dates[i]));
+    if (i<dates.length-1) await new Promise(function(r){setTimeout(r,600);});
+  }
+
+  var foreignBuyCount=0;
+  for (var ri=0;ri<scanResults.length;ri++) {
+    var r=scanResults[ri];
+    if (!r.details) continue;
+    var code=r.etf.id.trim();
+    var nets=dailyMaps.map(function(m){return m&&m.has(code)?m.get(code):null;});
+
+    var consecutive=0;
+    for (var ni=0;ni<nets.length;ni++) {
+      if (nets[ni]===null) break;
+      if (nets[ni]>0) consecutive++; else break;
+    }
+    var valid=nets.filter(function(n){return n!==null;});
+    var total10=Math.round(valid.reduce(function(a,b){return a+b;},0)/1000);
+
+    var accel=null;
+    var r5=nets.slice(0,5).filter(function(n){return n!==null;});
+    var o5=nets.slice(5,10).filter(function(n){return n!==null;});
+    if (r5.length>=3&&o5.length>=3) {
+      accel=(r5.reduce(function(a,b){return a+b;},0)/r5.length)>(o5.reduce(function(a,b){return a+b;},0)/o5.length);
+    }
+
+    r.details.foreignConsecutiveDays=consecutive;
+    r.details.foreignNet10d=total10;
+    r.details.foreignAccelerating=accel;
+    r.details.foreignCpScore=calcForeignCpScore(r.details,{consecutiveDays:consecutive,accelerating:accel},r.etf);
+    if (consecutive>=5) foreignBuyCount++;
+  }
+  document.getElementById('statForeignBuy').textContent=foreignBuyCount;
+}
+
+// ============================================================
+// UI
+// ============================================================
+document.getElementById('infoHeader').addEventListener('click',function(){
+  document.getElementById('infoBody').classList.toggle('open');
+  document.getElementById('infoChevron').classList.toggle('open');
 });
 
-// 篩選狀態
-const filters = { type: 'all', score: 0, trend: 'all' };
-
-document.querySelectorAll('.fbtn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const fType = btn.dataset.filter;
-    const fVal = btn.dataset.val;
-    // 更新同群組按鈕
-    document.querySelectorAll(`.fbtn[data-filter="${fType}"]`).forEach(b => b.classList.remove('active'));
+var filters={type:'all',score:0,trend:'all'};
+document.querySelectorAll('.fbtn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var ft=btn.dataset.filter, fv=btn.dataset.val;
+    document.querySelectorAll('.fbtn[data-filter="'+ft+'"]').forEach(function(b){b.classList.remove('active');});
     btn.classList.add('active');
-    if (fType === 'type') filters.type = fVal;
-    else if (fType === 'score') filters.score = parseInt(fVal);
-    else if (fType === 'trend') filters.trend = fVal;
+    if(ft==='type') filters.type=fv;
+    else if(ft==='score') filters.score=parseInt(fv);
+    else if(ft==='trend') filters.trend=fv;
     renderTable();
   });
 });
 
-// Toast 通知
-function showToast(msg, type = 'info', duration = 3000) {
-  const container = document.getElementById('toastContainer');
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  const icons = { info: 'fa-circle-info', success: 'fa-circle-check', error: 'fa-circle-xmark' };
-  toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i> ${msg}`;
-  container.appendChild(toast);
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateX(100%)';
-    toast.style.transition = 'all .3s';
-    setTimeout(() => toast.remove(), 300);
-  }, duration);
+function showToast(msg,type,dur){
+  type=type||'info'; dur=dur||3000;
+  var c=document.getElementById('toastContainer');
+  var t=document.createElement('div');
+  t.className='toast '+type;
+  var icons={info:'fa-circle-info',success:'fa-circle-check',error:'fa-circle-xmark'};
+  t.innerHTML='<i class="fas '+(icons[type]||icons.info)+'"></i> '+msg;
+  c.appendChild(t);
+  setTimeout(function(){
+    t.style.cssText='opacity:0;transform:translateX(100%);transition:all .3s';
+    setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},300);
+  },dur);
 }
 
-// 統計更新
-function updateStats() {
-  document.getElementById('statScanned').textContent = scanResults.length;
-  const highScore = scanResults.filter(r => r.details && r.details.score >= 60).length;
-  document.getElementById('statHighScore').textContent = highScore;
-  const sweet = scanResults.filter(r => r.details && r.details.sweetSpot === '最佳').length;
-  document.getElementById('statSweet').textContent = sweet;
+function updateStats(){
+  document.getElementById('statScanned').textContent=scanResults.length;
+  document.getElementById('statHighScore').textContent=scanResults.filter(function(r){return r.details&&r.details.score>=60;}).length;
+  document.getElementById('statSweet').textContent=scanResults.filter(function(r){return r.details&&r.details.sweetSpot==='最佳';}).length;
 }
 
-// 類型標籤對應
-const TYPE_MAP = {
-  market: { label: '市值型', cls: 'market' },
-  dividend: { label: '高股息', cls: 'dividend' },
-  bond: { label: '債券', cls: 'bond' },
-  tech: { label: '科技', cls: 'tech' },
-  esg: { label: 'ESG', cls: 'esg' },
-  overseas: { label: '海外', cls: 'overseas' },
-  reits: { label: 'REITs', cls: 'reits' },
-  other: { label: '其他', cls: 'other' }
+var TYPE_MAP={
+  market:{label:'市值型',cls:'market'},dividend:{label:'高股息',cls:'dividend'},
+  bond:{label:'債券',cls:'bond'},tech:{label:'科技',cls:'tech'},
+  esg:{label:'ESG',cls:'esg'},overseas:{label:'海外',cls:'overseas'},
+  reits:{label:'REITs',cls:'reits'},other:{label:'其他',cls:'other'}
 };
 
-// 格式化數字
-function fmt(v, decimals = 2) {
-  if (v == null) return '--';
-  return v.toFixed(decimals);
+function fmt(v,d){d=d!==undefined?d:2;return v==null?'--':v.toFixed(d);}
+
+function setForeignCols(show){
+  ['thFcp','thFdays','thFnet'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.style.display=show?'table-cell':'none';
+  });
+  ['thScore','thAtr','thTrend','thSweet','thEntry','thExit','thTsmc'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.style.display=show?'none':'table-cell';
+  });
+  document.getElementById('foreignModeLabel').style.display=show?'block':'none';
 }
 
-// 渲染表格
-function renderTable() {
-  const tbody = document.getElementById('tableBody');
-  let filtered = scanResults.filter(r => r.details !== null);
+function renderTable(){
+  var tbody=document.getElementById('tableBody');
+  var filtered=scanResults.filter(function(r){return r.details!==null;});
 
-  // 類型篩選
-  if (filters.type !== 'all') {
-    filtered = filtered.filter(r => r.etf.type === filters.type);
-  }
-  // 分數篩選
-  if (filters.score > 0) {
-    filtered = filtered.filter(r => r.details.score >= filters.score);
-  }
-  // 趨勢篩選
-  if (filters.trend !== 'all') {
-    if (filters.trend === 'sweet') {
-      filtered = filtered.filter(r => r.details.sweetSpot === '最佳');
-    } else {
-      filtered = filtered.filter(r => r.details.trendStatus === filters.trend);
+  if (isForeignMode) {
+    filtered=filtered.filter(function(r){
+      var d=r.details;
+      return d.foreignConsecutiveDays!==null&&d.foreignConsecutiveDays>=3
+          && d.foreignNet10d>0
+          && (d.rsi===null||d.rsi<55);
+    });
+    filtered.sort(function(a,b){return (b.details.foreignCpScore||0)-(a.details.foreignCpScore||0);});
+  } else {
+    if(filters.type!=='all') filtered=filtered.filter(function(r){return r.etf.type===filters.type;});
+    if(filters.score>0) filtered=filtered.filter(function(r){return r.details.score>=filters.score;});
+    if(filters.trend!=='all'){
+      if(filters.trend==='sweet') filtered=filtered.filter(function(r){return r.details.sweetSpot==='最佳';});
+      else filtered=filtered.filter(function(r){return r.details.trendStatus===filters.trend;});
     }
+    filtered.sort(function(a,b){return b.details.score-a.details.score;});
   }
 
-  // 按分數排序（高→低）
-  filtered.sort((a, b) => b.details.score - a.details.score);
+  document.getElementById('showCount').textContent=filtered.length;
+  document.getElementById('totalCount').textContent=scanResults.filter(function(r){return r.details;}).length;
 
-  document.getElementById('showCount').textContent = filtered.length;
-  document.getElementById('totalCount').textContent = scanResults.filter(r => r.details).length;
-
-  if (filtered.length === 0 && scanResults.length > 0) {
-    tbody.innerHTML = `<tr><td colspan="18"><div class="empty-state"><i class="fas fa-filter"></i><p>目前篩選條件無符合的 ETF</p></div></td></tr>`;
-    return;
-  }
-  if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="18"><div class="empty-state"><i class="fas fa-chart-line"></i><p>點擊上方按鈕開始掃描</p></div></td></tr>`;
+  if (!filtered.length){
+    var msg=scanResults.length?'目前篩選條件無符合的 ETF':'點擊上方按鈕開始掃描';
+    var icon=scanResults.length?'fa-filter':'fa-chart-line';
+    tbody.innerHTML='<tr><td colspan="21"><div class="empty-state"><i class="fas '+icon+'"></i><p>'+msg+'</p></div></td></tr>';
+    setForeignCols(isForeignMode);
     return;
   }
 
-  let html = '';
-  filtered.forEach(r => {
-    const d = r.details;
-    const etf = r.etf;
-    const tm = TYPE_MAP[etf.type] || TYPE_MAP.other;
+  var dn=isForeignMode?'none':'';      // 一般模式欄的 display
+  var dfc=isForeignMode?'':'none';     // 外資模式欄的 display
+  var html='';
+  filtered.forEach(function(r){
+    var d=r.details, etf=r.etf, tm=TYPE_MAP[etf.type]||TYPE_MAP.other;
+    var sc=d.signal==='green'?'signal-green':d.signal==='yellow'?'signal-yellow':'signal-red';
+    var ac=d.score>=70?'score-high':d.score>=40?'score-mid':'score-low';
+    var atrc=d.atrStatus==='強收縮'?'atr-strong':d.atrStatus==='收縮中'?'atr-mid':'atr-none';
+    var trc=d.trendStatus==='Stage2'?'trend-s2':d.trendStatus==='多頭'?'trend-bull':'trend-bear';
+    var swc=d.sweetSpot==='最佳'?'sweet-best':d.sweetSpot==='強勢'?'sweet-strong':'sweet-wait';
+    var tvUrl='https://www.tradingview.com/chart/?symbol=TSE%3A'+etf.id;
+    var dmap={M:'月配',Q:'季配',S:'半年',A:'年配',N:'不配'};
+    var divS=d.divFreq==='M'?'color:var(--mint);font-weight:700':d.divFreq==='Q'?'color:var(--sky)':'color:var(--text2)';
+    var rsiS=d.rsi==null?'':d.rsi>75?'color:var(--red);font-weight:700':d.rsi>65?'color:var(--orange);font-weight:700':d.rsi>=35?'color:var(--mint)':'color:var(--sky)';
+    var retS=d.ret1Y==null?'':d.ret1Y>0?'color:var(--mint)':'color:var(--red)';
+    var terS=d.ter==null?'':d.ter<0.3?'color:var(--mint)':d.ter<0.5?'color:var(--sky)':'color:var(--text2)';
+    var fdays=d.foreignConsecutiveDays;
+    var fdaysCls=fdays===null?'fdays-low':fdays>=7?'fdays-high':fdays>=3?'fdays-mid':'fdays-low';
+    var fnet=d.foreignNet10d;
+    var fnetS=fnet===null?'':fnet>0?'color:var(--mint);font-weight:700':'color:var(--red)';
+    var fcp=d.foreignCpScore;
+    var fcpCls=fcp===null?'fcp-low':fcp>=60?'fcp-hot':fcp>=35?'fcp-mid':'fcp-low';
 
-    // 信號燈
-    const sigCls = d.signal === 'green' ? 'signal-green' : d.signal === 'yellow' ? 'signal-yellow' : 'signal-red';
-
-    // 分數顏色
-    const scoreCls = d.score >= 70 ? 'score-high' : d.score >= 40 ? 'score-mid' : 'score-low';
-
-    // ATR 狀態
-    let atrCls = 'atr-none', atrText = d.atrStatus;
-    if (d.atrStatus === '強收縮') atrCls = 'atr-strong';
-    else if (d.atrStatus === '收縮中') atrCls = 'atr-mid';
-
-    // 趨勢
-    let trendCls = 'trend-bear', trendText = d.trendStatus;
-    if (d.trendStatus === 'Stage2') trendCls = 'trend-s2';
-    else if (d.trendStatus === '多頭') trendCls = 'trend-bull';
-
-    // 加碼甜蜜點
-    let sweetCls = 'sweet-wait', sweetText = d.sweetSpot;
-    if (d.sweetSpot === '最佳') sweetCls = 'sweet-best';
-    else if (d.sweetSpot === '強勢') sweetCls = 'sweet-strong';
-
-    // TradingView 連結
-    const tvUrl = `https://www.tradingview.com/chart/?symbol=TSE%3A${etf.id}`;
-
-    // 配息頻率
-    const divMap = {M:'月配',Q:'季配',S:'半年',A:'年配',N:'不配'};
-    const divText = divMap[d.divFreq] || '--';
-    const divCls  = d.divFreq==='M'?'style="color:var(--mint);font-weight:700"'
-                  : d.divFreq==='Q'?'style="color:var(--sky)"'
-                  : 'style="color:var(--text2)"';
-
-    // RSI 顏色
-    const rsiText = d.rsi != null ? d.rsi : '--';
-    const rsiStyle = d.rsi==null ? '' : d.rsi>75 ? 'style="color:var(--red);font-weight:700"'
-                   : d.rsi>65 ? 'style="color:var(--orange);font-weight:700"'
-                   : d.rsi>=35 ? 'style="color:var(--mint)"'
-                   : 'style="color:var(--sky)"';
-
-    // 1年報酬率
-    const ret1YText = d.ret1Y != null ? (d.ret1Y>0?'+':'')+d.ret1Y+'%' : '--';
-    const ret1YStyle= d.ret1Y==null?'': d.ret1Y>0?'style="color:var(--mint)"':'style="color:var(--red)"';
-
-    // 費用率
-    const terText = d.ter != null ? d.ter+'%' : '--';
-    const terStyle= d.ter==null?'': d.ter<0.3?'style="color:var(--mint)"'
-                  : d.ter<0.5?'style="color:var(--sky)"':'style="color:var(--text2)"';
-
-    html += `<tr>
-      <td><span class="signal-dot ${sigCls}"></span></td>
-      <td><a href="${tvUrl}" target="_blank" rel="noopener" class="ticker-link">${etf.id}</a></td>
-      <td style="font-weight:500;white-space:nowrap">${etf.name}</td>
-      <td><span class="type-tag ${tm.cls}">${tm.label}</span></td>
-      <td style="font-variant-numeric:tabular-nums;">${fmt(d.price)}</td>
-      <td class="score-cell ${scoreCls}">${d.score}</td>
-      <td><span ${divCls}>${divText}</span></td>
-      <td><span ${rsiStyle}>${rsiText}</span></td>
-      <td><span class="atr-tag ${atrCls}">${atrText}</span></td>
-      <td><span class="trend-tag ${trendCls}">${trendText}</span></td>
-      <td><span class="sweet-tag ${sweetCls}">${sweetText}</span></td>
-      <td><span class="${d.entryClass||'sig-n'}" style="font-size:.7rem;padding:2px 6px;border-radius:4px">${d.entrySignal||'—'}</span></td>
-      <td><span class="${d.exitClass||'sig-n'}" style="font-size:.7rem;padding:2px 6px;border-radius:4px">${d.exitSignal||'—'}</span></td>
-      <td><span ${ret1YStyle}>${ret1YText}</span></td>
-      <td><span ${terStyle}>${terText}</span></td>
-      <td style="font-size:.7rem">${d.has2330?'<span style="color:var(--mint)">✓</span>':'<span style="color:var(--text2)">—</span>'}</td>
-      <td class="ma-cell">${d.ma50 != null ? fmt(d.ma50) : '--'}</td>
-      <td class="ma-cell">${d.ma200 != null ? fmt(d.ma200) : '--'}</td>
-    </tr>`;
+    html+='<tr>'
+      +'<td><span class="signal-dot '+sc+'"></span></td>'
+      +'<td><a href="'+tvUrl+'" target="_blank" rel="noopener" class="ticker-link">'+etf.id+'</a></td>'
+      +'<td style="font-weight:500">'+etf.name+'</td>'
+      +'<td><span class="type-tag '+tm.cls+'">'+tm.label+'</span></td>'
+      +'<td>'+fmt(d.price)+'</td>'
+      +'<td class="score-cell '+ac+'" style="display:'+dn+'">'+d.score+'</td>'
+      +'<td style="display:'+dfc+'"><span class="fcp-tag '+fcpCls+'">'+(fcp===null?'--':fcp)+'</span></td>'
+      +'<td><span style="'+divS+'">'+(dmap[d.divFreq]||'--')+'</span></td>'
+      +'<td><span style="'+rsiS+'">'+(d.rsi!=null?d.rsi:'--')+'</span></td>'
+      +'<td style="display:'+dn+'"><span class="atr-tag '+atrc+'">'+d.atrStatus+'</span></td>'
+      +'<td style="display:'+dfc+'"><span class="'+fdaysCls+'">'+(fdays===null?'--':fdays+'天')+'</span></td>'
+      +'<td style="display:'+dn+'"><span class="trend-tag '+trc+'">'+d.trendStatus+'</span></td>'
+      +'<td style="display:'+dfc+'"><span style="'+fnetS+'">'+(fnet===null?'--':(fnet>0?'+':'')+fnet)+'</span></td>'
+      +'<td style="display:'+dn+'"><span class="sweet-tag '+swc+'">'+d.sweetSpot+'</span></td>'
+      +'<td style="display:'+dn+'"><span class="'+(d.entryClass||'sig-n')+'" style="font-size:.7rem;padding:2px 6px;border-radius:4px">'+(d.entrySignal||'—')+'</span></td>'
+      +'<td style="display:'+dn+'"><span class="'+(d.exitClass||'sig-n')+'" style="font-size:.7rem;padding:2px 6px;border-radius:4px">'+(d.exitSignal||'—')+'</span></td>'
+      +'<td><span style="'+retS+'">'+(d.ret1Y!=null?(d.ret1Y>0?'+':'')+d.ret1Y+'%':'--')+'</span></td>'
+      +'<td><span style="'+terS+'">'+(d.ter!=null?d.ter+'%':'--')+'</span></td>'
+      +'<td style="font-size:.7rem;display:'+dn+'">'+(d.has2330?'<span style="color:var(--mint)">&#10003;</span>':'<span style="color:var(--text2)">—</span>')+'</td>'
+      +'<td class="ma-cell">'+(d.ma50!=null?fmt(d.ma50):'--')+'</td>'
+      +'<td class="ma-cell">'+(d.ma200!=null?fmt(d.ma200):'--')+'</td>'
+      +'</tr>';
   });
-  tbody.innerHTML = html;
+  tbody.innerHTML=html;
+  setForeignCols(isForeignMode);
 }
 
 // ============================================================
 // 掃描主流程
 // ============================================================
-const scanBtn = document.getElementById('scanBtn');
-const scanBtnText = document.getElementById('scanBtnText');
-const progressWrap = document.getElementById('progressWrap');
-const progressFill = document.getElementById('progressFill');
-const progressLabel = document.getElementById('progressLabel');
-const progressEta = document.getElementById('progressEta');
+var scanBtn     = document.getElementById('scanBtn');
+var scanBtnText = document.getElementById('scanBtnText');
+var progressWrap= document.getElementById('progressWrap');
+var progressFill= document.getElementById('progressFill');
+var progressLabel=document.getElementById('progressLabel');
+var progressEta = document.getElementById('progressEta');
 
-scanBtn.addEventListener('click', startScan);
+scanBtn.addEventListener('click', function(){ startScan(false); });
 
-// ── 模式切換 ──
 function setMode(mode) {
-  const gBtn = document.getElementById('modeGrowthBtn');
-  const iBtn = document.getElementById('modeIncomeBtn');
-  if (mode === 'growth') {
-    // 成長動能：篩選科技+市值+海外，按分數排序，適合費半/台灣50類
-    gBtn.style.background = 'rgba(79,126,247,.2)'; iBtn.style.background = 'transparent';
-    // 把類型篩選設為 tech
-    document.querySelectorAll('.fbtn[data-filter="type"]').forEach(b => b.classList.remove('active'));
-    const techBtn = document.querySelector('.fbtn[data-filter="type"][data-val="tech"]');
-    if (techBtn) techBtn.classList.add('active');
-    filters.type = 'all'; // 顯示所有，但排序強調高分
-    // 用趨勢篩選 Stage2
-    document.querySelectorAll('.fbtn[data-filter="trend"]').forEach(b => b.classList.remove('active'));
-    const s2Btn = document.querySelector('.fbtn[data-filter="trend"][data-val="Stage2"]');
-    if (s2Btn) { s2Btn.classList.add('active'); filters.trend = 'Stage2'; }
-    filters.score = 0;
-    showToast('🚀 成長動能模式：顯示 Stage2 趨勢確立的 ETF，依分數排序', 'info');
-  } else {
-    // 穩定收益：篩選高股息+債券，優先月配，進場訊號優先
-    iBtn.style.background = 'rgba(63,185,122,.2)'; gBtn.style.background = 'transparent';
-    document.querySelectorAll('.fbtn[data-filter="type"]').forEach(b => b.classList.remove('active'));
-    const divBtn = document.querySelector('.fbtn[data-filter="type"][data-val="dividend"]');
-    if (divBtn) { divBtn.classList.add('active'); filters.type = 'dividend'; }
-    document.querySelectorAll('.fbtn[data-filter="trend"]').forEach(b => b.classList.remove('active'));
-    const allBtn = document.querySelector('.fbtn[data-filter="trend"][data-val="all"]');
-    if (allBtn) { allBtn.classList.add('active'); filters.trend = 'all'; }
-    filters.score = 0;
-    showToast('💰 穩定收益模式：顯示高股息 ETF，月配優先，找進場甜蜜點', 'info');
+  var gBtn=document.getElementById('modeGrowthBtn');
+  var iBtn=document.getElementById('modeIncomeBtn');
+  var fBtn=document.getElementById('modeForeignBtn');
+  gBtn.style.background=iBtn.style.background=fBtn.style.background='transparent';
+
+  if (mode==='growth') {
+    isForeignMode=false;
+    gBtn.style.background='rgba(79,126,247,.2)';
+    document.querySelectorAll('.fbtn[data-filter="trend"]').forEach(function(b){b.classList.remove('active');});
+    var s2=document.querySelector('.fbtn[data-filter="trend"][data-val="Stage2"]');
+    if(s2){s2.classList.add('active');filters.trend='Stage2';}
+    filters.type='all';filters.score=0;
+    showToast('🚀 成長動能模式：顯示 Stage2 趨勢確立的 ETF，依分數排序','info');
+    renderTable();
+
+  } else if (mode==='income') {
+    isForeignMode=false;
+    iBtn.style.background='rgba(63,185,122,.2)';
+    document.querySelectorAll('.fbtn[data-filter="type"]').forEach(function(b){b.classList.remove('active');});
+    var div=document.querySelector('.fbtn[data-filter="type"][data-val="dividend"]');
+    if(div){div.classList.add('active');filters.type='dividend';}
+    document.querySelectorAll('.fbtn[data-filter="trend"]').forEach(function(b){b.classList.remove('active');});
+    var all=document.querySelector('.fbtn[data-filter="trend"][data-val="all"]');
+    if(all){all.classList.add('active');filters.trend='all';}
+    filters.score=0;
+    showToast('💰 穩定收益模式：顯示高股息 ETF，月配優先，找進場甜蜜點','info');
+    renderTable();
+
+  } else if (mode==='foreignDip') {
+    isForeignMode=true;
+    fBtn.style.background='rgba(224,92,92,.15)';
+    if (scanResults.length===0) {
+      showToast('🐋 外資抄底雷達：先掃描 ETF 資料，再抓取外資買賣超...','info',5000);
+      startScan(true);
+    } else {
+      showToast('🐋 外資抄底雷達：正在抓取近10天外資資料...','info',4000);
+      startForeignFetch();
+    }
   }
-  renderTable();
 }
 
-async function startScan() {
-  if (isScanning) return;
-  isScanning = true;
-  scanResults = [];
-  scanBtn.disabled = true;
-  scanBtnText.textContent = '掃描中...';
+async function startForeignFetch() {
+  scanBtn.disabled=true;
   progressWrap.classList.add('show');
-  progressFill.style.width = '0%';
-  progressLabel.textContent = '準備中...';
-  progressEta.textContent = '';
-  updateStats();
+  progressFill.style.width='0%';
+  progressLabel.textContent='抓取外資資料中...';
+  progressEta.textContent='請稍候（約10～20秒）';
+  await buildForeignData();
   renderTable();
+  progressLabel.textContent='外資資料更新完成';
+  progressEta.textContent='';
+  progressFill.style.width='100%';
+  scanBtn.disabled=false;
+  var cnt=scanResults.filter(function(r){return r.details&&r.details.foreignConsecutiveDays>=3&&r.details.foreignNet10d>0;}).length;
+  showToast('🐋 找到 '+cnt+' 檔外資連買≥3天且淨買超>0的 ETF！按外資CP值排序','success',5000);
+}
 
-  const total = ETF_LIST.length;
-  const startTime = Date.now();
-  let scanned = 0;
-  let failed = 0;
+async function startScan(runForeignAfter) {
+  if (isScanning) return;
+  isScanning=true; scanResults=[];
+  scanBtn.disabled=true; scanBtnText.textContent='掃描中...';
+  progressWrap.classList.add('show');
+  progressFill.style.width='0%'; progressLabel.textContent='準備中...'; progressEta.textContent='';
+  updateStats(); renderTable();
 
-  showToast(`開始掃描 ${total} 檔 ETF，預計耗時約 ${Math.round(total * SCAN_DELAY / 1000)} 秒`, 'info');
+  var total=ETF_LIST.length, startTime=Date.now(), scanned=0, failed=0;
+  showToast('開始掃描 '+total+' 檔 ETF，預計耗時約 '+Math.round(total*SCAN_DELAY/1000)+' 秒','info');
 
-  for (let i = 0; i < total; i++) {
-    const etf = ETF_LIST[i];
-    const pct = ((i + 1) / total * 100).toFixed(1);
-    progressFill.style.width = pct + '%';
-    progressLabel.textContent = `${i + 1} / ${total} — ${etf.id} ${etf.name}`;
-
-    // 預估剩餘時間
-    const elapsed = Date.now() - startTime;
-    const avgMs = elapsed / (i + 1);
-    const remainMs = avgMs * (total - i - 1);
-    const remainSec = Math.round(remainMs / 1000);
-    progressEta.textContent = `剩餘約 ${remainSec} 秒`;
-
-    const ohlcv = await fetchETFData(etf);
-
-    if (ohlcv && ohlcv.length >= 60) {
-      cacheETF(etf, ohlcv);
-      const details = calcETF(ohlcv, etf);
-      scanResults.push({ etf, details });
-    } else {
-      failed++;
-      scanResults.push({ etf, details: null });
-    }
-
+  for (var i=0;i<total;i++) {
+    var etf=ETF_LIST[i];
+    progressFill.style.width=((i+1)/total*100).toFixed(1)+'%';
+    progressLabel.textContent=(i+1)+' / '+total+' — '+etf.id+' '+etf.name;
+    var elapsed=Date.now()-startTime;
+    progressEta.textContent='剩餘約 '+Math.round(elapsed/(i+1)*(total-i-1)/1000)+' 秒';
+    var ohlcv=await fetchETFData(etf);
+    if (ohlcv&&ohlcv.length>=60) {
+      cacheETF(etf,ohlcv);
+      scanResults.push({etf:etf,details:calcETF(ohlcv,etf)});
+    } else { failed++; scanResults.push({etf:etf,details:null}); }
     scanned++;
     updateStats();
-
-    // 每掃完一筆即時更新表格
-    if (scanned % 5 === 0 || scanned === total) renderTable();
-
-    // 延遲避免被擋
-    if (i < total - 1) {
-      await new Promise(resolve => setTimeout(resolve, SCAN_DELAY));
-    }
+    if (scanned%5===0||scanned===total) renderTable();
+    if (i<total-1) await new Promise(function(resolve){setTimeout(resolve,SCAN_DELAY);});
   }
 
-  const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-  document.getElementById('statTime').textContent = duration + 's';
-
+  var dur=((Date.now()-startTime)/1000).toFixed(1);
+  document.getElementById('statTime').textContent=dur+'s';
   renderTable();
-  progressLabel.textContent = `掃描完成 — 成功 ${total - failed} / 失敗 ${failed}`;
-  progressEta.textContent = `總耗時 ${duration} 秒`;
-  scanBtn.disabled = false;
-  scanBtnText.textContent = '重新掃描所有台灣 ETF';
-  isScanning = false;
+  progressLabel.textContent='掃描完成 — 成功 '+(total-failed)+' / 失敗 '+failed;
+  progressEta.textContent='總耗時 '+dur+' 秒';
+  scanBtn.disabled=false; scanBtnText.textContent='重新掃描所有台灣 ETF'; isScanning=false;
+  var ok=scanResults.filter(function(r){return r.details;}).length;
+  var hs=scanResults.filter(function(r){return r.details&&r.details.score>=60;}).length;
+  var sw=scanResults.filter(function(r){return r.details&&r.details.sweetSpot==='最佳';}).length;
+  showToast('掃描完成！成功 '+ok+' 檔，≥60分 '+hs+' 檔，加碼甜蜜點 '+sw+' 檔','success',5000);
 
-  const successCount = scanResults.filter(r => r.details !== null).length;
-  const highScore = scanResults.filter(r => r.details && r.details.score >= 60).length;
-  const sweetCount = scanResults.filter(r => r.details && r.details.sweetSpot === '最佳').length;
-  showToast(`掃描完成！成功 ${successCount} 檔，≥60分 ${highScore} 檔，加碼甜蜜點 ${sweetCount} 檔`, 'success', 5000);
+  if (runForeignAfter===true) await startForeignFetch();
 }
 
 // ============================================================
 // 粒子背景
 // ============================================================
-function createParticles() {
-  const container = document.getElementById('particles');
-  const count = 30;
-  for (let i = 0; i < count; i++) {
-    const p = document.createElement('div');
-    p.className = 'particle';
-    p.style.left = Math.random() * 100 + '%';
-    p.style.animationDuration = (8 + Math.random() * 12) + 's';
-    p.style.animationDelay = (Math.random() * 10) + 's';
-    p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
-    container.appendChild(p);
+(function(){
+  var c=document.getElementById('particles');
+  for(var i=0;i<30;i++){
+    var p=document.createElement('div'); p.className='particle';
+    p.style.left=Math.random()*100+'%';
+    p.style.animationDuration=(8+Math.random()*12)+'s';
+    p.style.animationDelay=(Math.random()*10)+'s';
+    p.style.width=p.style.height=(1+Math.random()*2)+'px';
+    c.appendChild(p);
   }
-}
-createParticles();
+})();
 
-// ============================================================
-// 初始化：預設展開說明卡片
-// ============================================================
-infoBody.classList.add('open');
-infoChevron.classList.add('open');
-document.getElementById('totalCount').textContent = '0';
-document.getElementById('showCount').textContent = '0';
+document.getElementById('infoBody').classList.add('open');
+document.getElementById('infoChevron').classList.add('open');
+document.getElementById('totalCount').textContent='0';
+document.getElementById('showCount').textContent='0';
 </script>
 </body>
 </html>
