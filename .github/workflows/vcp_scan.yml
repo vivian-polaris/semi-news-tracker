@@ -18,7 +18,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Run VCP scan (reads stocks_tse.json + stocks_otc.json)
+      - name: Install dependencies
+        run: pip install --quiet yfinance requests
+
+      - name: Run VCP scan (reads stocks_tse.json + stocks_otc.json, fetches fundamentals)
         run: python scripts/scan_vcp.py
 
       - name: Commit vcp_daily.json

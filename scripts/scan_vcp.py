@@ -5,8 +5,9 @@ Algorithm is a 1:1 port of calcVCP() in VCPfinder.html.
 Results will match what VCPfinder shows in the browser.
 """
 
-import json, math, datetime, sys
+import json, math, datetime, sys, time
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 MIN_SCORE_SAVE = 40
 
@@ -306,6 +307,68 @@ def calc_vcp(data):
         'pbBuy': pb_buy,
     }
 
+# ── Fundamental score (1:1 port of VCPfinder calcFundScore) ─────────────────
+
+def calc_fund_score(fund):
+    if not fund:
+        return None
+    pts = tot = 0
+    roe = fund.get('roe')
+    gross = fund.get('grossMargin')
+    op    = fund.get('operatingMargin')
+    eg    = fund.get('earningsGrowth')
+    rg    = fund.get('revenueGrowth')
+
+    if roe is not None:
+        tot += 30
+        pts += 30 if roe >= 0.15 else (18 if roe >= 0.08 else (8 if roe >= 0 else 0))
+    if gross is not None:
+        tot += 15
+        pts += 15 if gross >= 0.3 else (8 if gross >= 0.15 else (4 if gross > 0 else 0))
+    if op is not None:
+        tot += 15
+        pts += 15 if op >= 0.15 else (8 if op >= 0.08 else (4 if op > 0 else 0))
+    if eg is not None and not (isinstance(eg, float) and math.isnan(eg)):
+        tot += 20
+        pts += 20 if eg >= 0.15 else (10 if eg >= 0 else 0)
+    if rg is not None:
+        tot += 15
+        pts += 15 if rg >= 0.1 else (7 if rg >= 0 else 0)
+
+    return round(pts / tot * 100) if tot > 0 else None
+
+# ── Yahoo Finance fundamental fetch ─────────────────────────────────────────
+
+def _fetch_one(sym):
+    try:
+        import yfinance as yf
+        info = yf.Ticker(sym).info
+        return sym, {
+            'roe':             info.get('returnOnEquity'),
+            'grossMargin':     info.get('grossMargins'),
+            'operatingMargin': info.get('operatingMargins'),
+            'earningsGrowth':  info.get('earningsGrowth'),
+            'revenueGrowth':   info.get('revenueGrowth'),
+        }
+    except Exception:
+        return sym, None
+
+def fetch_fund_data(symbols, max_workers=8):
+    results = {}
+    total = len(symbols)
+    done = 0
+    with ThreadPoolExecutor(max_workers=max_workers) as ex:
+        futures = {ex.submit(_fetch_one, sym): sym for sym in symbols}
+        for future in as_completed(futures):
+            sym, data = future.result()
+            results[sym] = data
+            done += 1
+            if done % 50 == 0 or done == total:
+                sys.stdout.write(f'\r  fund fetch: {done}/{total}   ')
+                sys.stdout.flush()
+    print()
+    return results
+
 # ── Load JSON → data array ────────────────────────────────────────────────────
 
 def load_stocks(path):
@@ -380,20 +443,43 @@ def main():
     print(f'\nDone: scanned={total-failed}, candidates={len(results)}, failed={failed}')
     results.sort(key=lambda r: r['vcp']['score'], reverse=True)
 
+    # ── Step 2: fetch Yahoo Finance fundamentals + apply fundScore >= 80 ──────
+    FUND_MIN = 80
+    print(f'\nFetching fundamentals for {len(results)} candidates (Yahoo Finance)...')
+    syms = [r['sym'] for r in results]
+    fund_map = fetch_fund_data(syms, max_workers=8)
+
+    filtered = []
+    fund_pass = fund_null = fund_fail = 0
+    for r in results:
+        fd   = fund_map.get(r['sym'])
+        fs   = calc_fund_score(fd)
+        r['fund']      = fd
+        r['fundScore'] = fs
+        if fs is None:
+            fund_null += 1       # no Yahoo data → filtered out (matches VCPfinder)
+        elif fs < FUND_MIN:
+            fund_fail += 1
+        else:
+            fund_pass += 1
+            filtered.append(r)
+
+    print(f'Fund filter (>={FUND_MIN}): pass={fund_pass}, fail={fund_fail}, no_data={fund_null}')
+
     scan_date = price_date or now_tw.strftime('%Y-%m-%d')
     output = {
         'scanDate':      scan_date,
         'scanTime':      now_tw.strftime('%H:%M'),
         'totalScanned':  total - failed,
         'totalStocks':   total,
-        'vcpCandidates': len(results),
-        'stocks':        results,
+        'vcpCandidates': len(filtered),
+        'stocks':        filtered,
     }
 
     out_path = base / 'vcp_daily.json'
     with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(output, f, ensure_ascii=False, separators=(',', ':'))
-    print(f'Saved: {out_path}  ({len(results)} records)')
+    print(f'Saved: {out_path}  ({len(filtered)} records after fund filter)')
 
 if __name__ == '__main__':
     main()
