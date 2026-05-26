@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """VCP 每日選股 Email 報告 — 讀 vcp_daily.json，透過 Resend API 發送 HTML 報告"""
 
-import json, os, sys, datetime, urllib.request
+import json, os, sys, datetime
 from pathlib import Path
+import requests
 
 RESEND_API_KEY = os.environ['RESEND_API_KEY']
 TO_EMAIL       = 'polaris.sequoia@gmail.com'
@@ -146,28 +147,20 @@ def build_html(data):
     )
 
 def send_via_resend(subject, html):
-    payload = json.dumps({
-        'from':    FROM_EMAIL,
-        'to':      [TO_EMAIL],
-        'subject': subject,
-        'html':    html,
-    }).encode('utf-8')
-
-    req = urllib.request.Request(
+    resp = requests.post(
         'https://api.resend.com/emails',
-        data=payload,
-        headers={
-            'Authorization': f'Bearer {RESEND_API_KEY}',
-            'Content-Type':  'application/json',
+        json={
+            'from':    FROM_EMAIL,
+            'to':      [TO_EMAIL],
+            'subject': subject,
+            'html':    html,
         },
+        headers={'Authorization': f'Bearer {RESEND_API_KEY}'},
+        timeout=30,
     )
-    try:
-        with urllib.request.urlopen(req) as resp:
-            result = json.loads(resp.read())
-        return result.get('id', '?')
-    except urllib.error.HTTPError as e:
-        body = e.read().decode('utf-8', errors='replace')
-        raise RuntimeError(f'Resend API {e.code}: {body}') from None
+    if not resp.ok:
+        raise RuntimeError(f'Resend API {resp.status_code}: {resp.text}')
+    return resp.json().get('id', '?')
 
 def main():
     data      = load_vcp()

@@ -13,6 +13,8 @@ jobs:
         with:
           python-version: '3.11'
 
+      - run: pip install --quiet requests
+
       - name: Send VCP email report
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
