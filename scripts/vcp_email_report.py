@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 
 RESEND_API_KEY = os.environ['RESEND_API_KEY']
-TO_EMAILS      = ['polaris.sequoia@gmail.com', 'lightall.blog@gmail.com', 'vast.gamma@gmail.com']
+TO_EMAILS      = ['polaris.sequoia@gmail.com']  # TODO: add lightall.blog@gmail.com, vast.gamma@gmail.com after Resend verification
 FROM_EMAIL     = 'VCP選股 <onboarding@resend.dev>'
 
 MAX_STALE_DAYS = 4
