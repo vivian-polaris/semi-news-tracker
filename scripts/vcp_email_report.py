@@ -41,6 +41,30 @@ def score_color(s):
     if s >= 60: return '#d97706'
     return '#2563eb'
 
+def calc_canslim(vcp, fund):
+    """1:1 port of calcCANSLIM() from VCPfinder.html (I criterion skipped: no chips data)"""
+    eg = fund.get('earningsGrowth') if fund else None
+    if isinstance(eg, float) and eg != eg:  # NaN
+        eg = None
+    c_growth = eg if eg is not None else (fund.get('revenueGrowth') if fund else None)
+    C = (c_growth >= 0.25) if c_growth is not None else None
+
+    roe = fund.get('roe') if fund else None
+    op  = fund.get('operatingMargin') if fund else None
+    A = (roe >= 0.15) if roe is not None else ((op >= 0.12) if op is not None else None)
+
+    N = (vcp['pctH'] < 15) if vcp else None
+
+    v_rat = vcp.get('vRat') if vcp else None
+    cont  = vcp.get('contractions', 0) if vcp else 0
+    S = ((v_rat < 0.85 and cont >= 2) if v_rat is not None else (cont >= 2)) if vcp else None
+
+    L = (vcp['score'] >= 70) if vcp else None
+    M = (vcp.get('stage2', False)) if vcp else None
+
+    return sum(1 for v in [C, A, N, S, L, M] if v is True)
+
+
 def build_table(stocks):
     if not stocks:
         return '<p style="color:#94a3b8;font-size:13px">（無符合條件股票）</p>'
@@ -105,25 +129,22 @@ def build_html(data):
     total_scanned = data.get('totalScanned', 0)
     total_stocks  = data.get('totalStocks', 0)
 
-    hot   = [s for s in stocks if s['vcp']['score'] >= 80]
-    good  = [s for s in stocks if 60 <= s['vcp']['score'] < 80]
-    watch = [s for s in stocks if 40 <= s['vcp']['score'] < 60][:20]
+    # 套用與 VCPfinder.html 相同的預設 filter：VCP≥80、CANSLIM≥5（I項無chips資料略過）
+    filtered = [
+        s for s in stocks
+        if s['vcp']['score'] >= 80
+        and calc_canslim(s['vcp'], s.get('fund')) >= 5
+    ]
 
     tz_tw       = datetime.timezone(datetime.timedelta(hours=8))
     report_time = datetime.datetime.now(tz_tw).strftime('%Y-%m-%d %H:%M')
 
     sections = ''
-    if hot:
+    if filtered:
         sections += (f'<h3 style="color:#dc2626;margin:24px 0 8px">'
-                     f'🔥 強力候選（80分以上，共 {len(hot)} 支）</h3>{build_table(hot)}')
-    if good:
-        sections += (f'<h3 style="color:#d97706;margin:24px 0 8px">'
-                     f'🟢 良好候選（60–79分，共 {len(good)} 支）</h3>{build_table(good)}')
-    if watch:
-        sections += (f'<h3 style="color:#2563eb;margin:24px 0 8px">'
-                     f'🟡 觀察名單（40–59分，顯示前 {len(watch)} 支）</h3>{build_table(watch)}')
+                     f'🔥 VCP候選（VCP≥80 + CANSLIM≥5，共 {len(filtered)} 支）</h3>{build_table(filtered)}')
     if not sections:
-        sections = '<p style="color:#64748b;font-size:14px">今日無符合條件的 VCP 候選（分數 ≥ 40）</p>'
+        sections = '<p style="color:#64748b;font-size:14px">今日無符合條件的 VCP 候選</p>'
 
     return (
         '<!DOCTYPE html><html lang="zh-TW">'
@@ -134,7 +155,7 @@ def build_html(data):
         '<div style="font-size:20px;font-weight:700">📈 VCP 每日選股報告</div>'
         f'<div style="font-size:13px;opacity:.75;margin-top:4px">'
         f'掃描日期：{scan_date} {scan_time}　掃描股數：{total_scanned:,}/{total_stocks:,}'
-        f'　VCP 候選：{len(stocks)} 支　報告產生：{report_time}</div></div>'
+        f'　VCP候選(原始)：{len(stocks)} 支　報告產生：{report_time}</div></div>'
         f'{staleness_banner(scan_date)}'
         '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;'
         'padding:10px 14px;margin:12px 0;font-size:12px;color:#92400e">'
@@ -167,9 +188,13 @@ def main():
     data      = load_vcp()
     stocks    = data.get('stocks', [])
     scan_date = data.get('scanDate', '—')
-    hot_count = sum(1 for s in stocks if s['vcp']['score'] >= 60)
+    filtered_count = sum(
+        1 for s in stocks
+        if s['vcp']['score'] >= 80
+        and calc_canslim(s['vcp'], s.get('fund')) >= 5
+    )
 
-    subject = f'📈 VCP {scan_date} ─ {hot_count} 支高分候選'
+    subject = f'📈 VCP {scan_date} ─ {filtered_count} 支候選'
     html    = build_html(data)
     email_id = send_via_brevo(subject, html)
 
