@@ -11,6 +11,11 @@ FROM_EMAIL     = 'polaris.sequoia@gmail.com'
 FROM_NAME      = 'VCP選股'
 
 MAX_STALE_DAYS = 4
+DEFAULT_SEC_FILTER = {
+    'IC設計', 'PCB', '伺服器', '其他電子', '化學', '化工', '半導體', '散熱', '數位雲端', '油電燃氣',
+    '精密機械', '被動元件', '記憶體', '資訊服務', '通信網路', '連接器', '電子', '電子代工', '電子通路',
+    '電子零組件', '電機', '電源', '電腦', '面板'
+}
 
 def load_vcp():
     p = Path('vcp_daily.json')
@@ -134,6 +139,7 @@ def build_html(data):
         s for s in stocks
         if s['vcp']['score'] >= 80
         and calc_canslim(s['vcp'], s.get('fund')) >= 5
+        and s.get('sector', '') in DEFAULT_SEC_FILTER
     ]
 
     tz_tw       = datetime.timezone(datetime.timedelta(hours=8))
@@ -192,6 +198,7 @@ def main():
         1 for s in stocks
         if s['vcp']['score'] >= 80
         and calc_canslim(s['vcp'], s.get('fund')) >= 5
+        and s.get('sector', '') in DEFAULT_SEC_FILTER
     )
 
     subject = f'📈 VCP {scan_date} ─ {filtered_count} 支候選'

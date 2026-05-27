@@ -2,7 +2,9 @@ name: VCP Daily Scan + Email
 
 on:
   schedule:
-    - cron: '30 6 * * 1-5'   # Mon-Fri 06:30 UTC = 14:30 Taipei (after market close)
+    - cron: '0 0 * * 1-5'    # Mon-Fri 00:00 UTC = 08:00 Taipei
+    - cron: '30 2 * * 1-5'   # Mon-Fri 02:30 UTC = 10:30 Taipei
+    - cron: '0 5 * * 1-5'    # Mon-Fri 05:00 UTC = 13:00 Taipei
   workflow_dispatch:
 
 permissions:
@@ -20,6 +22,9 @@ jobs:
 
       - name: Install dependencies
         run: pip install --quiet yfinance requests
+
+      - name: Fetch latest market prices
+        run: python scripts/fetch_twse_daily.py
 
       - name: Run VCP scan (reads stocks_tse.json + stocks_otc.json, fetches fundamentals)
         run: python scripts/scan_vcp.py

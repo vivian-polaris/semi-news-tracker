@@ -402,20 +402,33 @@ def main():
     base     = Path(__file__).parent.parent
     tse_path = base / 'stocks_tse.json'
     otc_path = base / 'stocks_otc.json'
+    daily_path = base / 'twse_daily.json'
 
     if not tse_path.exists():
         print('ERROR: stocks_tse.json not found'); sys.exit(1)
 
     tse_stocks, price_date = load_stocks(tse_path)
     otc_stocks, _          = load_stocks(otc_path) if otc_path.exists() else ({}, '')
+    sector_map = {}
+    if daily_path.exists():
+        with open(daily_path, encoding='utf-8') as f:
+            sector_map = json.load(f).get('sectors', {}) or {}
     print(f'Data: TSE={len(tse_stocks)}, OTC={len(otc_stocks)}, price_date={price_date}')
 
     all_stocks = {}
     for code, entry in tse_stocks.items():
-        all_stocks[code] = {**entry, 'ex': 'TW',  'sector': '上市'}
+        all_stocks[code] = {
+            **entry,
+            'ex': 'TW',
+            'sector': sector_map.get(code, entry.get('sector', '上市')),
+        }
     for code, entry in otc_stocks.items():
         if code not in all_stocks:
-            all_stocks[code] = {**entry, 'ex': 'TWO', 'sector': '上櫃'}
+            all_stocks[code] = {
+                **entry,
+                'ex': 'TWO',
+                'sector': sector_map.get(code, entry.get('sector', '上櫃')),
+            }
 
     results = []
     failed = 0
