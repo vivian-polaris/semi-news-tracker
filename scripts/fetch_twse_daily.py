@@ -529,7 +529,7 @@ def is_trading_hours_tw():
     if now.weekday() >= 5:
         return False
     t = now.hour * 60 + now.minute
-    return 9 * 60 <= t <= 13 * 30
+    return 9 * 60 <= t <= 13 * 60 + 30
 
 def fetch_twse_mis_prices(all_stocks):
     """
@@ -797,7 +797,7 @@ def main():
     twse_today, twse_price_date_api = {}, None
     tpex_today, tpex_price_date = {}, None
 
-    if is_trading_hours_tw():
+    if is_trading_hours_tw() or os.environ.get('FORCE_YAHOO') == '1':
         today_date = last_trading_date_tw()
         all_for_yahoo = ([{'code': s['code'], 'ex': 'TW'}  for s in tse_stocks] +
                          [{'code': s['code'], 'ex': 'TWO'} for s in otc_stocks])

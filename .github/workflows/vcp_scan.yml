@@ -24,6 +24,8 @@ jobs:
         run: pip install --quiet yfinance requests
 
       - name: Fetch latest market prices
+        env:
+          FORCE_YAHOO: '1'
         run: python scripts/fetch_twse_daily.py
 
       - name: Run VCP scan (reads stocks_tse.json + stocks_otc.json, fetches fundamentals)

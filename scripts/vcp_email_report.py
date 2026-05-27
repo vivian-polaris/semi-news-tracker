@@ -175,14 +175,17 @@ def build_html(data):
     )
 
 def send_via_brevo(subject, html):
+    payload = {
+        'sender':      {'name': FROM_NAME, 'email': FROM_EMAIL},
+        'to':          [{'email': TO_EMAILS[0]}],
+        'subject':     subject,
+        'htmlContent': html,
+    }
+    if len(TO_EMAILS) > 1:
+        payload['bcc'] = [{'email': e} for e in TO_EMAILS[1:]]
     resp = requests.post(
         'https://api.brevo.com/v3/smtp/email',
-        json={
-            'sender':      {'name': FROM_NAME, 'email': FROM_EMAIL},
-            'to':          [{'email': e} for e in TO_EMAILS],
-            'subject':     subject,
-            'htmlContent': html,
-        },
+        json=payload,
         headers={'api-key': BREVO_API_KEY, 'Content-Type': 'application/json'},
         timeout=30,
     )
