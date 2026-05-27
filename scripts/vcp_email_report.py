@@ -5,9 +5,10 @@ import json, os, sys, datetime
 from pathlib import Path
 import requests
 
-RESEND_API_KEY = os.environ['RESEND_API_KEY']
-TO_EMAILS      = ['polaris.sequoia@gmail.com']  # TODO: add lightall.blog@gmail.com, vast.gamma@gmail.com after Resend verification
-FROM_EMAIL     = 'VCP選股 <onboarding@resend.dev>'
+BREVO_API_KEY  = os.environ['BREVO_API_KEY']
+TO_EMAILS      = ['polaris.sequoia@gmail.com', 'lightall.blog@gmail.com', 'vast.gamma@gmail.com']
+FROM_EMAIL     = 'polaris.sequoia@gmail.com'
+FROM_NAME      = 'VCP選股'
 
 MAX_STALE_DAYS = 4
 
@@ -146,21 +147,21 @@ def build_html(data):
         '</body></html>'
     )
 
-def send_via_resend(subject, html):
+def send_via_brevo(subject, html):
     resp = requests.post(
-        'https://api.resend.com/emails',
+        'https://api.brevo.com/v3/smtp/email',
         json={
-            'from':    FROM_EMAIL,
-            'to':      TO_EMAILS,
-            'subject': subject,
-            'html':    html,
+            'sender':      {'name': FROM_NAME, 'email': FROM_EMAIL},
+            'to':          [{'email': e} for e in TO_EMAILS],
+            'subject':     subject,
+            'htmlContent': html,
         },
-        headers={'Authorization': f'Bearer {RESEND_API_KEY}'},
+        headers={'api-key': BREVO_API_KEY, 'Content-Type': 'application/json'},
         timeout=30,
     )
     if not resp.ok:
-        raise RuntimeError(f'Resend API {resp.status_code}: {resp.text}')
-    return resp.json().get('id', '?')
+        raise RuntimeError(f'Brevo API {resp.status_code}: {resp.text}')
+    return resp.json().get('messageId', '?')
 
 def main():
     data      = load_vcp()
@@ -170,11 +171,11 @@ def main():
 
     subject = f'📈 VCP {scan_date} ─ {hot_count} 支高分候選'
     html    = build_html(data)
-    email_id = send_via_resend(subject, html)
+    email_id = send_via_brevo(subject, html)
 
     print(f'✉  Email sent → {", ".join(TO_EMAILS)}')
     print(f'   Subject : {subject}')
-    print(f'   Resend id: {email_id}')
+    print(f'   Brevo id: {email_id}')
 
 if __name__ == '__main__':
     main()

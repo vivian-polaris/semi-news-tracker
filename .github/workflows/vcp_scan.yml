@@ -34,7 +34,7 @@ jobs:
 
       - name: Send email report
         env:
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
         run: |
           pip install --quiet requests
           python scripts/vcp_email_report.py
