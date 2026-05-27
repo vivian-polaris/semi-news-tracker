@@ -686,6 +686,76 @@ def fetch_intraday_yahoo(all_stocks):
     return result
 
 
+def fetch_intraday_yfinance(all_stocks):
+    import pandas as pd
+    import yfinance as yf
+
+    symbols = [f"{s['code']}.{s['ex']}" for s in all_stocks]
+    code_map = {f"{s['code']}.{s['ex']}": s['code'] for s in all_stocks}
+    result = {}
+    if not symbols:
+        print(f'  yfinance 即時價格：{len(result)}/{len(all_stocks)} 支')
+        return result
+
+    try:
+        data = yf.download(symbols, period='1d', progress=False, auto_adjust=False, threads=True)
+    except Exception as e:
+        print(f'  [WARN] yfinance download failed: {e}')
+        print(f'  yfinance 即時價格：{len(result)}/{len(all_stocks)} 支')
+        return result
+
+    if data is None or getattr(data, 'empty', True):
+        print(f'  yfinance 即時價格：{len(result)}/{len(all_stocks)} 支')
+        return result
+
+    def _last_valid(frame, field):
+        try:
+            value = frame[field].iloc[-1]
+        except Exception:
+            return None
+        if pd.isna(value):
+            return None
+        return value
+
+    if isinstance(data.columns, pd.MultiIndex):
+        for symbol in symbols:
+            code = code_map.get(symbol)
+            if not code:
+                continue
+            try:
+                frame = data.xs(symbol, axis=1, level=1)
+            except Exception:
+                continue
+            c = _last_valid(frame, 'Close')
+            h = _last_valid(frame, 'High')
+            l = _last_valid(frame, 'Low')
+            v = _last_valid(frame, 'Volume')
+            if c is None or c <= 0 or any(pd.isna(x) for x in (h, l, v)):
+                continue
+            result[code] = {
+                'c': round(float(c), 2),
+                'h': round(float(h), 2),
+                'l': round(float(l), 2),
+                'v': int(float(v)),
+            }
+    else:
+        code = all_stocks[0]['code'] if all_stocks else None
+        c = _last_valid(data, 'Close')
+        h = _last_valid(data, 'High')
+        l = _last_valid(data, 'Low')
+        v = _last_valid(data, 'Volume')
+        if code and c is not None and c > 0 and not any(pd.isna(x) for x in (h, l, v)):
+            result[code] = {
+                'c': round(float(c), 2),
+                'h': round(float(h), 2),
+                'l': round(float(l), 2),
+                'v': int(float(v)),
+            }
+
+    print(f'  yfinance 即時價格：{len(result)}/{len(all_stocks)} 支')
+    return result
+
+
 def atomic_write(path, data):
     """原子寫入 JSON：先寫暫存檔再 rename，防止中途中斷毀損資料"""
     tmp = path + '.tmp'
@@ -823,6 +893,18 @@ def main():
             print(f'  ⚠️ Yahoo OTC 不足（{len(yahoo_otc)}），進入層2')
 
         # 層 2：mis.twse.com.tw（只補 Yahoo 失敗的市場）
+        if not yahoo_ok_tse:
+            print('  盤中模式（層1b）：yfinance 即時報價（fallback）...')
+            yf_all = fetch_intraday_yfinance(all_for_yahoo)
+            yf_tse = {k: v for k, v in yf_all.items() if k in tse_codes}
+            yf_otc = {k: v for k, v in yf_all.items() if k in otc_codes}
+            if len(yf_tse) > 100:
+                twse_today, twse_price_date_api = yf_tse, today_date
+                yahoo_ok_tse = True
+            if len(yf_otc) > 100:
+                tpex_today, tpex_price_date = yf_otc, today_date
+                yahoo_ok_otc = True
+
         need_mis = (not yahoo_ok_tse) or (not yahoo_ok_otc)
         if need_mis:
             print('  盤中模式（層2）：mis.twse.com.tw 備援...')
