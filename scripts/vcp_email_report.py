@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 
 RESEND_API_KEY = os.environ['RESEND_API_KEY']
-TO_EMAIL       = 'polaris.sequoia@gmail.com'
+TO_EMAILS      = ['polaris.sequoia@gmail.com', 'lightall.blog@gmail.com', 'vast.gamma@gmail.com']
 FROM_EMAIL     = 'VCP選股 <onboarding@resend.dev>'
 
 MAX_STALE_DAYS = 4
@@ -151,7 +151,7 @@ def send_via_resend(subject, html):
         'https://api.resend.com/emails',
         json={
             'from':    FROM_EMAIL,
-            'to':      [TO_EMAIL],
+            'to':      TO_EMAILS,
             'subject': subject,
             'html':    html,
         },
@@ -172,7 +172,7 @@ def main():
     html    = build_html(data)
     email_id = send_via_resend(subject, html)
 
-    print(f'✉  Email sent → {TO_EMAIL}')
+    print(f'✉  Email sent → {", ".join(TO_EMAILS)}')
     print(f'   Subject : {subject}')
     print(f'   Resend id: {email_id}')
 
