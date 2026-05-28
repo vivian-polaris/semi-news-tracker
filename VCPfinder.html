@@ -844,25 +844,21 @@ footer a:hover{text-decoration:underline}
 <div class="err-box" id="errBox"></div>
 
 <!-- ── Summary + Rescan Row ── -->
-<div id="sumGrid" style="display:none;align-items:center;gap:6px;margin:8px 0">
-  <div class="sum-card" style="flex:1;min-width:0;padding:6px 8px;text-align:center">
-    <div class="sum-label">已掃描</div>
-    <div class="sum-val" id="sumScanned" style="color:var(--purple);font-size:1.3rem">—</div>
-    <div class="sum-sub">支</div>
-  </div>
-  <div class="sum-card" style="flex:1;min-width:0;padding:6px 8px;text-align:center">
-    <div class="sum-label">VCP ≥60</div>
-    <div class="sum-val" id="sumVcp" style="color:var(--yellow);font-size:1.3rem">—</div>
-    <div class="sum-sub">支</div>
-  </div>
-  <div class="sum-card" style="flex:1;min-width:0;padding:6px 8px;text-align:center">
-    <div class="sum-label">強力 ≥80</div>
-    <div class="sum-val" id="sumStrong" style="color:var(--mint);font-size:1.3rem">—</div>
-    <div class="sum-sub">支</div>
-  </div>
-  <div class="sum-card" style="flex:1;min-width:0;padding:6px 8px;text-align:center">
-    <div class="sum-label">時間</div>
-    <div class="sum-val" id="sumTime" style="font-size:.8rem;color:var(--text)">—</div>
+<div id="sumGrid" style="display:none;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap">
+  <div class="sum-card" style="flex:1;min-width:0;padding:6px 10px;display:flex;align-items:baseline;gap:6px;white-space:nowrap">
+    <span style="font-size:.72rem;color:var(--text2)">已掃描</span>
+    <span class="sum-val" id="sumScanned" style="color:var(--purple);font-size:1.1rem;font-weight:700">—</span>
+    <span style="font-size:.75rem;color:var(--text2)">支</span>
+    <span style="color:var(--text2);margin:0 2px">·</span>
+    <span style="font-size:.72rem;color:var(--text2)">VCP≥60</span>
+    <span class="sum-val" id="sumVcp" style="color:var(--yellow);font-size:1.1rem;font-weight:700">—</span>
+    <span style="font-size:.75rem;color:var(--text2)">支</span>
+    <span style="color:var(--text2);margin:0 2px">·</span>
+    <span style="font-size:.72rem;color:var(--text2)">強力≥80</span>
+    <span class="sum-val" id="sumStrong" style="color:var(--mint);font-size:1.1rem;font-weight:700">—</span>
+    <span style="font-size:.75rem;color:var(--text2)">支</span>
+    <span style="color:var(--text2);margin:0 2px">·</span>
+    <span id="sumTime" style="font-size:.75rem;color:var(--text2)">—</span>
   </div>
   <button class="scan-btn" id="scanBtn" onclick="startScan()" style="flex-shrink:0;padding:9px 20px;font-size:.85rem">開始掃描 VCP</button>
   <button id="cancelBtn" onclick="cancelScan()" style="display:none;flex-shrink:0;padding:9px 18px;background:var(--card);border:1.5px solid var(--red);border-radius:6px;color:var(--red);font-size:.82rem;font-weight:700;cursor:pointer">停止</button>
