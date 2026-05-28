@@ -1,0 +1,40 @@
+name: Taiwan Futures Huge-Volume Black-Candle Alert
+
+on:
+  schedule:
+    # Every 5 min, Mon-Fri, 09:05-13:45 TW (01:05-05:45 UTC)
+    - cron: '5,10,15,20,25,30,35,40,45,50,55 1 * * 1-5'
+    - cron: '0,5,10,15,20,25,30,35,40,45,50,55 2 * * 1-5'
+    - cron: '0,5,10,15,20,25,30,35,40,45,50,55 3 * * 1-5'
+    - cron: '0,5,10,15,20,25,30,35,40,45,50,55 4 * * 1-5'
+    - cron: '0,5,10,15,20,25,30,35,40,45 5 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  alert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install --quiet yfinance requests
+
+      - name: Run futures alert
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+        run: python scripts/futures_alert.py
+
+      - name: Commit alert state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add alert_state.json
+          git diff --staged --quiet || git commit -m "data: update alert_state.json [skip ci]"
+          git push
