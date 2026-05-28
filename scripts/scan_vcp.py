@@ -372,34 +372,38 @@ def fetch_fund_data(symbols, max_workers=8):
 # ── Load JSON → data array ────────────────────────────────────────────────────
 
 def _yahoo_batch_quotes(codes, suffix):
-    """Fetch today's OHLCV from Yahoo Finance quote API in batches of 50. Returns {code: {c,h,l,o,v}}."""
-    import urllib.request as ur
+    """Fetch today's OHLCV via yfinance in batches of 200. Returns {code: {c,h,l,o,v}}."""
+    import yfinance as yf
     result = {}
-    for i in range(0, len(codes), 50):
-        batch = codes[i:i+50]
-        syms  = ','.join(f'{c}{suffix}' for c in batch)
-        url   = (f'https://query2.finance.yahoo.com/v7/finance/quote'
-                 f'?symbols={syms}'
-                 f'&fields=regularMarketPrice,regularMarketOpen,regularMarketHigh,'
-                 f'regularMarketLow,regularMarketVolume')
+    for i in range(0, len(codes), 200):
+        batch   = codes[i:i+200]
+        tickers = [f'{c}{suffix}' for c in batch]
         try:
-            req = ur.Request(url, headers={'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'})
-            with ur.urlopen(req, timeout=15) as resp:
-                data = json.loads(resp.read())
-            for q in data.get('quoteResponse', {}).get('result', []):
-                code = str(q.get('symbol', '')).replace(suffix, '')
-                c = q.get('regularMarketPrice')
-                if not c:
-                    continue
-                result[code] = {
-                    'c': round(c, 2),
-                    'o': round(q.get('regularMarketOpen') or c, 2),
-                    'h': round(q.get('regularMarketHigh') or c, 2),
-                    'l': round(q.get('regularMarketLow')  or c, 2),
-                    'v': int(q.get('regularMarketVolume') or 0),
-                }
+            df = yf.download(tickers, period='1d', interval='1d',
+                             progress=False, auto_adjust=True, timeout=30)
+            if df.empty:
+                continue
+            # yf.download with multiple tickers returns MultiIndex columns
+            closes  = df['Close']  if 'Close'  in df.columns else df.get('Close',  None)
+            opens   = df['Open']   if 'Open'   in df.columns else df.get('Open',   None)
+            highs   = df['High']   if 'High'   in df.columns else df.get('High',   None)
+            lows    = df['Low']    if 'Low'    in df.columns else df.get('Low',    None)
+            volumes = df['Volume'] if 'Volume' in df.columns else df.get('Volume', None)
+            for sym in tickers:
+                code = sym.replace(suffix, '')
+                try:
+                    c = float(closes[sym].dropna().iloc[-1])  if closes  is not None else None
+                    o = float(opens[sym].dropna().iloc[-1])   if opens   is not None else c
+                    h = float(highs[sym].dropna().iloc[-1])   if highs   is not None else c
+                    l = float(lows[sym].dropna().iloc[-1])    if lows    is not None else c
+                    v = int(volumes[sym].dropna().iloc[-1])   if volumes is not None else 0
+                    if c:
+                        result[code] = {'c': round(c,2), 'o': round(o or c,2),
+                                        'h': round(h or c,2), 'l': round(l or c,2), 'v': v}
+                except Exception:
+                    pass
         except Exception as e:
-            print(f'  [yahoo batch {i//50}] {e}')
+            print(f'  [yf batch {i//200}] {e}')
     return result
 
 
