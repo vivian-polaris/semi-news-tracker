@@ -958,48 +958,50 @@ footer a:hover{text-decoration:underline}
   </div>
 </div>
 
-<!-- ── Note + Legend toggle link ── -->
+<!-- ── 買股票的紀律 toggle ── -->
 <div style="text-align:right;margin:6px 2px 2px">
-  <a href="#" id="explainLink" onclick="toggleExplain(event)" style="font-size:.72rem;color:var(--purple);text-decoration:none">說明 ▶</a>
+  <a href="#" id="explainLink" onclick="toggleExplain(event)" style="font-size:.72rem;color:var(--purple);text-decoration:none">買股票的紀律 ▶</a>
 </div>
 <div id="explainDiv" style="display:none">
-  <div class="note">
-    <strong>VCP 四大條件：</strong>Stage 2（股價 &gt; MA50 &gt; MA150 &gt; MA200）· 距 52 週高點 &lt;25% · ATR 波動率收縮 · 成交量萎縮。分數 ≥ 80 為強力候選。<br>
-    <strong>距高點：</strong>股價距離過去 52 週最高點的跌幅百分比。數字越小（如 &lt;5%）代表股價越接近新高，突破可能性高。VCP 理論要求 &lt;25%。<br>
-    <strong>MA 排列：</strong>移動平均線的多頭排列。● 50 = 股價高於 50 日均線，● 150 = 高於 150 日均線，● 200 = 高於 200 日均線。三點全綠 = Stage 2 上升趨勢，是最強的技術結構。<br>
-    <strong>基本面：</strong>ROE ≥ 15% 佳 · 毛利率 / 營益率越高越好 · EPS 年增 / 營收年增為正成長。資料來源：Yahoo Finance。<br>
-    <strong>籌碼：</strong>外資 / 投信買賣超，來源：TWSE T86。數值為正 = 買超，負 = 賣超。
-  </div>
-  <div class="note" style="margin-top:8px;border-left:3px solid var(--purple)">
-    <strong style="color:var(--purple)">CAN SLIM — William O'Neil《笑傲股市》選股七條件</strong><br><br>
-    <strong>C</strong>（Current Earnings）當季 EPS 年增率 ≥ 25%。數字越大越好，代表公司獲利正在加速。<br>
-    <strong>A</strong>（Annual Earnings）年度 ROE ≥ 15%，代表公司長期維持高獲利能力。本工具以 ROE 或營業利益率作為代理指標。<br>
-    <strong>N</strong>（New High）股價距 52 週高點 &lt; 5%，即將或正在創新高，代表突破訊號。<br>
-    <strong>S</strong>（Supply &amp; Demand）量比 &lt; 0.85 且有整理收縮段數，代表籌碼緊縮、供給減少。<br>
-    <strong>L</strong>（Leader）VCP 分數 ≥ 70，代表相對大盤強勢的領漲股。<br>
-    <strong>I</strong>（Institutional Sponsorship）外資或投信買超，代表法人資金進場支撐。<br>
-    <strong>M</strong>（Market Direction）Stage 2 上升趨勢（MA50 &gt; MA150 &gt; MA200），順勢操作。<br><br>
-    <span style="color:var(--mint)">≥ 5 項</span> 視為強力 CAN SLIM 候選，<span style="color:var(--orange)">3–4 項</span> 為中等，&lt; 3 項建議觀望。<br>
-    <span style="color:var(--text2);font-size:.72rem">注意：C / A 項目來自 Yahoo Finance，週末或假日可能無最新財報資料。</span>
-  </div>
-  <div class="note" style="margin-top:8px;border-left:3px solid var(--mint)">
-    <strong style="color:var(--mint)">訊號欄說明 — 每個訊號代表什麼、應該做什麼</strong><br><br>
-    <strong style="color:#34d399">✅ 買：回踩地量</strong> — 股票在突破買點後拉回，且今日成交量縮至均量 30% 以下（地量）。<strong>現在可買入。</strong>停損設進場價 −5%。<br><br>
-    <strong style="color:#fbbf24">⏳ 不買：等量再縮</strong> — 突破後正在回踩，量有縮但尚未到地量（目前約均量 30–50%）。<strong>今日不買，等明日量繼續萎縮至地量再進場。</strong><br><br>
-    <strong style="color:#9ca3af">⏳ 不買：等量縮回踩</strong> — 剛剛突破買點（0–3% 內），突破當下不追。<strong>等股價小幅回踩 + 縮量後再買。</strong><br><br>
-    <strong style="color:#f97316">⏳ 不買：等回踩</strong> — 突破後已漲 3–8%，此時追高停損空間不足。<strong>等拉回至買點附近 + 縮量再進場。</strong><br><br>
-    <strong style="color:#f87171">🚫 不買：過熱</strong> — 已超突破點 8% 以上，風險極高。<strong>不碰，等大幅回踩後重新評估。</strong><br><br>
-    <strong style="color:#60a5fa">🚫 不買：等突破 $XXX</strong> — 尚未突破近期高點 $XXX。<strong>操作流程：①等放量突破 $XXX → ②突破後不追，等 1–3 日回踩 → ③量縮至地量才買。</strong><br><br>
-    <span style="color:var(--text2);font-size:.7rem">提示：滑鼠移到訊號標籤上方，可看到含具體數字的詳細說明。</span>
-  </div>
-  <div class="note" style="margin-top:8px">
-    <strong>掃描說明：</strong>只顯示 VCP 候選股，掃描中即時更新。全台灣掃描約 <strong>8–15 分鐘</strong>。<br>
-    <strong>VCP 理論：</strong>出自 Mark Minervini《超級績效》· 僅供研究參考，不構成投資建議。<br>
-    <strong>延伸資源：</strong>
-    <a href="https://www.tradingview.com/" target="_blank">TradingView VCP腳本</a> ·
-    <a href="https://www.finlab.tw/成長飆股怎麼找？超級績效選股法大解密" target="_blank">FinLab 台股VCP</a> ·
-    <a href="https://cevisub.com/technical-analysis-guide/vcp-pattern-taiwan-stocks-high-win-rate-buy-points/" target="_blank">VCP台股教學</a> ·
-    <a href="https://www.wantgoo.com/screener" target="_blank">玩股網選股器</a>
+  <div class="note" style="border-left:3px solid var(--orange)">
+    <strong style="color:var(--orange);font-size:.85rem">買股票的紀律</strong>
+    <div style="margin-top:10px;display:grid;gap:8px">
+
+      <div style="background:rgba(239,68,68,.08);border-radius:6px;padding:8px 12px">
+        <span style="color:#f87171;font-weight:700">賣出紀律</span><br>
+        <span style="color:var(--text2);font-size:.8rem">
+          ① <strong style="color:var(--fg)">隔日沖：開盤即賣</strong> — 隔日沖部位開盤第一時間出場，不等、不猶豫<br>
+          ② <strong style="color:var(--fg)">停損 −5%</strong> — 跌破買點 5% 無條件出場，不加碼攤平<br>
+          ③ <strong style="color:var(--fg)">分批獲利</strong> — 漲 15% 賣半倉，漲 25% 全出
+        </span>
+      </div>
+
+      <div style="background:rgba(52,211,153,.08);border-radius:6px;padding:8px 12px">
+        <span style="color:var(--mint);font-weight:700">買入時機</span><br>
+        <span style="color:var(--text2);font-size:.8rem">
+          ① <strong style="color:var(--fg)">盤中撿跌</strong> — 只在盤中大跌或明顯便宜時買，不追漲<br>
+          ② <strong style="color:var(--fg)">盤尾建倉</strong> — 新倉位 13:00 後才買，避免開盤追高被套
+        </span>
+      </div>
+
+      <div style="background:rgba(96,165,250,.08);border-radius:6px;padding:8px 12px">
+        <span style="color:#60a5fa;font-weight:700">摩根史坦利籌碼紀律</span><br>
+        <span style="color:var(--text2);font-size:.8rem">
+          ① <strong style="color:#f87171">禁買</strong> — 摩根史坦利當日有賣超，該股不可買<br>
+          ② <strong style="color:var(--mint)">跟買條件</strong> — 摩根史坦利連續 1日、5日、10日、20日<strong style="color:var(--fg)">皆買超</strong>才可跟進<br>
+          <span style="font-size:.72rem;opacity:.6">籌碼資料：TWSE T86 外資分點，需手動查詢證交所或券商資料</span>
+        </span>
+      </div>
+
+      <div style="background:rgba(251,191,36,.08);border-radius:6px;padding:8px 12px">
+        <span style="color:var(--orange);font-weight:700">風控紀律</span><br>
+        <span style="color:var(--text2);font-size:.8rem">
+          ① <strong style="color:var(--fg)">不逆大盤</strong> — 大盤單日跌超 2%，當天不開新倉<br>
+          ② <strong style="color:var(--fg)">部位控管</strong> — 單一個股不超過總資金 10%
+        </span>
+      </div>
+
+    </div>
   </div>
 </div>
 <script>
