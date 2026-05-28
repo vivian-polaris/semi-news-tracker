@@ -1945,10 +1945,11 @@ async function loadStockPrices(force){
   if(stockPriceLoaded && !force)return;
   if(force) stockPriceLoaded=false;
   const v=new Date().toISOString().slice(0,13);
+  const ghRaw='https://raw.githubusercontent.com/vivian-polaris/semi-news-tracker/main';
   try{
     const [r1,r2]=await Promise.all([
-      fetchTO(`./stocks_tse.json?v=${v}`,30000).catch(()=>null),
-      fetchTO(`./stocks_otc.json?v=${v}`,30000).catch(()=>null),
+      fetchTO(`${ghRaw}/stocks_tse.json?v=${v}`,30000).catch(()=>null),
+      fetchTO(`${ghRaw}/stocks_otc.json?v=${v}`,30000).catch(()=>null),
     ]);
     let count=0;
     if(r1?.ok){const d=await r1.json();if(d.stocks){Object.assign(stockPriceMap,d.stocks);count+=Object.keys(d.stocks).length;_tsePriceDate=d._price_date||d.date||'';}}
