@@ -27,12 +27,12 @@ jobs:
       - name: Run VCP scan (reads stocks_tse.json + stocks_otc.json, fetches fundamentals)
         run: python scripts/scan_vcp.py
 
-      - name: Commit vcp_daily.json
+      - name: Commit updated data files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add vcp_daily.json
-          git diff --cached --quiet || git commit -m "data: update vcp_daily.json [skip ci]"
+          git add vcp_daily.json stocks_tse.json stocks_otc.json
+          git diff --cached --quiet || git commit -m "data: update prices + vcp_daily"
           git push
 
       - name: Send email report
