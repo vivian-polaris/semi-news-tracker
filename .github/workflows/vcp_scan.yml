@@ -2,7 +2,10 @@ name: VCP Daily Scan + Email
 
 on:
   schedule:
-    - cron: '15 10 * * 1-5'  # Mon-Fri 10:15 UTC = 18:15 Taipei (TWSE open API fully updated by ~18:00)
+    - cron: '0 0 * * 1-5'    # Mon-Fri 00:00 UTC = 08:00 Taipei  (pre-market, yesterday's close — expected)
+    - cron: '45 2 * * 1-5'   # Mon-Fri 02:45 UTC = 10:45 Taipei  (intraday, Yahoo Finance data = today)
+    - cron: '15 5 * * 1-5'   # Mon-Fri 05:15 UTC = 13:15 Taipei  (near-close, Yahoo Finance data = today)
+    - cron: '15 10 * * 1-5'  # Mon-Fri 10:15 UTC = 18:15 Taipei  (post-close backup, TWSE confirmed today)
   workflow_dispatch:
 
 permissions:

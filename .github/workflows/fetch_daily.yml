@@ -34,7 +34,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install requests
+        run: pip install requests yfinance pandas
 
       - name: Fetch daily data
         run: python scripts/fetch_twse_daily.py
