@@ -523,13 +523,13 @@ def last_trading_date_tw():
     return dt.strftime('%Y-%m-%d')
 
 def is_trading_hours_tw():
-    """是否在台灣股市交易時間內（週一~週五 09:00–13:30 TW）"""
+    """使用 Yahoo Finance 的時間窗口：09:00–18:00 TW（含收盤後，TWSE open API 要到 18:00+ 才更新）"""
     tz = datetime.timezone(datetime.timedelta(hours=8))
     now = datetime.datetime.now(tz)
     if now.weekday() >= 5:
         return False
     t = now.hour * 60 + now.minute
-    return 9 * 60 <= t <= 13 * 60 + 30
+    return 9 * 60 <= t <= 18 * 60
 
 def fetch_twse_mis_prices(all_stocks):
     """
