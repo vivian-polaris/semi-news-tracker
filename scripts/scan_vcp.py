@@ -371,6 +371,94 @@ def fetch_fund_data(symbols, max_workers=8):
 
 # ── Load JSON → data array ────────────────────────────────────────────────────
 
+def _yahoo_batch_quotes(codes, suffix):
+    """Fetch today's OHLCV from Yahoo Finance quote API in batches of 50. Returns {code: {c,h,l,o,v}}."""
+    import urllib.request as ur
+    result = {}
+    for i in range(0, len(codes), 50):
+        batch = codes[i:i+50]
+        syms  = ','.join(f'{c}{suffix}' for c in batch)
+        url   = (f'https://query2.finance.yahoo.com/v7/finance/quote'
+                 f'?symbols={syms}'
+                 f'&fields=regularMarketPrice,regularMarketOpen,regularMarketHigh,'
+                 f'regularMarketLow,regularMarketVolume')
+        try:
+            req = ur.Request(url, headers={'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json'})
+            with ur.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read())
+            for q in data.get('quoteResponse', {}).get('result', []):
+                code = str(q.get('symbol', '')).replace(suffix, '')
+                c = q.get('regularMarketPrice')
+                if not c:
+                    continue
+                result[code] = {
+                    'c': round(c, 2),
+                    'o': round(q.get('regularMarketOpen') or c, 2),
+                    'h': round(q.get('regularMarketHigh') or c, 2),
+                    'l': round(q.get('regularMarketLow')  or c, 2),
+                    'v': int(q.get('regularMarketVolume') or 0),
+                }
+        except Exception as e:
+            print(f'  [yahoo batch {i//50}] {e}')
+    return result
+
+
+def refresh_today_prices(tse_path, otc_path):
+    """If price data is from a previous day and it's after 09:00 TW, update latest candle from Yahoo Finance."""
+    tz_tw   = datetime.timezone(datetime.timedelta(hours=8))
+    now_tw  = datetime.datetime.now(tz_tw)
+    today   = now_tw.strftime('%Y-%m-%d')
+    t       = now_tw.hour * 60 + now_tw.minute
+
+    if now_tw.weekday() >= 5 or t < 9 * 60:
+        return  # weekend or pre-market
+
+    for path, suffix in [(tse_path, '.TW'), (otc_path, '.TWO')]:
+        if not path.exists():
+            continue
+        with open(path, encoding='utf-8') as f:
+            data = json.load(f)
+
+        if data.get('_price_date', '') >= today:
+            print(f'  {path.name}: already today ({today}), skip refresh')
+            continue
+
+        stocks = data.get('stocks', {})
+        codes  = list(stocks.keys())
+        print(f'  {path.name}: stale ({data.get("_price_date","")}), fetching {len(codes)} from Yahoo...')
+
+        prices = _yahoo_batch_quotes(codes, suffix)
+        if len(prices) < len(codes) * 0.4:
+            print(f'  [warn] only {len(prices)}/{len(codes)} returned, keeping stale data')
+            continue
+
+        updated = 0
+        for code, entry in stocks.items():
+            p = prices.get(code)
+            if not p:
+                continue
+            cur_d = entry.get('_d', '')
+            if cur_d == today:
+                if entry.get('c'): entry['c'][0] = p['c']
+                if entry.get('h'): entry['h'][0] = max(entry['h'][0], p['h'])
+                if entry.get('l'): entry['l'][0] = min(entry['l'][0], p['l'])
+                if entry.get('v'): entry['v'][0] = p['v']
+            else:
+                entry['c'] = [p['c']] + entry.get('c', [])[:251]
+                entry['h'] = [p['h']] + entry.get('h', [])[:251]
+                entry['l'] = [p['l']] + entry.get('l', [])[:251]
+                entry['v'] = [p['v']] + entry.get('v', [])[:251]
+                entry['_d'] = today
+            updated += 1
+
+        data['_price_date'] = today
+        tmp = path.with_suffix('.tmp')
+        with open(tmp, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
+        tmp.replace(path)
+        print(f'  {path.name}: refreshed {updated} stocks → _price_date={today}')
+
+
 def load_stocks(path):
     with open(path, encoding='utf-8') as f:
         d = json.load(f)
@@ -406,6 +494,8 @@ def main():
 
     if not tse_path.exists():
         print('ERROR: stocks_tse.json not found'); sys.exit(1)
+
+    refresh_today_prices(tse_path, otc_path)
 
     tse_stocks, price_date = load_stocks(tse_path)
     otc_stocks, _          = load_stocks(otc_path) if otc_path.exists() else ({}, '')
