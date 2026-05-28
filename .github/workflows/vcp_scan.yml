@@ -2,7 +2,7 @@ name: VCP Daily Scan + Email
 
 on:
   schedule:
-    - cron: '15 7 * * 1-5'   # Mon-Fri 07:15 UTC = 15:15 Taipei (45 min after fetch_daily 14:45 commit, TWSE fully updated)
+    - cron: '15 10 * * 1-5'  # Mon-Fri 10:15 UTC = 18:15 Taipei (TWSE open API fully updated by ~18:00)
   workflow_dispatch:
 
 permissions:
