@@ -8,6 +8,10 @@ on:
     - cron: '15 10 * * 1-5'  # Mon-Fri 10:15 UTC = 18:15 Taipei  (post-close backup, TWSE confirmed today)
   workflow_dispatch:
 
+concurrency:
+  group: vcp-scan
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -25,6 +29,7 @@ jobs:
         run: pip install --quiet yfinance requests
 
       - name: Run VCP scan (reads stocks_tse.json + stocks_otc.json, fetches fundamentals)
+        id: scan
         run: python scripts/scan_vcp.py
 
       - name: Commit updated data files
@@ -38,7 +43,7 @@ jobs:
           git push
 
       - name: Send email report
-        if: always()
+        if: steps.scan.outcome == 'success'
         env:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
         run: |
