@@ -19,6 +19,10 @@ on:
     - cron: "45 6 * * *"  # 14:45 TW
   workflow_dispatch:
 
+concurrency:
+  group: fetch-daily
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -45,5 +49,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add twse_daily.json stocks_tse.json stocks_otc.json
           git diff --staged --quiet || git commit -m "data: update all data files $(date -u +'%Y-%m-%d')"
+          git pull --rebase origin main
           git push
       # Cloudflare Pages 部署由 deploy.yml (on:push) 自動觸發，此處不重複執行以節省 build 配額
