@@ -28,14 +28,17 @@ jobs:
         run: python scripts/scan_vcp.py
 
       - name: Commit updated data files
+        continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add vcp_daily.json stocks_tse.json stocks_otc.json
           git diff --cached --quiet || git commit -m "data: update prices + vcp_daily"
+          git pull --rebase origin main
           git push
 
       - name: Send email report
+        if: always()
         env:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
         run: |
