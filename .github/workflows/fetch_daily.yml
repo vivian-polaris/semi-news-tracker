@@ -19,6 +19,9 @@ on:
     - cron: "45 6 * * *"  # 14:45 TW
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 concurrency:
   group: fetch-daily
   cancel-in-progress: false
@@ -44,6 +47,7 @@ jobs:
         run: python scripts/fetch_twse_daily.py
 
       - name: Commit and push data files
+        continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
