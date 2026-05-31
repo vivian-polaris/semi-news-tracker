@@ -4190,7 +4190,7 @@ function renderTable(){
     const slopeCell=(()=>{
       if(!v.stage2)return'<td style="text-align:center;white-space:nowrap;min-width:60px"><div style="font-size:.75rem;font-weight:700">⏸ 整理等待</div><div style="font-size:.58rem;color:#9ca3af">無Stage2</div></td>';
       const sl=v.ma20Slope,dm=v.distMA20,rsi=v.rsi;
-      if(sl!=null&&sl<0)return'<td style="text-align:center;white-space:nowrap;min-width:60px"><div style="font-size:.75rem;font-weight:700">⏸ 整理等待</div><div style="font-size:.58rem;color:#9ca3af">斜率'+(sl>=0?'+':'')+sl+'%</div></td>';
+      if(sl!=null&&sl<0)return'<td style="text-align:center;white-space:nowrap;min-width:60px"><div style="font-size:.75rem;font-weight:700">⏸ 整理等待</div><div style="font-size:.58rem;color:#9ca3af">斜率'+sl+'%</div></td>';
       const fmtSl=sl!=null?(sl>=0?'+':'')+sl+'%':'--';
       const fmtDm=dm!=null?(dm>=0?'+':'')+dm+'%':'--';
       const sub=sl!=null?fmtSl+'/'+fmtDm:'資料不足';
@@ -4419,12 +4419,12 @@ function renderTable(){
       if(v.v10!=null&&v.v10<300000)return false;
       if(v.vRat==null||v.vRat<1.2)return false;
       if(v.vRat>3.0)return false;
-      if(v.closeRatio==null||v.closeRatio<0.65)return false;
+      if(v.closeRatio==null||v.closeRatio<0.55)return false;
       if(v.rsi!=null&&(v.rsi<45||v.rsi>78))return false;
       const cs=calcCANSLIM(v,r.fund||null,chipsMap[r.code]||null);
-      if(cs.total<4)return false;
+      if(cs.total<3)return false;
       const fs=calcFundScore(r.fund||{});
-      if(fs===null||fs<80)return false;
+      if(fs!==null&&fs<60)return false;
       return isQualified(r);
     });
     const buySort=(a,b)=>{
@@ -4614,9 +4614,9 @@ function renderTable(){
         return (parseChipNum(chipsMap[r.code]?.foreignNet)??0)>0;
       })
       .map(r=>{
-        const prevClose=stockPriceMap[r.code].c[0];
+        const prevClose=stockPriceMap[r.code]?.c?.[0];
         const dropPct=(r.vcp.price-prevClose)/prevClose*100;
-        const fNet=parseChipNum(chipsMap[r.code].foreignNet)??0;
+        const fNet=parseChipNum(chipsMap[r.code]?.foreignNet)??0;
         return {r,dropPct,fNet};
       })
       .sort((a,b)=>a.dropPct-b.dropPct)
@@ -5918,7 +5918,7 @@ function checkSlopeExitSignal(pos,v){
   // 優先級1：硬停損 -8%（必須最先判斷，否則halfSold狀態會蓋過硬停損）
   if(pct<=-8)return{signal:'exit',reason:`硬停損 ${pct.toFixed(1)}%`,color:'#ef4444'};
   // 半倉保護：賣½倉後若回落至+5%以下，保護剩餘利潤出場
-  if(pos.halfSold&&pct<=5)return{signal:'exit',reason:`半倉保護出場（回落至+${pct.toFixed(1)}%）`,color:'#f97316'};
+  if(pos.halfSold&&pct<=5)return{signal:'exit',reason:`半倉保護出場（回落至${pct>=0?'+':''}${pct.toFixed(1)}%）`,color:'#f97316'};
   // 優先級2：Stage2 破壞（跌破MA50）
   if(v.ma50&&price<v.ma50)return{signal:'exit',reason:'Stage2 破壞（跌破MA50）',color:'#ef4444'};
   // 優先級3：持有>5天，跌破MA20出場（含輕微虧損，防止從小虧擴大）
