@@ -980,21 +980,34 @@ def main():
         twse_today, twse_price_date_api = fetch_twse_prices_today()
         tpex_today, tpex_price_date = fetch_tpex_prices_today()
 
+        # TWSE FMTQIK 延遲更新（通常要到晚上 20:00 後才有今日資料）
+        # 若 TPEX 已有今日資料但 FMTQIK 還在昨日 → 改用 MIS 即時 API 補抓 TSE 今日收盤
+        today_tw = last_trading_date_tw()
+        if (tpex_price_date == today_tw
+                and twse_price_date_api
+                and twse_price_date_api < today_tw):
+            print(f'  ⚠️ STOCK_DAY_ALL 未更新 ({twse_price_date_api} < {today_tw})，改用 MIS 補抓 TSE 今日收盤')
+            all_tse = [{'code': s['code'], 'ex': 'TW'} for s in tse_stocks]
+            if all_tse:
+                mis_today = fetch_twse_mis_prices(all_tse)
+                if len(mis_today) > 100:
+                    twse_today = mis_today
+                    twse_price_date_api = today_tw
+                    print(f'  ✅ MIS 補抓成功：{len(mis_today)} 支，price_date={today_tw}')
+                else:
+                    twse_price_date_api = today_tw
+                    print(f'  ⚠️ MIS 補抓不足（{len(mis_today)} 支），沿用 STOCK_DAY_ALL，date 強制更新為今日')
+
     # 若官方 API 回傳資料不足（市場休假/API 故障），保留舊資料
     tse_ok = len(twse_today) > 100
     otc_ok = len(tpex_today) > 100
 
-    # _price_date：用 FMTQIK 回傳的實際交易日（最可靠），intraday 用 today_date
+    # _price_date：用 FMTQIK 或 MIS 補抓後的實際交易日
     tse_price_date = (twse_price_date_api or last_trading_date_tw()) if tse_ok else existing.get('_tse_price_date', '')
 
-    # TPEX 的 Date 欄位有時回傳查詢日（非實際交易日），若 TPEX date > TSE FMTQIK date 則
-    # 以 TSE date 為準（兩市場共用同一休市曆）
+    # 兩市場共用同一交易日曆；FMTQIK 延遲已由上方 MIS 補正，直接用各自日期
     raw_otc_date = tpex_price_date if otc_ok else existing.get('_otc_price_date', '')
-    if tse_price_date and raw_otc_date and raw_otc_date > tse_price_date:
-        print(f'  ⚠️ TPEX date ({raw_otc_date}) > TSE FMTQIK date ({tse_price_date})，以 TSE date 為準（假日判斷）')
-        otc_price_date_final = tse_price_date
-    else:
-        otc_price_date_final = raw_otc_date
+    otc_price_date_final = raw_otc_date
 
     # 傳入實際交易日，避免假日時 _d 被誤標為假日日期
     tse_prices = update_price_history(existing_tse_price, twse_today, name_map, trading_date=tse_price_date) if tse_ok else existing_tse_price
