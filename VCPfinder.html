@@ -876,6 +876,8 @@ footer a:hover{text-decoration:underline}
   <button id="portfolioBtn" onclick="loadPortfolioHistory()" style="display:none;flex-shrink:0;padding:9px 16px;background:var(--card);border:1.5px solid var(--purple);border-radius:6px;color:var(--purple);font-size:.78rem;font-weight:700;cursor:pointer">📊 本月績效</button>
 </div>
 <div id="scanCacheNote" style="display:none;font-size:.72rem;color:var(--text2);margin:-2px 0 6px;padding-left:2px"></div>
+<!-- ── 近期除息提醒橫幅 ── -->
+<div id="exDivBanner" style="display:none;margin:4px 0 8px;padding:8px 14px;background:rgba(251,191,36,.1);border:1.5px solid rgba(251,191,36,.4);border-radius:10px;font-size:.75rem"></div>
 
 <!-- ── Filters ── -->
 <div class="filter-box" id="filterBox" style="display:none">
@@ -2291,6 +2293,54 @@ function renderGeoStatus(status,date){
   }
   if(time) time.textContent=date?(date+(status?'  已記錄':' · 尚未確認')):'';
 }
+// ── 近期除息提醒橫幅（VCP 表上方，≤14天亮起）────────────────────────────
+// 顯示重要大型股的除息資訊，不管是否符合 VCP 形態
+const WATCHLIST_EX=[
+  '2330','2317','2382','2412','2454','3008','2308',  // 半導體
+  '2881','2882','2886','2884','2885','2892','2883',  // 金融
+  '2002','1301','1303','2207','2301','2303',          // 傳產/電子
+];
+
+function renderExDivBanner(){
+  const banner=document.getElementById('exDivBanner');
+  if(!banner||!Object.keys(exDivMap2026).length)return;
+  const today=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+  const todayDate=new Date(today);
+
+  const hits=[];
+  Object.entries(exDivMap2026).forEach(([code,mmdd])=>{
+    const [mm,dd]=mmdd.split('/');
+    const exDate=new Date(2026,parseInt(mm)-1,parseInt(dd));
+    const daysLeft=Math.round((exDate-todayDate)/86400000);
+    if(daysLeft<0||daysLeft>14)return;
+    const isWatchlist=WATCHLIST_EX.includes(code);
+    // 取名稱（從 stockPriceMap 或 hardcode）
+    const name=stockPriceMap[code]?.n||(code==='2330'?'台積電':code==='2317'?'鴻海':code==='2412'?'中華電':code);
+    hits.push({code,name,mmdd,daysLeft,isWatchlist,exDate});
+  });
+
+  if(!hits.length){banner.style.display='none';return;}
+
+  // 排序：天數近的在前，重要股優先
+  hits.sort((a,b)=>a.daysLeft-b.daysLeft||(b.isWatchlist-a.isWatchlist));
+
+  const items=hits.slice(0,8).map(h=>{
+    const col=h.daysLeft<=3?'#f87171':h.daysLeft<=7?'#fbbf24':'#34d399';
+    const dayTxt=h.daysLeft===0?'今天除息！':h.daysLeft===1?'明天除息':h.daysLeft+'天後除息';
+    const warn=h.daysLeft<=3?'⚠️ ':'';
+    return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:3px 8px;margin:2px">
+      <span style="font-weight:800;color:${col}">${warn}${h.code}</span>
+      <span style="color:var(--text)">${h.name}</span>
+      <span style="color:var(--text2);font-size:.68rem">${h.mmdd} 除息</span>
+      <span style="font-size:.65rem;font-weight:700;color:${col}">${dayTxt}</span>
+    </span>`;
+  }).join('');
+
+  banner.innerHTML=`<span style="font-weight:800;color:#fbbf24;margin-right:6px">📅 近期除息</span>${items}
+    <div style="font-size:.62rem;color:var(--text2);margin-top:5px">💡 除息當天指數會技術性下跳，不是真正跌勢。若填息順利，盤勢回穩。VCP 掃描結果不含除息判斷，請自行評估。</div>`;
+  banner.style.display='block';
+}
+
 function loadGeoStatus(){
   const saved=lsGet('geo_status');
   if(saved){
@@ -5483,8 +5533,9 @@ return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(20
   // 頁面載入：同時載入所有靜態資料，完成後顯示新聞/時鐘
   loadExDiv2026().catch(()=>{});
   loadConfCalendar().catch(()=>{});
-  // 本週大盤展望：等除息+法說曆載入後再跑（需要 exDivMap2026 & confByDate）
+  // 本週大盤展望 + 除息橫幅：等除息+法說曆載入後再跑
   Promise.all([loadExDiv2026().catch(()=>{}), loadConfCalendar().catch(()=>{})]).then(()=>{
+    renderExDivBanner();           // 近期除息提醒（立即，不用 AI）
     loadWeeklyOutlook(false).catch(()=>{});
   });
   Promise.all([loadTWSEDaily(), loadStockPrices()]).finally(()=>{
