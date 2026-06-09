@@ -5175,7 +5175,34 @@ async function lookupStock() {
       return;
     }
     if (data._yahooName && (!stockInfo.name || stockInfo.name === code)) stockInfo.name = data._yahooName;
+    // 盤中：用 /api/price 把今日即時價注入 data[0]，確保 VCP 計算用今日價
+    if(isTradingHours()){
+      try{
+        const sym=`${stockInfo.code}.${stockInfo.ex==='TWO'?'TWO':'TW'}`;
+        const pr=await fetchTO(`/api/price?syms=${encodeURIComponent(sym)}`,5000);
+        if(pr.ok){
+          const prices=await pr.json();
+          const liveP=prices[stockInfo.code];
+          if(liveP>0&&data.length>0){
+            data[0]={...data[0],close:liveP,high:Math.max(data[0].high||liveP,liveP),low:Math.min(data[0].low||liveP,liveP)};
+            data._livePrice=true;
+          }
+        }
+      }catch(_){}
+    }
     vcpData = calcVCP(data);
+  }
+  // 若是從 allResults 抓的，也補一次即時價
+  if(foundInResults&&isTradingHours()&&vcpData){
+    try{
+      const sym=`${stockInfo.code}.${stockInfo.ex==='TWO'?'TWO':'TW'}`;
+      const pr=await fetchTO(`/api/price?syms=${encodeURIComponent(sym)}`,5000);
+      if(pr.ok){
+        const prices=await pr.json();
+        const liveP=prices[stockInfo.code];
+        if(liveP>0) vcpData={...vcpData,price:liveP};
+      }
+    }catch(_){}
   }
 
   if (!vcpData) {
