@@ -639,6 +639,20 @@ footer a:hover{text-decoration:underline}
   </div>
 </div>
 
+<!-- ── 本週大盤展望 ── -->
+<div class="lcard" id="weeklyOutlookCard" style="margin:10px 0 12px;padding:14px 16px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+      <span style="font-size:.75rem;font-weight:800;color:var(--purple);letter-spacing:.03em">🔮 本週大盤展望</span>
+      <span style="font-size:.58rem;font-weight:700;color:#60a5fa;background:rgba(96,165,250,.12);padding:2px 7px;border-radius:6px">🤖 AI 每6小時自動更新</span>
+    </div>
+    <button onclick="loadWeeklyOutlook(true)" id="weeklyOutlookRefreshBtn"
+      style="padding:3px 10px;font-size:.68rem;font-weight:700;background:rgba(79,126,247,.15);border:1px solid var(--purple);border-radius:8px;color:var(--purple);cursor:pointer;white-space:nowrap">↻ 立即更新</button>
+  </div>
+  <div id="weeklyOutlookBody" style="font-size:.8rem;line-height:1.85;color:var(--text);min-height:60px;white-space:pre-wrap">載入中...</div>
+  <div id="weeklyOutlookTime" style="font-size:.62rem;color:var(--text2);margin-top:8px;text-align:right"></div>
+</div>
+
 <!-- ── 個股快查（置頂）── -->
 <div class="lcard" style="margin:10px 0 12px">
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
@@ -2329,6 +2343,126 @@ async function fetchFRED(seriesId, units){
     }catch(_){}
   }
   return null;
+}
+
+// ─── 本週大盤展望 ─────────────────────────────────────────────────────────
+async function loadWeeklyOutlook(force=false){
+  const body=document.getElementById('weeklyOutlookBody');
+  const timeEl=document.getElementById('weeklyOutlookTime');
+  const btn=document.getElementById('weeklyOutlookRefreshBtn');
+  if(!body)return;
+
+  // 快取 key：以「今天日期」為單位，每天自動換新（使用者可手動強制更新）
+  const twNow=new Date(Date.now()+8*3600000);
+  const dayKey='weekly_'+twNow.toISOString().slice(0,10);
+  const TTL=6*3600*1000; // 6小時
+
+  if(!force){
+    try{
+      const c=JSON.parse(localStorage.getItem('ai_'+dayKey)||'{}');
+      if(c.html&&c.ts&&Date.now()-c.ts<TTL){
+        body.style.color='var(--text)';
+        body.innerHTML=c.html;
+        if(timeEl)timeEl.textContent=`⏱ 快取（${cacheAgeStr(c.ts)}）・點 ↻ 強制更新`;
+        return;
+      }
+    }catch(_){}
+  }
+
+  // Loading state
+  body.style.color='var(--text2)';
+  body.textContent='正在抓取市場新聞並分析，約 15 秒...';
+  if(btn)btn.disabled=true;
+
+  // ① 抓新聞 RSS（兩個查詢，並行）
+  let newsItems=[];
+  try{
+    const [r1,r2]=await Promise.allSettled([
+      fetchRSS('台股 大盤 本週 展望'),
+      fetchRSS('台指期 台積電 stock market week'),
+    ]);
+    const list1=r1.status==='fulfilled'?r1.value:[];
+    const list2=r2.status==='fulfilled'?r2.value:[];
+    newsItems=[...list1,...list2].slice(0,12);
+  }catch(_){}
+
+  // ② 未來7天重要事件（除息、法說、假期）
+  const events=[];
+  const checkDays=7;
+  for(let i=0;i<checkDays;i++){
+    const d=new Date(twNow.getFullYear(),twNow.getMonth(),twNow.getDate()+i);
+    const dow=d.getDay();
+    if(dow===0||dow===6)continue; // 跳過週末
+    const ds=d.toISOString().slice(0,10);
+    const exCodes=exDivMap2026[ds];
+    if(exCodes&&exCodes.length>0){
+      const big=exCodes.filter(c=>['2330','2317','2382','2412','2454','3008','2308'].includes(c));
+      const label=big.length>0?`${big.join('、')}等除息`:`${exCodes.length}支股票除息`;
+      events.push(`${ds.slice(5)} ${['日','一','二','三','四','五','六'][dow]}：${label}`);
+    }
+    const confCodes=confByDate[ds];
+    if(confCodes&&confCodes.size>0){
+      events.push(`${ds.slice(5)} ${['日','一','二','三','四','五','六'][dow]}：${confCodes.size}支法說`);
+    }
+  }
+
+  // ③ 組建 prompt
+  const todayStr=twNow.toISOString().slice(0,10);
+  const dowNames=['日','一','二','三','四','五','六'];
+  // 未來5個交易日
+  const tradingDays=[];
+  for(let i=0;tradingDays.length<5&&i<14;i++){
+    const d=new Date(twNow.getFullYear(),twNow.getMonth(),twNow.getDate()+i);
+    const dow=d.getDay();
+    if(dow===0||dow===6)continue;
+    tradingDays.push(`週${dowNames[dow]} ${d.getMonth()+1}/${d.getDate()}`);
+  }
+  const newsLines=newsItems.slice(0,10).map(x=>`- ${x.title}`).join('\n')||'（無法取得新聞）';
+  const eventLines=events.length?events.join('\n'):'（無重大事件）';
+
+  const prompt=`今天是 ${todayStr}（台灣時間）。
+
+【近期市場新聞標題】
+${newsLines}
+
+【未來一週重要事件】
+${eventLines}
+
+【任務】
+你是台股分析師。用繁體中文，為以下每個交易日給出台股大盤展望。
+格式嚴格如下（每日一行，不要多行）：
+
+${tradingDays.map(d=>`📅 ${d}：[30字內判斷] 點位：[XXXXX–YYYYY] 情緒：[看多/看空/震盪]`).join('\n')}
+
+最後加一行：
+💡 本週關鍵：[2句話，點出最重要觀察點]
+
+只輸出上面格式，不要其他說明。`;
+
+  const result=await callAI(prompt);
+
+  // ④ 渲染：把看多/看空/震盪上色
+  const lines=result.split('\n').filter(l=>l.trim());
+  const htmlLines=lines.map(line=>{
+    let color='';
+    if(/看多|反彈|強勢|上漲|偏多/.test(line)) color='#34d399';
+    else if(/看空|下跌|偏空|弱勢|恐慌|賣壓/.test(line)) color='#f87171';
+    else if(/震盪|觀察|持平|中性|謹慎/.test(line)) color='#d4a84b';
+    if(line.startsWith('💡')) color='#93c5fd';
+    const escaped=escH(line);
+    return color
+      ?`<div style="color:${color};margin-bottom:2px">${escaped}</div>`
+      :`<div style="margin-bottom:2px">${escaped}</div>`;
+  }).join('');
+
+  body.style.color='';
+  body.innerHTML=htmlLines||escH(result);
+  const now=new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  if(timeEl)timeEl.textContent=`⏱ ${now} 更新`;
+  if(btn){btn.disabled=false;}
+
+  // 快取
+  try{localStorage.setItem('ai_'+dayKey,JSON.stringify({html:htmlLines,ts:Date.now()}));}catch(_){}
 }
 
 async function loadClock(useCache=false){
@@ -5058,6 +5192,10 @@ return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(20
   // 頁面載入：同時載入所有靜態資料，完成後顯示新聞/時鐘
   loadExDiv2026().catch(()=>{});
   loadConfCalendar().catch(()=>{});
+  // 本週大盤展望：等除息+法說曆載入後再跑（需要 exDivMap2026 & confByDate）
+  Promise.all([loadExDiv2026().catch(()=>{}), loadConfCalendar().catch(()=>{})]).then(()=>{
+    loadWeeklyOutlook(false).catch(()=>{});
+  });
   Promise.all([loadTWSEDaily(), loadStockPrices()]).finally(()=>{
     updateSemiPrices();
     loadGeoStatus();
