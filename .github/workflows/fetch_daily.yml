@@ -45,9 +45,7 @@ jobs:
 
       - name: Fetch daily data
         env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_D1_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_D1_DATABASE_ID: "a8d12b0f-b70c-4630-b471-612152641c87"
+          D1_WRITE_SECRET: ${{ secrets.D1_WRITE_SECRET }}
         run: python scripts/fetch_twse_daily.py
 
       - name: Commit and push data files

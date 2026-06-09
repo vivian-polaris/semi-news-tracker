@@ -872,48 +872,59 @@ def d1_post_batches(statements, account_id, database_id, token):
         print(f'  D1 batch {idx}/{total_batches}: {len(sql_batch)} SQL statements')
 
 def sync_d1_database(output, tse_prices, otc_prices):
-    account_id = os.environ.get('CLOUDFLARE_ACCOUNT_ID')
-    token = os.environ.get('CLOUDFLARE_D1_TOKEN')
-    database_id = os.environ.get('CLOUDFLARE_D1_DATABASE_ID') or 'a8d12b0f-b70c-4630-b471-612152641c87'
-    if not account_id or not token:
-        print('  [WARN] Skip D1 sync: missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_D1_TOKEN')
+    secret = os.environ.get('D1_WRITE_SECRET')
+    if not secret:
+        print('  [WARN] Skip D1 sync: missing D1_WRITE_SECRET')
         return
 
-    print('\n9. Sync Cloudflare D1...')
-    price_rows = build_price_history_rows(tse_prices, output.get('_tse_price_date')) + \
-                 build_price_history_rows(otc_prices, output.get('_otc_price_date'))
-    fund_rows = build_fundamentals_rows(output)
+    print('\n9. Sync Cloudflare D1 (via Pages Function)...')
 
-    statements = []
-    for rows in chunked(price_rows, PRICE_ROWS_PER_STATEMENT):
-        statements.append(build_bulk_insert_sql(
-            'stock_prices',
-            ['code', 'date', 'name', 'close', 'high', 'low', 'open', 'volume'],
-            rows,
-        ))
-    for rows in chunked(fund_rows, FUND_ROWS_PER_STATEMENT):
-        statements.append(build_bulk_insert_sql(
-            'fundamentals',
-            [
-                'code', 'sector', 'pe', 'pb', 'div_yield', 'eps', 'eps_year',
-                'eps_quarter', 'earnings_growth', 'foreign_net', 'trust_net',
-                'dealer_net', 'revenue_current', 'revenue_yoy', 'margin_today',
-                'margin_change', 'updated_date'
-            ],
-            rows,
-        ))
-    statements.append({
-        'sql': 'INSERT OR REPLACE INTO market_meta (key, value, updated_at) VALUES (?, ?, ?)',
-        'params': [
-            'last_update',
-            output.get('_tse_price_date') or output.get('_otc_price_date') or output.get('date'),
-            datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat(timespec='seconds'),
-        ],
-    })
+    tse_date = output.get('_tse_price_date')
+    otc_date = output.get('_otc_price_date') or output.get('date')
+
+    price_rows = []
+    for prices_dict, date_str in [(tse_prices, tse_date), (otc_prices, otc_date)]:
+        for code, stock in prices_dict.items():
+            if not re.match(r'^\d{4,6}$', str(code)):
+                continue
+            closes = stock.get('c') or []
+            if not closes or closes[0] is None:
+                continue
+            price_rows.append({
+                'code': str(code),
+                'date': stock.get('_d') or date_str,
+                'name': stock.get('n', str(code)),
+                'close': closes[0],
+                'high': (stock.get('h') or [None])[0],
+                'low': (stock.get('l') or [None])[0],
+                'open': None,
+                'volume': (stock.get('v') or [None])[0],
+            })
+
+    fund_cols = [
+        'code', 'sector', 'pe', 'pb', 'div_yield', 'eps', 'eps_year', 'eps_quarter',
+        'earnings_growth', 'foreign_net', 'trust_net', 'dealer_net',
+        'revenue_current', 'revenue_yoy', 'margin_today', 'margin_change', 'updated_date',
+    ]
+    fund_rows = [dict(zip(fund_cols, t)) for t in build_fundamentals_rows(output)]
+
+    meta_date = tse_date or otc_date or output.get('date')
+    payload = {'prices': price_rows, 'fundamentals': fund_rows, 'meta_date': meta_date}
 
     print(f'  D1 rows prepared: prices={len(price_rows)}, fundamentals={len(fund_rows)}')
-    d1_post_batches(statements, account_id, database_id, token)
-    print('  ✅ D1 sync completed')
+    resp = requests.post(
+        'https://vivian-vcpfinder.pages.dev/api/d1write',
+        headers={'Authorization': f'Bearer {secret}', 'Content-Type': 'application/json'},
+        json=payload,
+        timeout=120,
+    )
+    if not resp.ok:
+        raise RuntimeError(f'D1 write HTTP {resp.status_code}: {resp.text[:400]}')
+    result = resp.json()
+    if not result.get('success'):
+        raise RuntimeError(f'D1 write failed: {json.dumps(result)[:400]}')
+    written = result.get('written', {})
+    print(f'  ✅ D1 sync completed: prices={written.get("prices",0)}, fundamentals={written.get("fundamentals",0)}')
 
 def fetch_exdiv():
     """抓取 TWSE 2026 年除息日期，累積存入 exdiv_2026.json
