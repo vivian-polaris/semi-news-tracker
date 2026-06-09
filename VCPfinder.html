@@ -702,14 +702,16 @@ footer a:hover{text-decoration:underline}
     </div>
     <div class="sec-body" id="trumpSecBody">
     <div class="news-card" style="margin:0;border-top-left-radius:0;border-top-right-radius:0;border-top:none">
-      <div style="font-size:.75rem;color:var(--text2);margin-bottom:10px">開盤前查以下兩個來源，有戰事、制裁、談判破裂 → 打「有」</div>
-      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
-        <a href="https://news.google.com/search?q=%E7%BE%8E%E4%BC%8A+OR+%E4%B8%AD%E6%9D%B1&hl=zh-TW&gl=TW&ceid=TW:zh-Hant" target="_blank" rel="noopener" class="geo-link">🔍 Google 新聞：美伊・中東</a>
-        <a href="https://finance.ettoday.net/" target="_blank" rel="noopener" class="geo-link">📰 ETtoday 財經首頁</a>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:.62rem;font-weight:700;color:#60a5fa">🤖 AI 自動偵測（每4小時更新）</span>
+        <button onclick="loadGeoAI(true)" id="geoAIRefreshBtn"
+          style="padding:2px 8px;font-size:.62rem;font-weight:700;background:rgba(79,126,247,.15);border:1px solid var(--purple);border-radius:6px;color:var(--purple);cursor:pointer">↻ 更新</button>
       </div>
-      <div style="display:flex;gap:8px">
-        <button class="geo-btn" id="geoBtnYes" onclick="setGeoStatus('yes')">✅ 有</button>
-        <button class="geo-btn" id="geoBtnNo" onclick="setGeoStatus('no')">❌ 無</button>
+      <div id="geoAIBody" style="font-size:.78rem;line-height:1.75;color:var(--text);min-height:40px;white-space:pre-wrap">偵測中...</div>
+      <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:.6rem;color:var(--text2)">手動覆蓋：</span>
+        <button class="geo-btn" id="geoBtnYes" onclick="setGeoStatus('yes')">✅ 有事件</button>
+        <button class="geo-btn" id="geoBtnNo" onclick="setGeoStatus('no')">❌ 無事件</button>
       </div>
       <div class="news-time" id="geoTime"></div>
     </div>
@@ -2280,6 +2282,81 @@ function loadGeoStatus(){
     const today=new Date().toLocaleDateString('zh-TW');
     renderGeoStatus(saved.date===today?saved.status:null, saved.date===today?saved.date:'');
   }
+}
+
+async function loadGeoAI(force=false){
+  const body=document.getElementById('geoAIBody');
+  const btn=document.getElementById('geoAIRefreshBtn');
+  if(!body)return;
+
+  const cacheKey='geo_ai_'+new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+  const TTL=4*3600*1000; // 4小時
+
+  if(!force){
+    try{
+      const c=JSON.parse(localStorage.getItem(cacheKey)||'{}');
+      if(c.text&&c.ts&&Date.now()-c.ts<TTL){
+        body.textContent=c.text;
+        body.style.color=c.status==='yes'?'#f87171':c.status==='no'?'#34d399':'var(--text)';
+        renderGeoStatus(c.status, new Date().toLocaleDateString('zh-TW'));
+        const timeEl=document.getElementById('geoTime');
+        if(timeEl)timeEl.textContent=`🤖 AI 偵測（${cacheAgeStr(c.ts)}）`;
+        return;
+      }
+    }catch(_){}
+  }
+
+  body.style.color='var(--text2)';
+  body.textContent='正在抓取地緣政治新聞...';
+  if(btn)btn.disabled=true;
+
+  // 抓地緣政治相關新聞（美伊、中東、中美、台海）
+  let newsItems=[];
+  try{
+    const [r1,r2]=await Promise.allSettled([
+      fetchRSS('美伊 OR 中東 OR 以色列 衝突 制裁'),
+      fetchRSS('US China trade war Taiwan geopolitical risk'),
+    ]);
+    const l1=r1.status==='fulfilled'?r1.value:[];
+    const l2=r2.status==='fulfilled'?r2.value:[];
+    newsItems=[...l1,...l2].slice(0,10);
+  }catch(_){}
+
+  const headlines=newsItems.map(x=>`- ${x.title}`).join('\n')||'（無法取得新聞）';
+  const today=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+
+  const prompt=`今天是 ${today}。以下是最新的地緣政治相關新聞標題：
+
+${headlines}
+
+任務：判斷這些新聞是否有「重大地緣政治風險事件」會影響台股今日開盤（如：新戰事爆發、重大制裁、談判破裂、台海緊張）。
+
+輸出格式（嚴格只輸出以下兩行，不要其他文字）：
+第一行：【有事件】或【無事件】
+第二行：一句話說明原因（20字內）`;
+
+  const result=await callAI(prompt);
+
+  // 解析 AI 回答
+  let status='unknown';
+  let summary=result.trim();
+  if(result.includes('無事件')||/無重大|無明顯|目前無|沒有重大/.test(result)) status='no';
+  else if(result.includes('有事件')||/有重大|爆發|衝突|制裁|緊張/.test(result)) status='yes';
+
+  // 顯示
+  const lines=result.split('\n').filter(l=>l.trim()).slice(0,2).join('\n');
+  body.textContent=lines||result;
+  body.style.color=status==='yes'?'#f87171':status==='no'?'#34d399':'var(--text)';
+
+  // 自動更新 badge
+  if(status==='yes'||status==='no') setGeoStatus(status);
+  const timeEl=document.getElementById('geoTime');
+  if(timeEl)timeEl.textContent=`🤖 AI 偵測 ${new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'})}`;
+
+  if(btn)btn.disabled=false;
+
+  // 快取
+  try{localStorage.setItem(cacheKey,JSON.stringify({text:lines||result,status,ts:Date.now()}));}catch(_){}
 }
 
 // ─── 投資時鐘 ─────────────────────────────────────────────────────────────
@@ -5198,7 +5275,8 @@ return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(20
   });
   Promise.all([loadTWSEDaily(), loadStockPrices()]).finally(()=>{
     updateSemiPrices();
-    loadGeoStatus();
+    loadGeoStatus(); // 先顯示昨天快取，避免空白
+    loadGeoAI(false).catch(()=>{}); // AI 自動偵測今日地緣政治
     loadClock(true);
     // 用最新 stocks_tse/otc.json 更新快取結果的現價（修正舊快取顯示舊股價的問題）
     // 更新條件：快取是前一天或更早（舊快取），OR 今天盤後/盤前（非盤中）
