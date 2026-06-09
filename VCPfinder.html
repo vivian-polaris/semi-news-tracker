@@ -2558,37 +2558,108 @@ ${tradingDays.map(d=>`📅 ${d}：[30字內判斷] 點位：[XXXXX–YYYYY] 情�
 }
 
 // ─── Fed Watch 美國關鍵數據行事曆 ────────────────────────────────────────
+// ── 各指標衝擊說明（type → 解說） ──────────────────────────────────────
+const FED_IMPACT={
+  CPI:{
+    what:'美國消費者物價指數（月公布，衡量通膨年增率）',
+    rows:[
+      {c:'#f87171', t:'> 4%',   fx:'降息機會歸零，台積電、費半急殺。歷史：標普3個月均跌4%、6個月跌7%'},
+      {c:'#d4a84b', t:'3.5–4%', fx:'降息時間表延後，科技股承壓，但不至於崩'},
+      {c:'#34d399', t:'2–2.5%', fx:'接近Fed 2%目標，降息預期升溫，台股利多'},
+      {c:'#60a5fa', t:'< 2%',   fx:'通膨受控，但需確認非需求崩潰（衰退）造成'},
+    ]
+  },
+  NFP:{
+    what:'非農就業人數（每月第一個週五，衡量新增工作機會）',
+    rows:[
+      {c:'#f87171', t:'> 250K', fx:'勞動市場過熱 → Fed不敢降息甚至升息 → 科技股崩'},
+      {c:'#34d399', t:'150–200K',fx:'甜蜜點：溫和成長，既無過熱又無衰退，台股最喜歡'},
+      {c:'#d4a84b', t:'< 100K', fx:'就業急速放緩 → 衰退疑慮升溫 → 全面賣壓'},
+    ]
+  },
+  FOMC:{
+    what:'Fed公開市場委員會利率決議（每年8次）',
+    rows:[
+      {c:'#f87171', t:'升息 / 鷹派聲明',    fx:'外資出走新興市場，台股直接跌'},
+      {c:'#34d399', t:'降息 / 鴿派暗示',    fx:'外資回流亞太，台積電、高股息率先反彈'},
+      {c:'#60a5fa', t:'點陣圖（3/6/9/12月）',fx:'預測未來2年利率路徑，比決議本身更重要'},
+    ]
+  },
+  PCE:{
+    what:'個人消費支出物價指數（Fed官方首選通膨指標，月底公布）',
+    rows:[
+      {c:'#f87171', t:'> 2.5%', fx:'Fed最重視此數字，高於預期會直接推遲降息'},
+      {c:'#34d399', t:'≈ 2%',   fx:'達到Fed目標，降息路徑確認，比CPI出來時更直接'},
+    ]
+  },
+  ADP:{
+    what:'ADP私部門就業（NFP公布前兩天，先行指標）',
+    rows:[
+      {c:'#d4a84b', t:'大幅超預期', fx:'暗示週五NFP也強 → 科技股提前下跌'},
+      {c:'#d4a84b', t:'遠低預期',  fx:'暗示NFP可能疲軟 → 降息預期回升，反而利多'},
+    ]
+  },
+  ISM:{
+    what:'ISM製造業採購經理人指數（每月首個工作日）',
+    rows:[
+      {c:'#34d399', t:'> 55',   fx:'製造業強勁擴張，半導體需求預期大增，台積電利多'},
+      {c:'#60a5fa', t:'50–55',  fx:'溫和擴張，市場中性'},
+      {c:'#d4a84b', t:'45–50',  fx:'收縮，半導體供應鏈壓力浮現'},
+      {c:'#f87171', t:'< 45',   fx:'衰退警號，台股半導體板塊首當其衝'},
+    ]
+  },
+  GDP:{
+    what:'美國實質GDP季增年化率（每季公布初值／修正值）',
+    rows:[
+      {c:'#d4a84b', t:'> 3%',   fx:'過熱，Fed不降息，市場擔心再升息'},
+      {c:'#34d399', t:'1–2.5%', fx:'黃金成長區間，既無過熱又無衰退，股市最喜歡'},
+      {c:'#d4a84b', t:'0–1%',   fx:'成長放緩，衰退疑慮開始浮現'},
+      {c:'#f87171', t:'< 0%',   fx:'技術性衰退，外資全面撤出新興市場'},
+    ]
+  },
+};
+
+function getFedImpact(name){
+  if(name.includes('CPI'))  return FED_IMPACT.CPI;
+  if(name.includes('NFP')||name.includes('非農就業')) return FED_IMPACT.NFP;
+  if(name.includes('FOMC')) return FED_IMPACT.FOMC;
+  if(name.includes('PCE'))  return FED_IMPACT.PCE;
+  if(name.includes('ADP'))  return FED_IMPACT.ADP;
+  if(name.includes('ISM')||name.includes('PMI')) return FED_IMPACT.ISM;
+  if(name.includes('GDP'))  return FED_IMPACT.GDP;
+  return null;
+}
+
 const FED_CAL=[
   // tier 1 = 🔴 直接衝擊  tier 2 = 🟡 次重要
-  // ── 2026 下半年 ──
-  {date:'2026-06-11',name:'CPI 5月',tier:1,note:'美銀警告：>4% 觸發費半拋售'},
-  {date:'2026-06-18',name:'FOMC 利率決議',tier:1,note:'含點陣圖，今年最關鍵'},
-  {date:'2026-06-26',name:'PCE 5月',tier:2,note:'Fed 最看重的通膨指標'},
-  {date:'2026-07-01',name:'ISM 製造業 PMI',tier:2,note:'50以上擴張，影響半導體需求'},
-  {date:'2026-07-01',name:'ADP 就業',tier:2,note:'NFP 的先行指標'},
-  {date:'2026-07-10',name:'NFP 6月',tier:1,note:'就業太強→降息夢破→科技股崩'},
-  {date:'2026-07-15',name:'CPI 6月',tier:1,note:''},
-  {date:'2026-07-29',name:'FOMC 利率決議',tier:1,note:''},
-  {date:'2026-07-30',name:'GDP Q2 初值',tier:2,note:'太好→不降息，太差→衰退'},
-  {date:'2026-07-31',name:'PCE 6月',tier:2,note:''},
-  {date:'2026-08-05',name:'ADP 就業',tier:2,note:''},
-  {date:'2026-08-07',name:'NFP 7月',tier:1,note:''},
-  {date:'2026-08-13',name:'CPI 7月',tier:1,note:''},
-  {date:'2026-08-28',name:'PCE 7月',tier:2,note:''},
-  {date:'2026-09-02',name:'ADP 就業',tier:2,note:''},
-  {date:'2026-09-04',name:'NFP 8月',tier:1,note:''},
-  {date:'2026-09-10',name:'CPI 8月',tier:1,note:''},
-  {date:'2026-09-17',name:'FOMC 利率決議',tier:1,note:'含點陣圖'},
-  {date:'2026-09-25',name:'PCE 8月',tier:2,note:''},
-  {date:'2026-10-02',name:'NFP 9月',tier:1,note:''},
-  {date:'2026-10-13',name:'CPI 9月',tier:1,note:''},
-  {date:'2026-10-29',name:'FOMC 利率決議',tier:1,note:''},
-  {date:'2026-10-30',name:'GDP Q3 初值',tier:2,note:''},
-  {date:'2026-11-06',name:'NFP 10月',tier:1,note:''},
-  {date:'2026-11-12',name:'CPI 10月',tier:1,note:''},
-  {date:'2026-12-04',name:'NFP 11月',tier:1,note:''},
-  {date:'2026-12-10',name:'FOMC 利率決議',tier:1,note:'含點陣圖，年終最終決策'},
-  {date:'2026-12-11',name:'CPI 11月',tier:1,note:''},
+  {date:'2026-06-11',name:'CPI 5月',tier:1,dot:false,extra:'⚠️ 本波最關鍵：美銀警告若>4%直接觸發科技股拋售'},
+  {date:'2026-06-18',name:'FOMC 利率決議',tier:1,dot:true,extra:'含點陣圖，今年下半年最重要的政策信號'},
+  {date:'2026-06-26',name:'PCE 5月',tier:2},
+  {date:'2026-07-01',name:'ISM 製造業 PMI',tier:2},
+  {date:'2026-07-01',name:'ADP 就業',tier:2},
+  {date:'2026-07-10',name:'NFP 6月',tier:1},
+  {date:'2026-07-15',name:'CPI 6月',tier:1},
+  {date:'2026-07-29',name:'FOMC 利率決議',tier:1,dot:false},
+  {date:'2026-07-30',name:'GDP Q2 初值',tier:2},
+  {date:'2026-07-31',name:'PCE 6月',tier:2},
+  {date:'2026-08-05',name:'ADP 就業',tier:2},
+  {date:'2026-08-07',name:'NFP 7月',tier:1},
+  {date:'2026-08-13',name:'CPI 7月',tier:1},
+  {date:'2026-08-28',name:'PCE 7月',tier:2},
+  {date:'2026-09-02',name:'ADP 就業',tier:2},
+  {date:'2026-09-04',name:'NFP 8月',tier:1},
+  {date:'2026-09-10',name:'CPI 8月',tier:1},
+  {date:'2026-09-17',name:'FOMC 利率決議',tier:1,dot:true},
+  {date:'2026-09-25',name:'PCE 8月',tier:2},
+  {date:'2026-10-02',name:'NFP 9月',tier:1},
+  {date:'2026-10-13',name:'CPI 9月',tier:1},
+  {date:'2026-10-29',name:'FOMC 利率決議',tier:1,dot:false},
+  {date:'2026-10-30',name:'GDP Q3 初值',tier:2},
+  {date:'2026-11-06',name:'NFP 10月',tier:1},
+  {date:'2026-11-12',name:'CPI 10月',tier:1},
+  {date:'2026-12-04',name:'NFP 11月',tier:1},
+  {date:'2026-12-10',name:'FOMC 利率決議',tier:1,dot:true,extra:'年終最終決策，含點陣圖'},
+  {date:'2026-12-11',name:'CPI 11月',tier:1},
 ];
 
 async function loadFedWatch(force=false){
@@ -2611,7 +2682,7 @@ async function loadFedWatch(force=false){
     else badge.textContent='';
   }
 
-  // 渲染行事曆列表
+  // 渲染行事曆列表（附完整影響說明）
   const rows=upcoming.map(e=>{
     const daysLeft=Math.ceil((new Date(e.date)-new Date(todayTW))/86400000);
     const dateObj=new Date(e.date+'T00:00:00+08:00');
@@ -2623,20 +2694,28 @@ async function loadFedWatch(force=false){
     const soon=daysLeft<=14;
     const icon=e.tier===1?'🔴':'🟡';
     const dateColor=urgent?'#f87171':soon?'#d4a84b':'var(--text2)';
-    const daysStr=daysLeft===0?'今天':daysLeft===1?'明天':`${daysLeft}天後`;
-    const urgentClass=urgent?'fed-urgent':'';
-    const note=e.note?`<div style="font-size:.62rem;color:var(--text2);padding-left:20px">${escH(e.note)}</div>`:'';
-    return `<div class="fed-row ${urgentClass}">
-      <div style="display:flex;align-items:center;gap:6px">
+    const daysStr=daysLeft===0?'今天！':daysLeft===1?'明天':daysLeft<=7?`⚠️ ${daysLeft}天後`:`${daysLeft}天後`;
+    const bg=urgent?'rgba(248,113,113,.08)':soon?'rgba(212,168,75,.05)':'';
+    const impact=getFedImpact(e.name);
+    // 衝擊說明：取前3個閾值
+    const impactRows=impact?impact.rows.slice(0,3).map(r=>
+      `<span style="color:${r.c};font-weight:700">${escH(r.t)}</span><span style="color:var(--text2)"> → ${escH(r.fx)}</span>`
+    ).join('<br>'):'';
+    const extraNote=e.extra?`<div style="font-size:.62rem;color:#60a5fa;margin-top:2px">📌 ${escH(e.extra)}</div>`:'';
+    const dotBadge=e.dot?`<span style="font-size:.55rem;font-weight:700;color:#a78bfa;background:rgba(167,139,250,.15);padding:1px 5px;border-radius:4px;margin-left:4px">含點陣圖</span>`:'';
+    return `<div style="padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.05);background:${bg};border-radius:${urgent?'6px':'0'}">
+      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
         <span>${icon}</span>
-        <span style="font-size:.68rem;color:${dateColor};font-weight:700;min-width:52px">${mm}/${dd}（週${dow}）</span>
-        <span style="font-size:.72rem;font-weight:700;color:${urgent?'#f87171':'var(--text)'}">${escH(e.name)}</span>
-        <span style="font-size:.6rem;color:${dateColor};margin-left:auto">${daysStr}</span>
+        <span style="font-size:.7rem;color:${dateColor};font-weight:700;white-space:nowrap">${mm}/${dd}（週${dow}）</span>
+        <span style="font-size:.75rem;font-weight:800;color:${urgent?'#f87171':soon?'#d4a84b':'var(--text)'}">${escH(e.name)}${dotBadge}</span>
+        <span style="font-size:.62rem;color:${dateColor};margin-left:auto;white-space:nowrap;font-weight:700">${daysStr}</span>
       </div>
-      ${note}
+      ${impact?`<div style="font-size:.62rem;color:var(--text2);margin:2px 0 3px 18px">${escH(impact.what)}</div>`:''}
+      ${impactRows?`<div style="font-size:.62rem;line-height:1.8;margin-left:18px">${impactRows}</div>`:''}
+      ${extraNote}
     </div>`;
   }).join('');
-  calEl.innerHTML=rows;
+  calEl.innerHTML=rows||'<span style="color:var(--text2)">今年行事曆已結束</span>';
 
   // ── FRED 最新數值（快取 6 小時）───────────────────────────────────
   const fredCacheKey='fredvals_'+todayTW;
