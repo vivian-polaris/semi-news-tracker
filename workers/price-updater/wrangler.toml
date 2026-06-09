@@ -1,0 +1,11 @@
+name = "vcp-price-updater"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "VCP_KV"
+id = "d6a11a993af548248758c57cc64870d2"
+
+[triggers]
+# 台灣市場 09:00–13:30 CST = 01:00–05:30 UTC，每2分鐘跑一次
+crons = ["*/2 1-5 * * 1-5"]
