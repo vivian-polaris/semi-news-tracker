@@ -5,7 +5,9 @@ const FUND_COLS = [
   'revenue_current', 'revenue_yoy', 'margin_today', 'margin_change', 'updated_date',
 ];
 
-const ROWS_PER_STMT = 10;
+// D1 max 100 params per statement: 8 price cols → 12 rows max, 17 fund cols → 5 rows max
+const PRICE_ROWS_PER_STMT = 10;  // 10 × 8 = 80 params
+const FUND_ROWS_PER_STMT = 5;    // 5 × 17 = 85 params
 const STMTS_PER_BATCH = 50;
 
 function buildInsert(db, table, cols, rows) {
@@ -53,10 +55,10 @@ export async function onRequestPost({ request, env }) {
   const fundamentals = Array.isArray(body.fundamentals) ? body.fundamentals : [];
   const metaDate = body.meta_date || null;
 
-  const priceStmts = chunk(prices, ROWS_PER_STMT).map(rows =>
+  const priceStmts = chunk(prices, PRICE_ROWS_PER_STMT).map(rows =>
     buildInsert(env.VCP_DB, 'stock_prices', PRICE_COLS, rows)
   );
-  const fundStmts = chunk(fundamentals, ROWS_PER_STMT).map(rows =>
+  const fundStmts = chunk(fundamentals, FUND_ROWS_PER_STMT).map(rows =>
     buildInsert(env.VCP_DB, 'fundamentals', FUND_COLS, rows)
   );
 
@@ -65,7 +67,14 @@ export async function onRequestPost({ request, env }) {
     .prepare('INSERT OR REPLACE INTO market_meta (key, value, updated_at) VALUES (?, ?, ?)')
     .bind('last_update', metaDate || now.slice(0, 10), now);
 
-  await writeBatched(env.VCP_DB, [...priceStmts, ...fundStmts, metaStmt]);
+  try {
+    await writeBatched(env.VCP_DB, [...priceStmts, ...fundStmts, metaStmt]);
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ success: false, error: String(err), priceStmts: priceStmts.length, fundStmts: fundStmts.length }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
 
   return new Response(
     JSON.stringify({ success: true, written: { prices: prices.length, fundamentals: fundamentals.length } }),
