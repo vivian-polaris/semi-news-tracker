@@ -1202,7 +1202,10 @@ def main():
     }
 
     atomic_write('twse_daily.json', output)
-    sync_d1_database(output, tse_prices, otc_prices)
+    try:
+        sync_d1_database(output, tse_prices, otc_prices)
+    except Exception as e:
+        print(f'  [WARN] D1 sync failed (non-fatal): {e}')
 
     print(f'\n✅ twse_daily.json written:')
     print(f'   sectors={len(sectors)}, otcStocks={len(otc_stocks)}, chips={len(chips)}, bwibbu={len(bwibbu)}')
