@@ -5,7 +5,7 @@
 const CORS = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
-  'Cache-Control': 's-maxage=20',  // Cloudflare edge caches 20s — same IP won't re-hit TWSE
+  'Cache-Control': 's-maxage=10',  // Cloudflare edge caches 10s — shorter window for intraday accuracy
 };
 
 export async function onRequestGet(context) {

@@ -88,10 +88,8 @@ header p{color:rgba(255,255,255,.7);font-size:.78rem;line-height:1.6;text-shadow
 /* ── 每日快訊 ── */
 .news-card{background:var(--card);border-radius:10px;padding:14px 16px;min-height:90px;display:flex;flex-direction:column;border:1px solid var(--border);margin:8px 0 12px}
 @media(max-width:640px){.two-col-row{grid-template-columns:1fr!important}}
-.news-card.trump{border-left:4px solid var(--red)}
 .news-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .news-title{font-size:.8rem;font-weight:800;letter-spacing:.03em;display:flex;align-items:center;gap:5px}
-.news-title.t-trump{color:var(--red)}
 .news-refresh{background:transparent;border:1.5px solid var(--border);border-radius:12px;color:var(--text2);cursor:pointer;font-size:.68rem;padding:3px 9px;transition:all .18s}
 .news-refresh:hover{border-color:var(--purple);color:var(--purple)}
 .news-body{font-size:.8rem;line-height:1.75;color:var(--text);flex:1;white-space:pre-wrap}
@@ -347,21 +345,15 @@ footer a:hover{text-decoration:underline}
 .news-item-link::after{content:' ↗';font-size:.65rem;color:var(--purple);opacity:.7}
 .news-item-plain{padding:5px 0;border-bottom:1px solid rgba(45,55,72,.5);white-space:pre-wrap;line-height:1.75;font-size:.8rem}
 .news-item-link:last-child,.news-item-plain:last-child{border-bottom:none}
+.geo-link{display:block;padding:8px 12px;background:var(--tag);border-radius:8px;color:var(--text);text-decoration:none;font-size:.82rem;font-weight:600;transition:background .15s}
+.geo-link:hover{background:var(--card2);color:var(--purple)}
+.geo-btn{flex:1;padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--card2);color:var(--text);font-size:.9rem;font-weight:700;cursor:pointer;transition:all .18s}
+.geo-btn:hover{border-color:var(--purple);color:var(--purple)}
+.geo-btn.active-yes{background:rgba(52,211,153,.15);border-color:#34d399;color:#34d399}
+.geo-btn.active-no{background:rgba(248,113,113,.12);border-color:#f87171;color:#f87171}
 
 /* ── Mobile news swiper ── */
 @media(max-width:640px){
-  .trump-swiper{overflow:hidden;-webkit-overflow-scrolling:touch}
-  .trump-track{display:flex;transition:transform .32s cubic-bezier(.4,0,.2,1);will-change:transform}
-  .trump-card{flex-shrink:0;width:100%;box-sizing:border-box;padding:4px 0 10px}
-  .trump-card-num{font-size:.62rem;font-weight:800;letter-spacing:.06em;color:var(--red);margin-bottom:6px;text-transform:uppercase}
-  .trump-card-text{font-size:.84rem;line-height:1.75;white-space:pre-wrap;color:var(--text)}
-  .trump-nav{display:flex;align-items:center;gap:8px;margin-top:12px}
-  .trump-nav-btn{flex-shrink:0;width:34px;height:34px;background:var(--card2);border:1.5px solid var(--border);border-radius:50%;color:var(--text);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .16s;user-select:none}
-  .trump-nav-btn:active{background:var(--purple);border-color:var(--purple);color:#fff}
-  .trump-dots{display:flex;gap:5px;justify-content:center;flex:1;flex-wrap:wrap}
-  .trump-dot{width:6px;height:6px;border-radius:50%;background:var(--border);transition:background .2s,transform .2s;flex-shrink:0}
-  .trump-dot.on{background:var(--red);transform:scale(1.3)}
-  .trump-counter{font-size:.65rem;color:var(--text2);text-align:center;margin-top:6px}
 }
 
 /* ── Collapsible section header ── */
@@ -408,18 +400,11 @@ footer a:hover{text-decoration:underline}
   .news-head{margin-bottom:4px!important}
   .news-body{font-size:.78rem!important;line-height:1.45!important;word-break:break-word!important;overflow-wrap:break-word!important}
   .news-item-link,.news-item-plain{font-size:.76rem!important;line-height:1.45!important}
-  .trump-card-text{font-size:.76rem!important;line-height:1.45!important}
   .inv-card.c-clock{padding:8px 10px!important}
   #clockBody{font-size:.76rem!important;line-height:1.45!important;padding:8px 10px!important;min-height:0!important;margin-top:0!important}
   #clockSvg{margin:0 auto 4px!important}
   .clock-badge{font-size:.76rem!important;padding:3px 12px!important}
   #clockPhase{margin-bottom:6px!important}
-  .trump-card{padding:2px 0 6px!important}
-  .trump-card-num{margin-bottom:3px!important;font-size:.6rem!important}
-  .trump-card-text{font-size:.76rem!important;line-height:1.45!important}
-  .trump-card-analysis{font-size:.72rem!important;margin-top:5px!important;line-height:1.4!important}
-  .trump-swiper,.trump-track{padding:0!important}
-  .trump-dots{margin-top:6px!important;gap:4px!important}
   /* 手機：凍結欄縮到剛好文字寬度 */
   .tc{min-width:48px!important;max-width:48px!important;width:48px!important;font-size:.68rem!important;padding:4px 3px!important}
   .tn{min-width:52px!important;max-width:64px!important;left:48px!important;font-size:.68rem!important;padding:4px 3px!important;overflow:hidden;text-overflow:ellipsis}
@@ -690,34 +675,29 @@ footer a:hover{text-decoration:underline}
 <!-- ── 市場震撼彈 + 投資人專區 同一 row ── -->
 <div class="two-col-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-top:6px;margin-bottom:12px">
 
-  <!-- 左：市場震撼彈 -->
+  <!-- 左：地緣政治事件 -->
   <div>
     <!-- mobile toggle -->
     <div class="sec-toggle" onclick="toggleSec('trump')" id="trumpToggle">
       <div class="sec-toggle-left">
-        <span class="sec-toggle-icon">📰</span>
-        <span class="sec-toggle-title">市場震撼彈</span>
-        <span class="sec-toggle-badge">Top 10</span>
+        <span class="sec-toggle-icon">🌏</span>
+        <span class="sec-toggle-title">地緣政治事件</span>
+        <span class="sec-toggle-badge" id="geoBadge">待確認</span>
       </div>
       <span class="sec-chevron" id="trumpChevron">▼</span>
     </div>
     <div class="sec-body" id="trumpSecBody">
-    <div class="news-card trump" style="margin:0;border-top-left-radius:0;border-top-right-radius:0;border-top:none">
-      <div class="news-head">
-        <div class="news-title t-trump hide-mobile">最重要財經消息・影響台股 Top 10</div>
-        <div style="display:flex;gap:5px;margin-left:auto">
-          <button class="news-refresh" onclick="loadTrump()">↻ 刷新</button>
-          <button class="news-refresh" id="logicBtn" onclick="loadTrumpLogic()" style="border-color:var(--purple);color:var(--purple)">底層邏輯</button>
-        </div>
+    <div class="news-card" style="margin:0;border-top-left-radius:0;border-top-right-radius:0;border-top:none">
+      <div style="font-size:.75rem;color:var(--text2);margin-bottom:10px">開盤前查以下兩個來源，有戰事、制裁、談判破裂 → 打「有」</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+        <a href="https://news.google.com/search?q=%E7%BE%8E%E4%BC%8A+OR+%E4%B8%AD%E6%9D%B1&hl=zh-TW&gl=TW&ceid=TW:zh-Hant" target="_blank" rel="noopener" class="geo-link">🔍 Google 新聞：美伊・中東</a>
+        <a href="https://finance.ettoday.net/" target="_blank" rel="noopener" class="geo-link">📰 ETtoday 財經首頁</a>
       </div>
-      <div class="news-body loading" id="trumpBody">載入中...</div>
-      <div class="news-time" id="trumpTime"></div>
-      <!-- 底層邏輯分析區 -->
-      <div id="trumpLogicWrap" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;display:none">
-        <div style="font-size:.68rem;font-weight:800;color:var(--purple);letter-spacing:.05em;margin-bottom:6px">TRUMP 雙層解碼</div>
-        <div class="news-body loading" id="trumpLogicBody" style="font-size:.77rem"></div>
-        <div class="news-time" id="trumpLogicTime"></div>
+      <div style="display:flex;gap:8px">
+        <button class="geo-btn" id="geoBtnYes" onclick="setGeoStatus('yes')">✅ 有</button>
+        <button class="geo-btn" id="geoBtnNo" onclick="setGeoStatus('no')">❌ 無</button>
       </div>
+      <div class="news-time" id="geoTime"></div>
     </div>
     </div>
   </div>
@@ -2260,353 +2240,32 @@ function renderNewsWithLinks(aiText, srcItems){
   }).join('');
 }
 
-// ── Mobile news swiper ──────────────────────────────────────────────────────
-let _tIdx=0, _tTotal=0;
-function buildTrumpSwiper(rawText, container, srcItems){
-  // Parse numbered items (1. 2. … or 1、2、)
-  const items=[];
-  let cur='';
-  rawText.split('\n').forEach(line=>{
-    if(/^\d+[\.、．]/.test(line.trim())){
-      if(cur.trim()) items.push(cur.trim());
-      cur=line;
-    } else { cur+='\n'+line; }
-  });
-  if(cur.trim()) items.push(cur.trim());
-  if(items.length<2) return false;
-  // 預先計算每條的連結
-  const links=srcItems?items.map(item=>{
-    const m=item.match(/【([^·・】\s]+)/);
-    const hint=m?.[1]?.trim();
-    if(hint){
-      const srcMap={};
-      (srcItems||[]).forEach(x=>{if(!x.link)return;const s=getSrcAbbrFromUrl(x.link);if(s){if(!srcMap[s])srcMap[s]=[];srcMap[s].push(x);}});
-      if(srcMap[hint]&&srcMap[hint][0]?.link) return srcMap[hint][0].link;
-    }
-    return null;
-  }):items.map(()=>null);
-  _tIdx=0; _tTotal=items.length;
-  const cards=items.map((item,i)=>`
-    <div class="trump-card">
-      <div class="trump-card-num">第 ${i+1} 條 / 共 ${_tTotal}</div>
-      <div class="trump-card-text">${escH(item)}</div>
-      ${links[i]?`<a href="${safeUrl(links[i])}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;font-size:.72rem;color:var(--purple);text-decoration:none;border:1px solid var(--purple);border-radius:6px;padding:2px 10px">↗ 原文連結</a>`:''}
-    </div>`).join('');
-  const dots=items.map((_,i)=>`<div class="trump-dot${i===0?' on':''}" id="td${i}"></div>`).join('');
-  container.innerHTML=`
-    <div class="trump-swiper" id="trumpSwiperWrap">
-      <div class="trump-track" id="trumpTrack">${cards}</div>
-      <div class="trump-nav">
-        <button class="trump-nav-btn" onclick="trumpGo(-1)">‹</button>
-        <div class="trump-dots">${dots}</div>
-        <button class="trump-nav-btn" onclick="trumpGo(1)">›</button>
-      </div>
-    </div>`;
-  // Touch swipe
-  const wrap=document.getElementById('trumpSwiperWrap');
-  let sx=0;
-  wrap.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;},{passive:true});
-  wrap.addEventListener('touchend',e=>{
-    const dx=e.changedTouches[0].clientX-sx;
-    if(Math.abs(dx)>40) trumpGo(dx<0?1:-1);
-  },{passive:true});
-  return true;
-}
-function trumpGo(dir){
-  _tIdx=Math.max(0,Math.min(_tTotal-1,_tIdx+dir));
-  const track=document.getElementById('trumpTrack');
-  if(track) track.style.transform=`translateX(-${_tIdx*100}%)`;
-  document.querySelectorAll('.trump-dot').forEach((d,i)=>d.classList.toggle('on',i===_tIdx));
-}
-
-async function loadTrump(useCache=false){
-  const b=document.getElementById('trumpBody'), t=document.getElementById('trumpTime');
-  if(useCache){
-    const c=getAICache('trump2');
-    if(c){
-      b.className='news-body';
-      const cachedSrc=c.srcItems||[];
-      if(c.selected&&c.selected.length){
-        // 有選號快取，重新渲染真實連結版
-        const fakeEl=document.createElement('div');
-        fakeEl.innerHTML='';
-        b.innerHTML='';
-        const ABBR2={'wsj.com':'WSJ','reuters.com':'Reuters','bloomberg.com':'BBG','ft.com':'FT','cnbc.com':'CNBC','apnews.com':'AP','bbc.com':'BBC','bbc.co.uk':'BBC','cnn.com':'CNN','nbcnews.com':'NBC'};
-        function sb2(url){try{const h=new URL(url).hostname.replace(/^www\./,'');for(const[k,v]of Object.entries(ABBR2)){if(h===k||h.endsWith('.'+k))return v;}return h.split('.')[0].toUpperCase();}catch(_){return'';}}
-        const _di=a=>{const up=a.includes('↑'),dn=a.includes('↓');return up?{l:'↑ 正面',c:'#34d399'}:dn?{l:'↓ 注意',c:'#f87171'}:{l:'→ 中性',c:'#9ca3af'};};
-        const _ca=a=>a.replace(/\s*[↑↓→][^\n]*$/,'').trim()||a;
-        const _sum=c.summary?`<div style="padding:8px 12px 7px;background:rgba(79,126,247,.08);border-bottom:1px solid var(--border);font-size:.78rem;font-weight:600;color:var(--text);line-height:1.45"><span style="font-size:.62rem;font-weight:700;color:var(--purple);margin-right:6px;letter-spacing:.05em">今日重點</span>${escH(c.summary)}</div>`:'';
-        const _hdr=`<div style="display:grid;grid-template-columns:22px 1fr 58px;padding:4px 8px 5px;border-bottom:1px solid var(--border);font-size:.58rem;color:var(--text2);font-weight:700;letter-spacing:.07em;text-transform:uppercase"><div>#</div><div>新聞重點・台股影響</div><div style="text-align:center">方向</div></div>`;
-        b.innerHTML=_sum+_hdr+c.selected.map((s,i)=>{
-          const item=s.item,analysis=s.analysis,src=item.link?sb2(item.link):'';
-          const srcEl=src?` <span style="font-size:.58rem;color:var(--purple)">[${escH(src)}]</span>`:'';
-          const dir=_di(analysis);const mainText=_ca(analysis);
-          const sub=item.title?`<div style="font-size:.62rem;color:var(--text2);margin-top:2px;line-height:1.3">${escH(item.title.length>65?item.title.slice(0,65)+'…':item.title)}</div>`:'';
-          const inner=`<div style="display:grid;grid-template-columns:22px 1fr 58px;align-items:center;padding:8px 8px;border-bottom:1px solid rgba(45,55,72,.4)"><div style="font-size:.68rem;font-weight:800;color:var(--text2)">${i+1}</div><div><div style="font-size:.83rem;font-weight:600;line-height:1.45;color:var(--text)">${escH(mainText)}${srcEl}</div>${sub}</div><div style="text-align:center;font-size:.7rem;font-weight:700;color:${dir.c};white-space:nowrap">${escH(dir.l)}</div></div>`;
-          return item.link?`<a href="${safeUrl(item.link)}" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;transition:background .12s" onmouseover="this.style.background='rgba(79,126,247,.07)'" onmouseout="this.style.background=''">${inner}</a>`:`<div>${inner}</div>`;
-        }).join('');
-      } else {
-        const raw=c.rawText||c.text||'';
-        b.innerHTML=`<div style="white-space:pre-wrap">${escH(raw)}</div>`+buildSrcHtml(cachedSrc);
-      }
-      t.textContent='快取（'+cacheAgeStr(c.ts)+'）・點 ↻ 強制更新';return;
-    }
-  }
-  b.className='news-body loading'; b.textContent='抓取最新新聞...'; t.textContent='';
-  let items=[];
-  // useCache=false（手動刷新）時跳過後端快取，強制即時 RSS
-  const cachedNews=useCache?twseDailyMap?.news:null;
-  if(cachedNews&&cachedNews.length>=5){
-    const seen=new Set();
-    items=cachedNews
-      .map(x=>({title:x.title,link:x.link,dateStr:x.pubDate?new Date(x.pubDate).toLocaleDateString('zh-TW'):'近期',source:x.source||''}))
-      .filter(x=>{if(seen.has(x.title))return false;seen.add(x.title);return true;})
-      .slice(0,30);
-    t.textContent=`後端快取（${twseDailyMap.date||''}）· 點 ↻ 強制更新`;
-  } else {
-    // 備援：直接從 Google News RSS 抓（需要 CORS proxy）
-    const recentQ=new Date(Date.now()-1*24*60*60*1000).toISOString().slice(0,10);
-    const recentQ2=new Date(Date.now()-1*24*60*60*1000).toISOString().slice(0,10);
-    const [a,b2,c,d,e,ff1,ff2,war1,war2,war3,bbc1,ap1,cnn1,nbc1,reu1,reu2]=await Promise.all([
-      fetchRSS(`Trump tariff trade war sanctions policy after:${recentQ}`).catch(()=>[]),
-      fetchRSS(`Federal Reserve interest rate decision inflation CPI after:${recentQ}`).catch(()=>[]),
-      fetchRSS(`US China trade tariff supply chain technology export after:${recentQ}`).catch(()=>[]),
-      fetchRSS(`site:wsj.com economy markets finance after:${recentQ}`).catch(()=>[]),
-      fetchRSS(`site:reuters.com economy markets finance after:${recentQ}`).catch(()=>[]),
-      fetchRSSUrl('https://www.forexfactory.com/rss.php?category=market_news').catch(()=>[]),
-      fetchRSS(`stock market S&P Nasdaq earnings economy after:${recentQ}`).catch(()=>[]),
-      fetchRSS(`Israel Iran oil war ceasefire Hormuz after:${recentQ2}`).catch(()=>[]),
-      fetchRSS(`OPEC oil price energy supply after:${recentQ2}`).catch(()=>[]),
-      fetchRSS(`Trump Iran sanction nuclear deal after:${recentQ2}`).catch(()=>[]),
-      fetchRSSUrl('https://feeds.bbci.co.uk/news/business/rss.xml').catch(()=>[]),  // BBC Business only
-      fetchRSSUrl('https://feeds.apnews.com/rss/apf-business').catch(()=>[]),       // AP Business only
-      fetchRSSUrl('https://rss.cnn.com/rss/money_latest.rss').catch(()=>[]),
-      fetchRSSUrl('https://feeds.nbcnews.com/nbcnews/public/business').catch(()=>[]),
-      fetchRSSUrl('https://feeds.reuters.com/reuters/businessNews').catch(()=>[]),
-      fetchRSS(`semiconductor chip AI tech stock market after:${recentQ}`).catch(()=>[]),
-    ]);
-    // 財經關鍵字篩選：過濾掉跟金融無關的新聞
-    const FIN_KW=['tariff','trade','rate','inflation','GDP','PMI','market','stock','economy','economic',
-      'Fed','dollar','oil','recession','bank','earnings','semiconductor','tech','bond','yield',
-      'export','import','OPEC','energy','china','trump','taiwan','supply chain','currency',
-      'nasdaq','s&p','dow','fiscal','monetary','interest','crypto','bitcoin','gold','copper',
-      'Iran','Israel','Hormuz','sanction','geopolit','war','ceasefire'];
-    function isFinancial(title){
-      const t=title.toLowerCase();
-      return FIN_KW.some(k=>t.includes(k));
-    }
-    const seen=new Set();
-    const allItems=[...a,...b2,...c,...d,...e,...ff1,...ff2,...war1,...war2,...war3,...bbc1,...ap1,...cnn1,...nbc1,...reu1,...reu2];
-    items=allItems
-      .filter(x=>{
-        if(!x.title||!isFinancial(x.title))return false; // 過濾非財經
-        if(seen.has(x.title))return false;
-        seen.add(x.title);
-        return true;
-      })
-      .slice(0,60);
-  }
-  if(!items.length){
-    // RSS/CORS 失敗 → 先嘗試後端 twse_daily.json（GitHub Actions 每日定時更新）
-    if(twseDailyMap?.news?.length>=5){
-      const seen=new Set();
-      items=twseDailyMap.news
-        .map(x=>({title:x.title,link:x.link,dateStr:x.pubDate?new Date(x.pubDate).toLocaleDateString('zh-TW'):'近期',source:x.source||''}))
-        .filter(x=>{if(seen.has(x.title))return false;seen.add(x.title);return true;})
-        .slice(0,30);
-      // fall through to AI processing below
-    } else {
-      // 後端也沒資料 → 只顯示 12 小時內的 AI 快取，超過就提示重試
-      const stale=getAICache('trump2')||lsGet('trump_stale');
-      const staleAge=stale?.ts?Date.now()-stale.ts:Infinity;
-      if(stale&&staleAge<12*60*60*1000){
-        b.className='news-body';
-        const age=cacheAgeStr(stale.ts);
-        const raw=stale.rawText||stale.text||stale.data||'';
-        b.textContent=`[快取・${age}，RSS 暫時受限，點 ↻ 重試]\n\n${raw}`;
-        t.textContent=`快取（${age}）`;
-      }else{
-        b.className='news-body';
-        b.textContent='⚠️ 新聞暫時無法取得，請點 ↻ 重試。';
-      }
-      return;
-    }
-  }
-  // 先顯示真實 RSS 來源（不等 AI）
-  b.className='news-body';
-  b.innerHTML='<div id="tAI" style="color:var(--text2);font-size:.76rem;font-style:italic;margin-bottom:8px">AI 選出最重要 10 條中...</div>'+buildSrcHtml(items);
-
-  // AI 只做一件事：從清單選出最重要的編號，並給每條15字內中文說明
+// ── 地緣政治事件 ────────────────────────────────────────────────────────────
+function setGeoStatus(status){
   const today=new Date().toLocaleDateString('zh-TW');
-  const newsList=items.map((x,i)=>`${i+1}. [${x.dateStr||'近期'}][${x.link?new URL(x.link).hostname.replace('www.','').split('.')[0].toUpperCase():'?'}] ${x.title}`).join('\n');
-  const prompt=`今天${today}。你是台股分析師。以下是${items.length}條真實新聞（含來源和日期）。
-
-任務：從中挑出最影響台灣股市隔天開盤的10條（若不足10條就全選），依重要性排序。
-
-輸出格式（每行一條，純數字和文字，絕對不准用其他格式）：
-編號|15字內中文說明影響台股的原因
-
-最後加一行整體摘要（25字內，告訴投資人今天最關鍵的一件事）：
-SUMMARY|今日一句話
-
-範例：
-3|Fed降息預期升溫，科技股估值受惠↑
-15|川普關稅升高，電子供應鏈成本壓力↑
-SUMMARY|美中關稅暫緩，台股科技族群短線偏多，但需注意Fed鷹派風險
-
-禁止：捏造不在清單的消息、超過字數限制、其他任何格式。
-
-新聞清單：
-${newsList}`;
-
-  const res=await Promise.race([
-    callAI(prompt),
-    new Promise(r=>setTimeout(()=>r('TIMEOUT'),35000))
-  ]);
-
-  // 解析 AI 回傳的「編號|說明」格式
-  const aiDiv=document.getElementById('tAI');
-  if(res==='TIMEOUT'||res.startsWith('⚠️')||res.startsWith('❌')){
-    if(aiDiv) aiDiv.remove();
-    // 失敗就直接顯示全部 RSS（已在上面顯示了）
-    t.textContent='（AI 無回應，直接顯示原始新聞）・'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-    return;
-  }
-  const selected=[];
-  let newsSummary='';
-  res.split('\n').forEach(line=>{
-    const trimmed=line.trim();
-    const sm=trimmed.match(/^SUMMARY\|(.+)$/i);
-    if(sm){newsSummary=sm[1].trim();return;}
-    const m=trimmed.match(/^(\d+)\|(.+)$/);
-    if(!m)return;
-    const idx=parseInt(m[1])-1;
-    if(idx<0||idx>=items.length)return;
-    selected.push({item:items[idx],analysis:m[2].trim()});
-  });
-
-  // 渲染：每條都是真實標題 + 真實連結 + AI 中文說明
-  if(selected.length>0){
-    const ABBR={'wsj.com':'WSJ','reuters.com':'Reuters','bloomberg.com':'BBG','ft.com':'FT',
-      'cnbc.com':'CNBC','apnews.com':'AP','bbc.com':'BBC','bbc.co.uk':'BBC',
-      'cnn.com':'CNN','nbcnews.com':'NBC','forexfactory.com':'FF'};
-    function srcBadge(url){
-      try{const h=new URL(url).hostname.replace(/^www\./,'');
-        for(const[k,v]of Object.entries(ABBR)){if(h===k||h.endsWith('.'+k))return v;}
-        return h.split('.')[0].toUpperCase();
-      }catch(_){return'';}
-    }
-    const dirInfo=a=>{const up=a.includes('↑'),dn=a.includes('↓');return up?{l:'↑ 正面',c:'#34d399'}:dn?{l:'↓ 注意',c:'#f87171'}:{l:'→ 中性',c:'#9ca3af'};};
-    const cleanA=a=>a.replace(/\s*[↑↓→][^\n]*$/,'').trim()||a;
-    const summaryBar=newsSummary
-      ?`<div style="padding:8px 12px 7px;background:rgba(79,126,247,.08);border-bottom:1px solid var(--border);font-size:.78rem;font-weight:600;color:var(--text);line-height:1.45"><span style="font-size:.62rem;font-weight:700;color:var(--purple);margin-right:6px;letter-spacing:.05em">今日重點</span>${escH(newsSummary)}</div>`
-      :'';
-    const hdr=`<div style="display:grid;grid-template-columns:22px 1fr 58px;padding:4px 8px 5px;border-bottom:1px solid var(--border);font-size:.58rem;color:var(--text2);font-weight:700;letter-spacing:.07em;text-transform:uppercase"><div>#</div><div>新聞重點・台股影響</div><div style="text-align:center">方向</div></div>`;
-    const html=summaryBar+hdr+selected.map((s,i)=>{
-      const {item,analysis}=s;
-      const src=item.link?srcBadge(item.link):'';
-      const srcEl=src?` <span style="font-size:.58rem;color:var(--purple)">[${escH(src)}]</span>`:'';
-      const dir=dirInfo(analysis);
-      const mainText=cleanA(analysis);
-      const sub=item.title?`<div style="font-size:.62rem;color:var(--text2);margin-top:2px;line-height:1.3">${escH(item.title.length>65?item.title.slice(0,65)+'…':item.title)}</div>`:'';
-      const inner=`<div style="display:grid;grid-template-columns:22px 1fr 58px;align-items:center;padding:8px 8px;border-bottom:1px solid rgba(45,55,72,.4)">
-        <div style="font-size:.68rem;font-weight:800;color:var(--text2)">${i+1}</div>
-        <div><div style="font-size:.83rem;font-weight:600;line-height:1.45;color:var(--text)">${escH(mainText)}${srcEl}</div>${sub}</div>
-        <div style="text-align:center;font-size:.7rem;font-weight:700;color:${dir.c};white-space:nowrap">${escH(dir.l)}</div>
-      </div>`;
-      return item.link
-        ?`<a href="${safeUrl(item.link)}" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;transition:background .12s" onmouseover="this.style.background='rgba(79,126,247,.07)'" onmouseout="this.style.background=''">${inner}</a>`
-        :`<div>${inner}</div>`;
-    }).join('');
-    if(window.innerWidth<=640){
-      // Mobile：直接建 swiper，字體夠大，每卡有來源連結
-      _tIdx=0; _tTotal=selected.length;
-      const mCards=selected.map((s,i)=>{
-        const src=s.item.link?srcBadge(s.item.link):'';
-        const srcBadgeEl=src?`<span style="font-size:.72rem;font-weight:800;color:var(--purple)">[${escH(src)}]</span> `:'';
-        const linkBtn=s.item.link
-          ?`<a href="${safeUrl(s.item.link)}" target="_blank" rel="noopener"
-              style="display:inline-block;margin-top:10px;padding:6px 16px;font-size:.82rem;font-weight:700;
-                     color:var(--purple);border:1.5px solid var(--purple);border-radius:8px;text-decoration:none">
-              ↗ 原文連結
-            </a>`
-          :'';
-        return `<div class="trump-card">
-          <div class="trump-card-num">第 ${i+1} 條 / 共 ${_tTotal}</div>
-          <div class="trump-card-text" style="font-size:1rem;line-height:1.7">
-            ${srcBadgeEl}${escH(s.item.title)}
-          </div>
-          <div class="trump-card-analysis" style="font-size:.88rem;color:var(--mint);margin-top:8px;line-height:1.6">→ ${escH(s.analysis)}</div>
-          ${s.item.dateStr?`<div style="font-size:.68rem;color:var(--text2);margin-top:4px">${escH(s.item.dateStr)}</div>`:''}
-          ${linkBtn}
-        </div>`;
-      }).join('');
-      const dots=selected.map((_,i)=>`<div class="trump-dot${i===0?' on':''}" id="td${i}"></div>`).join('');
-      b.innerHTML=`<div class="trump-swiper" id="trumpSwiperWrap">
-        <div class="trump-track" id="trumpTrack">${mCards}</div>
-        <div class="trump-nav">
-          <button class="trump-nav-btn" onclick="trumpGo(-1)">‹</button>
-          <div class="trump-dots">${dots}</div>
-          <button class="trump-nav-btn" onclick="trumpGo(1)">›</button>
-        </div>
-      </div>`;
-      const wrap=document.getElementById('trumpSwiperWrap');
-      let sx=0;
-      if(wrap){
-        wrap.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;},{passive:true});
-        wrap.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx;if(Math.abs(dx)>40)trumpGo(dx<0?1:-1);},{passive:true});
-      }
-    } else {
-      b.innerHTML=html;
-    }
-    // 快取
-    setAICache('trump2','',{rawText:res,srcItems:items.slice(0,40),selected,summary:newsSummary});
-    lsSet('trump_stale',{selected,srcItems:items.slice(0,40),summary:newsSummary,ts:Date.now()});
-  } else {
-    // AI沒給有效選號，直接顯示原始RSS
-    if(aiDiv) aiDiv.remove();
-  }
-  t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  lsSet('geo_status',{status,date:today,ts:Date.now()});
+  renderGeoStatus(status,today);
 }
-
-// ─── Trump 底層邏輯分析 ────────────────────────────────────────────────────
-async function loadTrumpLogic(){
-  const wrap=document.getElementById('trumpLogicWrap');
-  const b=document.getElementById('trumpLogicBody');
-  const t=document.getElementById('trumpLogicTime');
-  const btn=document.getElementById('logicBtn');
-  wrap.style.display='block';
-  b.className='news-body loading'; b.textContent='AI 解碼中...'; t.textContent='';
-  btn.disabled=true; btn.textContent='⏳ 分析中';
-  // 抓最新新聞作為背景資料
-  const todayQ=new Date().toISOString().slice(0,10);
-  const items=await fetchRSS(`Trump tariff policy trade war after:${todayQ}`).catch(()=>[]);
-  const today=new Date().toLocaleDateString('zh-TW');
-  const newsCtx=items.length?'\n\n最新事件背景：\n'+items.slice(0,8).map((x,i)=>`${i+1}. ${x.title}`).join('\n'):'';
-  const prompt=`今天${today}。【輸出規則】純文字，禁止 markdown、代碼塊、星號、#號。你是政治經濟學家，專門拆解Trump的雙層策略。用繁體中文，精煉有力，禁止廢話。${newsCtx}
-
-嚴格按以下格式輸出，總字數控制在250字內：
-
-━━ 表面手段 ━━
-・[具體動作1]→表面目的（對選民/盟友/對手的宣傳效果）
-・[具體動作2]→表面目的
-
-━━ 底層邏輯 ━━
-・[真實戰略1]→實際利益（美元/選票/地緣/產業）+受益方
-・[真實戰略2]→實際利益
-
-━━ 台股/投資人怎麼看 ━━
-・表面衝擊：XXX sector短期漲跌%
-・底層機會：哪個方向反而是佈局點
-
-禁止：空泛描述、「可能」「或許」，必須有具體數字或名稱。`;
-  const res=await Promise.race([
-    callAI(prompt),
-    new Promise(r=>setTimeout(()=>r('⚠️ AI 等待超過 35 秒，請點「底層邏輯」重試'),35000))
-  ]);
-  b.className='news-body'; b.textContent=stripMd(res);
-  t.textContent='更新：'+new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-  btn.disabled=false; btn.textContent='🧠 底層邏輯';
+function renderGeoStatus(status,date){
+  const badge=document.getElementById('geoBadge');
+  const btnYes=document.getElementById('geoBtnYes');
+  const btnNo=document.getElementById('geoBtnNo');
+  const time=document.getElementById('geoTime');
+  if(btnYes){btnYes.classList.toggle('active-yes',status==='yes');btnYes.classList.remove('active-no');}
+  if(btnNo){btnNo.classList.toggle('active-no',status==='no');btnNo.classList.remove('active-yes');}
+  if(badge){
+    if(status==='yes'){badge.textContent='⚠️ 有事件';badge.style.background='rgba(248,113,113,.18)';badge.style.color='#f87171';badge.style.borderColor='rgba(248,113,113,.4)';}
+    else if(status==='no'){badge.textContent='✅ 無事件';badge.style.background='rgba(52,211,153,.15)';badge.style.color='#34d399';badge.style.borderColor='rgba(52,211,153,.3)';}
+    else{badge.textContent='待確認';badge.style.background='';badge.style.color='';badge.style.borderColor='';}
+  }
+  if(time) time.textContent=date?(date+(status?'  已記錄':' · 尚未確認')):'';
+}
+function loadGeoStatus(){
+  const saved=lsGet('geo_status');
+  if(saved){
+    const today=new Date().toLocaleDateString('zh-TW');
+    renderGeoStatus(saved.date===today?saved.status:null, saved.date===today?saved.date:'');
+  }
 }
 
 // ─── 投資時鐘 ─────────────────────────────────────────────────────────────
@@ -3695,6 +3354,21 @@ async function startScan(){
     ?`⏹ 已停止 · 已掃 ${done}/${total} 支，VCP候選 ${vcpFound} 支`
     :`✅ 完成！共 ${done-failed} 支成功，VCP候選 ${vcpFound} 支，無數據 ${failed} 支`;
   if(!scanCancelled&&failed>total*0.5){err.style.display='';err.textContent=`⚠️ 超過半數無法取得數據（${failed}/${total}），可能是 CORS 限制或網路問題。建議掛 VPN 或改用 TradingView/FinLab。`;}
+  // 盤中：掃描完成後補抓即時現價，解決 prefetchLivePrices race condition
+  if(!scanCancelled&&isTradingHours()){
+    pT.textContent='⚡ 盤中：補抓即時現價...';
+    await prefetchLivePrices(allResults.filter(r=>r.vcp)).catch(()=>{});
+    let liveCount=0;
+    allResults.forEach(r=>{
+      if(!r.vcp)return;
+      const sym=`${r.code}.${r.ex==='TWO'?'TWO':'TW'}`;
+      const cached=_liveQCache.get(sym);
+      if(cached&&Date.now()-cached.ts<LIVE_Q_TTL){r.vcp.price=cached.price;liveCount++;}
+    });
+    pT.textContent=liveCount>0
+      ?`✅ 完成！VCP候選 ${vcpFound} 支 · ⚡ 即時現價 ${liveCount} 支`
+      :`✅ 完成！VCP候選 ${vcpFound} 支（盤中但無法取得即時價，顯示昨收）`;
+  }
   renderAll();
   try{localStorage.setItem('vcpCache',JSON.stringify({results:allResults,ts:Date.now(),ver:CACHE_VER}));}catch(_){}
 }
@@ -3741,6 +3415,7 @@ function renderAll(){
 
 // ── 盤中自動刷價（每5分鐘，只抓已篩選股票的現價）──────────────────────────
 let _autoRefreshTimer=null;
+let _liveRetryTimer=null;
 
 async function autoRefreshPrices(){
   if(!isTradingHours()||!allResults.length) return;
@@ -3764,17 +3439,31 @@ async function autoRefreshPrices(){
 
   const lbl=document.getElementById('liveRefreshLabel');
   if(updated>0){
+    if(_liveRetryTimer){clearTimeout(_liveRetryTimer);_liveRetryTimer=null;}
     renderTable();
     if(lbl){
       const t=new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
       lbl.style.display='';
       lbl.style.color='#34d399';
-      lbl.textContent=`⚡ 現價 ${t} 更新（${updated} 支）`;
+      lbl.style.fontWeight='700';
+      lbl.style.fontSize='.72rem';
+      lbl.style.background='';
+      lbl.textContent=`⚡ 即時現價 ${t} 已更新（${updated} 支）`;
     }
-  } else if(isTradingHours()&&lbl){
-    lbl.style.display='';
-    lbl.style.color='var(--orange)';
-    lbl.textContent='⚠️ 盤中但無法取得即時價，顯示靜態資料';
+  } else if(isTradingHours()){
+    if(lbl){
+      lbl.style.display='';
+      lbl.style.color='#fff';
+      lbl.style.fontWeight='700';
+      lbl.style.fontSize='.78rem';
+      lbl.style.background='rgba(220,38,38,.85)';
+      lbl.style.padding='3px 10px';
+      lbl.style.borderRadius='6px';
+      lbl.textContent='⚠️ 盤中警告：目前顯示昨日收盤，非即時成交價，請勿據此下單';
+    }
+    if(!_liveRetryTimer){
+      _liveRetryTimer=setTimeout(()=>{_liveRetryTimer=null;autoRefreshPrices();},60*1000);
+    }
   }
 }
 
@@ -5371,7 +5060,7 @@ return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(20
   loadConfCalendar().catch(()=>{});
   Promise.all([loadTWSEDaily(), loadStockPrices()]).finally(()=>{
     updateSemiPrices();
-    loadTrump(true);
+    loadGeoStatus();
     loadClock(true);
     // 用最新 stocks_tse/otc.json 更新快取結果的現價（修正舊快取顯示舊股價的問題）
     // 更新條件：快取是前一天或更早（舊快取），OR 今天盤後/盤前（非盤中）
@@ -5415,6 +5104,8 @@ return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(20
           } else {r.vcp.pbBuy=null;}
         });
         if(updated>0) renderTable();
+        // 盤中：stockPriceMap（昨收）更新後立刻補抓即時價，避免昨收停留在畫面上
+        if(isTradingHours()) autoRefreshPrices();
       }
       // 背景補抓：對快取中沒有基本面的 VCP 候選股，自動從 Yahoo Finance 補資料
       // 只取 VCP≥40 且無本地基本面的股票，限 40 支避免 rate limit
@@ -5509,9 +5200,9 @@ return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(20
   document.addEventListener('keydown',e=>{
     if(e.altKey&&e.key.toLowerCase()==='r'){
       e.preventDefault();
-      loadTrump();loadClock();
+      loadClock();
       const tip=document.createElement('div');
-      tip.textContent='↻ Alt+R：重整 AI 快訊中...';
+      tip.textContent='↻ Alt+R：重整投資時鐘中...';
       tip.style.cssText='position:fixed;bottom:20px;right:20px;background:var(--purple);color:#fff;padding:8px 16px;border-radius:12px;font-size:.78rem;font-weight:700;z-index:9999;animation:fadeOut 2.5s ease forwards';
       document.body.appendChild(tip);
       setTimeout(()=>tip.remove(),2500);
