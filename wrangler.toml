@@ -5,3 +5,8 @@ compatibility_date = "2024-01-01"
 [[kv_namespaces]]
 binding = "VCP_KV"
 id = "d6a11a993af548248758c57cc64870d2"
+
+[[d1_databases]]
+binding = "VCP_DB"
+database_name = "vcp-database"
+database_id = "a8d12b0f-b70c-4630-b471-612152641c87"

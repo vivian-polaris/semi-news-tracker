@@ -25,6 +25,11 @@ SESSION.headers.update({
     'Referer': 'https://www.twse.com.tw/',
 })
 
+D1_QUERY_ENDPOINT = 'https://api.cloudflare.com/client/v4/accounts/{account_id}/d1/database/{database_id}/query'
+MAX_D1_SQL_PER_REQUEST = 50
+PRICE_ROWS_PER_STATEMENT = 80
+FUND_ROWS_PER_STATEMENT = 50
+
 def get(url, timeout=30, retries=3):
     delays = [5, 15, 30]
     for attempt in range(retries):
@@ -763,6 +768,153 @@ def atomic_write(path, data):
         json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
     os.replace(tmp, path)
 
+def chunked(seq, size):
+    for i in range(0, len(seq), size):
+        yield seq[i:i+size]
+
+def infer_recent_market_dates(latest_date, count):
+    """
+    Legacy price JSON stores ordered history without per-row dates.
+    For the initial D1 backfill, infer prior trading days by skipping weekends.
+    """
+    try:
+        cursor = datetime.datetime.strptime(latest_date, '%Y-%m-%d').date()
+    except Exception:
+        cursor = datetime.date.today()
+    dates = []
+    while len(dates) < count:
+        if cursor.weekday() < 5:
+            dates.append(cursor.strftime('%Y-%m-%d'))
+        cursor -= datetime.timedelta(days=1)
+    return dates
+
+def build_price_history_rows(price_map, fallback_latest_date):
+    rows = []
+    for code, info in price_map.items():
+        closes = list(info.get('c') or [])
+        highs = list(info.get('h') or [])
+        lows = list(info.get('l') or [])
+        vols = list(info.get('v') or [])
+        if not closes:
+            continue
+        latest_date = info.get('_d') or fallback_latest_date
+        if not latest_date:
+            continue
+        inferred_dates = infer_recent_market_dates(latest_date, len(closes))
+        name = info.get('n') or code
+        for idx, row_date in enumerate(inferred_dates):
+            close = closes[idx] if idx < len(closes) else None
+            high = highs[idx] if idx < len(highs) else close
+            low = lows[idx] if idx < len(lows) else close
+            open_ = close
+            volume = vols[idx] if idx < len(vols) else 0
+            rows.append((code, row_date, name, close, high, low, open_, volume))
+    return rows
+
+def build_fundamentals_rows(output):
+    codes = set()
+    for key in ('sectors', 'bwibbu', 'income', 'chips', 'monthRevenue', 'margin'):
+        codes.update((output.get(key) or {}).keys())
+    rows = []
+    for code in sorted(codes):
+        sector = (output.get('sectors') or {}).get(code)
+        bw = (output.get('bwibbu') or {}).get(code, {})
+        inc = (output.get('income') or {}).get(code, {})
+        chp = (output.get('chips') or {}).get(code, {})
+        rev = (output.get('monthRevenue') or {}).get(code, {})
+        mg = (output.get('margin') or {}).get(code, {})
+        rows.append((
+            code,
+            sector,
+            bw.get('pe'),
+            bw.get('pb'),
+            bw.get('divYield'),
+            inc.get('eps'),
+            inc.get('year'),
+            inc.get('quarter'),
+            inc.get('earningsGrowth'),
+            chp.get('foreignNet'),
+            chp.get('trustNet'),
+            chp.get('dealerNet'),
+            rev.get('current'),
+            rev.get('yoy'),
+            mg.get('today'),
+            mg.get('change'),
+            output.get('date'),
+        ))
+    return rows
+
+def build_bulk_insert_sql(table, columns, rows):
+    placeholders = '(' + ','.join(['?'] * len(columns)) + ')'
+    values_sql = ','.join([placeholders] * len(rows))
+    sql = f'INSERT OR REPLACE INTO {table} ({",".join(columns)}) VALUES {values_sql}'
+    params = []
+    for row in rows:
+        params.extend(row)
+    return {'sql': sql, 'params': params}
+
+def d1_post_batches(statements, account_id, database_id, token):
+    if not statements:
+        return
+    url = D1_QUERY_ENDPOINT.format(account_id=account_id, database_id=database_id)
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json',
+    }
+    total_batches = (len(statements) + MAX_D1_SQL_PER_REQUEST - 1) // MAX_D1_SQL_PER_REQUEST
+    for idx, sql_batch in enumerate(chunked(statements, MAX_D1_SQL_PER_REQUEST), start=1):
+        resp = requests.post(url, headers=headers, json={'batch': sql_batch}, timeout=120)
+        if not resp.ok:
+            raise RuntimeError(f'D1 HTTP {resp.status_code}: {resp.text[:400]}')
+        payload = resp.json()
+        if not payload.get('success'):
+            raise RuntimeError(f'D1 API failed: {json.dumps(payload)[:400]}')
+        print(f'  D1 batch {idx}/{total_batches}: {len(sql_batch)} SQL statements')
+
+def sync_d1_database(output, tse_prices, otc_prices):
+    account_id = os.environ.get('CLOUDFLARE_ACCOUNT_ID')
+    token = os.environ.get('CLOUDFLARE_D1_TOKEN')
+    database_id = os.environ.get('CLOUDFLARE_D1_DATABASE_ID') or 'a8d12b0f-b70c-4630-b471-612152641c87'
+    if not account_id or not token:
+        print('  [WARN] Skip D1 sync: missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_D1_TOKEN')
+        return
+
+    print('\n9. Sync Cloudflare D1...')
+    price_rows = build_price_history_rows(tse_prices, output.get('_tse_price_date')) + \
+                 build_price_history_rows(otc_prices, output.get('_otc_price_date'))
+    fund_rows = build_fundamentals_rows(output)
+
+    statements = []
+    for rows in chunked(price_rows, PRICE_ROWS_PER_STATEMENT):
+        statements.append(build_bulk_insert_sql(
+            'stock_prices',
+            ['code', 'date', 'name', 'close', 'high', 'low', 'open', 'volume'],
+            rows,
+        ))
+    for rows in chunked(fund_rows, FUND_ROWS_PER_STATEMENT):
+        statements.append(build_bulk_insert_sql(
+            'fundamentals',
+            [
+                'code', 'sector', 'pe', 'pb', 'div_yield', 'eps', 'eps_year',
+                'eps_quarter', 'earnings_growth', 'foreign_net', 'trust_net',
+                'dealer_net', 'revenue_current', 'revenue_yoy', 'margin_today',
+                'margin_change', 'updated_date'
+            ],
+            rows,
+        ))
+    statements.append({
+        'sql': 'INSERT OR REPLACE INTO market_meta (key, value, updated_at) VALUES (?, ?, ?)',
+        'params': [
+            'last_update',
+            output.get('_tse_price_date') or output.get('_otc_price_date') or output.get('date'),
+            datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat(timespec='seconds'),
+        ],
+    })
+
+    print(f'  D1 rows prepared: prices={len(price_rows)}, fundamentals={len(fund_rows)}')
+    d1_post_batches(statements, account_id, database_id, token)
+    print('  ✅ D1 sync completed')
+
 def fetch_exdiv():
     """抓取 TWSE 2026 年除息日期，累積存入 exdiv_2026.json
     格式：{ "2330": "06/11", "2317": "07/15", ... }（西元月/日）
@@ -1050,6 +1202,7 @@ def main():
     }
 
     atomic_write('twse_daily.json', output)
+    sync_d1_database(output, tse_prices, otc_prices)
 
     print(f'\n✅ twse_daily.json written:')
     print(f'   sectors={len(sectors)}, otcStocks={len(otc_stocks)}, chips={len(chips)}, bwibbu={len(bwibbu)}')

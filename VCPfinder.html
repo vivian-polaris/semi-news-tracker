@@ -1588,18 +1588,64 @@ async function loadStockPrices(force){
   if(stockPriceLoaded && !force)return;
   if(force) stockPriceLoaded=false;
   const v=new Date().toISOString().slice(0,15).replace('T','-').replace(':','');
+  const applyLoadedStocks=(stocks,dateStr)=>{
+    if(force||!stockPriceLoaded){
+      Object.keys(stockPriceMap).forEach(k=>{if(/^\d{4,6}$/.test(k))delete stockPriceMap[k];});
+    }
+    Object.assign(stockPriceMap,stocks);
+    if(dateStr){
+      stockPriceMap.__date=dateStr;
+      _tsePriceDate=dateStr;
+      _otcPriceDate=dateStr;
+    }
+    stockPriceLoaded=true;
+    _checkPriceStaleness();
+  };
+  try{
+    let daily=twseDailyMap;
+    if(!daily?.tseStocks?.length&&!daily?.otcStocks?.length){
+      const dailyResp=await fetchTO('./twse_daily.json?v='+v,8000).catch(()=>null);
+      if(dailyResp?.ok){
+        daily=await dailyResp.json();
+        if(daily?.date&&!twseDailyMap?.date)twseDailyMap=daily;
+      }
+    }
+    const codes=[...new Set([
+      ...((daily?.tseStocks||[]).map(s=>String(s?.code||'').trim())),
+      ...((daily?.otcStocks||[]).map(s=>String(s?.code||'').trim())),
+    ].filter(code=>/^\d{4,6}$/.test(code)))];
+    if(!codes.length) throw new Error('missing-stock-codes');
+    const chunks=[];
+    for(let i=0;i<codes.length;i+=200) chunks.push(codes.slice(i,i+200));
+    const responses=await Promise.all(
+      chunks.map(chunk=>fetchTO(`/api/d1prices?codes=${chunk.join(',')}`,30000).catch(()=>null))
+    );
+    const mergedStocks={};
+    let latestDate='',count=0;
+    for(const resp of responses){
+      if(!resp?.ok) throw new Error('d1-api-failed');
+      const d=await resp.json();
+      if(d?.stocks){
+        Object.assign(mergedStocks,d.stocks);
+        count+=Object.values(d.stocks).filter(s=>Array.isArray(s?.c)&&s.c.length>0).length;
+        if(!latestDate) latestDate=d._price_date||d.date||d?.meta?.last_update||'';
+      }
+    }
+    if(count>0){
+      applyLoadedStocks(mergedStocks,latestDate);
+      return;
+    }
+  }catch(_){}
   try{
     const [r1,r2]=await Promise.all([
       fetchTO(`./stocks_tse.json?v=${v}`,30000).catch(()=>null),
       fetchTO(`./stocks_otc.json?v=${v}`,30000).catch(()=>null),
     ]);
-    let count=0;
-    if(r1?.ok){const d=await r1.json();if(d.stocks){Object.assign(stockPriceMap,d.stocks);count+=Object.keys(d.stocks).length;_tsePriceDate=d._price_date||d.date||'';}}
-    if(r2?.ok){const d=await r2.json();if(d.stocks){Object.assign(stockPriceMap,d.stocks);count+=Object.keys(d.stocks).length;_otcPriceDate=d._price_date||d.date||'';}}
-    if(count>0){
-      stockPriceLoaded=true;
-      _checkPriceStaleness();
-    }
+    const mergedStocks={};
+    let count=0,dateStr='';
+    if(r1?.ok){const d=await r1.json();if(d.stocks){Object.assign(mergedStocks,d.stocks);count+=Object.keys(d.stocks).length;dateStr=d._price_date||d.date||dateStr;}}
+    if(r2?.ok){const d=await r2.json();if(d.stocks){Object.assign(mergedStocks,d.stocks);count+=Object.keys(d.stocks).length;dateStr=dateStr||d._price_date||d.date||'';}}
+    if(count>0) applyLoadedStocks(mergedStocks,dateStr);
   }catch(_){}
 }
 
@@ -4471,16 +4517,8 @@ async function refreshDtList(){
       if(cached&&Date.now()-cached.ts<LIVE_Q_TTL*2) r.vcp.price=cached.price;
     });
   } else {
-    // 盤後：用分鐘級 cache-buster 強制重載 stocks json，拿到 GH Actions 更新後的官方收盤價
-    const v=new Date().toISOString().slice(0,16);
-    try{
-      const [r1,r2]=await Promise.all([
-        fetchTO(`./stocks_tse.json?v=${v}`,15000).catch(()=>null),
-        fetchTO(`./stocks_otc.json?v=${v}`,15000).catch(()=>null),
-      ]);
-      if(r1?.ok){const d=await r1.json();if(d?.stocks)Object.assign(stockPriceMap,d.stocks);}
-      if(r2?.ok){const d=await r2.json();if(d?.stocks)Object.assign(stockPriceMap,d.stocks);}
-    }catch(_){}
+    // 盤後優先重抓 D1，失敗才由 loadStockPrices 自動退回靜態 JSON
+    try{await loadStockPrices(true);}catch(_){}
     // 用最新 stockPriceMap 同步所有結果的收盤價
     allResults.forEach(r=>{
       const pre=stockPriceMap[r.code];
@@ -5310,15 +5348,9 @@ return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(20
     if(!inPostCloseWindow||isTradingHours()||!allResults.length||scanning) return;
     if(now.getTime()-_postCloseLastLoad<5*60*1000) return; // 5 分鐘冷卻
     _postCloseLastLoad=now.getTime();
-    const v=new Date().toISOString().slice(0,16);
     try{
-      const [r1,r2]=await Promise.all([
-        fetchTO(`./stocks_tse.json?v=${v}`,15000).catch(()=>null),
-        fetchTO(`./stocks_otc.json?v=${v}`,15000).catch(()=>null),
-      ]);
+      await loadStockPrices(true);
       let updated=0;
-      if(r1?.ok){const d=await r1.json();if(d?.stocks)Object.assign(stockPriceMap,d.stocks);}
-      if(r2?.ok){const d=await r2.json();if(d?.stocks)Object.assign(stockPriceMap,d.stocks);}
       allResults.forEach(r=>{
         const pre=stockPriceMap[r.code];
         if(pre?.c?.length&&r.vcp&&r.vcp.price!==pre.c[0]){r.vcp.price=pre.c[0];updated++;}
