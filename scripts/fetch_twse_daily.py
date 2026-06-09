@@ -906,11 +906,14 @@ def sync_d1_database(output, tse_prices, otc_prices):
         'earnings_growth', 'foreign_net', 'trust_net', 'dealer_net',
         'revenue_current', 'revenue_yoy', 'margin_today', 'margin_change', 'updated_date',
     ]
-    # Only include stocks that are in the main sectors list to keep payload small
-    sectors_codes = set((output.get('sectors') or {}).keys())
+    # Only include stocks in sectors/bwibbu (not raw chips) to keep payload small
+    sectors_codes = (
+        set((output.get('sectors') or {}).keys()) or
+        set((output.get('bwibbu') or {}).keys())
+    )
     fund_rows = [
         dict(zip(fund_cols, t)) for t in build_fundamentals_rows(output)
-        if t[0] in sectors_codes
+        if not sectors_codes or t[0] in sectors_codes
     ]
 
     meta_date = tse_date or otc_date or output.get('date')
