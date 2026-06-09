@@ -5175,8 +5175,8 @@ async function lookupStock() {
       return;
     }
     if (data._yahooName && (!stockInfo.name || stockInfo.name === code)) stockInfo.name = data._yahooName;
-    // 盤中：用 /api/price 把今日即時價注入 data[0]，確保 VCP 計算用今日價
-    if(isTradingHours()){
+    // 盤中+盤後：用 /api/price 把今日即時價注入 data[0]（不限交易時間，盤後也要更新今收）
+    if(true){
       try{
         const sym=`${stockInfo.code}.${stockInfo.ex==='TWO'?'TWO':'TW'}`;
         const pr=await fetchTO(`/api/price?syms=${encodeURIComponent(sym)}`,5000);
@@ -5193,7 +5193,7 @@ async function lookupStock() {
     vcpData = calcVCP(data);
   }
   // 若是從 allResults 抓的，也補一次即時價
-  if(foundInResults&&isTradingHours()&&vcpData){
+  if(foundInResults&&vcpData){
     try{
       const sym=`${stockInfo.code}.${stockInfo.ex==='TWO'?'TWO':'TW'}`;
       const pr=await fetchTO(`/api/price?syms=${encodeURIComponent(sym)}`,5000);
