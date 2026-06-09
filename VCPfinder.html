@@ -1975,7 +1975,7 @@ async function loadExDiv2026(){
 async function loadStockPrices(force){
   if(stockPriceLoaded && !force)return;
   if(force) stockPriceLoaded=false;
-  const v=new Date().toISOString().slice(0,13);
+  const v=new Date().toISOString().slice(0,15).replace('T','-').replace(':','');
   try{
     const [r1,r2]=await Promise.all([
       fetchTO(`./stocks_tse.json?v=${v}`,30000).catch(()=>null),
@@ -2580,7 +2580,9 @@ async function loadWeeklyOutlook(force=false){
   const newsLines=newsItems.slice(0,10).map(x=>`- ${x.title}`).join('\n')||'（無法取得新聞）';
   const eventLines=events.length?events.join('\n'):'（無重大事件）';
 
-  const prompt=`今天是 ${todayStr}（台灣時間）。
+  const taixPriceStr=window.taixPrice?`台股加權指數目前約 ${window.taixPrice.toLocaleString()} 點`:'（大盤現值載入中）';
+
+  const prompt=`今天是 ${todayStr}（台灣時間）。${taixPriceStr}
 
 【近期市場新聞標題】
 ${newsLines}
@@ -2590,6 +2592,7 @@ ${eventLines}
 
 【任務】
 你是台股分析師。用繁體中文，為以下每個交易日給出台股大盤展望。
+請以目前大盤點位為基準給出合理的點位區間預測。
 格式嚴格如下（每日一行，不要多行）：
 
 ${tradingDays.map(d=>`📅 ${d}：[30字內判斷] 點位：[XXXXX–YYYYY] 情緒：[看多/看空/震盪]`).join('\n')}
@@ -5891,7 +5894,10 @@ document.head.appendChild(_style);
       const closes=d?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
       if(closes&&closes.length>=2){
         const prev=closes[closes.length-2], curr=closes[closes.length-1];
-        if(prev&&curr) window.taixChg=(curr-prev)/prev*100;
+        if(prev&&curr){
+          window.taixChg=(curr-prev)/prev*100;
+          window.taixPrice=Math.round(curr);
+        }
       }
       autoSetSentiment();
     }catch(e){}
