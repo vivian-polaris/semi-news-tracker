@@ -347,6 +347,12 @@ footer a:hover{text-decoration:underline}
 .news-item-link:last-child,.news-item-plain:last-child{border-bottom:none}
 .geo-link{display:block;padding:8px 12px;background:var(--tag);border-radius:8px;color:var(--text);text-decoration:none;font-size:.82rem;font-weight:600;transition:background .15s}
 .geo-link:hover{background:var(--card2);color:var(--purple)}
+.fed-val{font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--tag);color:var(--text);white-space:nowrap}
+.fed-row{display:flex;align-items:baseline;gap:6px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.fed-row:last-child{border-bottom:none}
+.fed-tier1{color:#f87171}
+.fed-tier2{color:#d4a84b}
+.fed-urgent{background:rgba(248,113,113,.12);border-radius:6px;padding:2px 4px}
 .geo-btn{flex:1;padding:10px;border-radius:10px;border:2px solid var(--border);background:var(--card2);color:var(--text);font-size:.9rem;font-weight:700;cursor:pointer;transition:all .18s}
 .geo-btn:hover{border-color:var(--purple);color:var(--purple)}
 .geo-btn.active-yes{background:rgba(52,211,153,.15);border-color:#34d399;color:#34d399}
@@ -718,28 +724,37 @@ footer a:hover{text-decoration:underline}
     </div>
   </div>
 
-  <!-- 右：投資人專區（美林時鐘） -->
+  <!-- 右：Fed Watch 美國關鍵數據行事曆 -->
   <div>
-    <!-- mobile toggle -->
-    <div class="sec-toggle" onclick="toggleSec('clock')" id="clockToggle">
+    <div class="sec-toggle" onclick="toggleSec('fedwatch')" id="fedwatchToggle">
       <div class="sec-toggle-left">
-        <span class="sec-toggle-icon">🕐</span>
-        <span class="sec-toggle-title">美林投資時鐘</span>
+        <span class="sec-toggle-icon">📡</span>
+        <span class="sec-toggle-title">Fed Watch 數據行事曆</span>
+        <span class="sec-toggle-badge" id="fedwatchBadge" style="background:rgba(248,113,113,.18);color:#f87171;border-color:rgba(248,113,113,.4)"></span>
       </div>
-      <span class="sec-chevron" id="clockChevron">▼</span>
+      <span class="sec-chevron" id="fedwatchChevron">▼</span>
     </div>
-    <div class="sec-body" id="clockSecBody">
-    <div class="inv-card c-clock" style="text-align:center;border-top-left-radius:0;border-top-right-radius:0;border-top:none">
-      <div class="inv-head" style="justify-content:flex-end;gap:8px;margin-bottom:6px">
-        <div class="inv-label lbl-clock hide-mobile" style="font-size:.85rem">美林投資時鐘</div>
-        <button class="inv-rf" onclick="loadClock()" style="margin-left:auto">↻ 刷新</button>
+    <div class="sec-body" id="fedwatchSecBody">
+    <div class="news-card" style="margin:0;border-top-left-radius:0;border-top-right-radius:0;border-top:none;padding:12px 14px">
+      <!-- 最新數值一覽 -->
+      <div id="fedValueBar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+        <span style="font-size:.6rem;color:var(--text2);width:100%;margin-bottom:2px">最新數值</span>
+        <span class="fed-val" id="fv_fed">Fed: —</span>
+        <span class="fed-val" id="fv_cpi">CPI: —</span>
+        <span class="fed-val" id="fv_pce">PCE: —</span>
+        <span class="fed-val" id="fv_gdp">GDP: —</span>
+        <span class="fed-val" id="fv_nfp">NFP: —</span>
       </div>
-      <div id="clockSvg" style="margin:0 auto 8px"></div>
-      <div id="clockPhase" style="margin-bottom:10px">
-        <span class="clock-badge" id="clockBadge" style="background:var(--purple);font-size:.9rem;padding:5px 18px">分析中...</span>
+      <!-- 行事曆 -->
+      <div id="fedCalBody" style="font-size:.75rem;line-height:1.7">載入中...</div>
+      <!-- 邏輯提示 -->
+      <div style="margin-top:10px;padding:7px 10px;background:var(--tag);border-radius:8px;font-size:.68rem;color:var(--text2);line-height:1.7">
+        💡 <strong style="color:var(--text)">記住這個邏輯：</strong><br>
+        數據好 → Fed 不降息 → 台股跌<br>
+        數據差 → 衰退疑慮 → 台股也跌<br>
+        <strong style="color:#34d399">剛剛好</strong> → 才漲
       </div>
-      <div id="clockBody" style="text-align:left;font-size:.8rem;line-height:1.75;color:var(--text);white-space:pre-wrap;background:var(--tag);border-radius:12px;padding:12px 14px;margin-top:2px;min-height:60px"></div>
-      <div class="inv-time" id="clockTime" style="margin-top:8px"></div>
+      <div class="news-time" id="fedwatchTime"></div>
     </div>
     </div>
   </div>
@@ -2540,6 +2555,126 @@ ${tradingDays.map(d=>`📅 ${d}：[30字內判斷] 點位：[XXXXX–YYYYY] 情�
 
   // 快取
   try{localStorage.setItem('ai_'+dayKey,JSON.stringify({html:htmlLines,ts:Date.now()}));}catch(_){}
+}
+
+// ─── Fed Watch 美國關鍵數據行事曆 ────────────────────────────────────────
+const FED_CAL=[
+  // tier 1 = 🔴 直接衝擊  tier 2 = 🟡 次重要
+  // ── 2026 下半年 ──
+  {date:'2026-06-11',name:'CPI 5月',tier:1,note:'美銀警告：>4% 觸發費半拋售'},
+  {date:'2026-06-18',name:'FOMC 利率決議',tier:1,note:'含點陣圖，今年最關鍵'},
+  {date:'2026-06-26',name:'PCE 5月',tier:2,note:'Fed 最看重的通膨指標'},
+  {date:'2026-07-01',name:'ISM 製造業 PMI',tier:2,note:'50以上擴張，影響半導體需求'},
+  {date:'2026-07-01',name:'ADP 就業',tier:2,note:'NFP 的先行指標'},
+  {date:'2026-07-10',name:'NFP 6月',tier:1,note:'就業太強→降息夢破→科技股崩'},
+  {date:'2026-07-15',name:'CPI 6月',tier:1,note:''},
+  {date:'2026-07-29',name:'FOMC 利率決議',tier:1,note:''},
+  {date:'2026-07-30',name:'GDP Q2 初值',tier:2,note:'太好→不降息，太差→衰退'},
+  {date:'2026-07-31',name:'PCE 6月',tier:2,note:''},
+  {date:'2026-08-05',name:'ADP 就業',tier:2,note:''},
+  {date:'2026-08-07',name:'NFP 7月',tier:1,note:''},
+  {date:'2026-08-13',name:'CPI 7月',tier:1,note:''},
+  {date:'2026-08-28',name:'PCE 7月',tier:2,note:''},
+  {date:'2026-09-02',name:'ADP 就業',tier:2,note:''},
+  {date:'2026-09-04',name:'NFP 8月',tier:1,note:''},
+  {date:'2026-09-10',name:'CPI 8月',tier:1,note:''},
+  {date:'2026-09-17',name:'FOMC 利率決議',tier:1,note:'含點陣圖'},
+  {date:'2026-09-25',name:'PCE 8月',tier:2,note:''},
+  {date:'2026-10-02',name:'NFP 9月',tier:1,note:''},
+  {date:'2026-10-13',name:'CPI 9月',tier:1,note:''},
+  {date:'2026-10-29',name:'FOMC 利率決議',tier:1,note:''},
+  {date:'2026-10-30',name:'GDP Q3 初值',tier:2,note:''},
+  {date:'2026-11-06',name:'NFP 10月',tier:1,note:''},
+  {date:'2026-11-12',name:'CPI 10月',tier:1,note:''},
+  {date:'2026-12-04',name:'NFP 11月',tier:1,note:''},
+  {date:'2026-12-10',name:'FOMC 利率決議',tier:1,note:'含點陣圖，年終最終決策'},
+  {date:'2026-12-11',name:'CPI 11月',tier:1,note:''},
+];
+
+async function loadFedWatch(force=false){
+  const calEl=document.getElementById('fedCalBody');
+  const timeEl=document.getElementById('fedwatchTime');
+  const badge=document.getElementById('fedwatchBadge');
+  if(!calEl)return;
+
+  const todayTW=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+
+  // ── 行事曆：顯示未來 70 天 ──────────────────────────────────────
+  const upcoming=FED_CAL.filter(e=>e.date>=todayTW).slice(0,10);
+  if(!upcoming.length){calEl.textContent='今年行事曆已結束';return;}
+
+  // 找最近的 tier1 事件更新 badge
+  const next1=upcoming.find(e=>e.tier===1);
+  if(next1&&badge){
+    const daysLeft=Math.ceil((new Date(next1.date)-new Date(todayTW))/86400000);
+    if(daysLeft<=7) badge.textContent=`⚠️ ${daysLeft}天後 ${next1.name}`;
+    else badge.textContent='';
+  }
+
+  // 渲染行事曆列表
+  const rows=upcoming.map(e=>{
+    const daysLeft=Math.ceil((new Date(e.date)-new Date(todayTW))/86400000);
+    const dateObj=new Date(e.date+'T00:00:00+08:00');
+    const mm=(dateObj.getMonth()+1);
+    const dd=dateObj.getDate();
+    const dowArr=['日','一','二','三','四','五','六'];
+    const dow=dowArr[dateObj.getDay()];
+    const urgent=daysLeft<=7;
+    const soon=daysLeft<=14;
+    const icon=e.tier===1?'🔴':'🟡';
+    const dateColor=urgent?'#f87171':soon?'#d4a84b':'var(--text2)';
+    const daysStr=daysLeft===0?'今天':daysLeft===1?'明天':`${daysLeft}天後`;
+    const urgentClass=urgent?'fed-urgent':'';
+    const note=e.note?`<div style="font-size:.62rem;color:var(--text2);padding-left:20px">${escH(e.note)}</div>`:'';
+    return `<div class="fed-row ${urgentClass}">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span>${icon}</span>
+        <span style="font-size:.68rem;color:${dateColor};font-weight:700;min-width:52px">${mm}/${dd}（週${dow}）</span>
+        <span style="font-size:.72rem;font-weight:700;color:${urgent?'#f87171':'var(--text)'}">${escH(e.name)}</span>
+        <span style="font-size:.6rem;color:${dateColor};margin-left:auto">${daysStr}</span>
+      </div>
+      ${note}
+    </div>`;
+  }).join('');
+  calEl.innerHTML=rows;
+
+  // ── FRED 最新數值（快取 6 小時）───────────────────────────────────
+  const fredCacheKey='fredvals_'+todayTW;
+  let fredData=null;
+  if(!force){
+    try{
+      const c=JSON.parse(localStorage.getItem(fredCacheKey)||'{}');
+      if(c.ts&&Date.now()-c.ts<6*3600*1000) fredData=c.data;
+    }catch(_){}
+  }
+  if(!fredData){
+    const [cpi,fed,pce,gdp,nfp]=await Promise.allSettled([
+      fetchFRED('CPIAUCSL','pc1'),
+      fetchFRED('FEDFUNDS'),
+      fetchFRED('PCEPI','pc1'),
+      fetchFRED('GDPC1','pca'),
+      fetchFRED('PAYEMS','chg'),
+    ]);
+    const v=r=>r.status==='fulfilled'?r.value:null;
+    fredData={cpi:v(cpi),fed:v(fed),pce:v(pce),gdp:v(gdp),nfp:v(nfp)};
+    try{localStorage.setItem(fredCacheKey,JSON.stringify({data:fredData,ts:Date.now()}));}catch(_){}
+  }
+  if(fredData){
+    const fmt=(v,unit='%')=>v!=null?`${(+v).toFixed(1)}${unit}`:'—';
+    const fmtK=(v)=>v!=null?(+v>0?`+${Math.round(+v)}K`:`${Math.round(+v)}K`):'—';
+    const setV=(id,txt,warn)=>{
+      const el=document.getElementById(id);
+      if(el){el.textContent=txt;if(warn)el.style.color='#f87171';}
+    };
+    const cpiVal=fredData.cpi?.value;
+    setV('fv_fed',`Fed: ${fmt(fredData.fed?.value)}`);
+    setV('fv_cpi',`CPI: ${fmt(cpiVal)}`,cpiVal&&+cpiVal>3.5);
+    setV('fv_pce',`PCE: ${fmt(fredData.pce?.value)}`);
+    setV('fv_gdp',`GDP: ${fmt(fredData.gdp?.value)}`);
+    setV('fv_nfp',`NFP: ${fmtK(fredData.nfp?.value)}`);
+  }
+
+  if(timeEl)timeEl.textContent=`更新：${new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'})}`;
 }
 
 async function loadClock(useCache=false){
@@ -5277,7 +5412,7 @@ return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(20
     updateSemiPrices();
     loadGeoStatus(); // 先顯示昨天快取，避免空白
     loadGeoAI(false).catch(()=>{}); // AI 自動偵測今日地緣政治
-    loadClock(true);
+    loadFedWatch(false).catch(()=>{}); // Fed Watch 行事曆 + FRED 數值
     // 用最新 stocks_tse/otc.json 更新快取結果的現價（修正舊快取顯示舊股價的問題）
     // 更新條件：快取是前一天或更早（舊快取），OR 今天盤後/盤前（非盤中）
     // 唯一不更新：快取是今天 AND 現在是盤中 → 保留即時掃描的盤中現價
