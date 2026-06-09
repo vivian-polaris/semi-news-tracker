@@ -1631,7 +1631,8 @@ async function loadStockPrices(force){
         if(!latestDate) latestDate=d._price_date||d.date||d?.meta?.last_update||'';
       }
     }
-    if(count>0){
+    const maxDays=count>0?Math.max(0,...Object.values(mergedStocks).map(s=>(s.c||[]).length)):0;
+    if(count>0&&maxDays>=30){
       applyLoadedStocks(mergedStocks,latestDate);
       return;
     }
