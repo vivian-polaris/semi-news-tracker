@@ -1925,11 +1925,29 @@ async function loadConfCalendar(){
   }catch(e){console.warn('法說會資料載入失敗',e);}
 }
 
-// ── 2026 除息日載入（TWSE TWT49U）───────────────────────────────────────────
+// ── 2026 除息日載入 ─────────────────────────────────────────────────────────
+// 優先讀靜態 exdiv_2026.json（GitHub Actions 每日更新，無 CORS 問題）
+// 備援：從 TWSE TWT49U 抓（CORS proxy，較不穩定）
 async function loadExDiv2026(){
   const cacheKey='exDiv2026';
   const cached=lsGet(cacheKey);
   if(cached?.data&&Date.now()-(cached.ts||0)<12*3600*1000){Object.assign(exDivMap2026,cached.data);return;}
+
+  // ① 優先：靜態 JSON（由 GitHub Actions fetch_daily 更新，永遠可用）
+  try{
+    const v=new Date().toISOString().slice(0,10);
+    const r=await fetchTO(`./exdiv_2026.json?v=${v}`,5000);
+    if(r.ok){
+      const d=await r.json();
+      if(d&&typeof d==='object'&&Object.keys(d).length>50){
+        Object.assign(exDivMap2026,d);
+        lsSet(cacheKey,{data:{...exDivMap2026},ts:Date.now()});
+        return;
+      }
+    }
+  }catch(_){}
+
+  // ② 備援：TWSE 直接抓（可能被 CORS 擋）
   const url='https://www.twse.com.tw/rwd/zh/exRight/TWT49U?response=json&year=2026&month=&type=';
   const proxies=[url,'https://corsproxy.io/?'+encodeURIComponent(url),'https://api.allorigins.win/raw?url='+encodeURIComponent(url)];
   for(const u of proxies){
@@ -1942,7 +1960,7 @@ async function loadExDiv2026(){
       if(j?.stat==='OK'&&Array.isArray(j.data)){
         j.data.forEach(row=>{
           const code=String(row[0]||'').trim();
-          const dateRaw=String(row[2]||'').trim(); // 民國 "115/07/20"
+          const dateRaw=String(row[2]||'').trim();
           if(!code||!dateRaw)return;
           const parts=dateRaw.split('/');
           if(parts.length===3) exDivMap2026[code]=`${parts[1]}/${parts[2]}`;
@@ -5040,6 +5058,33 @@ function sparkline(closes,w=80,h=28){
 
 // ── 今日盤況即時查詢（Yahoo Finance v7 quote）──
 async function fetchFullQuote(sym) {
+  const code=sym.split('.')[0];
+  // ① 優先：自己的 Cloudflare Worker（讀 KV，無 CORS，最可靠）
+  if(sym.endsWith('.TW')||sym.endsWith('.TWO')){
+    try{
+      const r=await fetchTO(`/api/price?syms=${encodeURIComponent(sym)}`,5000);
+      if(r.ok){
+        const prices=await r.json();
+        if(prices[code]>0){
+          // /api/price 只回即時成交價，補其他欄位從 stockPriceMap
+          const pre=stockPriceMap[code];
+          const prevClose=pre?.c?.[1]??null;
+          const livePrice=prices[code];
+          return{
+            price:livePrice,
+            open:pre?.o?.[0]??livePrice,
+            high:pre?.h?.[0]??livePrice,
+            low:pre?.l?.[0]??livePrice,
+            change:prevClose?+(livePrice-prevClose).toFixed(2):null,
+            changePct:prevClose?+((livePrice-prevClose)/prevClose*100).toFixed(2):null,
+            volume:pre?.v?.[0]??null,
+            prevClose
+          };
+        }
+      }
+    }catch(_){}
+  }
+  // ② 備援：Yahoo Finance CORS proxy
   const proxies = ['https://corsproxy.io/?', 'https://api.allorigins.win/raw?url=', 'https://api.codetabs.com/v1/proxy?quest='];
   const base = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(sym)}&_t=${Date.now()}`;
   for (const px of proxies) {

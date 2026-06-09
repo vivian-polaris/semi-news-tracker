@@ -763,6 +763,54 @@ def atomic_write(path, data):
         json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
     os.replace(tmp, path)
 
+def fetch_exdiv():
+    """抓取 TWSE 2026 年除息日期，累積存入 exdiv_2026.json
+    格式：{ "2330": "06/11", "2317": "07/15", ... }（西元月/日）
+    策略：每次只讀「今天 +60 天」的資料，累積合併（不清除舊資料）
+    """
+    # 載入現有累積資料
+    exdiv = {}
+    try:
+        with open('exdiv_2026.json', 'r', encoding='utf-8') as f:
+            existing = json.load(f)
+            if isinstance(existing, dict):
+                exdiv.update(existing)
+    except Exception:
+        pass
+
+    today = datetime.date.today()
+    start_str = today.strftime('%Y%m%d')
+    end_str = (today + datetime.timedelta(days=60)).strftime('%Y%m%d')
+    # 只抓 2026 年的資料
+    if today.year > 2026:
+        print('  ⚠️ 2026年已過，跳過除息抓取')
+        return
+    end_str = min(end_str, '20261231')
+
+    url = f'https://www.twse.com.tw/rwd/zh/exRight/TWT49U?response=json&startDate={start_str}&endDate={end_str}'
+    new_count = 0
+    try:
+        r = SESSION.get(url, timeout=20)
+        j = r.json()
+        if j.get('stat') != 'OK' or not isinstance(j.get('data'), list):
+            print(f'  ⚠️ 除息資料 stat={j.get("stat")}，跳過')
+        else:
+            for row in j['data']:
+                # row[11] = "code,yyyymmdd"（最可靠的欄位）
+                key = str(row[11] if len(row) > 11 else '').strip()
+                if ',' in key:
+                    code, datestr = key.split(',', 1)
+                    if len(datestr) == 8:
+                        mm, dd = datestr[4:6], datestr[6:8]
+                        if code not in exdiv:
+                            exdiv[code] = f'{mm}/{dd}'
+                            new_count += 1
+    except Exception as e:
+        print(f'  ⚠️ 除息資料抓取失敗：{e}')
+
+    atomic_write('exdiv_2026.json', exdiv)
+    print(f'  ✅ exdiv_2026.json: 累計 {len(exdiv)} 筆，本次新增 {new_count} 筆')
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
     tz_tw = datetime.timezone(datetime.timedelta(hours=8))
@@ -993,6 +1041,10 @@ def main():
     print(f'\n✅ twse_daily.json written:')
     print(f'   sectors={len(sectors)}, otcStocks={len(otc_stocks)}, chips={len(chips)}, bwibbu={len(bwibbu)}')
     print(f'   revenue={len(month_revenue)}, income={len(income)}, news={len(news)}')
+
+    # 除息日期（一次性抓全年，不受盤中/盤後限制）
+    print('\n── 除息資料 ─────────────────────────────────────')
+    fetch_exdiv()
 
 if __name__ == '__main__':
     main()
