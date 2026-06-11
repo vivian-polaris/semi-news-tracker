@@ -3454,13 +3454,12 @@ async function startScan(){
   secRow.querySelectorAll('[data-sec]:not([data-sec="ALL"])').forEach(p=>p.remove());
   secs.forEach(s=>{const p=document.createElement('span');p.className='pill'+(secFilter.has('ALL')||secFilter.has(s)?' s-on':'');p.dataset.sec=s;p.textContent=s;p.onclick=()=>setSec(s,p);secRow.appendChild(p);});
 
-  // 盤中：融資餘額 await，即時價格背景抓（不阻塞掃描）
-  if(isTradingHours()){
-    document.getElementById('progText').textContent='盤中模式：載入融資資料...';
+  // 盤中/盤後：融資餘額 await，即時/收盤價背景預載（不阻塞掃描）
+  if(isTradingHours()||isPostMarket()){
+    document.getElementById('progText').textContent=isTradingHours()?'盤中模式：載入融資資料...':'盤後模式：預載今日收盤價...';
     await loadMarginData().catch(()=>{});
     prefetchLivePrices(stocks).catch(()=>{}); // 背景執行，不 await
   } else {
-    // 盤後也載入融資（顯示收盤後的最終數字）
     loadMarginData().catch(()=>{});
   }
 
@@ -3625,7 +3624,7 @@ async function autoRefreshPrices(){
       lbl.style.fontWeight='700';
       lbl.style.fontSize='.72rem';
       lbl.style.background='';
-      lbl.textContent=`⚡ 即時現價 ${t} 已更新（${updated} 支）`;
+      lbl.textContent=`⚡ ${isTradingHours()?'即時現價':'今日收盤'} ${t} 已更新（${updated} 支）`;
     }
   } else if(isTradingHours()){
     if(lbl){
