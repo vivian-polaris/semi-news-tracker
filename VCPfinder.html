@@ -2180,10 +2180,17 @@ async function loadWeeklyOutlook(force=false){
     try{
       const c=JSON.parse(localStorage.getItem('ai_'+dayKey)||'{}');
       if(c.html&&c.ts&&Date.now()-c.ts<TTL){
-        body.style.color='var(--text)';
-        body.innerHTML=c.html;
-        if(timeEl)timeEl.textContent=`⏱ 快取（${cacheAgeStr(c.ts)}）・點 ↻ 強制更新`;
-        return;
+        // 若快取內容出現明顯偏低的大盤點位（低於 30000），視為 AI 用舊訓練數據生成，強制捨棄
+        const plainTxt=c.html.replace(/<[^>]*>/g,'');
+        const hasWrongTaiex=/點位[：:]\s*[12]\d{4}|[12]\d{4}\s*[–—~～\-]\s*[12]\d{4}\s*點/.test(plainTxt);
+        if(!hasWrongTaiex){
+          body.style.color='var(--text)';
+          body.innerHTML=c.html;
+          if(timeEl)timeEl.textContent=`⏱ 快取（${cacheAgeStr(c.ts)}）・點 ↻ 強制更新`;
+          return;
+        }
+        // 快取含異常點位，清除並重新生成
+        try{localStorage.removeItem('ai_'+dayKey);}catch(_){}
       }
     }catch(_){}
   }
@@ -2239,7 +2246,9 @@ async function loadWeeklyOutlook(force=false){
   const newsLines=newsItems.slice(0,10).map(x=>`- ${x.title}`).join('\n')||'（無法取得新聞）';
   const eventLines=events.length?events.join('\n'):'（無重大事件）';
 
-  const taixPriceStr=window.taixPrice?`台股加權指數目前約 ${window.taixPrice.toLocaleString()} 點`:'（大盤現值載入中）';
+  const taixPriceStr=window.taixPrice
+    ?`台股加權指數目前約 ${window.taixPrice.toLocaleString()} 點`
+    :`台股加權指數目前點位暫未取得即時數據，但台股自2024年起已長期維持在40000點以上，請務必以40000點以上為基準給出合理點位預測，嚴禁出現低於35000的點位數字`;
 
   const prompt=`今天是 ${todayStr}（台灣時間）。${taixPriceStr}
 
@@ -2447,13 +2456,15 @@ async function loadFedWatch(force=false){
   }).join('');
   calEl.innerHTML=rows||'<span style="color:var(--text2)">今年行事曆已結束</span>';
 
-  // ── FRED 最新數值（快取 6 小時）───────────────────────────────────
+  // ── FRED 最新數值（快取；重大數據發布日縮短為30分鐘，其餘6小時）──────
   const fredCacheKey='fredvals_'+todayTW;
+  const isReleaseDay=FED_CAL.some(e=>e.date===todayTW&&['CPI','NFP','PCE','FOMC'].some(k=>e.name.includes(k)));
+  const fredCacheTTL=isReleaseDay?30*60*1000:6*3600*1000;
   let fredData=null;
   if(!force){
     try{
       const c=JSON.parse(localStorage.getItem(fredCacheKey)||'{}');
-      if(c.ts&&Date.now()-c.ts<6*3600*1000) fredData=c.data;
+      if(c.ts&&Date.now()-c.ts<fredCacheTTL) fredData=c.data;
     }catch(_){}
   }
   if(!fredData){
@@ -2464,8 +2475,9 @@ async function loadFedWatch(force=false){
       fetchFRED('GDPC1','pca'),
       fetchFRED('PAYEMS','chg'),
     ]);
-    const v=r=>r.status==='fulfilled'?r.value:null;
-    fredData={cpi:v(cpi),fed:v(fed),pce:v(pce),gdp:v(gdp),nfp:v(nfp)};
+    // fetchFRED returns an array of {date,value} rows; take last element
+    const lastV=r=>{const arr=r.status==='fulfilled'?r.value:null;return Array.isArray(arr)?arr.at(-1):arr;};
+    fredData={cpi:lastV(cpi),fed:lastV(fed),pce:lastV(pce),gdp:lastV(gdp),nfp:lastV(nfp)};
     try{localStorage.setItem(fredCacheKey,JSON.stringify({data:fredData,ts:Date.now()}));}catch(_){}
   }
   if(fredData){
@@ -2475,12 +2487,14 @@ async function loadFedWatch(force=false){
       const el=document.getElementById(id);
       if(el){el.textContent=txt;if(warn)el.style.color='#f87171';}
     };
-    const cpiVal=fredData.cpi?.value;
-    setV('fv_fed',`Fed: ${fmt(fredData.fed?.value)}`);
+    // Handle both old cached arrays and new {date,value} objects
+    const lv=x=>Array.isArray(x)?x.at(-1):x;
+    const cpiVal=lv(fredData.cpi)?.value;
+    setV('fv_fed',`Fed: ${fmt(lv(fredData.fed)?.value)}`);
     setV('fv_cpi',`CPI: ${fmt(cpiVal)}`,cpiVal&&+cpiVal>3.5);
-    setV('fv_pce',`PCE: ${fmt(fredData.pce?.value)}`);
-    setV('fv_gdp',`GDP: ${fmt(fredData.gdp?.value)}`);
-    setV('fv_nfp',`NFP: ${fmtK(fredData.nfp?.value)}`);
+    setV('fv_pce',`PCE: ${fmt(lv(fredData.pce)?.value)}`);
+    setV('fv_gdp',`GDP: ${fmt(lv(fredData.gdp)?.value)}`);
+    setV('fv_nfp',`NFP: ${fmtK(lv(fredData.nfp)?.value)}`);
   }
 
   if(timeEl)timeEl.textContent=`更新：${new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'})}`;
@@ -3007,6 +3021,14 @@ function isTradingHours(){
   // 台灣市場 09:00–13:30 CST = 01:00–05:30 UTC
   return min>=60&&min<=330;
 }
+// 盤後收盤價抓取視窗：13:30–16:00 TW = 05:30–08:00 UTC（TWSE item.z 仍為收盤價）
+function isPostMarket(){
+  const now=new Date();
+  const day=now.getUTCDay();
+  if(day===0||day===6) return false;
+  const min=now.getUTCHours()*60+now.getUTCMinutes();
+  return min>330&&min<=480;
+}
 const _liveQCache=new Map(); // sym -> {price, ts}
 const LIVE_Q_TTL=1*60*1000; // 1 分鐘快取
 
@@ -3046,7 +3068,7 @@ async function fetchLiveQuoteBatch(syms){
 }
 
 async function prefetchLivePrices(stocks){
-  if(!isTradingHours()) return;
+  if(!isTradingHours()&&!isPostMarket()) return;
   const now=Date.now();
   const syms=stocks
     .map(s=>`${s.code}.${s.ex==='TWO'?'TWO':'TW'}`)
@@ -3069,10 +3091,10 @@ async function fetchYahoo(sym){
       volume:pre.v?.[i]??0, date:new Date(Date.now()-(i+1)*86400000)
     }));
     arr._yahooName=pre.n||null;
-    // 盤中：把即時價格插入 index 0（今日即時價）
-    if(isTradingHours()){
+    // 盤中/盤後：把即時/收盤價插入 index 0
+    if(isTradingHours()||isPostMarket()){
       const cached=_liveQCache.get(sym);
-      const livePrice=cached&&Date.now()-cached.ts<LIVE_Q_TTL?cached.price:null;
+      const livePrice=cached&&Date.now()-cached.ts<LIVE_Q_TTL*10?cached.price:null;
       if(livePrice){
         arr.unshift({close:livePrice,high:livePrice,low:livePrice,open:livePrice,volume:0,date:new Date()});
         arr._livePrice=true;
@@ -3509,20 +3531,20 @@ async function startScan(){
     ?`⏹ 已停止 · 已掃 ${done}/${total} 支，VCP候選 ${vcpFound} 支`
     :`✅ 完成！共 ${done-failed} 支成功，VCP候選 ${vcpFound} 支，無數據 ${failed} 支`;
   if(!scanCancelled&&failed>total*0.5){err.style.display='';err.textContent=`⚠️ 超過半數無法取得數據（${failed}/${total}），可能是 CORS 限制或網路問題。建議掛 VPN 或改用 TradingView/FinLab。`;}
-  // 盤中：掃描完成後補抓即時現價，解決 prefetchLivePrices race condition
-  if(!scanCancelled&&isTradingHours()){
-    pT.textContent='⚡ 盤中：補抓即時現價...';
+  // 盤中/盤後：掃描完成後補抓即時/收盤現價，解決 prefetchLivePrices race condition
+  if(!scanCancelled&&(isTradingHours()||isPostMarket())){
+    pT.textContent=isTradingHours()?'⚡ 盤中：補抓即時現價...':'⚡ 盤後：補抓今日收盤價...';
     await prefetchLivePrices(allResults.filter(r=>r.vcp)).catch(()=>{});
     let liveCount=0;
     allResults.forEach(r=>{
       if(!r.vcp)return;
       const sym=`${r.code}.${r.ex==='TWO'?'TWO':'TW'}`;
       const cached=_liveQCache.get(sym);
-      if(cached&&Date.now()-cached.ts<LIVE_Q_TTL){r.vcp.price=cached.price;liveCount++;}
+      if(cached&&Date.now()-cached.ts<LIVE_Q_TTL*10){r.vcp.price=cached.price;liveCount++;}
     });
     pT.textContent=liveCount>0
-      ?`✅ 完成！VCP候選 ${vcpFound} 支 · ⚡ 即時現價 ${liveCount} 支`
-      :`✅ 完成！VCP候選 ${vcpFound} 支（盤中但無法取得即時價，顯示昨收）`;
+      ?`✅ 完成！VCP候選 ${vcpFound} 支 · ⚡ ${isTradingHours()?'即時現價':'今日收盤'} ${liveCount} 支`
+      :`✅ 完成！VCP候選 ${vcpFound} 支（無法取得最新價，顯示昨收）`;
   }
   renderAll();
   try{localStorage.setItem('vcpCache',JSON.stringify({results:allResults,ts:Date.now(),ver:CACHE_VER}));}catch(_){}
@@ -3573,7 +3595,7 @@ let _autoRefreshTimer=null;
 let _liveRetryTimer=null;
 
 async function autoRefreshPrices(){
-  if(!isTradingHours()||!allResults.length) return;
+  if((!isTradingHours()&&!isPostMarket())||!allResults.length) return;
   const filtered=allResults.filter(r=>r.vcp);
   if(!filtered.length) return;
 
@@ -3624,7 +3646,7 @@ async function autoRefreshPrices(){
 
 function startAutoRefresh(){
   if(_autoRefreshTimer) clearInterval(_autoRefreshTimer);
-  if(!isTradingHours()) return;
+  if(!isTradingHours()&&!isPostMarket()) return;
   // 立刻跑一次，之後每5分鐘
   autoRefreshPrices();
   _autoRefreshTimer=setInterval(autoRefreshPrices, 5*60*1000);
@@ -5311,8 +5333,8 @@ return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(20
           } else {r.vcp.pbBuy=null;}
         });
         if(updated>0) renderTable();
-        // 盤中：stockPriceMap（昨收）更新後立刻補抓即時價，避免昨收停留在畫面上
-        if(isTradingHours()) autoRefreshPrices();
+        // 盤中/盤後：stockPriceMap 更新後立刻補抓即時/收盤價
+        if(isTradingHours()||isPostMarket()) autoRefreshPrices();
       }
       // 背景補抓：對快取中沒有基本面的 VCP 候選股，自動從 Yahoo Finance 補資料
       // 只取 VCP≥40 且無本地基本面的股票，限 40 支避免 rate limit
