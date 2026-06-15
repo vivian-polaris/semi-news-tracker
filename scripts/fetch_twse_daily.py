@@ -871,13 +871,35 @@ def d1_post_batches(statements, account_id, database_id, token):
             raise RuntimeError(f'D1 API failed: {json.dumps(payload)[:400]}')
         print(f'  D1 batch {idx}/{total_batches}: {len(sql_batch)} SQL statements')
 
-def sync_d1_database(output, tse_prices, otc_prices):
+def _d1_post_chunk(secret, prices_chunk, fund_rows, meta_date):
+    """送一批 price rows 到 d1write，回傳 written counts。"""
+    payload = {
+        'prices': prices_chunk,
+        'fundamentals': fund_rows,
+        'meta_date': meta_date,
+    }
+    resp = requests.post(
+        'https://vivian-vcpfinder.pages.dev/api/d1write',
+        headers={'Authorization': f'Bearer {secret}', 'Content-Type': 'application/json'},
+        json=payload,
+        timeout=120,
+    )
+    if not resp.ok:
+        raise RuntimeError(f'D1 write HTTP {resp.status_code}: {resp.text[:400]}')
+    result = resp.json()
+    if not result.get('success'):
+        raise RuntimeError(f'D1 write failed: {json.dumps(result)[:400]}')
+    return result.get('written', {})
+
+
+def sync_d1_database(output, tse_prices, otc_prices, full_sync=False):
     secret = os.environ.get('D1_WRITE_SECRET')
     if not secret:
         print('  [WARN] Skip D1 sync: missing D1_WRITE_SECRET')
         return
 
-    print('\n9. Sync Cloudflare D1 (via Pages Function)...')
+    mode = 'FULL_SYNC（252天歷史）' if full_sync else '每日更新（今日1筆）'
+    print(f'\n9. Sync Cloudflare D1 [{mode}]...')
 
     tse_date = output.get('_tse_price_date')
     otc_date = output.get('_otc_price_date') or output.get('date')
@@ -890,23 +912,47 @@ def sync_d1_database(output, tse_prices, otc_prices):
             closes = stock.get('c') or []
             if not closes or closes[0] is None:
                 continue
-            price_rows.append({
-                'code': str(code),
-                'date': stock.get('_d') or date_str,
-                'name': stock.get('n', str(code)),
-                'close': closes[0],
-                'high': (stock.get('h') or [None])[0],
-                'low': (stock.get('l') or [None])[0],
-                'open': None,
-                'volume': (stock.get('v') or [None])[0],
-            })
+
+            if full_sync:
+                # 寫入全部歷史（最多 252 天），用推算交易日期補日期欄位
+                highs  = stock.get('h') or []
+                lows   = stock.get('l') or []
+                vols   = stock.get('v') or []
+                latest_date = stock.get('_d') or date_str
+                if not latest_date:
+                    continue
+                dates = infer_recent_market_dates(latest_date, len(closes))
+                name  = stock.get('n', str(code))
+                for idx, row_date in enumerate(dates):
+                    c = closes[idx] if idx < len(closes) else None
+                    if c is None:
+                        continue
+                    price_rows.append({
+                        'code': str(code), 'date': row_date, 'name': name,
+                        'close': c,
+                        'high':   highs[idx]  if idx < len(highs)  else c,
+                        'low':    lows[idx]   if idx < len(lows)   else c,
+                        'open':   None,
+                        'volume': vols[idx]   if idx < len(vols)   else 0,
+                    })
+            else:
+                # 每日只寫今日 1 筆（省 D1 write quota）
+                price_rows.append({
+                    'code': str(code),
+                    'date': stock.get('_d') or date_str,
+                    'name': stock.get('n', str(code)),
+                    'close': closes[0],
+                    'high':   (stock.get('h') or [None])[0],
+                    'low':    (stock.get('l') or [None])[0],
+                    'open':   None,
+                    'volume': (stock.get('v') or [None])[0],
+                })
 
     fund_cols = [
         'code', 'sector', 'pe', 'pb', 'div_yield', 'eps', 'eps_year', 'eps_quarter',
         'earnings_growth', 'foreign_net', 'trust_net', 'dealer_net',
         'revenue_current', 'revenue_yoy', 'margin_today', 'margin_change', 'updated_date',
     ]
-    # Only include stocks in sectors/bwibbu (not raw chips) to keep payload small
     sectors_codes = (
         set((output.get('sectors') or {}).keys()) or
         set((output.get('bwibbu') or {}).keys())
@@ -917,22 +963,24 @@ def sync_d1_database(output, tse_prices, otc_prices):
     ]
 
     meta_date = tse_date or otc_date or output.get('date')
-    payload = {'prices': price_rows, 'fundamentals': fund_rows, 'meta_date': meta_date}
-
     print(f'  D1 rows prepared: prices={len(price_rows)}, fundamentals={len(fund_rows)}')
-    resp = requests.post(
-        'https://vivian-vcpfinder.pages.dev/api/d1write',
-        headers={'Authorization': f'Bearer {secret}', 'Content-Type': 'application/json'},
-        json=payload,
-        timeout=120,
-    )
-    if not resp.ok:
-        raise RuntimeError(f'D1 write HTTP {resp.status_code}: {resp.text[:400]}')
-    result = resp.json()
-    if not result.get('success'):
-        raise RuntimeError(f'D1 write failed: {json.dumps(result)[:400]}')
-    written = result.get('written', {})
-    print(f'  ✅ D1 sync completed: prices={written.get("prices",0)}, fundamentals={written.get("fundamentals",0)}')
+
+    # 分批送出（每批 500 筆），避免單一 HTTP 請求過大或超時
+    CHUNK = 500
+    total_written_prices = 0
+    chunks = [price_rows[i:i+CHUNK] for i in range(0, max(len(price_rows), 1), CHUNK)]
+    for idx, chunk in enumerate(chunks):
+        # fundamentals 和 meta_date 只在第一批送出
+        written = _d1_post_chunk(
+            secret, chunk,
+            fund_rows if idx == 0 else [],
+            meta_date if idx == 0 else None,
+        )
+        total_written_prices += written.get('prices', 0)
+        if len(chunks) > 1:
+            print(f'  批次 {idx+1}/{len(chunks)}: +{written.get("prices",0)} prices')
+
+    print(f'  ✅ D1 sync completed: prices={total_written_prices}, fundamentals={len(fund_rows)}')
 
 def fetch_exdiv():
     """抓取 TWSE 2026 年除息日期，累積存入 exdiv_2026.json
@@ -1221,8 +1269,9 @@ def main():
     }
 
     atomic_write('twse_daily.json', output)
+    full_sync = os.environ.get('FULL_SYNC', '').strip().lower() in ('1', 'true', 'yes')
     try:
-        sync_d1_database(output, tse_prices, otc_prices)
+        sync_d1_database(output, tse_prices, otc_prices, full_sync=full_sync)
     except Exception as e:
         print(f'  [WARN] D1 sync failed (non-fatal): {e}')
 

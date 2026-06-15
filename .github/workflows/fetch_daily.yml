@@ -18,6 +18,13 @@ on:
     # 備援：14:45 TW (06:45 UTC) — 若 14:15 TWSE API 尚未更新則此次補抓
     - cron: "45 6 * * *"  # 14:45 TW
   workflow_dispatch:
+    inputs:
+      full_sync:
+        description: '一次性補充 D1 完整 252 天歷史（只需跑一次）'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -47,6 +54,7 @@ jobs:
       - name: Fetch daily data
         env:
           D1_WRITE_SECRET: ${{ secrets.D1_WRITE_SECRET }}
+          FULL_SYNC: ${{ inputs.full_sync || 'false' }}
         run: python scripts/fetch_twse_daily.py
 
       - name: Commit and push data files

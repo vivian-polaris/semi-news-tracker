@@ -1675,9 +1675,21 @@ function _checkPriceStaleness(){
     const parts=[];
     if(tseStale) parts.push(`上市截至 ${_tsePriceDate}`);
     if(otcStale) parts.push(`上櫃截至 ${_otcPriceDate}`);
-    el.innerHTML=`<span style="color:#f87171;font-weight:700">⚠️ 股價資料過舊：${parts.join('・')} — 非最新收盤</span>`;
+    const msg=`⚠️ 股價資料過舊：${parts.join('・')} — 非最新收盤，掃描結果不可信`;
+    el.innerHTML=`<span style="color:#f87171;font-weight:700">${msg}</span>`;
+    // 頁面頂端顯示紅色浮動橫幅
+    let banner=document.getElementById('_stale_banner');
+    if(!banner){
+      banner=document.createElement('div');
+      banner.id='_stale_banner';
+      banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#7f1d1d;color:#fecaca;font-size:.82rem;font-weight:700;text-align:center;padding:8px 16px;letter-spacing:.02em;box-shadow:0 2px 8px rgba(0,0,0,.5)';
+      document.body.prepend(banner);
+    }
+    banner.textContent=msg;
   } else {
     el.textContent=`✅ 股價快取：上市 ${_tsePriceDate||'—'}・上櫃 ${_otcPriceDate||'—'}`;
+    const banner=document.getElementById('_stale_banner');
+    if(banner) banner.remove();
   }
 }
 async function testGroq(){
