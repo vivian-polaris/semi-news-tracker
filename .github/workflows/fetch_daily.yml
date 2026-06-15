@@ -28,6 +28,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   fetch:
@@ -57,4 +58,12 @@ jobs:
           git diff --staged --quiet || git commit -m "data: update all data files $(date -u +'%Y-%m-%d')"
           git pull --rebase origin main
           git push
-      # Cloudflare Pages 部署由 deploy.yml (on:push) 自動觸發，此處不重複執行以節省 build 配額
+
+      # GitHub 安全政策：github-actions[bot] 的 push 不觸發 on:push workflow
+      # 因此必須在此直接 deploy，不能依賴 deploy.yml 的 on:push 觸發
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy . --project-name vivian-vcpfinder --branch main --commit-dirty=true --commit-message="data deploy $(date -u +'%Y-%m-%dT%H:%M')"
