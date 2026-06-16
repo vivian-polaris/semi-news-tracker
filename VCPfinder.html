@@ -1675,14 +1675,14 @@ function _checkPriceStaleness(){
     const parts=[];
     if(tseStale) parts.push(`上市截至 ${_tsePriceDate}`);
     if(otcStale) parts.push(`上櫃截至 ${_otcPriceDate}`);
-    const msg=`⚠️ 股價資料過舊：${parts.join('・')} — 非最新收盤，掃描結果不可信`;
+    const msg=`🔴 股價資料過舊！${parts.join('・')} ── 掃描結果不可信，請等待資料更新`;
     el.innerHTML=`<span style="color:#f87171;font-weight:700">${msg}</span>`;
-    // 頁面頂端顯示紅色浮動橫幅
+    // 頁面頂端顯示大紅字浮動橫幅
     let banner=document.getElementById('_stale_banner');
     if(!banner){
       banner=document.createElement('div');
       banner.id='_stale_banner';
-      banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#7f1d1d;color:#fecaca;font-size:.82rem;font-weight:700;text-align:center;padding:8px 16px;letter-spacing:.02em;box-shadow:0 2px 8px rgba(0,0,0,.5)';
+      banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#b91c1c;color:#fff;font-size:1.05rem;font-weight:700;text-align:center;padding:12px 20px;letter-spacing:.03em;box-shadow:0 4px 16px rgba(0,0,0,.7)';
       document.body.prepend(banner);
     }
     banner.textContent=msg;
@@ -3545,6 +3545,7 @@ async function startScan(){
   // 盤中/盤後：掃描完成後補抓即時/收盤現價，解決 prefetchLivePrices race condition
   if(!scanCancelled&&(isTradingHours()||isPostMarket())){
     pT.textContent=isTradingHours()?'⚡ 盤中：補抓即時現價...':'⚡ 盤後：補抓今日收盤價...';
+    allResults.filter(r=>r.vcp).forEach(r=>_liveQCache.delete(`${r.code}.${r.ex==='TWO'?'TWO':'TW'}`));
     await prefetchLivePrices(allResults.filter(r=>r.vcp)).catch(()=>{});
     let liveCount=0;
     allResults.forEach(r=>{

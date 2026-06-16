@@ -17,14 +17,16 @@ on:
     - cron: "15 6 * * *"  # 14:15 TW
     # 備援：14:45 TW (06:45 UTC) — 若 14:15 TWSE API 尚未更新則此次補抓
     - cron: "45 6 * * *"  # 14:45 TW
+    # 每週一 15:00 TW (07:00 UTC) 自動補充 D1 完整 252 天歷史，確保備援有效
+    - cron: "0 7 * * 1"   # 週一 15:00 TW — 週 full sync
   workflow_dispatch:
     inputs:
       full_sync:
-        description: '一次性補充 D1 完整 252 天歷史（只需跑一次）'
+        description: '立即補充 D1 完整 252 天歷史（每週一亦自動執行）'
         required: false
-        default: 'false'
+        default: 'true'
         type: choice
-        options: ['false', 'true']
+        options: ['true', 'false']
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -54,7 +56,7 @@ jobs:
       - name: Fetch daily data
         env:
           D1_WRITE_SECRET: ${{ secrets.D1_WRITE_SECRET }}
-          FULL_SYNC: ${{ inputs.full_sync || 'false' }}
+          FULL_SYNC: ${{ (github.event.schedule == '0 7 * * 1') && 'true' || inputs.full_sync || 'false' }}
         run: python scripts/fetch_twse_daily.py
 
       - name: Commit and push data files
