@@ -5535,6 +5535,20 @@ async function refreshBadStocks(force=false){
 }
 
 async function loadBorrowData(force=false){
+  // ── 優先：從 twse_daily.json 讀（GitHub Actions 每天 14:15 更新，全市場 ~1700支）──
+  if(!force && twseDailyMap?.borrow && Object.keys(twseDailyMap.borrow).length>0){
+    _borrowMap=twseDailyMap.borrow;
+    renderBadStocks();
+    return;
+  }
+  // 若 twse_daily 已載入且有 borrow，直接用（強制更新也用最新的）
+  if(twseDailyMap?.borrow && Object.keys(twseDailyMap.borrow).length>0){
+    _borrowMap=twseDailyMap.borrow;
+    renderBadStocks();
+    return;
+  }
+
+  // ── 備援：直接呼叫 TWSE（僅 top-20，CORS via proxy）──────────────────────
   const CACHE_KEY='badBorrowCache';
   const TTL=6*3600*1000;
   if(!force){
@@ -5546,7 +5560,6 @@ async function loadBorrowData(force=false){
     }
   }
 
-  // TWSE BFT41U — 借券賣出餘額前二十名（CORS via proxy）
   const url='https://www.twse.com.tw/rwd/zh/fund/BFT41U?response=json';
   const proxies=['https://corsproxy.io/?'+encodeURIComponent(url),
                  'https://api.allorigins.win/raw?url='+encodeURIComponent(url)];
@@ -5561,9 +5574,8 @@ async function loadBorrowData(force=false){
   }
 
   if(!d){
-    // Fallback: show cached data
     const cached=lsGet(CACHE_KEY);
-    if(cached?.data) _borrowMap=cached.data;
+    if(cached?.data)_borrowMap=cached.data;
     else _borrowMap={};
     renderBadStocks();
     return;
@@ -5572,32 +5584,25 @@ async function loadBorrowData(force=false){
   const PREV_KEY='badBorrowPrev';
   const prev=lsGet(PREV_KEY)?.data||{};
   const todayDate=d.date||d.Date||'';
+  const parseN=s=>parseInt(String(s||'0').replace(/,/g,''))||0;
 
   const today={};
   d.data.forEach(row=>{
     const code=(row[0]||'').trim().replace(/\s/g,'');
     if(!/^\d{4,6}$/.test(code))return;
-    const name=(row[1]||'').trim();
-    // BFT41U fields: 代號, 名稱, 借券賣出成交量, 借券買進成交量, 借券賣出餘額, 借券買進餘額
-    const parseN=s=>parseInt(String(s||'0').replace(/,/g,''))||0;
-    const sellVol=parseN(row[2]);
-    const balance=parseN(row[4]);  // 借券賣出餘額(張)
-    today[code]={name,sellVol,balance};
+    today[code]={name:(row[1]||'').trim(),balance:parseN(row[4]),sellVol:parseN(row[2])};
   });
 
   const newMap={};
   Object.entries(today).forEach(([code,v])=>{
     const prevBal=prev[code]?.balance||0;
     const changePct=prevBal>0?(v.balance-prevBal)/prevBal*100:0;
-    const changeAbs=v.balance-prevBal;
-    newMap[code]={...v,prevBalance:prevBal,changePct,changeAbs};
+    newMap[code]={...v,prevBalance:prevBal,changePct,changeAbs:v.balance-prevBal};
   });
   _borrowMap=newMap;
 
-  const prevDate=lsGet(PREV_KEY)?.date||'';
-  if(todayDate&&todayDate!==prevDate&&Object.keys(today).length>0){
+  if(todayDate&&todayDate!==lsGet(PREV_KEY)?.date&&Object.keys(today).length>0)
     lsSet(PREV_KEY,{data:today,date:todayDate});
-  }
   lsSet(CACHE_KEY,{data:newMap,ts:Date.now(),date:todayDate});
   renderBadStocks();
 }
@@ -5608,7 +5613,17 @@ function renderBadStocks(){
   const timeEl=document.getElementById('badStockTime');
   if(!body)return;
 
-  const gdrList=getGDRList();
+  // 合併：伺服器端自動偵測（twseDailyMap.gdr）+ 使用者手動新增（localStorage）
+  const manualGDR=getGDRList();
+  const manualCodes=new Set(manualGDR.map(g=>g.code));
+  const serverGDR=(twseDailyMap?.gdr||[]).map(g=>({
+    code:g.code, name:g.name,
+    note:`${g.type||'GDR'}${g.amount?' $'+g.amount+'M':''}${g.date?' '+g.date:''} [自動]`,
+    auto:true
+  }));
+  // 伺服器端有、手動沒有的，才加入（避免重複）
+  const mergedGDR=[...manualGDR,...serverGDR.filter(g=>!manualCodes.has(g.code))];
+  const gdrList=mergedGDR;
   const gdrCodes=new Set(gdrList.map(g=>g.code));
 
   // 借券暴增：增幅 ≥20% AND 餘額 ≥500張
@@ -5778,7 +5793,19 @@ function renderBadStocks(){
   </div>`;
 
   body.innerHTML=html;
-  if(timeEl){const c=lsGet('badBorrowCache');if(c?.ts)timeEl.textContent='借券資料（TWSE BFT41U）：'+lsAgeStr(c.ts)+' 更新';}
+  if(timeEl){
+    const serverGDRLen=(twseDailyMap?.gdr||[]).length;
+    const hasDailyBorrow=twseDailyMap?.borrow&&Object.keys(twseDailyMap.borrow).length>0;
+    if(hasDailyBorrow){
+      const borDate=twseDailyMap.date||'';
+      timeEl.textContent=`借券資料（全市場 ${Object.keys(_borrowMap).length}支，GitHub Actions 自動更新）`
+        +(borDate?' 日期：'+borDate:'')
+        +(serverGDRLen?` · 自動偵測 GDR ${serverGDRLen}支`:'');
+    }else{
+      const c=lsGet('badBorrowCache');
+      if(c?.ts)timeEl.textContent='借券資料（TWSE BFT41U 前20名）：'+lsAgeStr(c.ts)+' 更新';
+    }
+  }
 }
 // ────────────────────────────────────────────────────────────────────────────
 // 爛股警示初始化：在函數定義完成後才呼叫，避免 let TDZ 問題

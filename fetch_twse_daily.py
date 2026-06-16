@@ -12,6 +12,8 @@ Data collected:
   - bwibbu   : {code -> pe/pb/divYield} TSE+OTC
   - monthRevenue : {code -> yoy/current} TSE+OTC
   - income   : {code -> eps/revenue/operatingIncome/netIncome/year/quarter} TSE+OTC
+  - gdr      : [{code,name,date,type,amount}] 最近 90 天 GDR 申請/發行
+  - borrow   : {code -> {balance,prevBalance,changeAbs,changePct}} 借券賣出餘額全市場
 """
 
 import json, sys, time, datetime, re, xml.etree.ElementTree as ET
@@ -454,6 +456,208 @@ def _int2(v):
         return i if i != 0 else None
     except: return None
 
+# ── 8. GDR 發行偵測（MOPS 海外存託憑證申請 + 新聞搜尋雙重來源）──────────────
+def fetch_gdr_list():
+    """抓最近 90 天的 GDR 申請/發行股票清單，來源：TWSE OpenAPI + MOPS HTML"""
+    import html as html_lib
+    result = []
+    seen_codes = set()
+
+    tz_tw = datetime.timezone(datetime.timedelta(hours=8))
+    now_tw = datetime.datetime.now(tz_tw)
+    year_roc = now_tw.year - 1911  # 民國年
+
+    # ── 來源 1：TWSE openapi t187ap13_L 海外有價證券募集 ──────────────────────
+    try:
+        d = get('https://openapi.twse.com.tw/v1/opendata/t187ap13_L')
+        if d and isinstance(d, list):
+            for row in d:
+                code = str(row.get('公司代號') or '').strip()
+                name = str(row.get('公司名稱') or '').strip()
+                sec_type = str(row.get('有價證券種類') or row.get('種類') or '').strip()
+                date_raw = str(row.get('申請日期') or row.get('日期') or '').strip()
+                amount = str(row.get('募集金額') or row.get('金額') or '').strip()
+                # 只抓 GDR/DR/存託憑證 相關
+                if re.search(r'GDR|ADR|DR|存託憑證', sec_type, re.I):
+                    if code and re.match(r'^\d{4,6}$', code) and code not in seen_codes:
+                        # 轉西元日期
+                        date_ad = ''
+                        m = re.match(r'(\d{3})[/-]?(\d{2})[/-]?(\d{2})', date_raw)
+                        if m:
+                            date_ad = f'{int(m.group(1))+1911}-{m.group(2)}-{m.group(3)}'
+                        result.append({'code': code, 'name': name, 'date': date_ad,
+                                       'type': sec_type, 'amount': amount, 'src': 'TWSE-OpenAPI'})
+                        seen_codes.add(code)
+            print(f'  GDR from TWSE OpenAPI t187ap13_L: {len(result)}')
+    except Exception as e:
+        print(f'  [WARN] GDR TWSE OpenAPI failed: {e}')
+
+    # ── 來源 2：MOPS ajax_t78sb01_q1 海外存託憑證申請 ──────────────────────────
+    try:
+        mops_url = 'https://mops.twse.com.tw/mops/web/ajax_t78sb01_q1'
+        for yr_offset in range(2):  # 今年 + 去年
+            yr = year_roc - yr_offset
+            r = SESSION.post(mops_url, data={
+                'encodeURIComponent': '1', 'step': '1', 'firstin': '1',
+                'off': '1', 'queryName': 'co_id', 'inpuType': 'co_id',
+                'TYPEK': 'all', 'isnew': 'false', 'co_id': '',
+                'year': str(yr), 'month': '', 'type': '',
+            }, timeout=20, headers={'Content-Type': 'application/x-www-form-urlencoded'})
+            if not r.ok:
+                continue
+            text = r.text
+            # 解析 HTML 表格（簡易 regex，MOPS 格式穩定）
+            trs = re.findall(r'<tr[^>]*>(.*?)</tr>', text, re.S)
+            for tr in trs:
+                tds = re.findall(r'<td[^>]*>(.*?)</td>', tr, re.S)
+                tds = [re.sub(r'<[^>]+>', '', td).strip() for td in tds]
+                tds = [html_lib.unescape(td) for td in tds]
+                if len(tds) < 3:
+                    continue
+                # 嘗試找股票代號（4-6 位數字）
+                code = ''
+                for td in tds[:3]:
+                    m = re.match(r'^(\d{4,6})$', td.strip())
+                    if m:
+                        code = m.group(1)
+                        break
+                if not code or code in seen_codes:
+                    continue
+                name = tds[1] if len(tds) > 1 else ''
+                date_raw = next((td for td in tds if re.match(r'\d{3}[/年]\d{1,2}', td)), '')
+                date_ad = ''
+                m2 = re.match(r'(\d{3})[/年](\d{1,2})[/月]?(\d{0,2})', date_raw)
+                if m2:
+                    date_ad = f'{int(m2.group(1))+1911}-{m2.group(2).zfill(2)}-{(m2.group(3) or "01").zfill(2)}'
+                sec_type = next((td for td in tds if re.search(r'GDR|ADR|DR|存託', td, re.I)), 'GDR')
+                result.append({'code': code, 'name': name, 'date': date_ad,
+                               'type': sec_type, 'amount': '', 'src': 'MOPS'})
+                seen_codes.add(code)
+        print(f'  GDR total after MOPS: {len(result)}')
+    except Exception as e:
+        print(f'  [WARN] GDR MOPS failed: {e}')
+
+    # ── 來源 3：Google News RSS 補充（關鍵字 "台灣 GDR 發行"）──────────────────
+    try:
+        keywords = ['台股 GDR 發行', '海外存託憑證 申請', 'DR 上市 台灣']
+        for kw in keywords:
+            rss_url = f'https://news.google.com/rss/search?q={requests.utils.quote(kw)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant'
+            r = SESSION.get(rss_url, timeout=12)
+            if not r.ok:
+                continue
+            root = ET.fromstring(r.content)
+            for item in root.iter('item'):
+                title = (item.findtext('title') or '').strip()
+                # 從標題中提取股票代號
+                for m in re.finditer(r'[（(「](\d{4,6})[）)」]|\b(\d{4,6})\b', title):
+                    code = m.group(1) or m.group(2)
+                    if code and code not in seen_codes and re.match(r'^\d{4,6}$', code):
+                        pub = (item.findtext('pubDate') or '').strip()
+                        result.append({'code': code, 'name': '', 'date': pub[:10],
+                                       'type': 'GDR (新聞偵測)', 'amount': '', 'src': 'news',
+                                       'title': title[:80]})
+                        seen_codes.add(code)
+    except Exception as e:
+        print(f'  [WARN] GDR news RSS failed: {e}')
+
+    # 只保留最近 180 天
+    cutoff = (now_tw - datetime.timedelta(days=180)).strftime('%Y-%m-%d')
+    result = [g for g in result if not g.get('date') or g['date'] >= cutoff or g['src'] == 'news']
+    print(f'  GDR final: {len(result)} stocks → {[g["code"] for g in result]}')
+    return result
+
+
+# ── 9. 借券賣出餘額全市場掃描（每日更新，含昨日比較）───────────────────────────
+def fetch_borrow_balance(existing_borrow=None):
+    """抓 TWSE 全部股票借券賣出餘額，與前日比較計算暴增幅度"""
+    prev = existing_borrow or {}
+    borrow = {}
+
+    # 主端點：MI_SLBK selectType=AL（全部股票借貸餘額）
+    raw = None
+    for url in [
+        'https://www.twse.com.tw/rwd/zh/fund/MI_SLBK?response=json&selectType=AL',
+        'https://www.twse.com.tw/fund/MI_SLBK?response=json&selectType=AL',
+    ]:
+        try:
+            r = SESSION.get(url, timeout=30)
+            if not r.ok:
+                continue
+            j = r.json()
+            if j.get('stat') == 'OK' and j.get('data'):
+                raw = j
+                print(f'  borrow: MI_SLBK OK, {len(j["data"])} rows, date={j.get("date","")}')
+                break
+        except Exception as e:
+            print(f'  [WARN] MI_SLBK {url[:50]}: {e}')
+
+    # 備援：BFT41U 借券賣出餘額前20名
+    if not raw:
+        try:
+            r = SESSION.get('https://www.twse.com.tw/rwd/zh/fund/BFT41U?response=json', timeout=20)
+            if r.ok:
+                j = r.json()
+                if j.get('stat') == 'OK' and j.get('data'):
+                    raw = j
+                    print(f'  borrow: BFT41U fallback (top 20), date={j.get("date","")}')
+        except Exception as e:
+            print(f'  [WARN] BFT41U fallback: {e}')
+
+    if not raw:
+        print('  [WARN] 無法取得借券資料，保留舊資料')
+        return prev
+
+    date_str = raw.get('date', '')
+    fields = raw.get('fields', [])
+
+    # 判斷欄位對應（MI_SLBK vs BFT41U 欄位不同）
+    # MI_SLBK: [代號,名稱,..合計出借數量(idx~6),合計借入數量(idx~7)]
+    # BFT41U:  [代號,名稱,借券賣出成交量,借券買進量,借券賣出餘額(idx 4),借券買進餘額]
+    # 用欄位名稱判斷
+    balance_col = 4  # BFT41U 預設
+    if fields:
+        for i, f in enumerate(fields):
+            if '合計出借' in f or '出借數量' in f:
+                balance_col = i
+                break
+            if '賣出餘額' in f or '借券賣出餘額' in f:
+                balance_col = i
+                break
+
+    for row in raw.get('data', []):
+        code = str(row[0]).strip()
+        if not re.match(r'^\d{4,6}$', code):
+            continue
+        name = str(row[1]).strip() if len(row) > 1 else ''
+        try:
+            balance = int(str(row[balance_col]).replace(',', ''))
+        except:
+            balance = 0
+
+        prev_entry = prev.get(code, {})
+        prev_bal = prev_entry.get('balance', 0) if isinstance(prev_entry, dict) else 0
+        change_abs = balance - prev_bal
+        change_pct = round(change_abs / prev_bal * 100, 2) if prev_bal > 0 else 0.0
+
+        borrow[code] = {
+            'name': name,
+            'balance': balance,
+            'prevBalance': prev_bal,
+            'changeAbs': change_abs,
+            'changePct': change_pct,
+            'date': date_str,
+        }
+
+    # 統計暴增警示
+    surge = [(c, v) for c, v in borrow.items() if v['changePct'] >= 20 and v['balance'] >= 500]
+    surge.sort(key=lambda x: -x[1]['changePct'])
+    print(f'  borrow: {len(borrow)} stocks，借券暴增(≥20%,≥500張): {len(surge)} 支')
+    if surge[:5]:
+        for c, v in surge[:5]:
+            print(f'    {c} {v["name"]} 餘額={v["balance"]:,} 增{v["changePct"]:+.1f}%')
+    return borrow
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
     tz_tw = datetime.timezone(datetime.timedelta(hours=8))
@@ -577,11 +781,25 @@ def main():
             print(f'  ⚠️ 新聞抓取不足（{len(news)}），保留舊資料（{len(old_news)}筆）')
             news = old_news
 
+    print('\n8. GDR 發行偵測（MOPS + TWSE OpenAPI + News）...')
+    gdr_list = fetch_gdr_list()
+    if not gdr_list:
+        old_gdr = existing.get('gdr', [])
+        if old_gdr:
+            print(f'  ⚠️ GDR 資料空，保留舊資料（{len(old_gdr)}筆）')
+            gdr_list = old_gdr
+
+    print('\n9. 借券賣出餘額全市場掃描（TWSE MI_SLBK）...')
+    existing_borrow = existing.get('borrow', {})
+    borrow_data = fetch_borrow_balance(existing_borrow)
+    if not borrow_data and existing_borrow:
+        print(f'  ⚠️ 借券資料空，保留舊資料（{len(existing_borrow)}筆）')
+        borrow_data = existing_borrow
+
     output = {
         'date':         date_str,
         'sectors':      sectors,
         'otcStocks':    otc_stocks,
-        'tseStocks':    tse_stocks,
         'tseStocks':    tse_stocks,
         'chips':        chips,
         'bwibbu':       bwibbu,
@@ -589,14 +807,17 @@ def main():
         'income':       income,
         'incomePrev':   income_prev,
         'news':         news,
+        'gdr':          gdr_list,
+        'borrow':       borrow_data,
     }
 
     with open('twse_daily.json', 'w', encoding='utf-8') as f:
         json.dump(output, f, ensure_ascii=False, separators=(',', ':'))
 
     print(f'\n✅ twse_daily.json written:')
-    print(f'   sectors={len(sectors)}, otcStocks={len(otc_stocks)}, chips={len(chips)}, bwibbu={len(bwibbu)}')
+    print(f'   sectors={len(sectors)}, chips={len(chips)}, bwibbu={len(bwibbu)}')
     print(f'   revenue={len(month_revenue)}, income={len(income)}, news={len(news)}')
+    print(f'   gdr={len(gdr_list)}, borrow={len(borrow_data)}')
 
 if __name__ == '__main__':
     main()
