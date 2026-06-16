@@ -1162,6 +1162,8 @@ def fetch_borrow_balance(existing_borrow=None):
     ]:
         try:
             r = SESSION.get(url, timeout=30, headers={'Accept': 'application/json, text/javascript, */*'})
+            snippet = r.text[:80].replace('\n', ' ') if r.text else '(empty)'
+            print(f'  MI_SLBK {r.status_code} body={snippet!r}')
             if r.ok and r.text.strip():
                 j = r.json()
                 if j.get('stat') == 'OK' and j.get('data'):
@@ -1171,7 +1173,7 @@ def fetch_borrow_balance(existing_borrow=None):
                 else:
                     print(f'  [WARN] MI_SLBK stat={j.get("stat")}, rows={len(j.get("data",[]))}')
             else:
-                print(f'  [WARN] MI_SLBK empty body or {r.status_code} from {url[:60]}')
+                print(f'  [WARN] MI_SLBK empty body or {r.status_code}')
         except Exception as e:
             print(f'  [WARN] MI_SLBK {url[:60]}: {e}')
 
