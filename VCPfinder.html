@@ -65,9 +65,9 @@ header p{color:rgba(255,255,255,.7);font-size:.78rem;line-height:1.6;text-shadow
   font-weight:600;background:rgba(79,126,247,.25);color:#93c5fd;
   border:1px solid rgba(79,126,247,.4);margin-left:6px;letter-spacing:.03em}
 @media(max-width:640px){
-  header{padding:16px 14px 0;min-height:240px;background-position:center 62%}
-  h1{font-size:1.25rem}
-  .back-btn,.key-btn{top:10px}
+  header{padding:44px 14px 8px;min-height:90px;background-position:center 62%}
+  h1{font-size:1.08rem;margin-bottom:2px}
+  .back-btn,.key-btn{top:8px;position:absolute!important;margin-bottom:0!important;display:inline-block!important}
 }
 
 /* ── API Key Panel ── */
@@ -152,6 +152,10 @@ details>summary::-webkit-details-marker,details>summary::marker{display:none;con
   #sumGrid .sum-val{font-size:.88rem!important}
   #sumGrid .sum-sub{display:none}
   #sumGrid .scan-btn,#sumGrid #cancelBtn{width:100%;margin-top:4px}
+  /* 手機：掃描前按鈕區垂直排列，全寬好按 */
+  #preScanRow{flex-direction:column!important;gap:6px!important}
+  #preScanRow .scan-btn{width:100%!important;padding:13px!important;font-size:.95rem!important;border-radius:10px!important}
+  #preScanRow #scanOptBtn{width:100%!important;text-align:center!important;padding:10px!important;border-radius:10px!important}
   .sum-card{padding:8px 10px;border-radius:6px}
   .sum-label{font-size:.58rem;letter-spacing:.02em;margin-bottom:2px}
   .sum-val{font-size:1.2rem}
@@ -596,9 +600,18 @@ footer a:hover{text-decoration:underline}
 #semi-wrap .fsearch::placeholder{color:#52525b;}
 #semi-wrap .fsearch:focus{border-color:#3f3f46;}
 #semi-wrap .fcount{font-size:12px;color:#71717a;margin-left:auto;flex-shrink:0;}
-#semi-wrap .fcount span{color:#e4e4e7;font-weight:600;}</style>
+#semi-wrap .fcount span{color:#e4e4e7;font-weight:600;}
+/* ── Mobile FAB scan button ── */
+#mobScanFab{display:none;position:fixed;bottom:22px;right:16px;z-index:2000;
+  padding:13px 22px;background:var(--purple);border:none;border-radius:28px;
+  color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;
+  box-shadow:0 4px 20px rgba(79,126,247,.55);transition:opacity .2s,transform .2s;
+  white-space:nowrap;letter-spacing:.02em}
+#mobScanFab:active{transform:scale(.95)}
+@media(min-width:641px){#mobScanFab{display:none!important}}</style>
 </head>
 <body>
+<button id="mobScanFab" onclick="startScan()">▶ 開始掃描</button>
 <div class="wrap">
 
 <!-- No-Key Banner hidden (key is server-side) -->
@@ -5899,6 +5912,36 @@ function renderSlopePositions(){
 // 頁面載入時自動顯示已存持倉
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',renderSlopePositions,{once:true});}
 else{renderSlopePositions();}
+
+// ── Mobile FAB: 顯示/隱藏浮動掃描鈕 ──
+(function(){
+  const fab=document.getElementById('mobScanFab');
+  if(!fab)return;
+  function updateFab(){
+    if(window.innerWidth>640){fab.style.display='none';return;}
+    const scanArea=document.getElementById('preScanRow')||document.getElementById('sumGrid');
+    if(!scanArea){fab.style.display='none';return;}
+    const rect=scanArea.getBoundingClientRect();
+    // 只在 scanning 時改為「停止」，否則顯示「掃描」（已滾過才顯示）
+    if(rect.bottom<0){
+      if(typeof scanning!=='undefined'&&scanning){
+        fab.textContent='⏹ 停止';
+        fab.style.background='var(--red,#ef4444)';
+        fab.onclick=cancelScan;
+      } else {
+        fab.textContent='▶ 開始掃描';
+        fab.style.background='var(--purple)';
+        fab.onclick=startScan;
+      }
+      fab.style.display='block';
+    } else {
+      fab.style.display='none';
+    }
+  }
+  window.addEventListener('scroll',updateFab,{passive:true});
+  window.addEventListener('resize',updateFab,{passive:true});
+  setInterval(updateFab,1500);
+})();
 </script>
 </body>
 </html>
