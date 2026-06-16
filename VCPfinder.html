@@ -5697,7 +5697,7 @@ function renderBadStocks(){
       const isHighBorrow=highBorrowCodes.has(g.code);
       const balTxt=borrow?borrow.balance.toLocaleString():'—';
       const chgPct=borrow?.changePct||0;
-      const chgTxt=borrow?(chgPct>=0?'+':'')+chgPct.toFixed(1)+'%（'+（chgPct>=0?'+':'')+（borrow.changeAbs||0).toLocaleString()+'張）':'—';
+      const chgTxt=borrow?(chgPct>=0?'+':'')+chgPct.toFixed(1)+'%（'+(chgPct>=0?'+':'')+(borrow.changeAbs||0).toLocaleString()+'張）':'—';
       const chgCol=chgPct>=50?'#f87171':chgPct>=20?'#fb923c':'#fbbf24';
       const typePills=`<span class="bad-pill bad-gdr" style="margin-right:3px">GDR稀釋</span>`
         +(isSurge?`<span class="bad-pill bad-borrow">借券暴增</span>`
