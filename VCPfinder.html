@@ -5673,15 +5673,34 @@ function renderBadStocks(){
     .sort((a,b)=>b[1].balance-a[1].balance)
     .slice(0,10);
 
-  const totalAlerts=dualAlert.length+gdrOnly.length+surgeOnly.length;
+  // 5. 機構大賣超（外資+投信每日淨賣超 > 1000張）— 從 twseDailyMap.chips 取，永遠有今日資料
+  const _chips=twseDailyMap?.chips||{};
+  const heavySell=Object.entries(_chips)
+    .map(([c,v])=>{
+      const sell=-((v.foreignNet||0)+(v.trustNet||0)); // 正數=賣超，千股≈張
+      return [c,{sell,foreign:v.foreignNet||0,trust:v.trustNet||0,name:_nameMap[c]||''}];
+    })
+    .filter(([c,[,v]])=>v.sell>1000&&!gdrCodes.has(c)&&!surgeCodes.has(c))
+    .sort((a,b)=>b[1][0].sell-a[1][0].sell)
+    .slice(0,20);
+  // 解包
+  const heavySellArr=Object.entries(_chips)
+    .map(([c,v])=>({code:c,sell:-((v.foreignNet||0)+(v.trustNet||0)),foreign:v.foreignNet||0,trust:v.trustNet||0,name:_nameMap[c]||''}))
+    .filter(r=>r.sell>1000&&!gdrCodes.has(r.code)&&!surgeCodes.has(r.code))
+    .sort((a,b)=>b.sell-a.sell)
+    .slice(0,20);
+
+  const totalAlerts=dualAlert.length+gdrOnly.length+surgeOnly.length+heavySellArr.length;
   if(countEl){
     const dualTxt=dualAlert.length?` 雙重${dualAlert.length}支`:'';
-    countEl.textContent=totalAlerts?`（警示 ${totalAlerts} 支${dualTxt}）`:'';
-    countEl.style.color=dualAlert.length?'#f87171':'var(--text2)';
+    const chipsTxt=heavySellArr.length?` 賣超${heavySellArr.length}支`:'';
+    countEl.textContent=totalAlerts?`（警示 ${totalAlerts} 支${dualTxt}${chipsTxt}）`:'';
+    countEl.style.color=dualAlert.length?'#f87171':heavySellArr.length?'#fbbf24':'var(--text2)';
   }
 
   const hasBorrowData=Object.keys(_borrowMap).length>0;
-  if(!gdrList.length&&!allSurge.length&&!highOnly.length){
+  const hasChipsData=heavySellArr.length>0;
+  if(!gdrList.length&&!allSurge.length&&!highOnly.length&&!hasChipsData){
     body.innerHTML=hasBorrowData
       ?'<div style="padding:8px 0;color:var(--text2)">今日借券前20名無異常（增幅 &lt;20% 或餘額 &lt;500張），市場空頭壓力正常。</div>'
        +'<div style="margin-top:8px;padding:7px 10px;background:var(--tag);border-radius:8px;font-size:.62rem;color:var(--text2);line-height:1.6">💡 可手動加入 GDR 股票追蹤。每日點「↻ 更新借券」取得最新放空數據。</div>'
@@ -5805,25 +5824,53 @@ function renderBadStocks(){
     });
   }
 
+  // ── 機構大賣超（外資+投信每日淨賣超 ≥1000千股，今日實際數字）────────────
+  if(heavySellArr.length){
+    const chipsDate=twseDailyMap?.date?twseDailyMap.date.slice(0,4)+'/'+twseDailyMap.date.slice(4,6)+'/'+twseDailyMap.date.slice(6):'';
+    html+=`<tr><td colspan="6" style="padding:4px 8px;font-size:.6rem;font-weight:700;color:#fb923c;text-transform:uppercase;letter-spacing:.08em;background:rgba(251,146,60,.06)">
+      🏦 機構大賣超 — 外資+投信淨賣超 ≥1,000張${chipsDate?' ('+chipsDate+')':''} · 今日實際大盤數字
+    </td></tr>`;
+    heavySellArr.forEach(r=>{
+      const price=stockPriceMap[r.code]?.c?.[0];
+      const foreignTxt=r.foreign<0?`外資${(r.foreign/1000).toFixed(0)}千`:`外資+${(r.foreign/1000).toFixed(0)}千`;
+      const trustTxt=r.trust<0?`投信${(r.trust/1000).toFixed(0)}千`:`投信+${(r.trust/1000).toFixed(0)}千`;
+      const sellCol=r.sell>=5000?'#f87171':r.sell>=2000?'#fb923c':'#fbbf24';
+      const risk=r.sell>=5000?'🔴 重壓':r.sell>=2000?'🟠 大賣':'🟡 賣超';
+      html+=`<tr style="border-bottom:1px solid rgba(45,55,72,.3)"
+        onmouseover="this.style.background='rgba(251,146,60,.07)'" onmouseout="this.style.background=''">
+        <td style="padding:7px 8px;white-space:nowrap">
+          <a href="${tv(r.code)}" target="_blank" style="color:var(--purple);font-weight:700;text-decoration:none">${escH(r.code)}</a>
+          <span style="font-size:.72rem;font-weight:600;margin-left:4px">${escH(r.name||_nameMap[r.code]||'')}</span>
+          ${price?`<span style="font-size:.6rem;color:var(--text2);margin-left:6px">$${price}</span>`:''}
+        </td>
+        <td style="padding:7px 8px;text-align:center">
+          <span class="bad-pill" style="background:rgba(251,146,60,.12);color:#fb923c;border:1px solid rgba(251,146,60,.3)">機構賣超</span>
+        </td>
+        <td style="padding:7px 8px;text-align:right;font-weight:800;color:${sellCol};font-size:.8rem">${r.sell.toLocaleString()}張</td>
+        <td style="padding:7px 8px;text-align:right;font-size:.68rem;color:var(--text2);white-space:nowrap">${foreignTxt}<br>${trustTxt}</td>
+        <td style="padding:7px 8px;text-align:center;font-weight:700">${risk}</td>
+        <td style="padding:7px 8px;text-align:center">${addBtn(r.code,r.name)}</td>
+      </tr>`;
+    });
+  }
+
   html+='</tbody></table></div>';
   html+=`<div style="margin-top:8px;padding:7px 10px;background:var(--tag);border-radius:8px;font-size:.62rem;color:var(--text2);line-height:1.7">
-    🚨 <strong style="color:#f87171">雙重警示邏輯</strong>：GDR 發行（稀釋股本）+ 借券賣出（主力放空）同時發生 → 上方壓力極大，股價易破底。
-    借券暴增 = 大戶用借來的股票賣出，未來回補才算結束。<strong style="color:#fbbf24">出現在此列表的股票務必避開做多</strong>。
+    🚨 <strong style="color:#f87171">雙重警示邏輯</strong>：GDR 發行（稀釋股本）+ 借券賣出（主力放空）同時發生 → 上方壓力極大，股價易破底。<br>
+    🏦 <strong style="color:#fb923c">機構賣超</strong>：外資+投信今日淨賣出，數字越大賣壓越重。借券暴增 = 大戶用借來的股票賣出，未來回補才算結束。<strong style="color:#fbbf24">出現在此列表的股票務必避開做多</strong>。
   </div>`;
 
   body.innerHTML=html;
   if(timeEl){
     const serverGDRLen=(twseDailyMap?.gdr||[]).length;
-    const hasDailyBorrow=twseDailyMap?.borrow&&Object.keys(twseDailyMap.borrow).length>0;
-    if(hasDailyBorrow){
-      const borDate=twseDailyMap.date||'';
-      timeEl.textContent=`借券資料（全市場 ${Object.keys(_borrowMap).length}支，GitHub Actions 自動更新）`
-        +(borDate?' 日期：'+borDate:'')
-        +(serverGDRLen?` · 自動偵測 GDR ${serverGDRLen}支`:'');
-    }else{
-      const c=lsGet('badBorrowCache');
-      if(c?.ts)timeEl.textContent='借券資料（TWSE BFT41U 前20名）：'+lsAgeStr(c.ts)+' 更新';
-    }
+    const chipsCount=Object.keys(twseDailyMap?.chips||{}).length;
+    const borDate=twseDailyMap?.date||'';
+    const parts=[];
+    if(chipsCount>0)parts.push(`三大法人籌碼 ${chipsCount} 支`);
+    if(serverGDRLen)parts.push(`GDR 自動偵測 ${serverGDRLen} 支`);
+    if(Object.keys(_borrowMap).length>0)parts.push(`借券 ${Object.keys(_borrowMap).length} 支`);
+    if(borDate)parts.push(borDate.slice(0,4)+'/'+borDate.slice(4,6)+'/'+borDate.slice(6));
+    if(parts.length)timeEl.textContent='資料：'+parts.join(' · ');
   }
 }
 // ────────────────────────────────────────────────────────────────────────────
