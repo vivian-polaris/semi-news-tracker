@@ -1584,7 +1584,12 @@ async function loadConfCalendar(){
 async function loadExDiv2026(){
   const cacheKey='exDiv2026';
   const cached=lsGet(cacheKey);
-  if(cached?.data&&Date.now()-(cached.ts||0)<12*3600*1000){Object.assign(exDivMap2026,cached.data);return;}
+  if(cached?.data&&Date.now()-(cached.ts||0)<12*3600*1000){
+    // Handle double-wrapped cache corruption: {data:{data:{...},ts:...},ts:...}
+    const src=(cached.data?.data&&typeof cached.data.data==='object'&&!Number.isFinite(cached.data.data))?cached.data.data:cached.data;
+    if(Object.keys(src).some(k=>/^\d/.test(k))){Object.assign(exDivMap2026,src);return;}
+    // Corrupted — fall through to re-fetch
+  }
 
   // ① 優先：靜態 JSON（由 GitHub Actions fetch_daily 更新，永遠可用）
   try{
@@ -2039,6 +2044,7 @@ function renderExDivBanner(){
 
   const hits=[];
   Object.entries(exDivMap2026).forEach(([code,mmdd])=>{
+    if(typeof mmdd!=='string')return;
     const [mm,dd]=mmdd.split('/');
     const exDate=new Date(2026,parseInt(mm)-1,parseInt(dd));
     const daysLeft=Math.round((exDate-todayDate)/86400000);
@@ -5673,20 +5679,12 @@ function renderBadStocks(){
     .sort((a,b)=>b[1].balance-a[1].balance)
     .slice(0,10);
 
-  // 5. 機構大賣超（外資+投信每日淨賣超 > 1000張）— 從 twseDailyMap.chips 取，永遠有今日資料
+  // 5. 機構大賣超 — 從 twseDailyMap.chips 取（T86 三大法人，單位：股）
+  // foreignNet/trustNet 單位是「股」，除以 1000 = 張
   const _chips=twseDailyMap?.chips||{};
-  const heavySell=Object.entries(_chips)
-    .map(([c,v])=>{
-      const sell=-((v.foreignNet||0)+(v.trustNet||0)); // 正數=賣超，千股≈張
-      return [c,{sell,foreign:v.foreignNet||0,trust:v.trustNet||0,name:_nameMap[c]||''}];
-    })
-    .filter(([c,[,v]])=>v.sell>1000&&!gdrCodes.has(c)&&!surgeCodes.has(c))
-    .sort((a,b)=>b[1][0].sell-a[1][0].sell)
-    .slice(0,20);
-  // 解包
   const heavySellArr=Object.entries(_chips)
     .map(([c,v])=>({code:c,sell:-((v.foreignNet||0)+(v.trustNet||0)),foreign:v.foreignNet||0,trust:v.trustNet||0,name:_nameMap[c]||''}))
-    .filter(r=>r.sell>1000&&!gdrCodes.has(r.code)&&!surgeCodes.has(r.code))
+    .filter(r=>r.sell>1000000&&!gdrCodes.has(r.code)&&!surgeCodes.has(r.code)) // 1,000,000 股 = 1,000 張
     .sort((a,b)=>b.sell-a.sell)
     .slice(0,20);
 
@@ -5824,7 +5822,7 @@ function renderBadStocks(){
     });
   }
 
-  // ── 機構大賣超（外資+投信每日淨賣超 ≥1000千股，今日實際數字）────────────
+  // ── 機構大賣超（外資+投信淨賣超 ≥1,000張，今日實際大盤）────────────
   if(heavySellArr.length){
     const chipsDate=twseDailyMap?.date?twseDailyMap.date.slice(0,4)+'/'+twseDailyMap.date.slice(4,6)+'/'+twseDailyMap.date.slice(6):'';
     html+=`<tr><td colspan="6" style="padding:4px 8px;font-size:.6rem;font-weight:700;color:#fb923c;text-transform:uppercase;letter-spacing:.08em;background:rgba(251,146,60,.06)">
@@ -5832,10 +5830,12 @@ function renderBadStocks(){
     </td></tr>`;
     heavySellArr.forEach(r=>{
       const price=stockPriceMap[r.code]?.c?.[0];
-      const foreignTxt=r.foreign<0?`外資${(r.foreign/1000).toFixed(0)}千`:`外資+${(r.foreign/1000).toFixed(0)}千`;
-      const trustTxt=r.trust<0?`投信${(r.trust/1000).toFixed(0)}千`:`投信+${(r.trust/1000).toFixed(0)}千`;
-      const sellCol=r.sell>=5000?'#f87171':r.sell>=2000?'#fb923c':'#fbbf24';
-      const risk=r.sell>=5000?'🔴 重壓':r.sell>=2000?'🟠 大賣':'🟡 賣超';
+      const f張=Math.round(r.foreign/1000),t張=Math.round(r.trust/1000);
+      const foreignTxt=f張<0?`外資${f張.toLocaleString()}張`:`外資+${f張.toLocaleString()}張`;
+      const trustTxt=t張<0?`投信${t張.toLocaleString()}張`:`投信+${t張.toLocaleString()}張`;
+      const sell張=Math.round(r.sell/1000);
+      const sellCol=sell張>=5000?'#f87171':sell張>=2000?'#fb923c':'#fbbf24';
+      const risk=sell張>=5000?'🔴 重壓':sell張>=2000?'🟠 大賣':'🟡 賣超';
       html+=`<tr style="border-bottom:1px solid rgba(45,55,72,.3)"
         onmouseover="this.style.background='rgba(251,146,60,.07)'" onmouseout="this.style.background=''">
         <td style="padding:7px 8px;white-space:nowrap">
@@ -5846,7 +5846,7 @@ function renderBadStocks(){
         <td style="padding:7px 8px;text-align:center">
           <span class="bad-pill" style="background:rgba(251,146,60,.12);color:#fb923c;border:1px solid rgba(251,146,60,.3)">機構賣超</span>
         </td>
-        <td style="padding:7px 8px;text-align:right;font-weight:800;color:${sellCol};font-size:.8rem">${r.sell.toLocaleString()}張</td>
+        <td style="padding:7px 8px;text-align:right;font-weight:800;color:${sellCol};font-size:.8rem">${sell張.toLocaleString()}張</td>
         <td style="padding:7px 8px;text-align:right;font-size:.68rem;color:var(--text2);white-space:nowrap">${foreignTxt}<br>${trustTxt}</td>
         <td style="padding:7px 8px;text-align:center;font-weight:700">${risk}</td>
         <td style="padding:7px 8px;text-align:center">${addBtn(r.code,r.name)}</td>
