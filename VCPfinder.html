@@ -5332,9 +5332,6 @@ return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(20
   // 頁面載入：同時載入所有靜態資料，完成後顯示新聞/時鐘
   loadExDiv2026().catch(()=>{});
   loadConfCalendar().catch(()=>{});
-  // 爛股警示：頁面載入時取借券資料，先用快取，背景自動更新
-  renderBadStocks(); // 先顯示 GDR 追蹤清單（不需要 API）
-  loadBorrowData(false).catch(()=>{});
   // 本週大盤展望 + 除息橫幅：等除息+法說曆載入後再跑
   Promise.all([loadExDiv2026().catch(()=>{}), loadConfCalendar().catch(()=>{})]).then(()=>{
     renderExDivBanner();           // 近期除息提醒（立即，不用 AI）
@@ -5784,6 +5781,9 @@ function renderBadStocks(){
   if(timeEl){const c=lsGet('badBorrowCache');if(c?.ts)timeEl.textContent='借券資料（TWSE BFT41U）：'+lsAgeStr(c.ts)+' 更新';}
 }
 // ────────────────────────────────────────────────────────────────────────────
+// 爛股警示初始化：在函數定義完成後才呼叫，避免 let TDZ 問題
+renderBadStocks();
+loadBorrowData(false).catch(()=>{});
 </script>
 <script>
 (() => {
