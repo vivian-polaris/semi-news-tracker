@@ -1143,57 +1143,103 @@ def fetch_borrow_balance(existing_borrow=None):
     prev = existing_borrow or {}
     borrow = {}
 
+    tz_tw = datetime.timezone(datetime.timedelta(hours=8))
+    today_str = datetime.datetime.now(tz_tw).strftime('%Y%m%d')
+
     raw = None
+
+    # ── 主端點：MI_SLBK 全市場（需 warmup cookie） ───────────────────────────
+    try:
+        # 先 warmup（讓 TWSE 設定 session cookie，避免空 body 回應）
+        SESSION.get('https://www.twse.com.tw/zh/page/fund/MI_SLBK.html', timeout=10)
+    except Exception:
+        pass
+
     for url in [
+        f'https://www.twse.com.tw/rwd/zh/fund/MI_SLBK?response=json&selectType=AL&date={today_str}',
         'https://www.twse.com.tw/rwd/zh/fund/MI_SLBK?response=json&selectType=AL',
-        'https://www.twse.com.tw/fund/MI_SLBK?response=json&selectType=AL',
+        f'https://www.twse.com.tw/fund/MI_SLBK?response=json&selectType=AL&date={today_str}',
     ]:
         try:
-            r = SESSION.get(url, timeout=30)
-            if r.ok:
+            r = SESSION.get(url, timeout=30, headers={'Accept': 'application/json, text/javascript, */*'})
+            if r.ok and r.text.strip():
                 j = r.json()
                 if j.get('stat') == 'OK' and j.get('data'):
                     raw = j
                     print(f'  borrow: MI_SLBK OK, {len(j["data"])} rows, date={j.get("date","")}')
                     break
+                else:
+                    print(f'  [WARN] MI_SLBK stat={j.get("stat")}, rows={len(j.get("data",[]))}')
+            else:
+                print(f'  [WARN] MI_SLBK empty body or {r.status_code} from {url[:60]}')
         except Exception as e:
-            print(f'  [WARN] MI_SLBK {url[:50]}: {e}')
+            print(f'  [WARN] MI_SLBK {url[:60]}: {e}')
 
-    # 備援：BFT41U 前20名
+    # ── 備援 1：BFT41U 借券賣出餘額前20名 ─────────────────────────────────────
+    if not raw:
+        for url in [
+            'https://www.twse.com.tw/rwd/zh/fund/BFT41U?response=json',
+            f'https://www.twse.com.tw/rwd/zh/fund/BFT41U?response=json&date={today_str}',
+        ]:
+            try:
+                r = SESSION.get(url, timeout=20)
+                if r.ok and r.text.strip():
+                    j = r.json()
+                    if j.get('stat') == 'OK' and j.get('data'):
+                        raw = j
+                        print(f'  borrow: BFT41U fallback OK (top 20), date={j.get("date","")}')
+                        break
+            except Exception as e:
+                print(f'  [WARN] BFT41U {url[:60]}: {e}')
+
+    # ── 備援 2：openapi 公開 JSON（無需 cookie） ──────────────────────────────
     if not raw:
         try:
-            r = SESSION.get('https://www.twse.com.tw/rwd/zh/fund/BFT41U?response=json', timeout=20)
-            if r.ok:
-                j = r.json()
-                if j.get('stat') == 'OK' and j.get('data'):
-                    raw = j
-                    print(f'  borrow: BFT41U fallback (top 20)')
+            d = get('https://openapi.twse.com.tw/v1/stockNews/SecuritiesLending')
+            if d and isinstance(d, list) and len(d) > 0:
+                raw = {'data': d, 'stat': 'OK', 'date': today_str, '_openapi': True}
+                print(f'  borrow: OpenAPI SecuritiesLending OK, {len(d)} rows')
         except Exception as e:
-            print(f'  [WARN] BFT41U fallback: {e}')
+            print(f'  [WARN] OpenAPI SecuritiesLending: {e}')
 
     if not raw:
         print('  [WARN] 無法取得借券資料，保留舊資料')
         return prev
 
-    date_str = raw.get('date', '')
+    date_str = raw.get('date', today_str)
     fields = raw.get('fields', [])
-    balance_col = 4
-    if fields:
-        for i, f in enumerate(fields):
-            if '合計出借' in f or '出借數量' in f or '賣出餘額' in f:
-                balance_col = i
-                break
+    is_openapi = raw.get('_openapi', False)
+
+    def _parse_row(row):
+        """統一解析 MI_SLBK / BFT41U array row 或 OpenAPI dict"""
+        if is_openapi and isinstance(row, dict):
+            code = str(row.get('SecuritiesCompanyCode') or row.get('StockNo') or '').strip()
+            name = str(row.get('CompanyName') or row.get('SecuritiesCompanyName') or '').strip()
+            try:
+                balance = int(str(row.get('LendingBalance') or row.get('LendingShares') or 0).replace(',', ''))
+            except:
+                balance = 0
+            return code, name, balance
+        else:
+            # array row：找 balance_col
+            balance_col = 4
+            if fields:
+                for i, f in enumerate(fields):
+                    if '合計出借' in f or '出借數量' in f or '賣出餘額' in f:
+                        balance_col = i
+                        break
+            code = str(row[0]).strip() if row else ''
+            name = str(row[1]).strip() if len(row) > 1 else ''
+            try:
+                balance = int(str(row[balance_col]).replace(',', '')) if len(row) > balance_col else 0
+            except:
+                balance = 0
+            return code, name, balance
 
     for row in raw.get('data', []):
-        code = str(row[0]).strip()
+        code, name, balance = _parse_row(row)
         if not re.match(r'^\d{4,6}$', code):
             continue
-        name = str(row[1]).strip() if len(row) > 1 else ''
-        try:
-            balance = int(str(row[balance_col]).replace(',', ''))
-        except:
-            balance = 0
-
         prev_entry = prev.get(code, {})
         prev_bal = prev_entry.get('balance', 0) if isinstance(prev_entry, dict) else 0
         change_abs = balance - prev_bal
@@ -1207,9 +1253,8 @@ def fetch_borrow_balance(existing_borrow=None):
     surge = [(c, v) for c, v in borrow.items() if v['changePct'] >= 20 and v['balance'] >= 500]
     surge.sort(key=lambda x: -x[1]['changePct'])
     print(f'  borrow: {len(borrow)} stocks，借券暴增(≥20%,≥500張): {len(surge)} 支')
-    if surge[:5]:
-        for c, v in surge[:5]:
-            print(f'    {c} {v["name"]} 餘額={v["balance"]:,} 增{v["changePct"]:+.1f}%')
+    for c, v in surge[:5]:
+        print(f'    {c} {v["name"]} 餘額={v["balance"]:,} 增{v["changePct"]:+.1f}%')
     return borrow
 
 
