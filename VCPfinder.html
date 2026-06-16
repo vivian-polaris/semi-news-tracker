@@ -1599,7 +1599,7 @@ async function loadExDiv2026(){
       const d=await r.json();
       if(d&&typeof d==='object'&&Object.keys(d).length>50){
         Object.assign(exDivMap2026,d);
-        lsSet(cacheKey,{data:{...exDivMap2026},ts:Date.now()});
+        lsSet(cacheKey,{...exDivMap2026});
         return;
       }
     }
@@ -1623,7 +1623,7 @@ async function loadExDiv2026(){
           const parts=dateRaw.split('/');
           if(parts.length===3) exDivMap2026[code]=`${parts[1]}/${parts[2]}`;
         });
-        lsSet(cacheKey,{data:{...exDivMap2026},ts:Date.now()});
+        lsSet(cacheKey,{...exDivMap2026});
         break;
       }
     }catch(_){}
