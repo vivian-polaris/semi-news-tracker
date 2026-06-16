@@ -1514,6 +1514,8 @@ async function loadTWSEDaily(){
       // 融資餘額
       if(d.margin){loadMarginFromDaily();}
       if(infoEl) infoEl.textContent=`✅ 每日資料載入：籌碼 ${Object.keys(d.chips).length} 支、財報 ${Object.keys(d.income||{}).length} 支、産業 ${Object.keys(d.sectors||{}).length} 支（${d.date||''}）`;
+      // 重新渲染爛股警示（GDR 清單和借券資料可能剛到齊）
+      if(typeof renderBadStocks==='function') renderBadStocks();
     }
   }catch(_){}
 }
@@ -5548,9 +5550,9 @@ async function loadBorrowData(force=false){
     return;
   }
 
-  // ── 備援：直接呼叫 TWSE（僅 top-20，CORS via proxy）──────────────────────
+  // ── 備援：瀏覽器端抓借券（優先 /api/borrow CF Worker，再走 CORS proxy）─────
   const CACHE_KEY='badBorrowCache';
-  const TTL=6*3600*1000;
+  const TTL=3*3600*1000;  // 3 小時快取
   if(!force){
     const cached=lsGet(CACHE_KEY);
     if(cached?.ts&&Date.now()-cached.ts<TTL&&cached.data&&Object.keys(cached.data).length>0){
@@ -5560,49 +5562,59 @@ async function loadBorrowData(force=false){
     }
   }
 
-  const url='https://www.twse.com.tw/rwd/zh/fund/BFT41U?response=json';
-  const proxies=['https://corsproxy.io/?'+encodeURIComponent(url),
-                 'https://api.allorigins.win/raw?url='+encodeURIComponent(url)];
+  // 嘗試各端點：先 Cloudflare Worker，再 CORS proxy
+  const twseUrl='https://www.twse.com.tw/rwd/zh/fund/BFT41U?response=json';
+  const sources=[
+    '/api/borrow',  // Cloudflare Pages Function（無 CORS 限制）
+    'https://corsproxy.io/?'+encodeURIComponent(twseUrl),
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(twseUrl),
+    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(twseUrl),
+  ];
   let d=null;
-  for(const proxy of proxies){
+  for(const src of sources){
     try{
-      const r=await fetchTO(proxy,12000);
+      const r=await fetchTO(src,10000);
       if(!r.ok)continue;
       const j=await r.json();
-      if((j.stat==='OK'||j.status==='200')&&Array.isArray(j.data)&&j.data.length>0){d=j;break;}
+      if(j.stat==='OK'&&Array.isArray(j.data)&&j.data.length>0){d=j;break;}
     }catch(_){}
   }
 
   if(!d){
     const cached=lsGet(CACHE_KEY);
-    if(cached?.data)_borrowMap=cached.data;
+    if(cached?.data&&Object.keys(cached.data).length>0)_borrowMap=cached.data;
     else _borrowMap={};
     renderBadStocks();
     return;
   }
 
+  // 判斷欄位（MI_SLBK vs BFT41U 欄數不同）
+  const flds=d.fields||[];
+  let balCol=4;
+  flds.forEach((f,i)=>{if(f.includes('賣出餘額')||f.includes('出借數量'))balCol=i;});
+
   const PREV_KEY='badBorrowPrev';
   const prev=lsGet(PREV_KEY)?.data||{};
-  const todayDate=d.date||d.Date||'';
+  const todayDate=d.date||'';
   const parseN=s=>parseInt(String(s||'0').replace(/,/g,''))||0;
 
-  const today={};
+  const todaySnap={};
   d.data.forEach(row=>{
     const code=(row[0]||'').trim().replace(/\s/g,'');
     if(!/^\d{4,6}$/.test(code))return;
-    today[code]={name:(row[1]||'').trim(),balance:parseN(row[4]),sellVol:parseN(row[2])};
+    todaySnap[code]={name:(row[1]||'').trim(),balance:parseN(row[balCol]),sellVol:parseN(row[2]||'0')};
   });
 
   const newMap={};
-  Object.entries(today).forEach(([code,v])=>{
+  Object.entries(todaySnap).forEach(([code,v])=>{
     const prevBal=prev[code]?.balance||0;
     const changePct=prevBal>0?(v.balance-prevBal)/prevBal*100:0;
     newMap[code]={...v,prevBalance:prevBal,changePct,changeAbs:v.balance-prevBal};
   });
   _borrowMap=newMap;
 
-  if(todayDate&&todayDate!==lsGet(PREV_KEY)?.date&&Object.keys(today).length>0)
-    lsSet(PREV_KEY,{data:today,date:todayDate});
+  if(todayDate&&todayDate!==lsGet(PREV_KEY)?.date&&Object.keys(todaySnap).length>0)
+    lsSet(PREV_KEY,{data:todaySnap,date:todayDate});
   lsSet(CACHE_KEY,{data:newMap,ts:Date.now(),date:todayDate});
   renderBadStocks();
 }
@@ -5613,12 +5625,19 @@ function renderBadStocks(){
   const timeEl=document.getElementById('badStockTime');
   if(!body)return;
 
+  // 名稱查詢表：從 twseDailyMap.tseStocks / otcStocks + 借券資料
+  const _nameMap={};
+  (twseDailyMap?.tseStocks||[]).forEach(s=>{if(s.name&&s.code)_nameMap[s.code]=s.name;});
+  (twseDailyMap?.otcStocks||[]).forEach(s=>{if(s.name&&s.code)_nameMap[s.code]=s.name;});
+  Object.entries(_borrowMap).forEach(([c,v])=>{if(v.name)_nameMap[c]=v.name;});
+
   // 合併：伺服器端自動偵測（twseDailyMap.gdr）+ 使用者手動新增（localStorage）
   const manualGDR=getGDRList();
   const manualCodes=new Set(manualGDR.map(g=>g.code));
   const serverGDR=(twseDailyMap?.gdr||[]).map(g=>({
-    code:g.code, name:g.name,
-    note:`${g.type||'GDR'}${g.amount?' $'+g.amount+'M':''}${g.date?' '+g.date:''} [自動]`,
+    code:g.code,
+    name:g.name||_nameMap[g.code]||'',
+    note:`GDR${g.amount?' $'+g.amount+'M':''}${g.date?' ('+g.date.slice(0,10)+')':''} [自動]`,
     auto:true
   }));
   // 伺服器端有、手動沒有的，才加入（避免重複）
@@ -5755,7 +5774,7 @@ function renderBadStocks(){
         onmouseover="this.style.background='rgba(245,158,11,.07)'" onmouseout="this.style.background=''">
         <td style="padding:7px 8px;white-space:nowrap">
           <a href="${tv(code)}" target="_blank" style="color:var(--purple);font-weight:700;text-decoration:none">${escH(code)}</a>
-          <span style="font-size:.72rem;font-weight:600;margin-left:4px">${escH(v.name)}</span>
+          <span style="font-size:.72rem;font-weight:600;margin-left:4px">${escH(v.name||_nameMap[code]||'')}</span>
         </td>
         <td style="padding:7px 8px;text-align:center"><span class="bad-pill bad-borrow">借券暴增</span></td>
         <td style="padding:7px 8px;text-align:right;font-weight:700">${v.balance.toLocaleString()}</td>
@@ -5775,7 +5794,7 @@ function renderBadStocks(){
         onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.8'">
         <td style="padding:6px 8px;white-space:nowrap">
           <a href="${tv(code)}" target="_blank" style="color:var(--purple);font-weight:700;text-decoration:none">${escH(code)}</a>
-          <span style="font-size:.7rem;margin-left:4px">${escH(v.name)}</span>
+          <span style="font-size:.7rem;margin-left:4px">${escH(v.name||_nameMap[code]||'')}</span>
         </td>
         <td style="padding:6px 8px;text-align:center"><span class="bad-pill" style="background:rgba(113,113,122,.12);color:#9ca3af;border:1px solid rgba(113,113,122,.2)">高借券</span></td>
         <td style="padding:6px 8px;text-align:right;font-weight:600">${v.balance.toLocaleString()}</td>

@@ -1116,16 +1116,18 @@ def fetch_gdr_list():
             r = SESSION.get(rss_url, timeout=12)
             if not r.ok:
                 continue
-            root = ET.fromstring(r.content)
+            # 用 r.text（已依 HTTP Content-Type 解碼），再 encode 成 UTF-8 給 ET 解析
+            root = ET.fromstring(r.text.encode('utf-8'))
             for item in root.iter('item'):
                 title = (item.findtext('title') or '').strip()
-                for m in re.finditer(r'[（(「](\d{4,6})[）)」]|\b(\d{4,6})\b', title):
+                # 從標題找代號：括號內數字或開頭4-6位數字
+                for m in re.finditer(r'[（(「](\d{4,6})[）)」]|^(\d{4,6})\b', title):
                     code = m.group(1) or m.group(2)
                     if code and code not in seen_codes and re.match(r'^\d{4,6}$', code):
-                        pub = (item.findtext('pubDate') or '')[:10]
+                        pub = (item.findtext('pubDate') or '')[:16]
                         result.append({'code': code, 'name': '', 'date': pub,
-                                       'type': 'GDR (新聞偵測)', 'amount': '', 'src': 'news',
-                                       'title': title[:80]})
+                                       'type': 'GDR', 'amount': '', 'src': 'news',
+                                       'title': title[:100]})
                         seen_codes.add(code)
     except Exception as e:
         print(f'  [WARN] GDR news RSS failed: {e}')
@@ -1488,6 +1490,12 @@ def main():
         if old_gdr:
             print(f'  ⚠️ GDR 資料空，保留舊資料（{len(old_gdr)}筆）')
             gdr_list = old_gdr
+    # 補名稱（從本次已抓到的股票清單）
+    stock_name_map = {s['code']: s['name'] for s in (tse_stocks + otc_stocks) if s.get('code') and s.get('name')}
+    for g in gdr_list:
+        if not g.get('name') and g.get('code') in stock_name_map:
+            g['name'] = stock_name_map[g['code']]
+            print(f'    補名稱: {g["code"]} → {g["name"]}')
 
     print('\n10. 借券賣出餘額全市場掃描（TWSE MI_SLBK）...')
     borrow_data = fetch_borrow_balance(existing.get('borrow', {}))
