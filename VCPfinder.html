@@ -1589,7 +1589,8 @@ async function loadConfCalendar(){
 // 優先讀靜態 exdiv_2026.json（GitHub Actions 每日更新，無 CORS 問題）
 // 備援：從 TWSE TWT49U 抓（CORS proxy，較不穩定）
 async function loadExDiv2026(){
-  const cacheKey='exDiv2026';
+  const _todayTW=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+  const cacheKey='exDiv2026_'+_todayTW;
   const cached=lsGet(cacheKey);
   if(cached?.data&&Date.now()-(cached.ts||0)<12*3600*1000){
     // Handle double-wrapped cache corruption: {data:{data:{...},ts:...},ts:...}
@@ -5865,13 +5866,25 @@ function renderBadStocks(){
   // 合併：伺服器端自動偵測（twseDailyMap.gdr）+ 使用者手動新增（localStorage）
   const manualGDR=getGDRList();
   const manualCodes=new Set(manualGDR.map(g=>g.code));
-  const serverGDR=(twseDailyMap?.gdr||[]).map(g=>({
-    code:g.code,
-    name:g.name||_nameMap[g.code]||'',
-    note:`GDR${g.amount?' $'+g.amount+'M':''}${g.date?' ('+g.date.slice(0,10)+')':''} [自動]`,
-    completed:!!g.completed,
-    auto:true
-  }));
+  const serverGDR=(twseDailyMap?.gdr||[]).map(g=>{
+    // Normalise date to YYYY-MM-DD regardless of server format
+    let _dStr='';
+    if(g.date){
+      const _d=new Date(g.date);
+      if(!isNaN(_d)){
+        _dStr=_d.getFullYear()+'-'+String(_d.getMonth()+1).padStart(2,'0')+'-'+String(_d.getDate()).padStart(2,'0');
+      }else{
+        _dStr=g.date.slice(0,10); // fallback
+      }
+    }
+    return {
+      code:g.code,
+      name:g.name||_nameMap[g.code]||'',
+      note:`GDR${g.amount?' $'+g.amount+'M':''}${_dStr?' ('+_dStr+')':''} [自動]`,
+      completed:!!g.completed,
+      auto:true
+    };
+  });
   // 伺服器端有、手動沒有的，才加入（避免重複）
   const mergedGDR=[...manualGDR,...serverGDR.filter(g=>!manualCodes.has(g.code))];
   // 進行中：做多危險；已完成：股票已流入市面（不同性質）
