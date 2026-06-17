@@ -457,7 +457,7 @@ def fetch_tpex_prices_today():
     data = get('https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes')
     if not data or not isinstance(data, list):
         print('  [WARN] TPEX openapi 收盤行情取得失敗')
-        return {}
+        return {}, None
     # 從回傳資料讀取實際日期（民國年格式 '1150521' → 2026-05-21）
     price_date = None
     raw_date = str(data[0].get('Date', '') if data else '').strip()
@@ -486,7 +486,7 @@ def fetch_tpex_prices_today():
     if len(result) > 100:
         print(f'  TPEX openapi 收盤行情（{price_date}）：{len(result)} 支')
         return result, price_date
-    print('  [WARN] TPEX openapi 解析失敗（回傳 {len(result)} 支）')
+    print(f'  [WARN] TPEX openapi 解析失敗（回傳 {len(result)} 支）')
     return {}, None
 
 
