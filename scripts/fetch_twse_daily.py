@@ -1066,8 +1066,10 @@ def fetch_exdiv():
     print(f'  ✅ exdiv_2026.json: 累計 {len(exdiv)} 筆，本次新增 {new_count} 筆')
 
 # ── 9. GDR 發行偵測（MOPS 海外存託憑證 + TWSE OpenAPI + News RSS）────────────
-def fetch_gdr_list():
-    """抓最近 180 天的 GDR 申請/發行股票，來源：TWSE OpenAPI t187ap13_L + MOPS + Google News"""
+def fetch_gdr_list(name_to_code=None):
+    """抓最近 180 天的 GDR 申請/發行股票，來源：TWSE OpenAPI t187ap13_L + MOPS + Google News
+    name_to_code: {公司名稱: 股票代號} dict，用於從新聞標題中比對公司名稱取得代號
+    """
     import html as html_lib
     result = []
     seen_codes = set()
@@ -1144,7 +1146,11 @@ def fetch_gdr_list():
 
     # ── 來源 3：Google News RSS ───────────────────────────────────────────────
     try:
-        for kw in ['台股 GDR 發行', '海外存託憑證 申請', 'DR 上市 台灣']:
+        gdr_keywords = [
+            '台股 GDR 發行', '海外存託憑證 申請', 'DR 上市 台灣',
+            '台股 私募 GDR', 'GDR 私募 申請', '私募海外存託憑證',
+        ]
+        for kw in gdr_keywords:
             rss_url = f'https://news.google.com/rss/search?q={requests.utils.quote(kw)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant'
             r = SESSION.get(rss_url, timeout=12)
             if not r.ok:
@@ -1153,15 +1159,30 @@ def fetch_gdr_list():
             root = ET.fromstring(r.text.encode('utf-8'))
             for item in root.iter('item'):
                 title = (item.findtext('title') or '').strip()
-                # 從標題找代號：括號內數字或開頭4-6位數字
+                pub = (item.findtext('pubDate') or '')[:16]
+                # 方法一：從標題找代號（括號內數字或開頭4-6位數字）
+                found_by_code = False
                 for m in re.finditer(r'[（(「](\d{4,6})[）)」]|^(\d{4,6})\b', title):
                     code = m.group(1) or m.group(2)
                     if code and code not in seen_codes and re.match(r'^\d{4,6}$', code):
-                        pub = (item.findtext('pubDate') or '')[:16]
                         result.append({'code': code, 'name': '', 'date': pub,
                                        'type': 'GDR', 'amount': '', 'src': 'news',
                                        'title': title[:100]})
                         seen_codes.add(code)
+                        found_by_code = True
+                # 方法二：若無法從標題提取代號，改用公司名稱對照表比對
+                # 適用於「光寶科宣布私募GDR」這類標題以公司名稱開頭的新聞
+                if not found_by_code and name_to_code and re.search(r'GDR|DR|存託', title, re.I):
+                    for cname, ccode in name_to_code.items():
+                        if ccode in seen_codes or len(cname) < 3:
+                            continue
+                        if cname in title:
+                            result.append({'code': ccode, 'name': cname, 'date': pub,
+                                           'type': 'GDR', 'amount': '', 'src': 'news',
+                                           'title': title[:100]})
+                            seen_codes.add(ccode)
+                            print(f'    GDR news 名稱比對: {cname} → {ccode}（{title[:60]}）')
+                            break
     except Exception as e:
         print(f'  [WARN] GDR news RSS failed: {e}')
 
@@ -1534,7 +1555,10 @@ def main():
             news = old_news
 
     print('\n9. GDR 發行偵測（MOPS + TWSE OpenAPI + News RSS）...')
-    gdr_list = fetch_gdr_list()
+    # 建立公司名稱 → 代號對照表（供 Google News 標題比對，名稱長度≥3 避免誤抓）
+    _name_to_code = {s['name']: s['code'] for s in (tse_stocks + otc_stocks)
+                     if s.get('name') and s.get('code') and len(s.get('name', '')) >= 3}
+    gdr_list = fetch_gdr_list(name_to_code=_name_to_code)
     if not gdr_list:
         old_gdr = existing.get('gdr', [])
         if old_gdr:

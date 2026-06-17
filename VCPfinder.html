@@ -5833,7 +5833,7 @@ function renderBadStocks(){
 
   // ── 第一優先：雙重警示（GDR + 借券）────────────────────────────────────────
   if(dualAlert.length){
-    html+=`<tr><td colspan="6" style="padding:6px 8px;font-size:.65rem;font-weight:800;color:#f87171;letter-spacing:.06em;background:rgba(239,68,68,.12);border-left:3px solid #f87171">
+    html+=`<tr><td colspan="7" style="padding:6px 8px;font-size:.65rem;font-weight:800;color:#f87171;letter-spacing:.06em;background:rgba(239,68,68,.12);border-left:3px solid #f87171">
       🚨 雙重警示 — GDR 稀釋 + 借券放空 同時發生（最高風險，嚴禁做多）
     </td></tr>`;
     dualAlert.forEach(g=>{
@@ -5877,7 +5877,7 @@ function renderBadStocks(){
     gdrOnly.forEach(g=>{
       const borrow=_borrowMap[g.code];
       const price=stockPriceMap[g.code]?.c?.[0];
-      const balTxt=borrow?borrow.balance.toLocaleString():'借券資料無此股';
+      const balTxt=borrow?borrow.balance.toLocaleString():'— （待觀察）';
       const chgPct=borrow?.changePct||0;
       const chgTxt=borrow?(chgPct>=0?'+':'')+chgPct.toFixed(1)+'%':'—';
       const {sigs:gs,margin:gm}=_computeSignals(g.code);
