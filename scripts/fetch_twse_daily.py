@@ -1144,11 +1144,67 @@ def fetch_gdr_list(name_to_code=None):
     except Exception as e:
         print(f'  [WARN] GDR MOPS failed: {e}')
 
+    # ── 來源 2b：MOPS 重大訊息關鍵字搜尋（t05st01_q2）─────────────────────────
+    # 補充 MOPS GDR 申請表（來源2）未收錄的「計劃公告」階段訊息
+    try:
+        mops_news_url = 'https://mops.twse.com.tw/mops/web/ajax_t05st01_q2'
+        mops_news_kws = ['GDR', '海外存託憑證', '私募GDR', '海外募資 GDR']
+        n_before = len(result)
+        for yr_offset in range(2):
+            yr = year_roc - yr_offset
+            for kw in mops_news_kws:
+                try:
+                    r = SESSION.post(mops_news_url, data={
+                        'encodeURIComponent': '1', 'step': '1', 'firstin': '1',
+                        'off': '1', 'keyword': kw, 'TYPEK': 'all',
+                        'co_id': '', 'year': str(yr), 'month': '', 'type': '',
+                    }, timeout=20, headers={
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Referer': 'https://mops.twse.com.tw/mops/web/t05st01',
+                    })
+                    if not r.ok or '<table' not in r.text:
+                        continue
+                    trs = re.findall(r'<tr[^>]*>(.*?)</tr>', r.text, re.S)
+                    for tr in trs:
+                        tds = re.findall(r'<td[^>]*>(.*?)</td>', tr, re.S)
+                        tds = [html_lib.unescape(re.sub(r'<[^>]+>', '', td).strip()) for td in tds]
+                        if len(tds) < 4:
+                            continue
+                        code = tds[0].strip() if re.match(r'^\d{4,6}$', tds[0].strip()) else ''
+                        if not code or code in seen_codes:
+                            continue
+                        # 主旨（第5欄或最後欄）需含 GDR/存託/海外募資 才算 GDR 相關
+                        subject = tds[4] if len(tds) > 4 else tds[-1]
+                        if not re.search(r'GDR|ADR|DR|存託|海外募資|海外上市', subject, re.I):
+                            continue
+                        name = tds[1] if len(tds) > 1 else ''
+                        date_raw = tds[2] if len(tds) > 2 else ''
+                        date_ad = ''
+                        m2 = re.match(r'(\d{3})/(\d{1,2})/(\d{1,2})', date_raw)
+                        if m2:
+                            date_ad = f'{int(m2.group(1))+1911}-{m2.group(2).zfill(2)}-{m2.group(3).zfill(2)}'
+                        result.append({'code': code, 'name': name, 'date': date_ad,
+                                       'type': 'GDR', 'amount': '', 'src': 'MOPS-重大訊息',
+                                       'title': subject[:100]})
+                        seen_codes.add(code)
+                        print(f'    MOPS重大訊息: {code} {name}（{subject[:50]}）')
+                except Exception as e2:
+                    print(f'  [WARN] MOPS重大訊息 {kw} {yr}: {e2}')
+        print(f'  GDR total after MOPS重大訊息: {len(result)} (+{len(result)-n_before})')
+    except Exception as e:
+        print(f'  [WARN] GDR MOPS重大訊息 failed: {e}')
+
     # ── 來源 3：Google News RSS ───────────────────────────────────────────────
+    # 名稱比對條件：GDR/DR/存託（明確）或 海外募資/海外上市（廣義，搭配廣義關鍵字搜尋）
+    _gdr_title_re = re.compile(r'GDR|ADR|DR|存託|海外存託|海外募資|海外上市|海外掛牌|海外私募', re.I)
     try:
         gdr_keywords = [
+            # 明確 GDR/存託 類
             '台股 GDR 發行', '海外存託憑證 申請', 'DR 上市 台灣',
             '台股 私募 GDR', 'GDR 私募 申請', '私募海外存託憑證',
+            'GDR 定價 台灣', '海外存託憑證 規劃', 'ADR GDR 台灣',
+            # 廣義海外募資（需標題同時含 GDR 相關字才算）
+            '台股 海外募資計劃', '海外私募 台灣', '台灣企業 海外上市 GDR',
         ]
         for kw in gdr_keywords:
             rss_url = f'https://news.google.com/rss/search?q={requests.utils.quote(kw)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant'
@@ -1170,9 +1226,8 @@ def fetch_gdr_list(name_to_code=None):
                                        'title': title[:100]})
                         seen_codes.add(code)
                         found_by_code = True
-                # 方法二：若無法從標題提取代號，改用公司名稱對照表比對
-                # 適用於「光寶科宣布私募GDR」這類標題以公司名稱開頭的新聞
-                if not found_by_code and name_to_code and re.search(r'GDR|DR|存託', title, re.I):
+                # 方法二：公司名稱比對（標題需含 GDR/存託/海外募資/海外上市 等關鍵字）
+                if not found_by_code and name_to_code and _gdr_title_re.search(title):
                     for cname, ccode in name_to_code.items():
                         if ccode in seen_codes or len(cname) < 3:
                             continue
