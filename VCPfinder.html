@@ -5535,7 +5535,7 @@ function _getHistory5d(lsKey, serverKey){
   // 優先用 server-side history（twse_daily.json），再補 localStorage
   const srv=(twseDailyMap?.[serverKey]||[]).map(h=>({date:h.date,data:h.data}));
   if(srv.length>=3) return srv;
-  return lsGet(lsKey)||[];
+  return lsGet(lsKey)?.data||[];
 }
 function _consecutive3Increase(hist,code){
   if(hist.length<3) return false;
