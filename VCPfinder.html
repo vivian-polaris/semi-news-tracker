@@ -5204,6 +5204,41 @@ if((sl==null||sl>=0)&&(rsi==null||(rsi>=45&&rsi<=65))&&(dm==null||(dm>=-5&&dm<=8
 return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(202,138,4,.15)',border:'#d97706',desc:mkD()||'資料不足',action:'繼續持有・停損移至成本・不追加碼'};
   })();
 
+  // ── 借券警示 ──────────────────────────────────────────────────────────────
+  const _borrow=_borrowMap[stockInfo.code];
+  let _borrowWarnHtml='';
+  if(_borrow){
+    const bal=_borrow.balance||0;
+    const chgPct=_borrow.changePct||0;
+    const chgAbs=_borrow.changeAbs||0;
+    const isSurge=chgPct>=20&&bal>=500;
+    const isHigh=bal>=5000;
+    const balStr=bal.toLocaleString()+'張';
+    const chgStr=(chgPct>=0?'+':'')+chgPct.toFixed(1)+'%（'+(chgAbs>=0?'+':'')+chgAbs.toLocaleString()+'張）';
+    if(isSurge||isHigh){
+      const urgColor=isSurge?'#f87171':'#fb923c';
+      const urgBg=isSurge?'rgba(239,68,68,.15)':'rgba(251,146,60,.12)';
+      const urgBorder=isSurge?'#f87171':'#fb923c';
+      const urgTitle=isSurge?'🔺 借券餘額暴增':'⚠️ 借券餘額偏高';
+      const urgDesc=isSurge
+        ?`借券餘額 <strong style="color:${urgColor}">${balStr}</strong>，今日增幅 <strong style="color:${urgColor}">${chgStr}</strong> — 空方正在建立放空部位，做多需謹慎。`
+        :`借券餘額 <strong style="color:${urgColor}">${balStr}</strong>，今日變化 ${chgStr} — 市場空頭部位偏重，注意下行壓力。`;
+      _borrowWarnHtml=`
+    <div style="margin-bottom:10px;padding:10px 14px;background:${urgBg};border:1.5px solid ${urgBorder};border-radius:10px">
+      <div style="font-weight:800;color:${urgColor};font-size:.82rem">${urgTitle}</div>
+      <div style="font-size:.7rem;color:var(--text);margin-top:5px;line-height:1.7">${urgDesc}</div>
+    </div>`;
+    } else {
+      _borrowWarnHtml=`
+    <div style="margin-bottom:10px;padding:8px 14px;background:var(--tag);border:1px solid var(--border);border-radius:10px;display:flex;gap:16px;align-items:center">
+      <span style="font-size:.65rem;font-weight:700;color:var(--text2)">借券餘額</span>
+      <span style="font-size:.75rem;font-weight:700;color:var(--text)">${balStr}</span>
+      <span style="font-size:.65rem;color:${chgPct>=0?'#fb923c':'#34d399'}">${chgStr}</span>
+      <span style="font-size:.6rem;color:var(--text2);margin-left:auto">正常範圍</span>
+    </div>`;
+    }
+  }
+
   // ── GDR 警示：進行中（危險）vs 已完成（股票流入市面）─────────────────────
   const _gdrRaw=(twseDailyMap?.gdr||[]).find(g=>g.code===stockInfo.code);
   const _gdrMatch=_gdrRaw||getGDRList().find(g=>g.code===stockInfo.code);
@@ -5228,6 +5263,7 @@ return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(20
 
   res.innerHTML = `
     ${_gdrWarnHtml}
+    ${_borrowWarnHtml}
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
       <span class="tc" style="font-size:1rem">${stockInfo.code}</span>
       <span class="tn" style="font-size:.95rem">${escH(stockInfo.name)}</span>
