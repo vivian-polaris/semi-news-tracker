@@ -37,6 +37,9 @@ SEMI_ECO_STOCKS = {
     '6239':{'name':'力成',      'sector':'新興主題',    'grade':'A','ex':'TW'},
     '3711':{'name':'日月光投控','sector':'新興主題',    'grade':'A','ex':'TW'},
     '3081':{'name':'聯亞',      'sector':'新興主題',    'grade':'B','ex':'TW'},
+    '2338':{'name':'台灣光罩',  'sector':'特殊材料',    'grade':'A','ex':'TW'},
+    '1785':{'name':'光洋科技',  'sector':'特殊材料',    'grade':'B','ex':'TW'},
+    '5434':{'name':'崇越科技',  'sector':'特殊材料',    'grade':'B','ex':'TW'},
 }
 
 # ── Helper functions (ported from VCPfinder.html) ────────────────────────────

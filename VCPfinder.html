@@ -1186,6 +1186,7 @@ footer a:hover{text-decoration:underline}
   <button class="nb" onclick="showSemiTab('pkgequip')">⚙️ 先進封裝設備</button>
   <button class="nb" onclick="showSemiTab('test')">🔬 測試設備介面</button>
   <button class="nb" onclick="showSemiTab('emerging')">🌐 新興主題</button>
+  <button class="nb" onclick="showSemiTab('material')">🧪 特殊材料</button>
 </div>
 
 <!-- HOME -->
@@ -1199,11 +1200,12 @@ footer a:hover{text-decoration:underline}
     <div class="hc" onclick="showSemiTab('pkgequip')"><div class="hnum" style="color:#c084fc">3</div><div class="hlab">⚙️ 先進封裝設備</div></div>
     <div class="hc" onclick="showSemiTab('test')"><div class="hnum" style="color:#fb923c">3</div><div class="hlab">🔬 測試設備介面</div></div>
     <div class="hc" onclick="showSemiTab('emerging')"><div class="hnum" style="color:#f87171">3</div><div class="hlab">🌐 新興主題</div></div>
+    <div class="hc" onclick="showSemiTab('material')"><div class="hnum" style="color:#22d3ee">3</div><div class="hlab">🧪 特殊材料</div></div>
   </div>
   <div style="background:#18181b;border:0.5px solid #3f3f46;border-radius:13px;padding:18px;">
     <div style="font-size:14px;font-weight:600;color:#f4f4f5;margin-bottom:10px;">這版的取捨邏輯</div>
     <div style="font-size:13px;color:#a1a1aa;line-height:1.8;">
-      這次只保留 <strong style="color:#e4e4e7">AI 半導體最直接受惠的 8 個層次</strong>，每層挑 3 檔台灣龍頭，避免把整張圖做成題材大雜燴。<br><br>
+      這次只保留 <strong style="color:#e4e4e7">AI 半導體最直接受惠的 9 個層次</strong>（含特殊材料），每層挑 3 檔台灣龍頭，避免把整張圖做成題材大雜燴。<br><br>
       <strong style="color:#4ade80">S級</strong>：產業位置難替代、財報已驗證、估值仍可接受<br>
       <strong style="color:#60a5fa">A級</strong>：護城河成立，需求結構向上，但估值已部分反映<br>
       <strong style="color:#fb923c">B級</strong>：公司地位重要，但短線估值、景氣或獲利波動需要更高安全邊際<br><br>
@@ -1214,7 +1216,7 @@ footer a:hover{text-decoration:underline}
 
 <!-- SUMMARY TABLE -->
 <div class="sec" id="semi-sec-summary">
-<div class="sec-hdr"><div class="sec-dot" style="background:#a78bfa;"></div><div><div class="sec-title">全部 24 檔快速總覽</div><div class="sec-desc">依 2026/06/09 TWSE / TPEx 資料更新，可篩選與排序</div></div></div>
+<div class="sec-hdr"><div class="sec-dot" style="background:#a78bfa;"></div><div><div class="sec-title">全部 27 檔快速總覽</div><div class="sec-desc">依 2026/06/09 TWSE / TPEx 資料更新，可篩選與排序</div></div></div>
 
 <div class="fbar">
   <div class="frow">
@@ -1225,7 +1227,7 @@ footer a:hover{text-decoration:underline}
       <button class="fb fa" data-grade="A" onclick="setSemiFilter('grade','A',this)">A級</button>
       <button class="fb fb2" data-grade="B" onclick="setSemiFilter('grade','B',this)">B級</button>
     </div>
-    <span class="fcount" id="semi-fcount">顯示 <span id="semi-fcountnum">24</span> / 24 檔</span>
+    <span class="fcount" id="semi-fcount">顯示 <span id="semi-fcountnum">27</span> / 27 檔</span>
   </div>
   <div class="frow">
     <span class="flabel">層次</span>
@@ -1239,6 +1241,7 @@ footer a:hover{text-decoration:underline}
       <button class="fb fp" data-sector="先進封裝設備" onclick="setSemiFilter('sector','先進封裝設備',this)">先進封裝設備</button>
       <button class="fb fp" data-sector="測試設備介面" onclick="setSemiFilter('sector','測試設備介面',this)">測試設備介面</button>
       <button class="fb fp" data-sector="新興主題" onclick="setSemiFilter('sector','新興主題',this)">新興主題</button>
+      <button class="fb fp" data-sector="特殊材料" onclick="setSemiFilter('sector','特殊材料',this)">特殊材料</button>
     </div>
   </div>
   <div class="frow">
@@ -1295,6 +1298,9 @@ footer a:hover{text-decoration:underline}
 <tr data-grade="A" data-sector="新興主題" data-pe="38"><td>6239</td><td class="tn">力成</td><td><span class="sec-tag">新興主題</span></td><td>NT$321</td><td>2026Q1 2.50</td><td class="pe-mid">38.21x</td><td><span class="chip-a">A</span></td><td>HBM 封裝與記憶體測試受惠</td></tr>
 <tr data-grade="A" data-sector="新興主題" data-pe="53"><td>3711</td><td class="tn">日月光投控</td><td><span class="sec-tag">新興主題</span></td><td>NT$569</td><td>2026Q1 3.24</td><td class="pe-high">52.83x</td><td><span class="chip-a">A</span></td><td>Chiplet / 2.5D / 系統級封裝整合</td></tr>
 <tr data-grade="B" data-sector="新興主題" data-pe="327"><td>3081</td><td class="tn">聯亞</td><td><span class="sec-tag">新興主題</span></td><td>NT$2,490</td><td>2026Q1 3.44</td><td class="pe-high">327.20x</td><td><span class="chip-b">B</span></td><td>矽光子雷射磊晶與光通訊材料</td></tr>
+<tr data-grade="A" data-sector="特殊材料" data-pe="35"><td>2338</td><td class="tn">台灣光罩</td><td><span class="sec-tag">特殊材料</span></td><td>NT$—</td><td>—</td><td class="pe-mid">—</td><td><span class="chip-a">A</span></td><td>光罩製造 — TSMC/UMC 唯一本土供應商</td></tr>
+<tr data-grade="B" data-sector="特殊材料" data-pe="30"><td>1785</td><td class="tn">光洋科技</td><td><span class="sec-tag">特殊材料</span></td><td>NT$—</td><td>—</td><td class="pe-mid">—</td><td><span class="chip-b">B</span></td><td>濺鍍靶材 — 薄膜製程不可或缺的耗材</td></tr>
+<tr data-grade="B" data-sector="特殊材料" data-pe="25"><td>5434</td><td class="tn">崇越科技</td><td><span class="sec-tag">特殊材料</span></td><td>NT$—</td><td>—</td><td class="pe-mid">—</td><td><span class="chip-b">B</span></td><td>半導體特化氣體與電子材料通路</td></tr>
 </tbody>
 </table></div>
 </div>
@@ -1361,6 +1367,14 @@ footer a:hover{text-decoration:underline}
 <div class="card"><div class="ctop"><div class="sid"><span class="snum">6239</span><div><div class="sname">力成</div><div class="ssub">HBM / 記憶體封測</div></div></div><span class="cv ca">A級 — AI 記憶體最直接受惠</span></div><div class="bgs"><span class="bg bv">股價 NT$321</span><span class="bg bg2">2026Q1 EPS 2.50</span><span class="bg bb">P/E 38.21x</span></div><p class="mq">護城河：記憶體封測與 HBM 相關經驗需要長期累積。</p><p class="an">HBM 的價值不只在顆粒，而在整體堆疊、測試與良率。力成卡在台灣最關鍵的記憶體封測位置之一，只要 AI GPU 持續拉貨，它的能見度就不差。</p></div>
 <div class="card"><div class="ctop"><div class="sid"><span class="snum">3711</span><div><div class="sname">日月光投控</div><div class="ssub">Chiplet / SiP / 2.5D</div></div></div><span class="cv ca">A級 — Chiplet 整合能力最完整</span></div><div class="bgs"><span class="bg bv">股價 NT$569</span><span class="bg bg2">2026Q1 EPS 3.24</span><span class="bg bb">P/E 52.83x</span></div><p class="mq">護城河：全球封測規模、模組整合與系統級封裝能力。</p><p class="an">Chiplet 不是單看封裝顆粒，而是看誰能把不同晶片、記憶體與散熱方案整合成可量產的系統。日月光的規模與客戶基礎，讓它在這種複雜整合上最有優勢。</p></div>
 <div class="card"><div class="ctop"><div class="sid"><span class="snum">3081</span><div><div class="sname">聯亞</div><div class="ssub">矽光子 / 光通訊磊晶</div></div></div><span class="cv cb">B級 — 技術很對，估值更熱</span></div><div class="bgs"><span class="bg bv">股價 NT$2,490</span><span class="bg bg2">2026Q1 EPS 3.44</span><span class="bg bb">P/E 327.20x</span></div><p class="mq">護城河：高階雷射磊晶與矽光子供應鏈材料能力。</p><p class="an">矽光子真正難的是把光源、材料與量產良率做好，而不是只講 CPO 題材。聯亞卡的是上游材料與元件位置，但市場已先把未來期待拉得很高，評分必須保守。</p></div>
+</div>
+
+<!-- MATERIAL -->
+<div class="sec" id="semi-sec-material">
+<div class="sec-hdr"><div class="sec-dot" style="background:#22d3ee;"></div><div><div class="sec-title">特殊材料 — 光罩、靶材、特殊氣體與化學品</div><div class="sec-desc">製程材料是最難被看見的護城河：每一批晶圓都要消耗，切換供應商要重新做全套製程認證，替換成本極高。</div></div></div>
+<div class="card"><div class="ctop"><div class="sid"><span class="snum">2338</span><div><div class="sname">台灣光罩</div><div class="ssub">光罩製造 / Photomask</div></div></div><span class="cv ca">A級 — 本土唯一光罩製造商</span></div><div class="bgs"><span class="bg bv">上市：TSE</span><span class="bg bg2">供應：TSMC / UMC / PSMC</span><span class="bg bb">耗材型收入</span></div><p class="mq">護城河：晶圓廠驗證封閉，光罩商幾乎不可替換。</p><p class="an">每一層光罩都要進行精密的製程驗證，一旦通過認證就很難換廠。台灣光罩作為本土唯一光罩廠，是 TSMC / UMC 等客戶最穩定的供應鏈保障選項。AI 晶片製程進入 N2/N3 後，光罩複雜度大幅提升，每張晶圓的光罩費用也同步上漲。</p></div>
+<div class="card"><div class="ctop"><div class="sid"><span class="snum">1785</span><div><div class="sname">光洋科技</div><div class="ssub">濺鍍靶材 / Sputtering Targets</div></div></div><span class="cv cb">B級 — 薄膜製程不可缺的耗材</span></div><div class="bgs"><span class="bg bv">上市：TSE</span><span class="bg bg2">應用：TFT / CMOS / 先進封裝</span><span class="bg bb">客戶：TSMC / AUO</span></div><p class="mq">護城河：高純度金屬靶材製程技術與客戶認證。</p><p class="an">薄膜沉積是晶圓製程的核心步驟，靶材純度直接影響良率。光洋科技做的是 ITO、Mo、Al 等高純度靶材，每次更換靶材供應商都要重跑製程認證，黏著度高。AI 晶片的金屬層數增加讓靶材消耗量同步提升。</p></div>
+<div class="card"><div class="ctop"><div class="sid"><span class="snum">5434</span><div><div class="sname">崇越科技</div><div class="ssub">電子特殊材料通路 / 特殊氣體</div></div></div><span class="cv cb">B級 — 半導體化學品最關鍵的通路商</span></div><div class="bgs"><span class="bg bv">上市：TSE</span><span class="bg bg2">代理：特殊氣體 / 濕化學品 / 研磨液</span><span class="bg bb">客戶：台積電生態系</span></div><p class="mq">護城河：半導體級化學品的技術服務與認證通路。</p><p class="an">光阻劑、特殊氣體（如 NF3、WF6）、研磨液（CMP slurry）這些材料雖然不是崇越自製，但做為專業通路商，它的技術服務與認證資格讓晶圓廠很難直接跳過。AI 晶片製程複雜化後，對特殊化學品的種類與品質要求只會愈來愈高。</p></div>
 </div>
 
 <p class="note">⚠️ 以上數字以 2026/06/09 TWSE、TPEx 與最新已公告季報為主，主要採用 2026Q1 EPS；評級為獨立研究判斷，不構成任何投資建議。若交易所之本益比因獲利谷底或負值而失真，應搭配景氣位置一併解讀。</p>
