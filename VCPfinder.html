@@ -1527,6 +1527,13 @@ function loadMarginFromDaily(){
   Object.entries(m).forEach(([code,v])=>{
     marginMap[code]={today:v.today||0,prev:v.prev||0,change:v.change||0};
   });
+  // 存入 5日 rolling buffer
+  const dateStr=twseDailyMap?.date||'';
+  if(dateStr){
+    const snap={};
+    Object.entries(m).forEach(([c,v])=>{snap[c]=v.today||0;});
+    _saveDailySnap('marginHistory5d',dateStr,snap);
+  }
 }
 // 保留空的 async 函數讓掃描流程不出錯
 async function loadMarginData(){loadMarginFromDaily();}
@@ -5125,7 +5132,22 @@ if((sl==null||sl>=0)&&(rsi==null||(rsi>=45&&rsi<=65))&&(dm==null||(dm>=-5&&dm<=8
 return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(202,138,4,.15)',border:'#d97706',desc:mkD()||'資料不足',action:'繼續持有・停損移至成本・不追加碼'};
   })();
 
+  // ── GDR 警示：查詢股票時檢查是否在 GDR 名單或 gdr_danger ─────────────────
+  const _gdrMatch=(twseDailyMap?.gdr||[]).find(g=>g.code===stockInfo.code)
+    || getGDRList().find(g=>g.code===stockInfo.code);
+  const _gdrDanger=(twseDailyMap?.gdr_danger||[]).find(g=>g.code===stockInfo.code);
+  const _gdrWarnHtml=_gdrMatch?`
+    <div style="margin-bottom:10px;padding:10px 14px;background:rgba(239,68,68,.15);border:1.5px solid #f87171;border-radius:10px">
+      <div style="font-weight:800;color:#f87171;font-size:.82rem">🚨 GDR 地雷警示 — 此股票正在發行/已發行 GDR</div>
+      <div style="font-size:.72rem;color:var(--text);margin-top:4px">${escH(_gdrMatch.note||_gdrMatch.type||'GDR 發行')} ${_gdrMatch.date?'（'+_gdrMatch.date.slice(0,10)+'）':''}</div>
+      ${_gdrDanger?`<div style="margin-top:6px;font-size:.7rem;color:#fbbf24">⚠️ 危險評分 ${_gdrDanger.score}／10 — ${escH((_gdrDanger.signals||[]).join('・'))}</div>`:''}
+      <div style="margin-top:6px;font-size:.65rem;color:var(--text2);line-height:1.6">
+        GDR 稀釋股本 + 借券放空 = 大戶套利坑散戶的典型模式。<strong style="color:#f87171">做多風險極高，建議迴避。</strong>
+      </div>
+    </div>`:''
+
   res.innerHTML = `
+    ${_gdrWarnHtml}
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
       <span class="tc" style="font-size:1rem">${stockInfo.code}</span>
       <span class="tn" style="font-size:.95rem">${escH(stockInfo.name)}</span>
@@ -5500,6 +5522,86 @@ document.head.appendChild(_style);
 // ── 爛股警示 — 借券暴增 / GDR 稀釋 ─────────────────────────────────────────
 let _borrowMap={};
 
+// ── 5日歷史 rolling buffer（localStorage） ─────────────────────────────────
+function _saveDailySnap(lsKey, dateStr, snapObj){
+  if(!snapObj||!dateStr)return;
+  let hist=lsGet(lsKey)||[];
+  hist=hist.filter(h=>h.date!==dateStr);
+  hist.push({date:dateStr,data:snapObj});
+  hist=hist.slice(-6);
+  lsSet(lsKey,hist);
+}
+function _getHistory5d(lsKey, serverKey){
+  // 優先用 server-side history（twse_daily.json），再補 localStorage
+  const srv=(twseDailyMap?.[serverKey]||[]).map(h=>({date:h.date,data:h.data}));
+  if(srv.length>=3) return srv;
+  return lsGet(lsKey)||[];
+}
+function _consecutive3Increase(hist,code){
+  if(hist.length<3) return false;
+  const last3=hist.slice(-3).map(h=>Number(h.data?.[code]||0));
+  return last3[1]>last3[0]&&last3[2]>last3[1];
+}
+
+// ── 地雷訊號計算（stockPriceMap + chips + margin + borrow history）────────
+function _computeSignals(code){
+  const borrow=_borrowMap[code];
+  const margin=twseDailyMap?.margin?.[code];
+  const chip=twseDailyMap?.chips?.[code];
+  const price=stockPriceMap[code];
+  const bwi=twseDailyMap?.bwibbu?.[code];
+  const sigs=[];
+
+  // ── A. 借券訊號 ──────────────────────────────────────────────────────────
+  const borrowHist=_getHistory5d('borrowHistory5d','borrow_history');
+  if(_consecutive3Increase(borrowHist,code)){
+    sigs.push({k:'b3',lbl:'借券連3增',col:'#f87171'});
+  } else if(borrow?.changePct>=20&&borrow?.balance>=500){
+    sigs.push({k:'b1',lbl:'借券今暴增',col:'#fb923c'});
+  } else if(borrow?.balance>=5000){
+    sigs.push({k:'bh',lbl:'高借券',col:'#fbbf24'});
+  }
+
+  // ── B. 融資訊號（散戶接刀）────────────────────────────────────────────
+  const marginHist=_getHistory5d('marginHistory5d','margin_history');
+  if(_consecutive3Increase(marginHist,code)){
+    sigs.push({k:'m3',lbl:'融資連3增',col:'#f87171'});
+  } else if(margin?.change>0){
+    sigs.push({k:'m1',lbl:'融資今增',col:'#fbbf24'});
+  }
+
+  // ── C. 外資籌碼背離 ──────────────────────────────────────────────────────
+  if(chip){
+    const fNet=chip.foreignNet||0;     // 股
+    const c0=price?.c?.[0],c1=price?.c?.[1];
+    const pct=c0&&c1?(c0-c1)/c1*100:null;
+    if(fNet>100000&&pct!==null&&pct<2){
+      sigs.push({k:'div',lbl:'外資買但不漲',col:'#a855f7'});
+    } else if(fNet<-100000){
+      sigs.push({k:'fs',lbl:'外資倒貨',col:'#f87171'});
+    }
+  }
+
+  // ── D. 技術面 ─────────────────────────────────────────────────────────────
+  if(price?.c?.length>=21){
+    const c0=price.c[0];
+    const ma20=price.c.slice(1,21).reduce((a,b)=>a+b,0)/20;
+    const ma60=price.c.length>=61?price.c.slice(1,61).reduce((a,b)=>a+b,0)/60:null;
+    if(c0<ma20) sigs.push({k:'ma20',lbl:'跌破月線',col:'#f87171'});
+    else if(ma60!==null&&c0<ma60) sigs.push({k:'ma60',lbl:'跌破季線',col:'#f87171'});
+
+    // 長上影線：上影佔振幅 >50% 且上影佔收盤 >1.5%
+    const h0=price.h?.[0],l0=price.l?.[0];
+    if(h0&&l0){
+      const shadow=h0-c0,range=h0-l0;
+      if(range>0&&shadow/range>0.5&&shadow/c0>0.015)
+        sigs.push({k:'ush',lbl:'長上影線',col:'#fbbf24'});
+    }
+  }
+
+  return {sigs, bwi, margin, chip, price};
+}
+
 function getGDRList(){return lsGet('gdrWatchlist')?.data||[];}
 function saveGDRList(arr){lsSet('gdrWatchlist',arr);}
 
@@ -5622,6 +5724,13 @@ async function loadBorrowData(force=false){
   if(todayDate&&todayDate!==lsGet(PREV_KEY)?.date&&Object.keys(todaySnap).length>0)
     lsSet(PREV_KEY,{data:todaySnap,date:todayDate});
   lsSet(CACHE_KEY,{data:newMap,ts:Date.now(),date:todayDate});
+
+  // 存入 5日 rolling buffer（只存 balance，節省空間）
+  if(todayDate&&Object.keys(todaySnap).length>0){
+    const snap={};
+    Object.entries(todaySnap).forEach(([c,v])=>{snap[c]=v.balance||0;});
+    _saveDailySnap('borrowHistory5d',todayDate,snap);
+  }
   renderBadStocks();
 }
 
@@ -5715,8 +5824,9 @@ function renderBadStocks(){
     +'<thead><tr style="border-bottom:1px solid var(--border);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em">'
     +'<th style="padding:5px 8px;text-align:left;color:var(--text2)">代號/名稱</th>'
     +'<th style="padding:5px 8px;text-align:center;color:var(--text2)">警示類型</th>'
-    +'<th style="padding:5px 8px;text-align:right;color:var(--text2)">借券餘額(張)</th>'
-    +'<th style="padding:5px 8px;text-align:right;color:var(--text2)">較昨增減</th>'
+    +'<th style="padding:5px 8px;text-align:right;color:var(--text2)">借券(張)/增%</th>'
+    +'<th style="padding:5px 8px;text-align:right;color:var(--text2)">融資(張)/增</th>'
+    +'<th style="padding:5px 8px;text-align:center;color:var(--text2)">籌碼/技術訊號</th>'
     +'<th style="padding:5px 8px;text-align:center;color:var(--text2)">風險</th>'
     +'<th style="padding:5px 8px;text-align:center;color:var(--text2)">操作</th>'
     +'</tr></thead><tbody>';
@@ -5733,22 +5843,28 @@ function renderBadStocks(){
       const isHighBorrow=highBorrowCodes.has(g.code);
       const balTxt=borrow?borrow.balance.toLocaleString():'—';
       const chgPct=borrow?.changePct||0;
-      const chgTxt=borrow?(chgPct>=0?'+':'')+chgPct.toFixed(1)+'%（'+(chgPct>=0?'+':'')+(borrow.changeAbs||0).toLocaleString()+'張）':'—';
       const chgCol=chgPct>=50?'#f87171':chgPct>=20?'#fb923c':'#fbbf24';
       const typePills=`<span class="bad-pill bad-gdr" style="margin-right:3px">GDR稀釋</span>`
         +(isSurge?`<span class="bad-pill bad-borrow">借券暴增</span>`
                  :`<span class="bad-pill" style="background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)">高借券</span>`);
+      const {sigs,margin:mg,bwi}=_computeSignals(g.code);
+      const sigHtml=sigs.map(s=>`<span style="display:inline-block;padding:1px 5px;margin:1px;border-radius:3px;font-size:.58rem;font-weight:700;background:${s.col}22;color:${s.col};border:1px solid ${s.col}44">${s.lbl}</span>`).join('');
+      const mgTxt=mg?`${(mg.today||0).toLocaleString()}<span style="font-size:.62rem;color:${mg.change>0?'#f87171':mg.change<0?'#34d399':'var(--text2)'};margin-left:3px">${mg.change>0?'+':''}${(mg.change||0).toLocaleString()}</span>`:'—';
+      const peStr=bwi?.pe?`PE ${bwi.pe}`:'';
       html+=`<tr style="border-bottom:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.07)"
         onmouseover="this.style.background='rgba(239,68,68,.15)'" onmouseout="this.style.background='rgba(239,68,68,.07)'">
         <td style="padding:8px 8px;white-space:nowrap;border-left:3px solid #f87171">
           <a href="${tv(g.code)}" target="_blank" style="color:#f87171;font-weight:800;font-size:.85rem;text-decoration:none">${escH(g.code)}</a>
           <span style="font-size:.73rem;font-weight:700;margin-left:5px;color:var(--text)">${escH(g.name)}</span>
           <br><span style="font-size:.6rem;color:#f87171;font-weight:600">${escH(g.note)}</span>
-          ${price?`<span style="font-size:.6rem;color:var(--text2);margin-left:8px">現價 $${price}</span>`:''}
+          ${price?`<span style="font-size:.6rem;color:var(--text2);margin-left:8px">現價 $${price}${peStr?' · '+peStr:''}</span>`:''}
         </td>
         <td style="padding:8px 8px;text-align:center">${typePills}</td>
-        <td style="padding:8px 8px;text-align:right;font-weight:800;color:${isHighBorrow?'#f87171':'var(--text)'}">${balTxt}</td>
-        <td style="padding:8px 8px;text-align:right;font-weight:800;color:${chgCol};white-space:nowrap">${borrow?chgTxt:'—'}</td>
+        <td style="padding:8px 8px;text-align:right;font-weight:800;color:${isHighBorrow?'#f87171':'var(--text)'}">
+          ${balTxt}${borrow?`<br><span style="font-size:.65rem;color:${chgCol}">${chgPct>=0?'+':''}${chgPct.toFixed(1)}%</span>`:''}
+        </td>
+        <td style="padding:8px 8px;text-align:right;font-size:.75rem">${mgTxt}</td>
+        <td style="padding:8px 8px;text-align:left;line-height:1.5">${sigHtml||'<span style="color:var(--text2);font-size:.62rem">—</span>'}</td>
         <td style="padding:8px 8px;text-align:center;font-size:.85rem;font-weight:900">🚨 極危</td>
         <td style="padding:8px 8px;text-align:center">${rmBtn(g.code)}</td>
       </tr>`;
@@ -5757,13 +5873,16 @@ function renderBadStocks(){
 
   // ── GDR only（無借券資料 / 借券正常）──────────────────────────────────────
   if(gdrOnly.length){
-    html+=`<tr><td colspan="6" style="padding:4px 8px;font-size:.6rem;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:.08em;background:rgba(239,68,68,.06)">🔴 GDR 稀釋（借券資料無對應或正常）</td></tr>`;
+    html+=`<tr><td colspan="7" style="padding:4px 8px;font-size:.6rem;font-weight:700;color:#f87171;text-transform:uppercase;letter-spacing:.08em;background:rgba(239,68,68,.06)">🔴 GDR 稀釋（借券資料無對應或正常）</td></tr>`;
     gdrOnly.forEach(g=>{
       const borrow=_borrowMap[g.code];
       const price=stockPriceMap[g.code]?.c?.[0];
       const balTxt=borrow?borrow.balance.toLocaleString():'借券資料無此股';
       const chgPct=borrow?.changePct||0;
       const chgTxt=borrow?(chgPct>=0?'+':'')+chgPct.toFixed(1)+'%':'—';
+      const {sigs:gs,margin:gm}=_computeSignals(g.code);
+      const gSigHtml=gs.map(s=>`<span style="display:inline-block;padding:1px 5px;margin:1px;border-radius:3px;font-size:.58rem;font-weight:700;background:${s.col}22;color:${s.col};border:1px solid ${s.col}44">${s.lbl}</span>`).join('');
+      const gMgTxt=gm?`${(gm.today||0).toLocaleString()}<span style="font-size:.62rem;color:${gm.change>0?'#f87171':'var(--text2)'};margin-left:3px">${gm.change>0?'+':''}${(gm.change||0).toLocaleString()}</span>`:'—';
       html+=`<tr style="border-bottom:1px solid rgba(45,55,72,.4);background:rgba(239,68,68,.03)"
         onmouseover="this.style.background='rgba(239,68,68,.09)'" onmouseout="this.style.background='rgba(239,68,68,.03)'">
         <td style="padding:7px 8px;white-space:nowrap">
@@ -5773,8 +5892,9 @@ function renderBadStocks(){
           ${price?`<span style="font-size:.6rem;color:var(--text2);margin-left:8px">$${price}</span>`:''}
         </td>
         <td style="padding:7px 8px;text-align:center"><span class="bad-pill bad-gdr">GDR 稀釋</span></td>
-        <td style="padding:7px 8px;text-align:right;color:var(--text2);font-size:.72rem">${balTxt}</td>
-        <td style="padding:7px 8px;text-align:right;color:var(--text2)">${chgTxt}</td>
+        <td style="padding:7px 8px;text-align:right;color:var(--text2);font-size:.72rem">${balTxt}<br><span style="font-size:.62rem;color:var(--text2)">${chgTxt}</span></td>
+        <td style="padding:7px 8px;text-align:right;font-size:.75rem">${gMgTxt}</td>
+        <td style="padding:7px 8px;text-align:left">${gSigHtml||'<span style="color:var(--text2);font-size:.62rem">—</span>'}</td>
         <td style="padding:7px 8px;text-align:center;font-weight:700">🔴 稀釋</td>
         <td style="padding:7px 8px;text-align:center">${rmBtn(g.code)}</td>
       </tr>`;
@@ -5783,10 +5903,13 @@ function renderBadStocks(){
 
   // ── 借券暴增 only（不在 GDR 名單）─────────────────────────────────────────
   if(surgeOnly.length){
-    html+=`<tr><td colspan="6" style="padding:4px 8px;font-size:.6rem;font-weight:700;color:#fbbf24;text-transform:uppercase;letter-spacing:.08em;background:rgba(245,158,11,.06)">🔺 借券暴增（增幅 ≥20%，GDR 名單未收錄）</td></tr>`;
+    html+=`<tr><td colspan="7" style="padding:4px 8px;font-size:.6rem;font-weight:700;color:#fbbf24;text-transform:uppercase;letter-spacing:.08em;background:rgba(245,158,11,.06)">🔺 借券暴增（增幅 ≥20%，GDR 名單未收錄）</td></tr>`;
     surgeOnly.forEach(([code,v])=>{
       const pctCol=v.changePct>=50?'#f87171':v.changePct>=30?'#fb923c':'#fbbf24';
       const risk=v.changePct>=50?'🔴 高危':v.changePct>=30?'🟠 警戒':'🟡 注意';
+      const {sigs:ss,margin:sm}=_computeSignals(code);
+      const sSigHtml=ss.map(s=>`<span style="display:inline-block;padding:1px 5px;margin:1px;border-radius:3px;font-size:.58rem;font-weight:700;background:${s.col}22;color:${s.col};border:1px solid ${s.col}44">${s.lbl}</span>`).join('');
+      const sMgTxt=sm?`${(sm.today||0).toLocaleString()}<span style="font-size:.62rem;color:${sm.change>0?'#f87171':'var(--text2)'};margin-left:3px">${sm.change>0?'+':''}${(sm.change||0).toLocaleString()}</span>`:'—';
       html+=`<tr style="border-bottom:1px solid rgba(45,55,72,.4)"
         onmouseover="this.style.background='rgba(245,158,11,.07)'" onmouseout="this.style.background=''">
         <td style="padding:7px 8px;white-space:nowrap">
@@ -5794,8 +5917,9 @@ function renderBadStocks(){
           <span style="font-size:.72rem;font-weight:600;margin-left:4px">${escH(v.name||_nameMap[code]||'')}</span>
         </td>
         <td style="padding:7px 8px;text-align:center"><span class="bad-pill bad-borrow">借券暴增</span></td>
-        <td style="padding:7px 8px;text-align:right;font-weight:700">${v.balance.toLocaleString()}</td>
-        <td style="padding:7px 8px;text-align:right;font-weight:800;color:${pctCol};white-space:nowrap">+${v.changePct.toFixed(1)}%（+${v.changeAbs.toLocaleString()}張）</td>
+        <td style="padding:7px 8px;text-align:right;font-weight:700">${v.balance.toLocaleString()}<br><span style="font-size:.65rem;color:${pctCol}">+${v.changePct.toFixed(1)}%（+${v.changeAbs.toLocaleString()}）</span></td>
+        <td style="padding:7px 8px;text-align:right;font-size:.75rem">${sMgTxt}</td>
+        <td style="padding:7px 8px;text-align:left">${sSigHtml||'—'}</td>
         <td style="padding:7px 8px;text-align:center;font-weight:700">${risk}</td>
         <td style="padding:7px 8px;text-align:center">${addBtn(code,v.name)}</td>
       </tr>`;
@@ -5804,7 +5928,7 @@ function renderBadStocks(){
 
   // ── 高借券餘額 only（長期空頭陣地）────────────────────────────────────────
   if(highOnly.length){
-    html+=`<tr><td colspan="6" style="padding:4px 8px;font-size:.6rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;background:var(--bg2)">長期高借券（≥5,000張，空頭長期佈局中）</td></tr>`;
+    html+=`<tr><td colspan="7" style="padding:4px 8px;font-size:.6rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;background:var(--bg2)">長期高借券（≥5,000張，空頭長期佈局中）</td></tr>`;
     highOnly.forEach(([code,v])=>{
       const chgCol=v.changePct>0?'#fbbf24':v.changePct<0?'#34d399':'var(--text2)';
       html+=`<tr style="border-bottom:1px solid rgba(45,55,72,.3);opacity:.8"
@@ -5814,8 +5938,9 @@ function renderBadStocks(){
           <span style="font-size:.7rem;margin-left:4px">${escH(v.name||_nameMap[code]||'')}</span>
         </td>
         <td style="padding:6px 8px;text-align:center"><span class="bad-pill" style="background:rgba(113,113,122,.12);color:#9ca3af;border:1px solid rgba(113,113,122,.2)">高借券</span></td>
-        <td style="padding:6px 8px;text-align:right;font-weight:600">${v.balance.toLocaleString()}</td>
-        <td style="padding:6px 8px;text-align:right;font-size:.7rem;color:${chgCol}">${v.changePct>=0?'+':''}${v.changePct.toFixed(1)}%</td>
+        <td style="padding:6px 8px;text-align:right;font-weight:600">${v.balance.toLocaleString()}<br><span style="font-size:.65rem;color:${chgCol}">${v.changePct>=0?'+':''}${v.changePct.toFixed(1)}%</span></td>
+        <td style="padding:6px 8px;text-align:right;font-size:.7rem">—</td>
+        <td style="padding:6px 8px;text-align:center;color:var(--text2);font-size:.72rem">—</td>
         <td style="padding:6px 8px;text-align:center;color:var(--text2);font-size:.72rem">觀察</td>
         <td style="padding:6px 8px;text-align:center">${addBtn(code,v.name)}</td>
       </tr>`;
@@ -5825,7 +5950,7 @@ function renderBadStocks(){
   // ── 機構大賣超（外資+投信淨賣超 ≥1,000張，今日實際大盤）────────────
   if(heavySellArr.length){
     const chipsDate=twseDailyMap?.date?twseDailyMap.date.slice(0,4)+'/'+twseDailyMap.date.slice(4,6)+'/'+twseDailyMap.date.slice(6):'';
-    html+=`<tr><td colspan="6" style="padding:4px 8px;font-size:.6rem;font-weight:700;color:#fb923c;text-transform:uppercase;letter-spacing:.08em;background:rgba(251,146,60,.06)">
+    html+=`<tr><td colspan="7" style="padding:4px 8px;font-size:.6rem;font-weight:700;color:#fb923c;text-transform:uppercase;letter-spacing:.08em;background:rgba(251,146,60,.06)">
       🏦 機構大賣超 — 外資+投信淨賣超 ≥1,000張${chipsDate?' ('+chipsDate+')':''} · 今日實際大盤數字
     </td></tr>`;
     heavySellArr.forEach(r=>{
@@ -5846,8 +5971,9 @@ function renderBadStocks(){
         <td style="padding:7px 8px;text-align:center">
           <span class="bad-pill" style="background:rgba(251,146,60,.12);color:#fb923c;border:1px solid rgba(251,146,60,.3)">機構賣超</span>
         </td>
-        <td style="padding:7px 8px;text-align:right;font-weight:800;color:${sellCol};font-size:.8rem">${sell張.toLocaleString()}張</td>
-        <td style="padding:7px 8px;text-align:right;font-size:.68rem;color:var(--text2);white-space:nowrap">${foreignTxt}<br>${trustTxt}</td>
+        <td style="padding:7px 8px;text-align:right;font-weight:800;color:${sellCol};font-size:.8rem">${sell張.toLocaleString()}張<br><span style="font-size:.62rem;color:var(--text2)">${foreignTxt}</span></td>
+        <td style="padding:7px 8px;text-align:right;font-size:.68rem;color:var(--text2)">${trustTxt}</td>
+        <td style="padding:7px 8px;text-align:center;color:var(--text2);font-size:.62rem">—</td>
         <td style="padding:7px 8px;text-align:center;font-weight:700">${risk}</td>
         <td style="padding:7px 8px;text-align:center">${addBtn(r.code,r.name)}</td>
       </tr>`;
@@ -5856,8 +5982,9 @@ function renderBadStocks(){
 
   html+='</tbody></table></div>';
   html+=`<div style="margin-top:8px;padding:7px 10px;background:var(--tag);border-radius:8px;font-size:.62rem;color:var(--text2);line-height:1.7">
-    🚨 <strong style="color:#f87171">雙重警示邏輯</strong>：GDR 發行（稀釋股本）+ 借券賣出（主力放空）同時發生 → 上方壓力極大，股價易破底。<br>
-    🏦 <strong style="color:#fb923c">機構賣超</strong>：外資+投信今日淨賣出，數字越大賣壓越重。借券暴增 = 大戶用借來的股票賣出，未來回補才算結束。<strong style="color:#fbbf24">出現在此列表的股票務必避開做多</strong>。
+    🚨 <strong style="color:#f87171">雙重警示</strong>：GDR 發行 + 借券放空同時發生 → 股價易破底，嚴禁做多。<br>
+    📊 <strong style="color:#a855f7">籌碼訊號</strong>：「外資買但不漲」= 外資是誘多煙霧彈；「融資連3增」= 散戶接刀中；「跌破月線/季線」= 空方成形。<br>
+    🏦 <strong style="color:#fb923c">機構賣超</strong>：外資+投信今日淨賣出，數字越大賣壓越重。<strong style="color:#fbbf24">出現在此列表的股票務必避開做多</strong>。
   </div>`;
 
   body.innerHTML=html;

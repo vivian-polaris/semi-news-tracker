@@ -5,7 +5,7 @@ import json, os, sys, datetime
 from pathlib import Path
 import requests
 
-BREVO_API_KEY  = os.environ['BREVO_API_KEY']
+BREVO_API_KEY  = os.environ.get('BREVO_API_KEY') or os.environ.get('RESEND_API_KEY', '')
 TO_EMAILS      = ['polaris.sequoia@gmail.com', 'lightall.blog@gmail.com', 'vast.gamma@gmail.com']
 FROM_EMAIL     = 'polaris.sequoia@gmail.com'
 FROM_NAME      = 'VCP選股'
@@ -127,6 +127,57 @@ def staleness_banner(scan_date_str):
         pass
     return ''
 
+def load_twse_daily():
+    """讀 twse_daily.json 取 gdr_danger 地雷名單"""
+    p = Path('twse_daily.json')
+    if not p.exists():
+        return {}
+    try:
+        with open(p, encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def build_gdr_danger_section(daily):
+    """產生 GDR 地雷警示 HTML 段落"""
+    danger_list = daily.get('gdr_danger', [])
+    if not danger_list:
+        return ''
+
+    rows = ''
+    for d in danger_list:
+        level_color = '#dc2626' if d.get('score', 0) >= 7 else ('#d97706' if d.get('score', 0) >= 5 else '#7c3aed')
+        sigs = '・'.join(d.get('signals', []))
+        rows += (
+            f'<tr style="border-bottom:1px solid #fee2e2">'
+            f'<td style="padding:8px 10px;font-weight:700;color:{level_color}">{d["code"]}</td>'
+            f'<td style="padding:8px 10px">{d.get("name","")}</td>'
+            f'<td style="padding:8px 10px;font-size:12px;color:#64748b">{d.get("note","")[:50]}</td>'
+            f'<td style="padding:8px 10px;font-weight:700;color:{level_color}">{d.get("level","")}</td>'
+            f'<td style="padding:8px 10px;font-size:12px;color:#dc2626">{sigs}</td>'
+            f'</tr>'
+        )
+
+    return (
+        '<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;'
+        'padding:14px 18px;margin:16px 0">'
+        '<div style="font-size:16px;font-weight:700;color:#dc2626;margin-bottom:6px">'
+        f'🚨 GDR 地雷警示 — 今日發現 {len(danger_list)} 支危險股票</div>'
+        '<div style="font-size:12px;color:#7f1d1d;margin-bottom:10px">'
+        'GDR 發行稀釋股本 + 借券放空 + 散戶接刀 = 大戶套利收割地雷，務必迴避做多</div>'
+        '<table style="width:100%;border-collapse:collapse;font-size:13px">'
+        '<thead><tr style="background:#fee2e2;font-size:11px;font-weight:700">'
+        '<th style="padding:6px 10px;text-align:left">代號</th>'
+        '<th style="padding:6px 10px;text-align:left">名稱</th>'
+        '<th style="padding:6px 10px;text-align:left">GDR 資訊</th>'
+        '<th style="padding:6px 10px;text-align:left">風險</th>'
+        '<th style="padding:6px 10px;text-align:left">警示訊號</th>'
+        '</tr></thead>'
+        f'<tbody>{rows}</tbody></table></div>'
+    )
+
+
 def build_html(data):
     stocks        = data.get('stocks', [])
     scan_date     = data.get('scanDate', '—')
@@ -145,7 +196,13 @@ def build_html(data):
     tz_tw       = datetime.timezone(datetime.timedelta(hours=8))
     report_time = datetime.datetime.now(tz_tw).strftime('%Y-%m-%d %H:%M')
 
+    # GDR 地雷段落
+    daily = load_twse_daily()
+    gdr_danger_section = build_gdr_danger_section(daily)
+
     sections = ''
+    if gdr_danger_section:
+        sections += gdr_danger_section
     if filtered:
         sections += (f'<h3 style="color:#dc2626;margin:24px 0 8px">'
                      f'🔥 VCP候選（VCP≥80 + CANSLIM≥5，共 {len(filtered)} 支）</h3>{build_table(filtered)}')
@@ -203,8 +260,12 @@ def main():
         and calc_canslim(s['vcp'], s.get('fund')) >= 5
         and s.get('sector', '') in DEFAULT_SEC_FILTER
     )
+    daily         = load_twse_daily()
+    danger_count  = len(daily.get('gdr_danger', []))
 
     subject = f'📈 VCP {scan_date} ─ {filtered_count} 支候選'
+    if danger_count:
+        subject += f' ／ 🚨 {danger_count} 支GDR地雷'
     html    = build_html(data)
     email_id = send_via_brevo(subject, html)
 

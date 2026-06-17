@@ -299,8 +299,10 @@ def fetch_margin():
         try: return int(str(v or '').replace(',', ''))
         except: return 0
     margin = {}
+
+    # ── 來源 1：OpenAPI（無 CORS 問題，欄位有中文名稱，最易解析）──────────────
     data = get('https://openapi.twse.com.tw/v1/marginTrading/MI_MARGN')
-    if data:
+    if data and isinstance(data, list) and len(data) > 100:
         for row in data:
             code = str(row.get('股票代號') or '').strip()
             if not code:
@@ -308,9 +310,40 @@ def fetch_margin():
             t = parse_num(row.get('融資今日餘額'))
             p = parse_num(row.get('融資前日餘額'))
             margin[code] = {'today': t, 'prev': p, 'change': t - p}
-        print(f'  margin: {len(margin)} stocks from MI_MARGN')
-    else:
-        print('  [WARN] MI_MARGN fetch failed')
+        print(f'  margin: {len(margin)} stocks from OpenAPI MI_MARGN')
+        return margin
+
+    # ── 來源 2：MI_MARGN?selectType=ALL（備援，實測可通過）────────────────────
+    print('  [WARN] OpenAPI MI_MARGN 失敗，嘗試 selectType=ALL 備援...')
+    try:
+        SESSION.get('https://www.twse.com.tw/', timeout=6)
+        r = SESSION.get(
+            'https://www.twse.com.tw/rwd/zh/marginTrading/MI_MARGN?response=json&selectType=ALL',
+            timeout=25,
+        )
+        if r.ok and r.text.strip().startswith('{'):
+            j = r.json()
+            for tbl in j.get('tables', []):
+                rows = tbl.get('data', [])
+                if len(rows) < 100:
+                    continue
+                # 欄位順序: [代號, 名稱, 融資買進, 融資償還, 現金償還, 前日餘額, 今日餘額, ...]
+                for row in rows:
+                    if len(row) < 7:
+                        continue
+                    code = str(row[0]).strip()
+                    if not re.match(r'^\d{4,6}$', code):
+                        continue
+                    t = parse_num(row[6])
+                    p = parse_num(row[5])
+                    margin[code] = {'today': t, 'prev': p, 'change': t - p}
+            if margin:
+                print(f'  margin: {len(margin)} stocks from MI_MARGN selectType=ALL')
+                return margin
+    except Exception as e:
+        print(f'  [WARN] MI_MARGN selectType=ALL failed: {e}')
+
+    print('  [WARN] MI_MARGN 所有端點均失敗')
     return margin
 
 
@@ -1150,6 +1183,23 @@ def fetch_borrow_balance(existing_borrow=None):
 
     raw = None
 
+    # ── 來源 0：CF Worker /api/borrow（走 Cloudflare IP，繞過 GitHub Actions 封鎖）──
+    for cf_url in [
+        'https://vivian-vcpfinder.pages.dev/api/borrow',
+        'https://vivian-vcpfinder.pages.dev/api/borrow',  # retry once
+    ]:
+        try:
+            r = SESSION.get(cf_url, timeout=20)
+            if r.ok and r.text.strip().startswith('{'):
+                j = r.json()
+                if j.get('stat') == 'OK' and j.get('data') and len(j['data']) > 0:
+                    raw = j
+                    src = j.get('_src', 'CF-Worker')
+                    print(f'  borrow: CF Worker OK ({src}), {len(j["data"])} rows')
+                    break
+        except Exception as e:
+            print(f'  [WARN] CF Worker borrow: {e}')
+
     # ── 主端點：MI_SLBK 全市場（需 warmup cookie） ───────────────────────────
     try:
         # 先 warmup（讓 TWSE 設定 session cookie，避免空 body 回應）
@@ -1503,6 +1553,80 @@ def main():
         print(f'  ⚠️ 借券資料空，保留舊資料（{len(existing["borrow"])}筆）')
         borrow_data = existing['borrow']
 
+    # ── 11. 5日歷史：融資 / 借券 rolling buffer（每天 append，保留最近 5 天）────
+    print('\n11. 5日歷史快照...')
+    margin_history = existing.get('margin_history', [])
+    if margin and len(margin) > 100:
+        snap_m = {code: v.get('today', 0) for code, v in margin.items()}
+        margin_history = [h for h in margin_history if h.get('date') != date_str]
+        margin_history.append({'date': date_str, 'data': snap_m})
+        margin_history = margin_history[-5:]
+        print(f'  margin_history: {len(margin_history)} days')
+
+    borrow_history = existing.get('borrow_history', [])
+    if borrow_data and len(borrow_data) > 100:
+        snap_b = {code: v.get('balance', 0) for code, v in borrow_data.items()}
+        borrow_history = [h for h in borrow_history if h.get('date') != date_str]
+        borrow_history.append({'date': date_str, 'data': snap_b})
+        borrow_history = borrow_history[-5:]
+        print(f'  borrow_history: {len(borrow_history)} days')
+
+    # ── 12. GDR 地雷偵測：對 GDR 名單做四條件評分 ──────────────────────────────
+    print('\n12. GDR 地雷偵測...')
+    gdr_codes = {g['code'] for g in gdr_list}
+    gdr_danger = []
+    for g in gdr_list:
+        code = g['code']
+        danger = {'code': code, 'name': g.get('name', ''), 'note': g.get('note', ''),
+                  'signals': [], 'score': 0}
+
+        # 借券暴增（今日）
+        brow = borrow_data.get(code, {})
+        if brow.get('changePct', 0) >= 20 and brow.get('balance', 0) >= 500:
+            danger['signals'].append('借券暴增')
+            danger['score'] += 3
+        elif brow.get('balance', 0) >= 5000:
+            danger['signals'].append('高借券')
+            danger['score'] += 2
+
+        # 借券連3日增（從 borrow_history）
+        if len(borrow_history) >= 3:
+            balances = [h['data'].get(code, 0) for h in borrow_history[-3:]]
+            if len(balances) == 3 and balances[1] > balances[0] and balances[2] > balances[1]:
+                if '借券暴增' not in danger['signals']:
+                    danger['signals'].append('借券連3增')
+                danger['score'] += 2
+
+        # 融資接刀（今日融資增加）
+        marg = margin.get(code, {})
+        if marg.get('change', 0) > 0:
+            danger['signals'].append('融資接刀')
+            danger['score'] += 2
+
+        # 融資連3增
+        if len(margin_history) >= 3:
+            mvals = [h['data'].get(code, 0) for h in margin_history[-3:]]
+            if len(mvals) == 3 and mvals[1] > mvals[0] and mvals[2] > mvals[1]:
+                if '融資接刀' not in danger['signals']:
+                    danger['signals'].append('融資連3增')
+                danger['score'] += 2
+
+        # 外資買超（籌碼背離）
+        chip = chips.get(code, {})
+        foreign_shares = chip.get('foreignNet', 0)
+        if foreign_shares > 100000:
+            danger['signals'].append('外資買超(誘多)')
+            danger['score'] += 1
+
+        if danger['score'] >= 3:
+            danger['level'] = '🚨 極危' if danger['score'] >= 7 else ('🔴 高危' if danger['score'] >= 5 else '🟠 警戒')
+            gdr_danger.append(danger)
+
+    gdr_danger.sort(key=lambda x: -x['score'])
+    print(f'  GDR 地雷警示: {len(gdr_danger)} 支')
+    for d in gdr_danger[:5]:
+        print(f'    {d["code"]} {d["name"]} score={d["score"]} {d["signals"]}')
+
     output = {
         'date':            date_str,
         '_tse_price_date': tse_price_date,
@@ -1517,9 +1641,12 @@ def main():
         'incomePrev':      income_prev,
         'incomeHistory':   income_history,
         'margin':          margin,
+        'margin_history':  margin_history,
         'news':            news,
         'gdr':             gdr_list,
+        'gdr_danger':      gdr_danger,
         'borrow':          borrow_data,
+        'borrow_history':  borrow_history,
     }
 
     atomic_write('twse_daily.json', output)
@@ -1532,7 +1659,7 @@ def main():
     print(f'\n✅ twse_daily.json written:')
     print(f'   sectors={len(sectors)}, otcStocks={len(otc_stocks)}, chips={len(chips)}, bwibbu={len(bwibbu)}')
     print(f'   revenue={len(month_revenue)}, income={len(income)}, news={len(news)}')
-    print(f'   gdr={len(gdr_list)}, borrow={len(borrow_data)}')
+    print(f'   gdr={len(gdr_list)}, gdr_danger={len(gdr_danger)}, borrow={len(borrow_data)}')
 
     # 除息日期（一次性抓全年，不受盤中/盤後限制）
     print('\n── 除息資料 ─────────────────────────────────────')
