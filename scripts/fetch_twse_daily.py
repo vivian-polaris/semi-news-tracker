@@ -1241,11 +1241,34 @@ def fetch_gdr_list(name_to_code=None):
     except Exception as e:
         print(f'  [WARN] GDR news RSS failed: {e}')
 
-    # 只保留最近 180 天
-    cutoff = (now_tw - datetime.timedelta(days=180)).strftime('%Y-%m-%d')
-    result = [g for g in result if not g.get('date') or g['date'] >= cutoff or g['src'] == 'news']
-    print(f'  GDR final: {len(result)} → {[g["code"] for g in result]}')
-    return result
+    # 修正 news 來源的 pubDate 格式（RSS RFC 2822 → YYYY-MM-DD）
+    import email.utils as _eu
+    for g in result:
+        if g.get('src') == 'news' and g.get('date') and not re.match(r'^\d{4}-\d{2}-\d{2}', g['date']):
+            try:
+                g['date'] = _eu.parsedate_to_datetime(g['date']).strftime('%Y-%m-%d')
+            except Exception:
+                g['date'] = ''
+
+    # 180天 = 保留上限；90天 = 進行中 vs 已完成分界
+    # completed=True 代表 GDR 已完成，股票已流入市面
+    cutoff_keep   = (now_tw - datetime.timedelta(days=180)).strftime('%Y-%m-%d')
+    cutoff_active = (now_tw - datetime.timedelta(days=90)).strftime('%Y-%m-%d')
+
+    valid = []
+    for g in result:
+        date = g.get('date', '')
+        if not date:
+            continue          # 日期無法解析，排除（不再「無日期就保留」）
+        if date < cutoff_keep:
+            continue          # 超過 180 天，排除
+        g['completed'] = date < cutoff_active   # >90天前 = GDR 已完成
+        valid.append(g)
+
+    active_cnt = sum(1 for g in valid if not g.get('completed'))
+    done_cnt   = sum(1 for g in valid if g.get('completed'))
+    print(f'  GDR final: {len(valid)} active={active_cnt} completed={done_cnt} → {[g["code"] for g in valid]}')
+    return valid
 
 
 # ── 10. 借券賣出餘額全市場掃描 ───────────────────────────────────────────────

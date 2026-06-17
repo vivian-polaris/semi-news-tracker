@@ -2057,8 +2057,11 @@ function renderExDivBanner(){
     const daysLeft=Math.round((exDate-todayDate)/86400000);
     if(daysLeft<0||daysLeft>14)return;
     const isWatchlist=WATCHLIST_EX.includes(code);
-    // 取名稱（從 stockPriceMap 或 hardcode）
-    const name=stockPriceMap[code]?.n||(code==='2330'?'台積電':code==='2317'?'鴻海':code==='2412'?'中華電':code);
+    // 取名稱（stockPriceMap → twseDailyMap 股票清單 → 代號）
+    const name=stockPriceMap[code]?.n
+      ||(twseDailyMap?.tseStocks||[]).find(s=>s.code===code)?.name
+      ||(twseDailyMap?.otcStocks||[]).find(s=>s.code===code)?.name
+      ||code;
     hits.push({code,name,mmdd,daysLeft,isWatchlist,exDate});
   });
 
@@ -2244,7 +2247,7 @@ async function loadWeeklyOutlook(force=false){
 
   if(!force){
     try{
-      const c=JSON.parse(localStorage.getItem('ai_'+dayKey)||'{}');
+      const c=JSON.parse(localStorage.getItem('ai_v2_'+dayKey)||'{}');
       if(c.html&&c.ts&&Date.now()-c.ts<TTL){
         // 若快取內容出現明顯偏低的大盤點位（低於 30000），視為 AI 用舊訓練數據生成，強制捨棄
         const plainTxt=c.html.replace(/<[^>]*>/g,'');
@@ -2256,7 +2259,7 @@ async function loadWeeklyOutlook(force=false){
           return;
         }
         // 快取含異常點位，清除並重新生成
-        try{localStorage.removeItem('ai_'+dayKey);}catch(_){}
+        try{localStorage.removeItem('ai_v2_'+dayKey);}catch(_){}
       }
     }catch(_){}
   }
@@ -2316,23 +2319,90 @@ async function loadWeeklyOutlook(force=false){
     ?`台股加權指數目前約 ${window.taixPrice.toLocaleString()} 點`
     :`台股加權指數目前點位暫未取得即時數據，但台股自2024年起已長期維持在40000點以上，請務必以40000點以上為基準給出合理點位預測，嚴禁出現低於35000的點位數字`;
 
+  // ③-A 讀取 FRED 美國總經數據（loadFedWatch 已快取至 localStorage）
+  let fredBlock='【美國總經數據（FRED）】（未能取得，略過）';
+  try{
+    const fc=JSON.parse(localStorage.getItem('fredvals_'+todayStr)||'{}');
+    const fd=fc.data;
+    if(fd){
+      const lv=x=>Array.isArray(x)?x.at(-1):x;
+      const fmtPct=v=>v!=null?(+v).toFixed(1)+'%':'未知';
+      const fmtK=v=>v!=null?Math.round(+v)+'K':'未知';
+      fredBlock=`【美國總經數據（FRED 官方最新）】
+CPI 年增率：${fmtPct(lv(fd.cpi)?.value)}
+Fed 基準利率：${fmtPct(lv(fd.fed)?.value)}
+PCE 年增率：${fmtPct(lv(fd.pce)?.value)}
+GDP 成長率：${fmtPct(lv(fd.gdp)?.value)}
+非農就業月增：${fmtK(lv(fd.nfp)?.value)}`;
+    }
+  }catch(_){}
+
+  // ③-B 本週美國重大事件行事曆（FED_CAL）
+  const fedWeekLines=(typeof FED_CAL!=='undefined'?FED_CAL:[])
+    .filter(e=>{const diff=Math.round((new Date(e.date+'T00:00:00')-new Date(todayStr))/86400000);return diff>=0&&diff<=7;})
+    .map(e=>{const diff=Math.round((new Date(e.date+'T00:00:00')-new Date(todayStr))/86400000);
+      return `${e.date}（${diff===0?'今天':diff===1?'明天':diff+'天後'}）：${e.name}${e.tier===1?' 🔴重要':''}${e.extra?' — '+e.extra:''}`;})
+    .join('\n')||'（本週無重大美國經濟事件）';
+
+  // ③-C 外資台指期未平倉淨多空（TAIFEX OpenAPI）
+  let taifexBlock='【外資台指期未平倉】（未能取得，略過）';
+  try{
+    const txKey='taifex_fut_'+todayStr;
+    let txData=null;
+    const txC=JSON.parse(localStorage.getItem(txKey)||'{}');
+    if(txC.data&&txC.ts&&Date.now()-txC.ts<4*3600*1000){txData=txC.data;}
+    if(!txData){
+      const txUrl='https://openapi.taifex.com.tw/v1/FuturesAndOptionsDetailsOfMajorInstitutionalTraders';
+      for(const px of['','https://corsproxy.io/?','https://api.allorigins.win/raw?url=']){
+        try{
+          const ru=px?px+encodeURIComponent(txUrl):txUrl;
+          const r=await fetch(ru,{signal:AbortSignal.timeout(8000)});
+          if(!r.ok)continue;
+          const arr=await r.json();
+          if(!Array.isArray(arr))continue;
+          // 外資（IdentityCode 3 或含「外資」）台指期（TXF 或含「臺指」）全市場
+          const row=arr.find(x=>(x.IdentityCode==='3'||String(x.IdentityCode||x.Identity||'').includes('外資'))
+            &&(String(x.ContractCode||x.Contract||'').includes('TXF')||String(x.ContractCode||x.Contract||'').includes('臺指')));
+          if(row){txData=row;break;}
+        }catch(_){continue;}
+      }
+      if(txData){try{localStorage.setItem(txKey,JSON.stringify({data:txData,ts:Date.now()}));}catch(_){}}
+    }
+    if(txData){
+      const longOI=+(txData.LongOI??txData.LongOpenInterest??txData.long_oi??0);
+      const shortOI=+(txData.ShortOI??txData.ShortOpenInterest??txData.short_oi??0);
+      const net=longOI-shortOI;
+      taifexBlock=`【外資台指期未平倉（TAIFEX）】
+外資淨多空：${net>0?'+'+net+'口（淨多，偏多訊號）':net+'口（淨空，偏空訊號）'}
+多方未平倉：${longOI.toLocaleString()} 口
+空方未平倉：${shortOI.toLocaleString()} 口`;
+    }
+  }catch(_){}
+
   const prompt=`今天是 ${todayStr}（台灣時間）。${taixPriceStr}
 
-【近期市場新聞標題】
+${fredBlock}
+
+【本週美國重大事件行事曆】
+${fedWeekLines}
+
+${taifexBlock}
+
+【近期台股市場新聞標題】
 ${newsLines}
 
-【未來一週重要事件】
+【台股本週重要事件（除息、法說）】
 ${eventLines}
 
 【任務】
-你是台股分析師。用繁體中文，為以下每個交易日給出台股大盤展望。
+你是台股分析師。請根據上方美國總經數據、本週美國事件行事曆、外資期貨淨多空部位，以及台股本週新聞，用繁體中文，為以下每個交易日給出台股大盤展望。
 請以目前大盤點位為基準給出合理的點位區間預測。
 格式嚴格如下（每日一行，不要多行）：
 
 ${tradingDays.map(d=>`📅 ${d}：[30字內判斷] 點位：[XXXXX–YYYYY] 情緒：[看多/看空/震盪]`).join('\n')}
 
 最後加一行：
-💡 本週關鍵：[2句話，點出最重要觀察點]
+💡 本週關鍵：[2句話，根據Fed數據與外資期貨，點出最重要觀察點]
 
 只輸出上面格式，不要其他說明。`;
 
@@ -2359,7 +2429,7 @@ ${tradingDays.map(d=>`📅 ${d}：[30字內判斷] 點位：[XXXXX–YYYYY] 情�
   if(btn){btn.disabled=false;}
 
   // 快取
-  try{localStorage.setItem('ai_'+dayKey,JSON.stringify({html:htmlLines,ts:Date.now()}));}catch(_){}
+  try{localStorage.setItem('ai_v2_'+dayKey,JSON.stringify({html:htmlLines,ts:Date.now()}));}catch(_){}
 }
 
 // ─── Fed Watch 美國關鍵數據行事曆 ────────────────────────────────────────
@@ -4276,11 +4346,13 @@ function renderTable(){
           const today=new Date();
           const exDate=new Date(2026,parseInt(mm)-1,parseInt(dd));
           const daysLeft=Math.round((exDate-today)/86400000);
-          const col=daysLeft<=7?'#f87171':daysLeft<=14?'#fbbf24':'#34d399';
-          const note=daysLeft>=0?`距今 ${daysLeft} 天`:'已過';
-          return `<td style="text-align:center;white-space:nowrap" title="除息日 2026/${mmdd}・${note}">
+          const col=daysLeft<=1?'#f87171':daysLeft<=7?'#fbbf24':'#34d399';
+          const urgeTxt=daysLeft<0?'已過':daysLeft===0?'今天除息！':daysLeft===1?'明天除息':daysLeft+'天後除息';
+          const subTxt=daysLeft===1?'除息前一天（今天可買）':'';
+          return `<td style="text-align:center;white-space:nowrap" title="除息日 2026/${mmdd}・${urgeTxt}">
             <div style="font-size:.72rem;font-weight:700;color:${col}">${mmdd}</div>
-            <div style="font-size:.58rem;color:var(--text2)">${daysLeft>=0?daysLeft+'天後':'已過'}</div>
+            <div style="font-size:.58rem;font-weight:${daysLeft<=1?'700':'400'};color:${col}">${urgeTxt}</div>
+            ${subTxt?`<div style="font-size:.56rem;color:#fbbf24;font-weight:700">${subTxt}</div>`:''}
           </td>`;
         })();
         const fhCell=(()=>{
@@ -5132,19 +5204,27 @@ if((sl==null||sl>=0)&&(rsi==null||(rsi>=45&&rsi<=65))&&(dm==null||(dm>=-5&&dm<=8
 return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(202,138,4,.15)',border:'#d97706',desc:mkD()||'資料不足',action:'繼續持有・停損移至成本・不追加碼'};
   })();
 
-  // ── GDR 警示：查詢股票時檢查是否在 GDR 名單或 gdr_danger ─────────────────
-  const _gdrMatch=(twseDailyMap?.gdr||[]).find(g=>g.code===stockInfo.code)
-    || getGDRList().find(g=>g.code===stockInfo.code);
+  // ── GDR 警示：進行中（危險）vs 已完成（股票流入市面）─────────────────────
+  const _gdrRaw=(twseDailyMap?.gdr||[]).find(g=>g.code===stockInfo.code);
+  const _gdrMatch=_gdrRaw||getGDRList().find(g=>g.code===stockInfo.code);
   const _gdrDanger=(twseDailyMap?.gdr_danger||[]).find(g=>g.code===stockInfo.code);
-  const _gdrWarnHtml=_gdrMatch?`
+  const _gdrCompleted=!!(_gdrMatch?.completed);
+  const _gdrWarnHtml=_gdrMatch?(_gdrCompleted?`
+    <div style="margin-bottom:10px;padding:10px 14px;background:rgba(59,130,246,.12);border:1.5px solid #3b82f6;border-radius:10px">
+      <div style="font-weight:800;color:#60a5fa;font-size:.82rem">📢 GDR 已完成 — 股票已流入市面</div>
+      <div style="font-size:.72rem;color:var(--text);margin-top:4px">${escH(_gdrMatch.note||_gdrMatch.type||'GDR 發行')} ${_gdrMatch.date?'（'+_gdrMatch.date.slice(0,10)+'）':''}</div>
+      <div style="margin-top:6px;font-size:.65rem;color:var(--text2);line-height:1.6">
+        GDR 稀釋已完成，新股已流入市面。套利放空壓力趨緩，但需注意新股持有人的持續賣壓。
+      </div>
+    </div>`:`
     <div style="margin-bottom:10px;padding:10px 14px;background:rgba(239,68,68,.15);border:1.5px solid #f87171;border-radius:10px">
-      <div style="font-weight:800;color:#f87171;font-size:.82rem">🚨 GDR 地雷警示 — 此股票正在發行/已發行 GDR</div>
+      <div style="font-weight:800;color:#f87171;font-size:.82rem">🚨 GDR 地雷警示 — 此股票正在發行 GDR</div>
       <div style="font-size:.72rem;color:var(--text);margin-top:4px">${escH(_gdrMatch.note||_gdrMatch.type||'GDR 發行')} ${_gdrMatch.date?'（'+_gdrMatch.date.slice(0,10)+'）':''}</div>
       ${_gdrDanger?`<div style="margin-top:6px;font-size:.7rem;color:#fbbf24">⚠️ 危險評分 ${_gdrDanger.score}／10 — ${escH((_gdrDanger.signals||[]).join('・'))}</div>`:''}
       <div style="margin-top:6px;font-size:.65rem;color:var(--text2);line-height:1.6">
         GDR 稀釋股本 + 借券放空 = 大戶套利坑散戶的典型模式。<strong style="color:#f87171">做多風險極高，建議迴避。</strong>
       </div>
-    </div>`:''
+    </div>`):''
 
   res.innerHTML = `
     ${_gdrWarnHtml}
@@ -5753,12 +5833,16 @@ function renderBadStocks(){
     code:g.code,
     name:g.name||_nameMap[g.code]||'',
     note:`GDR${g.amount?' $'+g.amount+'M':''}${g.date?' ('+g.date.slice(0,10)+')':''} [自動]`,
+    completed:!!g.completed,
     auto:true
   }));
   // 伺服器端有、手動沒有的，才加入（避免重複）
   const mergedGDR=[...manualGDR,...serverGDR.filter(g=>!manualCodes.has(g.code))];
-  const gdrList=mergedGDR;
+  // 進行中：做多危險；已完成：股票已流入市面（不同性質）
+  const gdrList=mergedGDR.filter(g=>!g.completed);       // 進行中 GDR → 危險警示
+  const gdrDone=mergedGDR.filter(g=>!!g.completed);      // 已完成 GDR → 股票流入市面
   const gdrCodes=new Set(gdrList.map(g=>g.code));
+  const gdrAllCodes=new Set(mergedGDR.map(g=>g.code));   // 進行中+完成，用於排除重複
 
   // 借券暴增：增幅 ≥20% AND 餘額 ≥500張
   const allSurge=Object.entries(_borrowMap)
@@ -5779,12 +5863,12 @@ function renderBadStocks(){
   // 2. GDR only（無借券資料或借券正常）
   const gdrOnly=gdrList.filter(g=>!dualCodes.has(g.code));
 
-  // 3. 借券暴增 only（不在 GDR 名單）
-  const surgeOnly=allSurge.filter(([c])=>!gdrCodes.has(c)).slice(0,20);
+  // 3. 借券暴增 only（不在 GDR 名單，含進行中和已完成）
+  const surgeOnly=allSurge.filter(([c])=>!gdrAllCodes.has(c)).slice(0,20);
 
-  // 4. 高借券餘額 only（不在暴增、不在 GDR）
+  // 4. 高借券餘額 only（不在暴增、不在 GDR，含進行中和已完成）
   const highOnly=Object.entries(_borrowMap)
-    .filter(([c,v])=>v.balance>=5000&&!surgeCodes.has(c)&&!gdrCodes.has(c))
+    .filter(([c,v])=>v.balance>=5000&&!surgeCodes.has(c)&&!gdrAllCodes.has(c))
     .sort((a,b)=>b[1].balance-a[1].balance)
     .slice(0,10);
 
@@ -5980,9 +6064,42 @@ function renderBadStocks(){
     });
   }
 
+  // ── GDR 已完成（股票已流入市面，90-180天）────────────────────────────────
+  if(gdrDone.length){
+    html+=`<tr><td colspan="7" style="padding:6px 8px;font-size:.6rem;font-weight:700;color:#60a5fa;text-transform:uppercase;letter-spacing:.08em;background:rgba(96,165,250,.06);border-left:3px solid #3b82f6">
+      📢 GDR 已完成 — 股票已流入市面（稀釋已發生，注意持續賣壓）
+    </td></tr>`;
+    gdrDone.forEach(g=>{
+      const borrow=_borrowMap[g.code];
+      const balTxt=borrow?borrow.balance.toLocaleString():'—';
+      const chgPct=borrow?.changePct||0;
+      const chgTxt=borrow?(chgPct>=0?`+${chgPct.toFixed(1)}%`:`${chgPct.toFixed(1)}%`):'—';
+      const chgCol=chgPct>=20?'#fb923c':'var(--text2)';
+      const price=stockPriceMap[g.code]?.c?.[0];
+      const {sigs,margin:mg}=_computeSignals(g.code);
+      const gSigHtml=sigs.slice(0,2).map(s=>`<span style="font-size:.6rem;padding:1px 5px;border-radius:3px;background:${s.bg||'var(--tag)'};color:${s.color||'var(--text2)'};border:1px solid ${s.border||'var(--border)'}">${s.label}</span>`).join(' ');
+      const gMgTxt=mg!==null?`${mg>0?'+':''}${mg.toLocaleString()}`:'—';
+      const op=g.auto?`<td style="padding:7px 8px"></td>`:`<td style="padding:7px 8px;text-align:center">${rmBtn(g.code)}</td>`;
+      html+=`<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:7px 8px">
+          <a href="${tv(g.code)}" target="_blank" style="color:#60a5fa;font-weight:700;text-decoration:none">${escH(g.code)}</a>
+          <span style="margin-left:6px;color:var(--text);font-size:.72rem">${escH(g.name)}</span>
+          <br><span style="font-size:.6rem;color:var(--text2)">${escH(g.note)}</span>
+          ${price?`<span style="font-size:.6rem;color:var(--text2);margin-left:8px">$${price}</span>`:''}
+        </td>
+        <td style="padding:7px 8px;text-align:center"><span class="bad-pill" style="background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.4)">流入市面</span></td>
+        <td style="padding:7px 8px;text-align:right;color:${chgCol};font-size:.72rem">${balTxt}<br><span style="font-size:.62rem">${chgTxt}</span></td>
+        <td style="padding:7px 8px;text-align:right;font-size:.75rem">${gMgTxt}</td>
+        <td style="padding:7px 8px;text-align:left">${gSigHtml||'<span style="color:var(--text2);font-size:.62rem">—</span>'}</td>
+        ${op}
+      </tr>`;
+    });
+  }
+
   html+='</tbody></table></div>';
   html+=`<div style="margin-top:8px;padding:7px 10px;background:var(--tag);border-radius:8px;font-size:.62rem;color:var(--text2);line-height:1.7">
     🚨 <strong style="color:#f87171">雙重警示</strong>：GDR 發行 + 借券放空同時發生 → 股價易破底，嚴禁做多。<br>
+    📢 <strong style="color:#60a5fa">GDR 已完成</strong>：稀釋已發生，股票流入市面，套利賣壓轉為持股人賣壓，仍需注意。<br>
     📊 <strong style="color:#a855f7">籌碼訊號</strong>：「外資買但不漲」= 外資是誘多煙霧彈；「融資連3增」= 散戶接刀中；「跌破月線/季線」= 空方成形。<br>
     🏦 <strong style="color:#fb923c">機構賣超</strong>：外資+投信今日淨賣出，數字越大賣壓越重。<strong style="color:#fbbf24">出現在此列表的股票務必避開做多</strong>。
   </div>`;
