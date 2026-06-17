@@ -1069,10 +1069,12 @@ def fetch_exdiv():
 def fetch_gdr_list(name_to_code=None):
     """抓最近 180 天的 GDR 申請/發行股票，來源：TWSE OpenAPI t187ap13_L + MOPS + Google News
     name_to_code: {公司名稱: 股票代號} dict，用於從新聞標題中比對公司名稱取得代號
+    回傳 (list, sources_ok)：sources_ok=True 表示至少一個 API 成功回應，0 筆是真實結果
     """
     import html as html_lib
     result = []
     seen_codes = set()
+    sources_ok = False  # 至少一個 API 成功回應
 
     tz_tw = datetime.timezone(datetime.timedelta(hours=8))
     now_tw = datetime.datetime.now(tz_tw)
@@ -1082,6 +1084,7 @@ def fetch_gdr_list(name_to_code=None):
     try:
         r = SESSION.get('https://openapi.twse.com.tw/v1/opendata/t187ap13_L', timeout=20)
         if r.ok:
+            sources_ok = True
             d = r.json()
             if isinstance(d, list):
                 for row in d:
@@ -1116,6 +1119,7 @@ def fetch_gdr_list(name_to_code=None):
             }, timeout=20, headers={'Content-Type': 'application/x-www-form-urlencoded'})
             if not r.ok:
                 continue
+            sources_ok = True
             trs = re.findall(r'<tr[^>]*>(.*?)</tr>', r.text, re.S)
             for tr in trs:
                 tds = re.findall(r'<td[^>]*>(.*?)</td>', tr, re.S)
@@ -1268,7 +1272,7 @@ def fetch_gdr_list(name_to_code=None):
     active_cnt = sum(1 for g in valid if not g.get('completed'))
     done_cnt   = sum(1 for g in valid if g.get('completed'))
     print(f'  GDR final: {len(valid)} active={active_cnt} completed={done_cnt} → {[g["code"] for g in valid]}')
-    return valid
+    return valid, sources_ok
 
 
 # ── 10. 借券賣出餘額全市場掃描 ───────────────────────────────────────────────
@@ -1636,12 +1640,15 @@ def main():
     # 建立公司名稱 → 代號對照表（供 Google News 標題比對，名稱長度≥3 避免誤抓）
     _name_to_code = {s['name']: s['code'] for s in (tse_stocks + otc_stocks)
                      if s.get('name') and s.get('code') and len(s.get('name', '')) >= 3}
-    gdr_list = fetch_gdr_list(name_to_code=_name_to_code)
-    if not gdr_list:
+    gdr_list, gdr_sources_ok = fetch_gdr_list(name_to_code=_name_to_code)
+    if not gdr_list and not gdr_sources_ok:
+        # 所有 API 都失敗（網路問題），才保留舊資料
         old_gdr = existing.get('gdr', [])
         if old_gdr:
-            print(f'  ⚠️ GDR 資料空，保留舊資料（{len(old_gdr)}筆）')
+            print(f'  ⚠️ GDR 所有來源失敗，保留舊資料（{len(old_gdr)}筆）')
             gdr_list = old_gdr
+    elif not gdr_list:
+        print(f'  ✅ GDR 來源正常回應，過濾後確認 0 筆（無近期 GDR 活動）')
     # 補名稱（從本次已抓到的股票清單）
     stock_name_map = {s['code']: s['name'] for s in (tse_stocks + otc_stocks) if s.get('code') and s.get('name')}
     for g in gdr_list:
