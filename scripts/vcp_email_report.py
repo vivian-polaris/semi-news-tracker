@@ -178,6 +178,76 @@ def build_gdr_danger_section(daily):
     )
 
 
+def build_semi_eco_section(semi_eco):
+    """產生 AI 半導體生態圖護城河排名 HTML"""
+    if not semi_eco:
+        return ''
+
+    def moat_color(s):
+        if s is None: return '#94a3b8'
+        if s >= 70: return '#16a34a'
+        if s >= 50: return '#d97706'
+        return '#dc2626'
+
+    def grade_badge(g):
+        c = {'S': '#7c3aed', 'A': '#2563eb', 'B': '#64748b'}.get(g, '#94a3b8')
+        return f'<span style="background:{c};color:#fff;padding:1px 6px;border-radius:3px;font-size:10px">{g}</span>'
+
+    sector_order = ['晶圓代工','矽晶圓上游','IP/IC設計','廠務工程','前段製程設備','先進封裝設備','測試設備介面','新興主題']
+    by_sector = {}
+    for s in semi_eco:
+        by_sector.setdefault(s['sector'], []).append(s)
+
+    rows = ''
+    rank = 1
+    for s in semi_eco:
+        ms = s.get('moat')
+        fd = s.get('fund') or {}
+        gm = fd.get('grossMargin'); roe = fd.get('roe'); om = fd.get('operatingMargin')
+        gm_str  = f"{gm*100:.0f}%" if gm is not None and gm == gm else '—'
+        roe_str = f"{roe*100:.0f}%" if roe is not None and roe == roe else '—'
+        om_str  = f"{om*100:.0f}%" if om is not None and om == om else '—'
+        ms_str  = str(ms) if ms is not None else '—'
+        rows += (
+            f'<tr style="border-bottom:1px solid #e2e8f0">'
+            f'<td style="padding:5px 8px;text-align:center;color:#94a3b8;font-size:11px">{rank}</td>'
+            f'<td style="padding:5px 8px;font-weight:700">{s["code"]}</td>'
+            f'<td style="padding:5px 8px">{s["name"]}</td>'
+            f'<td style="padding:5px 8px;font-size:11px;color:#64748b">{s["sector"]}</td>'
+            f'<td style="padding:5px 8px;text-align:center">{grade_badge(s["grade"])}</td>'
+            f'<td style="padding:5px 8px;text-align:center;font-weight:700;color:{moat_color(ms)}">{ms_str}</td>'
+            f'<td style="padding:5px 8px;text-align:center;font-size:11px">{gm_str}</td>'
+            f'<td style="padding:5px 8px;text-align:center;font-size:11px">{roe_str}</td>'
+            f'<td style="padding:5px 8px;text-align:center;font-size:11px">{om_str}</td>'
+            f'</tr>'
+        )
+        rank += 1
+
+    header = (
+        '<tr style="background:#f1f5f9;font-size:11px;color:#475569">'
+        '<th style="padding:5px 8px">#</th>'
+        '<th style="padding:5px 8px;text-align:left">代號</th>'
+        '<th style="padding:5px 8px;text-align:left">名稱</th>'
+        '<th style="padding:5px 8px;text-align:left">產業</th>'
+        '<th style="padding:5px 8px">等級</th>'
+        '<th style="padding:5px 8px">護城河</th>'
+        '<th style="padding:5px 8px">毛利率</th>'
+        '<th style="padding:5px 8px">ROE</th>'
+        '<th style="padding:5px 8px">營業利率</th>'
+        '</tr>'
+    )
+    return (
+        '<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;'
+        'padding:14px 18px;margin:16px 0">'
+        '<div style="font-size:16px;font-weight:700;color:#15803d;margin-bottom:4px">'
+        '🏰 台灣 AI 半導體生態圖 — 護城河排名</div>'
+        '<div style="font-size:12px;color:#166534;margin-bottom:10px">'
+        '評分公式：毛利率(40pt) + ROE(30pt) + 營業利率(20pt) + 盈餘成長(15pt)，滿分100</div>'
+        '<table style="width:100%;border-collapse:collapse;font-size:13px">'
+        f'{header}<tbody>{rows}</tbody></table></div>'
+    )
+
+
 def build_html(data):
     stocks        = data.get('stocks', [])
     scan_date     = data.get('scanDate', '—')
@@ -209,6 +279,8 @@ def build_html(data):
     if not sections:
         sections = '<p style="color:#64748b;font-size:14px">今日無符合條件的 VCP 候選</p>'
 
+    semi_section = build_semi_eco_section(data.get('semi_eco', []))
+
     return (
         '<!DOCTYPE html><html lang="zh-TW">'
         '<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>'
@@ -224,6 +296,7 @@ def build_html(data):
         'padding:10px 14px;margin:12px 0;font-size:12px;color:#92400e">'
         '⚠️ 僅供研究參考，非投資建議，投資有風險請審慎評估。</div>'
         f'{sections}'
+        f'{semi_section}'
         '<p style="margin-top:24px;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:12px">'
         '本報告由 GitHub Actions 自動產生，每個交易日 08:00（台北時間）發送。<br>'
         'VCPfinder：<a href="https://vivian-vcpfinder.pages.dev/VCPfinder" style="color:#3b82f6">'

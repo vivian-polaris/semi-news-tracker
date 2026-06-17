@@ -11,6 +11,34 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 MIN_SCORE_SAVE = 40
 
+# ── 台灣 AI 半導體生態圖 24 檔 ──────────────────────────────────────────────────
+SEMI_ECO_STOCKS = {
+    '2330':{'name':'台積電',    'sector':'晶圓代工',    'grade':'S','ex':'TW'},
+    '2303':{'name':'聯電',      'sector':'晶圓代工',    'grade':'A','ex':'TW'},
+    '5347':{'name':'世界先進',  'sector':'晶圓代工',    'grade':'A','ex':'TW'},
+    '6488':{'name':'環球晶',    'sector':'矽晶圓上游',  'grade':'A','ex':'TW'},
+    '5483':{'name':'中美晶',    'sector':'矽晶圓上游',  'grade':'A','ex':'TW'},
+    '3532':{'name':'台勝科',    'sector':'矽晶圓上游',  'grade':'B','ex':'TW'},
+    '3529':{'name':'力旺',      'sector':'IP/IC設計',   'grade':'S','ex':'TW'},
+    '3661':{'name':'世芯-KY',   'sector':'IP/IC設計',   'grade':'A','ex':'TW'},
+    '3443':{'name':'創意',      'sector':'IP/IC設計',   'grade':'A','ex':'TW'},
+    '2404':{'name':'漢唐',      'sector':'廠務工程',    'grade':'S','ex':'TW'},
+    '6139':{'name':'亞翔',      'sector':'廠務工程',    'grade':'A','ex':'TW'},
+    '6196':{'name':'帆宣',      'sector':'廠務工程',    'grade':'A','ex':'TW'},
+    '3131':{'name':'弘塑',      'sector':'前段製程設備','grade':'A','ex':'TW'},
+    '3583':{'name':'辛耘',      'sector':'前段製程設備','grade':'A','ex':'TW'},
+    '5443':{'name':'均豪',      'sector':'前段製程設備','grade':'B','ex':'TW'},
+    '6640':{'name':'均華',      'sector':'先進封裝設備','grade':'A','ex':'TW'},
+    '6187':{'name':'萬潤',      'sector':'先進封裝設備','grade':'B','ex':'TW'},
+    '6438':{'name':'迅得',      'sector':'先進封裝設備','grade':'A','ex':'TW'},
+    '6223':{'name':'旺矽',      'sector':'測試設備介面','grade':'A','ex':'TW'},
+    '6510':{'name':'精測',      'sector':'測試設備介面','grade':'A','ex':'TW'},
+    '6515':{'name':'穎崴',      'sector':'測試設備介面','grade':'B','ex':'TW'},
+    '6239':{'name':'力成',      'sector':'新興主題',    'grade':'A','ex':'TW'},
+    '3711':{'name':'日月光投控','sector':'新興主題',    'grade':'A','ex':'TW'},
+    '3081':{'name':'聯亞',      'sector':'新興主題',    'grade':'B','ex':'TW'},
+}
+
 # ── Helper functions (ported from VCPfinder.html) ────────────────────────────
 
 def sma(arr, n):
@@ -369,6 +397,25 @@ def fetch_fund_data(symbols, max_workers=8):
     print()
     return results
 
+def calc_moat(fd):
+    """護城河評分 (0–100)，port of calcMoat() in VCPfinder.html"""
+    if not fd:
+        return None
+    score = 0
+    gm = fd.get('grossMargin')
+    if gm is not None and gm == gm:
+        score += min(40, max(0, gm * 200))   # 0→0pt, 20%→40pt (cap)
+    roe = fd.get('roe')
+    if roe is not None and roe == roe:
+        score += min(30, max(0, roe * 150))
+    om = fd.get('operatingMargin')
+    if om is not None and om == om:
+        score += min(20, max(0, om * 100))
+    eg = fd.get('earningsGrowth')
+    if eg is not None and eg == eg:
+        score += min(15, max(0, eg * 50))
+    return round(min(100, max(0, score)), 1)
+
 # ── Load JSON → data array ────────────────────────────────────────────────────
 
 def _yahoo_batch_quotes(codes, suffix):
@@ -583,10 +630,32 @@ def main():
         'stocks':        filtered,
     }
 
+    # ── Step 3: AI 半導體生態圖護城河分析 ──────────────────────────────────────
+    print(f'\n台灣 AI 半導體生態圖：分析 {len(SEMI_ECO_STOCKS)} 檔護城河...')
+    semi_syms = [f"{code}.TW" for code in SEMI_ECO_STOCKS]
+    semi_fund  = fetch_fund_data(semi_syms, max_workers=8)
+    semi_eco   = []
+    for code, meta in SEMI_ECO_STOCKS.items():
+        sym = f"{code}.TW"
+        fd  = semi_fund.get(sym)
+        ms  = calc_moat(fd)
+        semi_eco.append({
+            'code':   code,
+            'name':   meta['name'],
+            'sector': meta['sector'],
+            'grade':  meta['grade'],
+            'moat':   ms,
+            'fund':   fd,
+        })
+    semi_eco.sort(key=lambda x: (x['moat'] or 0), reverse=True)
+    output['semi_eco'] = semi_eco
+    top3 = [f"{s['name']}({s['moat']})" for s in semi_eco[:3] if s['moat'] is not None]
+    print(f'護城河 Top3: {", ".join(top3)}')
+
     out_path = base / 'vcp_daily.json'
     with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(output, f, ensure_ascii=False, separators=(',', ':'))
-    print(f'Saved: {out_path}  ({len(filtered)} records after fund filter)')
+    print(f'Saved: {out_path}  ({len(filtered)} records + {len(semi_eco)} semi_eco)')
 
 if __name__ == '__main__':
     main()
