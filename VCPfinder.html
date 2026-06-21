@@ -5259,17 +5259,29 @@ return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(20
   const _gdrMatch=_gdrRaw||getGDRList().find(g=>g.code===stockInfo.code);
   const _gdrDanger=(twseDailyMap?.gdr_danger||[]).find(g=>g.code===stockInfo.code);
   const _gdrCompleted=!!(_gdrMatch?.completed);
+  const _gdrDateStr=_gdrMatch?.announcementDate||(_gdrMatch?.date?_gdrMatch.date.slice(0,10):'');
+  const _gdrDays=_gdrDateStr?Math.floor((Date.now()-new Date(_gdrDateStr))/864e5):null;
+  const _gdrIsAuto=!!_gdrMatch?.auto;
+  const _gdrDateHtml=_gdrDateStr
+    ?`<span style="color:${_gdrDays>90?'#f87171':_gdrDays>30?'#fbbf24':'#34d399'}">${_gdrIsAuto?'公告':'加入'} ${_gdrDateStr}（${_gdrDays}天前${_gdrDays>90?' ⚠️':'' }）</span>`
+    :'<span style="color:#6b7280">無公告日期</span>';
+  const _gdrSrcHtml=_gdrMatch?.src==='news'?'📰 新聞偵測（未確認）'
+    :_gdrMatch?.src==='MOPS'?'📋 MOPS 正式申請'
+    :_gdrMatch?.src==='TWSE-OpenAPI'?'📋 TWSE 官方公告'
+    :_gdrIsAuto?'📋 官方來源':'📌 手動追蹤';
   const _gdrWarnHtml=_gdrMatch?(_gdrCompleted?`
     <div style="margin-bottom:10px;padding:10px 14px;background:rgba(59,130,246,.12);border:1.5px solid #3b82f6;border-radius:10px">
       <div style="font-weight:800;color:#60a5fa;font-size:.82rem">📢 GDR 已完成 — 股票已流入市面</div>
-      <div style="font-size:.72rem;color:var(--text);margin-top:4px">${escH(_gdrMatch.note||_gdrMatch.type||'GDR 發行')} ${_gdrMatch.date?'（'+_gdrMatch.date.slice(0,10)+'）':''}</div>
+      <div style="font-size:.7rem;color:var(--text2);margin-top:4px">${_gdrSrcHtml} · ${_gdrDateHtml}</div>
+      <div style="font-size:.7rem;color:var(--text);margin-top:3px">${escH(_gdrMatch.note||_gdrMatch.type||'GDR 發行')}</div>
       <div style="margin-top:6px;font-size:.65rem;color:var(--text2);line-height:1.6">
         GDR 稀釋已完成，新股已流入市面。套利放空壓力趨緩，但需注意新股持有人的持續賣壓。
       </div>
     </div>`:`
     <div style="margin-bottom:10px;padding:10px 14px;background:rgba(239,68,68,.15);border:1.5px solid #f87171;border-radius:10px">
       <div style="font-weight:800;color:#f87171;font-size:.82rem">🚨 GDR 地雷警示 — 此股票正在發行 GDR</div>
-      <div style="font-size:.72rem;color:var(--text);margin-top:4px">${escH(_gdrMatch.note||_gdrMatch.type||'GDR 發行')} ${_gdrMatch.date?'（'+_gdrMatch.date.slice(0,10)+'）':''}</div>
+      <div style="font-size:.7rem;color:var(--text2);margin-top:4px">${_gdrSrcHtml} · ${_gdrDateHtml}</div>
+      <div style="font-size:.7rem;color:var(--text);margin-top:3px">${escH(_gdrMatch.note||_gdrMatch.type||'GDR 發行')}</div>
       ${_gdrDanger?`<div style="margin-top:6px;font-size:.7rem;color:#fbbf24">⚠️ 危險評分 ${_gdrDanger.score}／10 — ${escH((_gdrDanger.signals||[]).join('・'))}</div>`:''}
       <div style="margin-top:6px;font-size:.65rem;color:var(--text2);line-height:1.6">
         GDR 稀釋股本 + 借券放空 = 大戶套利坑散戶的典型模式。<strong style="color:#f87171">做多風險極高，建議迴避。</strong>
@@ -5894,8 +5906,9 @@ function renderBadStocks(){
     return {
       code:g.code,
       name:g.name||_nameMap[g.code]||'',
-      note:`GDR${g.amount?' $'+g.amount+'M':''}${_dStr?' ('+_dStr+')':''}`,
+      note:`GDR${g.amount?' $'+g.amount+'M':''}`,
       src:g.src||'',type:g.type||'',
+      announcementDate:_dStr,
       completed:!!g.completed,
       auto:true
     };
@@ -5967,15 +5980,23 @@ function renderBadStocks(){
   const tv=code=>`https://www.tradingview.com/chart/?symbol=TWSE%3A${code}`;
   const rmBtn=code=>`<button onclick="removeGDRStock('${escH(code)}')" style="padding:2px 8px;font-size:.62rem;background:transparent;border:1px solid var(--border2);border-radius:4px;color:var(--text2);cursor:pointer">移除</button>`;
   const addBtn=(code,name)=>`<button onclick="addToGDRFromBorrow('${escH(code)}','${escH(name)}')" style="padding:2px 8px;font-size:.62rem;background:transparent;border:1px solid var(--border2);border-radius:4px;color:var(--text2);cursor:pointer">加追蹤</button>`;
-  const gdrSrcTag=g=>g.src==='news'
-    ?'<span style="font-size:.58rem;color:#fb923c;font-weight:700">📰 新聞偵測（未確認）</span>'
-    :g.src==='MOPS'
-      ?'<span style="font-size:.58rem;color:#f87171;font-weight:700">📋 MOPS 正式申請</span>'
-      :g.src==='TWSE-OpenAPI'
-        ?'<span style="font-size:.58rem;color:#f87171;font-weight:700">📋 TWSE 官方公告</span>'
-        :g.auto
-          ?'<span style="font-size:.58rem;color:#f87171;font-weight:700">📋 官方來源</span>'
-          :'<span style="font-size:.58rem;color:#9ca3af;font-weight:600">📌 手動追蹤</span>';
+  const _daysAgo=d=>{if(!d)return null;const ms=Date.now()-new Date(d);return Math.floor(ms/864e5);};
+  const gdrInfoLine=g=>{
+    const srcLabel=g.src==='news'?'📰 新聞偵測（未確認）'
+      :g.src==='MOPS'?'📋 MOPS 正式申請'
+      :g.src==='TWSE-OpenAPI'?'📋 TWSE 官方公告'
+      :g.auto?'📋 官方來源':'📌 手動追蹤';
+    const srcCol=g.src==='news'?'#fb923c':g.auto?'#f87171':'#9ca3af';
+    const srcHtml=`<span style="font-size:.58rem;color:${srcCol};font-weight:700">${srcLabel}</span>`;
+    // 公告日期（server entry 用 announcementDate；manual entry 用 g.date 當作加入日）
+    const dateRaw=g.announcementDate||(g.date?g.date.slice(0,10):'');
+    if(!dateRaw) return srcHtml+`<span style="font-size:.58rem;color:#6b7280;margin-left:5px">・無公告日期</span>`;
+    const days=_daysAgo(dateRaw);
+    const ageCol=days>90?'#f87171':days>30?'#fbbf24':'#34d399';
+    const warn=days>90?` ⚠️>90天`:'';
+    const label=g.announcementDate?'公告':'加入';
+    return srcHtml+`<span style="font-size:.58rem;color:${ageCol};margin-left:5px">・${label} ${dateRaw}（${days}天前${warn}）</span>`;
+  };
 
   let html='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.76rem">'
     +'<thead><tr style="border-bottom:1px solid var(--border);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em">'
@@ -6009,7 +6030,7 @@ function renderBadStocks(){
         <td style="padding:8px 8px;white-space:nowrap;border-left:3px solid #f87171">
           <a href="${tv(g.code)}" target="_blank" style="color:#f87171;font-weight:800;font-size:.85rem;text-decoration:none">${escH(g.code)}</a>
           <span style="font-size:.73rem;font-weight:700;margin-left:5px;color:var(--text)">${escH(g.name)}</span>
-          <br>${gdrSrcTag(g)}<span style="font-size:.6rem;color:#f87171;font-weight:600;margin-left:4px">${escH(g.note)}</span>
+          <br>${gdrInfoLine(g)}${g.note?`<span style="font-size:.58rem;color:var(--text2);margin-left:4px">${escH(g.note)}</span>`:''}
           ${price?`<span style="font-size:.6rem;color:var(--text2);margin-left:8px">現價 $${price}${peStr?' · '+peStr:''}</span>`:''}
         </td>
         <td style="padding:8px 8px;text-align:center">${typePills}</td>
@@ -6036,7 +6057,7 @@ function renderBadStocks(){
         <td style="padding:7px 8px;white-space:nowrap">
           <a href="${tv(g.code)}" target="_blank" style="color:var(--purple);font-weight:700;text-decoration:none">${escH(g.code)}</a>
           <span style="font-size:.72rem;font-weight:600;margin-left:4px">${escH(g.name)}</span>
-          <br>${gdrSrcTag(g)}<span style="font-size:.6rem;color:var(--text2);margin-left:4px">${escH(g.note)}</span>
+          <br>${gdrInfoLine(g)}${g.note?`<span style="font-size:.58rem;color:var(--text2);margin-left:4px">${escH(g.note)}</span>`:''}
           ${price?`<span style="font-size:.6rem;color:var(--text2);margin-left:8px">$${price}</span>`:''}
         </td>
         <td style="padding:7px 8px;text-align:center"><span class="bad-pill bad-gdr">GDR 稀釋</span></td>
@@ -6135,7 +6156,7 @@ function renderBadStocks(){
         <td style="padding:7px 8px">
           <a href="${tv(g.code)}" target="_blank" style="color:#60a5fa;font-weight:700;text-decoration:none">${escH(g.code)}</a>
           <span style="margin-left:6px;color:var(--text);font-size:.72rem">${escH(g.name)}</span>
-          <br>${gdrSrcTag(g)}<span style="font-size:.6rem;color:var(--text2);margin-left:4px">${escH(g.note)}</span>
+          <br>${gdrInfoLine(g)}${g.note?`<span style="font-size:.58rem;color:var(--text2);margin-left:4px">${escH(g.note)}</span>`:''}
           ${price?`<span style="font-size:.6rem;color:var(--text2);margin-left:8px">$${price}</span>`:''}
         </td>
         <td style="padding:7px 8px;text-align:center"><span class="bad-pill" style="background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.4)">流入市面</span></td>
