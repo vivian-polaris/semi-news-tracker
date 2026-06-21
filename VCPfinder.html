@@ -5978,7 +5978,7 @@ function renderBadStocks(){
     return;
   }
 
-  const tv=code=>`https://goodinfo.tw/tw/StockBorrowingLendingRatio.asp?STOCK_ID=${code}`;
+  const tv=code=>`https://goodinfo.tw/tw/ShowBBShareData.asp?STOCK_ID=${code}`;
   const rmBtn=code=>`<button onclick="removeGDRStock('${escH(code)}')" style="padding:2px 8px;font-size:.62rem;background:transparent;border:1px solid var(--border2);border-radius:4px;color:var(--text2);cursor:pointer">移除</button>`;
   const addBtn=(code,name)=>`<button onclick="addToGDRFromBorrow('${escH(code)}','${escH(name)}')" style="padding:2px 8px;font-size:.62rem;background:transparent;border:1px solid var(--border2);border-radius:4px;color:var(--text2);cursor:pointer">加追蹤</button>`;
   const _daysAgo=d=>{if(!d)return null;const ms=Date.now()-new Date(d);return Math.floor(ms/864e5);};
