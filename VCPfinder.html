@@ -5973,7 +5973,9 @@ function renderBadStocks(){
       ?'<span style="font-size:.58rem;color:#f87171;font-weight:700">📋 MOPS 正式申請</span>'
       :g.src==='TWSE-OpenAPI'
         ?'<span style="font-size:.58rem;color:#f87171;font-weight:700">📋 TWSE 官方公告</span>'
-        :g.auto?'<span style="font-size:.58rem;color:#f87171;font-weight:700">📋 官方來源</span>':'';
+        :g.auto
+          ?'<span style="font-size:.58rem;color:#f87171;font-weight:700">📋 官方來源</span>'
+          :'<span style="font-size:.58rem;color:#9ca3af;font-weight:600">📌 手動追蹤</span>';
 
   let html='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.76rem">'
     +'<thead><tr style="border-bottom:1px solid var(--border);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em">'
