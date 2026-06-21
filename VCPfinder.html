@@ -5261,9 +5261,10 @@ return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(20
   const _gdrCompleted=!!(_gdrMatch?.completed);
   const _gdrDateStr=_gdrMatch?.announcementDate||(_gdrMatch?.date?_gdrMatch.date.slice(0,10):'');
   const _gdrDays=_gdrDateStr?Math.floor((Date.now()-new Date(_gdrDateStr))/864e5):null;
-  const _gdrIsAuto=!!_gdrMatch?.auto;
-  const _gdrDateHtml=_gdrDateStr
-    ?`<span style="color:${_gdrDays>90?'#f87171':_gdrDays>30?'#fbbf24':'#34d399'}">${_gdrIsAuto?'公告':'加入'} ${_gdrDateStr}（${_gdrDays}天前${_gdrDays>90?' ⚠️':'' }）</span>`
+  // server entries have src field; manual entries don't — use src to detect auto
+  const _gdrIsAuto=!!(_gdrMatch?.auto||_gdrMatch?.src);
+  const _gdrDateHtml=_gdrDateStr&&_gdrDays!=null
+    ?`<span style="color:${_gdrDays>90?'#f87171':_gdrDays>30?'#fbbf24':'#34d399'}">${_gdrIsAuto?'公告':'加入'} ${_gdrDateStr}（${_gdrDays}天前${_gdrDays>90?' ⚠️':''}）</span>`
     :'<span style="color:#6b7280">無公告日期</span>';
   const _gdrSrcHtml=_gdrMatch?.src==='news'?'📰 新聞偵測（未確認）'
     :_gdrMatch?.src==='MOPS'?'📋 MOPS 正式申請'
@@ -5992,8 +5993,9 @@ function renderBadStocks(){
     const dateRaw=g.announcementDate||(g.date?g.date.slice(0,10):'');
     if(!dateRaw) return srcHtml+`<span style="font-size:.58rem;color:#6b7280;margin-left:5px">・無公告日期</span>`;
     const days=_daysAgo(dateRaw);
+    if(days==null) return srcHtml+`<span style="font-size:.58rem;color:#6b7280;margin-left:5px">・${dateRaw}</span>`;
     const ageCol=days>90?'#f87171':days>30?'#fbbf24':'#34d399';
-    const warn=days>90?` ⚠️>90天`:'';
+    const warn=days>90?' ⚠️':'';
     const label=g.announcementDate?'公告':'加入';
     return srcHtml+`<span style="font-size:.58rem;color:${ageCol};margin-left:5px">・${label} ${dateRaw}（${days}天前${warn}）</span>`;
   };
