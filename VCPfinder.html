@@ -5982,6 +5982,13 @@ function renderBadStocks(){
   const rmBtn=code=>`<button onclick="removeGDRStock('${escH(code)}')" style="padding:2px 8px;font-size:.62rem;background:transparent;border:1px solid var(--border2);border-radius:4px;color:var(--text2);cursor:pointer">移除</button>`;
   const addBtn=(code,name)=>`<button onclick="addToGDRFromBorrow('${escH(code)}','${escH(name)}')" style="padding:2px 8px;font-size:.62rem;background:transparent;border:1px solid var(--border2);border-radius:4px;color:var(--text2);cursor:pointer">加追蹤</button>`;
   const _daysAgo=d=>{if(!d)return null;const ms=Date.now()-new Date(d);return Math.floor(ms/864e5);};
+  // 借券日變化格式：0% → 今日持平；其他→ 今日±X.X%（±N張）
+  const _fmtBorrowChg=(pct,absChg)=>{
+    if(pct==null||pct===0) return '<span style="font-size:.6rem;color:var(--text2)">今日持平</span>';
+    const col=pct>=50?'#f87171':pct>=20?'#fb923c':pct>0?'#fbbf24':'#34d399';
+    const absStr=absChg!=null?`（${absChg>0?'+':''}${Math.abs(absChg).toLocaleString()}）`:'';
+    return `<span style="font-size:.62rem;color:${col}">今日${pct>0?'+':''}${pct.toFixed(1)}%${absStr}</span>`;
+  };
   const gdrInfoLine=g=>{
     const srcLabel=g.src==='news'?'📰 新聞偵測（未確認）'
       :g.src==='MOPS'?'📋 MOPS 正式申請'
@@ -6037,7 +6044,7 @@ function renderBadStocks(){
         </td>
         <td style="padding:8px 8px;text-align:center">${typePills}</td>
         <td style="padding:8px 8px;text-align:right;font-weight:800;color:${isHighBorrow?'#f87171':'var(--text)'}">
-          ${balTxt}${borrow?`<br><span style="font-size:.65rem;color:${chgCol}">${chgPct>=0?'+':''}${chgPct.toFixed(1)}%</span>`:''}
+          ${balTxt}${borrow?`<br>${_fmtBorrowChg(chgPct,borrow.changeAbs)}`:''}
         </td>
         <td style="padding:8px 8px;text-align:center;font-size:.85rem;font-weight:900">🚨 極危</td>
         <td style="padding:8px 8px;text-align:center">${rmBtn(g.code)}</td>
@@ -6053,7 +6060,6 @@ function renderBadStocks(){
       const price=stockPriceMap[g.code]?.c?.[0];
       const balTxt=borrow?borrow.balance.toLocaleString():'— （待觀察）';
       const chgPct=borrow?.changePct||0;
-      const chgTxt=borrow?(chgPct>=0?'+':'')+chgPct.toFixed(1)+'%':'—';
       html+=`<tr style="border-bottom:1px solid rgba(45,55,72,.4);background:rgba(239,68,68,.03)"
         onmouseover="this.style.background='rgba(239,68,68,.09)'" onmouseout="this.style.background='rgba(239,68,68,.03)'">
         <td style="padding:7px 8px;white-space:nowrap">
@@ -6063,7 +6069,7 @@ function renderBadStocks(){
           ${price?`<span style="font-size:.6rem;color:var(--text2);margin-left:8px">$${price}</span>`:''}
         </td>
         <td style="padding:7px 8px;text-align:center"><span class="bad-pill bad-gdr">GDR 稀釋</span></td>
-        <td style="padding:7px 8px;text-align:right;color:var(--text2);font-size:.72rem">${balTxt}<br><span style="font-size:.62rem;color:var(--text2)">${chgTxt}</span></td>
+        <td style="padding:7px 8px;text-align:right;color:var(--text2);font-size:.72rem">${balTxt}<br>${borrow?_fmtBorrowChg(chgPct,borrow.changeAbs):'<span style="color:var(--text2);font-size:.6rem">無借券資料</span>'}</td>
         <td style="padding:7px 8px;text-align:center;font-weight:700">🔴 稀釋</td>
         <td style="padding:7px 8px;text-align:center">${rmBtn(g.code)}</td>
       </tr>`;
@@ -6083,7 +6089,7 @@ function renderBadStocks(){
           <span style="font-size:.72rem;font-weight:600;margin-left:4px">${escH(v.name||_nameMap[code]||'')}</span>
         </td>
         <td style="padding:7px 8px;text-align:center"><span class="bad-pill bad-borrow">借券暴增</span></td>
-        <td style="padding:7px 8px;text-align:right;font-weight:700">${v.balance.toLocaleString()}<br><span style="font-size:.65rem;color:${pctCol}">+${v.changePct.toFixed(1)}%（+${v.changeAbs.toLocaleString()}）</span></td>
+        <td style="padding:7px 8px;text-align:right;font-weight:700">${v.balance.toLocaleString()}<br>${_fmtBorrowChg(v.changePct,v.changeAbs)}</td>
         <td style="padding:7px 8px;text-align:center;font-weight:700">${risk}</td>
         <td style="padding:7px 8px;text-align:center">${addBtn(code,v.name)}</td>
       </tr>`;
@@ -6094,7 +6100,6 @@ function renderBadStocks(){
   if(highOnly.length){
     html+=`<tr><td colspan="5" style="padding:4px 8px;font-size:.6rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;background:var(--bg2)">長期高借券（≥5,000張，空頭長期佈局中）</td></tr>`;
     highOnly.forEach(([code,v])=>{
-      const chgCol=v.changePct>0?'#fbbf24':v.changePct<0?'#34d399':'var(--text2)';
       html+=`<tr style="border-bottom:1px solid rgba(45,55,72,.3);opacity:.8"
         onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.8'">
         <td style="padding:6px 8px;white-space:nowrap">
@@ -6102,7 +6107,7 @@ function renderBadStocks(){
           <span style="font-size:.7rem;margin-left:4px">${escH(v.name||_nameMap[code]||'')}</span>
         </td>
         <td style="padding:6px 8px;text-align:center"><span class="bad-pill" style="background:rgba(113,113,122,.12);color:#9ca3af;border:1px solid rgba(113,113,122,.2)">高借券</span></td>
-        <td style="padding:6px 8px;text-align:right;font-weight:600">${v.balance.toLocaleString()}<br><span style="font-size:.65rem;color:${chgCol}">${v.changePct>=0?'+':''}${v.changePct.toFixed(1)}%</span></td>
+        <td style="padding:6px 8px;text-align:right;font-weight:600">${v.balance.toLocaleString()}<br>${_fmtBorrowChg(v.changePct,v.changeAbs)}</td>
         <td style="padding:6px 8px;text-align:center;color:var(--text2);font-size:.72rem">觀察</td>
         <td style="padding:6px 8px;text-align:center">${addBtn(code,v.name)}</td>
       </tr>`;
@@ -6150,8 +6155,6 @@ function renderBadStocks(){
       const borrow=_borrowMap[g.code];
       const balTxt=borrow?borrow.balance.toLocaleString():'—';
       const chgPct=borrow?.changePct||0;
-      const chgTxt=borrow?(chgPct>=0?`+${chgPct.toFixed(1)}%`:`${chgPct.toFixed(1)}%`):'—';
-      const chgCol=chgPct>=20?'#fb923c':'var(--text2)';
       const price=stockPriceMap[g.code]?.c?.[0];
       const op=g.auto?`<td style="padding:7px 8px"></td>`:`<td style="padding:7px 8px;text-align:center">${rmBtn(g.code)}</td>`;
       html+=`<tr style="border-bottom:1px solid var(--border)">
@@ -6162,7 +6165,7 @@ function renderBadStocks(){
           ${price?`<span style="font-size:.6rem;color:var(--text2);margin-left:8px">$${price}</span>`:''}
         </td>
         <td style="padding:7px 8px;text-align:center"><span class="bad-pill" style="background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.4)">流入市面</span></td>
-        <td style="padding:7px 8px;text-align:right;color:${chgCol};font-size:.72rem">${balTxt}<br><span style="font-size:.62rem">${chgTxt}</span></td>
+        <td style="padding:7px 8px;text-align:right;font-size:.72rem">${balTxt}<br>${borrow?_fmtBorrowChg(chgPct,borrow.changeAbs):'<span style="color:var(--text2);font-size:.6rem">—</span>'}</td>
         <td style="padding:7px 8px;text-align:center;color:var(--text2);font-size:.72rem">觀察</td>
         ${op}
       </tr>`;
