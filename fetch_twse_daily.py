@@ -280,10 +280,11 @@ def parse_income_rows(data):
             continue
         eps = _flt(r.get('基本每股盈餘(元)'))
         rev = _int2(r.get('營業收入'))
+        gp  = _int2(r.get('營業毛利（毛損）') or r.get('營業毛利(毛損)') or r.get('營業毛利'))
         oi  = _int2(r.get('營業利益'))
         ni  = _int2(r.get('稅後淨利'))
         result[code] = {
-            'eps': eps, 'revenue': rev,
+            'eps': eps, 'revenue': rev, 'grossProfit': gp,
             'operatingIncome': oi, 'netIncome': ni,
             'year': str(r.get('年度','')),
             'quarter': str(r.get('季別',''))
@@ -314,15 +315,25 @@ def fetch_income():
                 mops_url = f'https://mops.twse.com.tw/mops/web/ajax_t05st09?encodeURIComponent=1&step=1&firstin=1&off=1&keyword4=&code1=&TYPEK=sii&co_id=&year={tw_year}&season={cur_qtr}'
                 prev_data = get(mops_url)
             prev_income = parse_income_rows(prev_data) if prev_data else {}
-            # 計算 YoY EPS 成長率
+            # 計算 YoY 成長率：EPS / 營業利益 / 毛利
             yoy_count = 0
             for code, cur in income.items():
                 prev = prev_income.get(code)
-                if prev and prev.get('eps') and cur.get('eps'):
-                    p_eps, c_eps = prev['eps'], cur['eps']
-                    if p_eps != 0:
-                        cur['earningsGrowth'] = round((c_eps - p_eps) / abs(p_eps), 4)
-                        yoy_count += 1
+                if not prev:
+                    continue
+                # EPS 成長
+                p_eps, c_eps = prev.get('eps'), cur.get('eps')
+                if p_eps and c_eps and p_eps != 0:
+                    cur['earningsGrowth'] = round((c_eps - p_eps) / abs(p_eps), 4)
+                    yoy_count += 1
+                # 營業利益成長
+                p_oi, c_oi = prev.get('operatingIncome'), cur.get('operatingIncome')
+                if p_oi and c_oi and p_oi != 0:
+                    cur['operatingIncomeGrowth'] = round((c_oi - p_oi) / abs(p_oi), 4)
+                # 毛利成長
+                p_gp, c_gp = prev.get('grossProfit'), cur.get('grossProfit')
+                if p_gp and c_gp and p_gp != 0:
+                    cur['grossProfitGrowth'] = round((c_gp - p_gp) / abs(p_gp), 4)
             print(f'  prev year income ({prev_year}Q{cur_qtr}): {len(prev_income)}, YoY computed: {yoy_count}')
     else:
         print('  ⚠️ t187ap14_L failed or empty')

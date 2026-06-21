@@ -1118,6 +1118,9 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('score')">VCP ⇅</th>
       <th onclick="setSort('canslim',this)">CANSLIM ⇅</th>
       <th onclick="setSort('fund',this)">基本面 ⇅</th>
+      <th onclick="setSort('revGrowth',this)" title="月營收年增率（YoY），來源：TWSE 月營收公告">營收% ⇅</th>
+      <th onclick="setSort('gpGrowth',this)" title="毛利年增率（季報 YoY），來源：TWSE 季報">毛利% ⇅</th>
+      <th onclick="setSort('oiGrowth',this)" title="營業利益年增率（季報 YoY），來源：TWSE 季報">營益% ⇅</th>
       <th onclick="setSort('moat',this)" title="護城河評分：毛利率（定價力/客戶非你不買）+ ROE（打不死）+ 營業利益率（效率）+ EPS成長（持續性）。≥80=極強，股價未漲前是最佳買點。">護城河 ⇅</th>
       <th onclick="setSort('chips',this)">籌碼 ⇅</th>
       <th onclick="setSort('foreignHits',this)" title="外資連買：今日/10日/20日/60日 各期均為外資買超的計數（4/4=四期全買，最強）">外資連買 ⇅</th>
@@ -3339,12 +3342,15 @@ function quickFund(sym){
       operatingMargin:rev>0?+(oi/rev).toFixed(4):null,
       revenueGrowth:rawRg!=null?Math.min(rawRg,5.0):null,
       earningsGrowth:inc?.earningsGrowth??null,
+      operatingIncomeGrowth:inc?.operatingIncomeGrowth??null,
+      grossProfitGrowth:inc?.grossProfitGrowth??null,
       pe:bwi?.pe??null,pb:bwi?.pb??null,divYield:bwi?.divYield??null,
     };
   }
   if(bwi?.pe!=null||bwi?.pb!=null||bwi?.divYield!=null){
     return{roe:null,grossMargin:null,operatingMargin:null,earningsGrowth:null,
-      revenueGrowth:null,pe:bwi.pe??null,pb:bwi.pb??null,divYield:bwi.divYield??null};
+      revenueGrowth:null,operatingIncomeGrowth:null,grossProfitGrowth:null,
+      pe:bwi.pe??null,pb:bwi.pb??null,divYield:bwi.divYield??null};
   }
   return null;
 }
@@ -3363,6 +3369,8 @@ async function fetchFundamentals(sym){
       operatingMargin:rev>0?+(oi/rev).toFixed(4):null,
       revenueGrowth:rawRg!=null?Math.min(rawRg,5.0):null,
       earningsGrowth:inc?.earningsGrowth??null,
+      operatingIncomeGrowth:inc?.operatingIncomeGrowth??null,
+      grossProfitGrowth:inc?.grossProfitGrowth??null,
       pe:bwi?.pe??null,pb:bwi?.pb??null,divYield:bwi?.divYield??null,
     };
     lsSet('fund_'+stockId,result);
@@ -3967,6 +3975,9 @@ if(sortKey==='graham'){
       const mg=r=>marginMap[r.code]?.change??-Infinity;
       return sortAsc?mg(a)-mg(b):mg(b)-mg(a);
     }
+    if(sortKey==='revGrowth'){const v=r=>r.fund?.revenueGrowth??-Infinity;return sortAsc?v(a)-v(b):v(b)-v(a);}
+    if(sortKey==='gpGrowth'){const v=r=>r.fund?.grossProfitGrowth??-Infinity;return sortAsc?v(a)-v(b):v(b)-v(a);}
+    if(sortKey==='oiGrowth'){const v=r=>r.fund?.operatingIncomeGrowth??-Infinity;return sortAsc?v(a)-v(b):v(b)-v(a);}
     if(sortKey==='moat'){const mv=r=>moatDb[r.code]?.strength??calcMoat(r.fund||null)??-1;return sortAsc?mv(a)-mv(b):mv(b)-mv(a);}
     if(sortKey==='slope'){
       const sv=r=>{const v=r.vcp;if(!v||!v.stage2)return 0;const sl=v.ma20Slope,dm=v.distMA20,rsi=v.rsi;if(sl!=null&&sl<0)return 1;if((rsi!=null&&rsi>75)||(dm!=null&&dm>20))return 2;if((rsi!=null&&rsi>=65&&rsi<=75)||(dm!=null&&dm>=8&&dm<=20))return 3;if((sl==null||sl>=0)&&(rsi==null||(rsi>=45&&rsi<=65))&&(dm==null||(dm>=-5&&dm<=8)))return 5;return 4;};
@@ -4380,7 +4391,11 @@ function renderTable(){
             <div>${dot(h.d1,'今')}${dot(h.d10,'10d')}${dot(h.d20,'20d')}${dot(h.d60,'60d')}</div>
           </td>`;
         })();
-        return cs.score+`<td>${fundHTML}</td>${moatCell}<td>${chipsHTML}</td>`+fhCell+pivotCell+signalCell+grahamCell+mgCell+exDivCell+cs.seven;
+        const _gCell=v=>{if(v==null)return'<td style="text-align:right;color:var(--text2);font-size:.62rem">—</td>';const p=(v*100).toFixed(1);const col=v>=0.25?'#34d399':v>=0.10?'#a3e635':v>=0?'#fbbf24':'#f87171';return`<td style="text-align:right;white-space:nowrap"><span style="font-size:.72rem;font-weight:700;color:${col}">${v>=0?'+':''}${p}%</span></td>`;};
+        const revGrowthCell=_gCell(fund.revenueGrowth);
+        const gpGrowthCell=_gCell(fund.grossProfitGrowth);
+        const oiGrowthCell=_gCell(fund.operatingIncomeGrowth);
+        return cs.score+`<td>${fundHTML}</td>`+revGrowthCell+gpGrowthCell+oiGrowthCell+`${moatCell}<td>${chipsHTML}</td>`+fhCell+pivotCell+signalCell+grahamCell+mgCell+exDivCell+cs.seven;
       })()}
       ${slopeCell}
       <td><span class="pct-b ${pBadge}">-${v.pctH}%</span>${cHTML}</td>
