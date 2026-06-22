@@ -412,13 +412,9 @@ def fetch_news():
     return all_items
 
 # ── 7. Stock Price OHLCV（TWSE/TPEX 官方 API 批次抓取，取代 Yahoo Finance）──────
-def fetch_twse_prices_today():
-    """TWSE 官方 API 一次取得所有上市股票今日 OHLCV（不需逐股請求，無 rate-limit 風險）"""
-    data = get('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL')
+def _parse_twse_openapi_prices(data):
+    """解析 openapi.twse.com.tw 格式（list of dicts）"""
     result = {}
-    if not data or not isinstance(data, list):
-        print('  [WARN] TWSE STOCK_DAY_ALL 取得失敗')
-        return result, None
     for r in data:
         code = str(r.get('Code') or r.get('code') or '').strip()
         if not re.match(r'^\d{4,6}$', code):
@@ -435,19 +431,72 @@ def fetch_twse_prices_today():
         except Exception:
             v = 0
         result[code] = {'c': round(c, 2), 'h': round(h, 2), 'l': round(l, 2), 'o': round(o, 2), 'v': v}
-    # 從 FMTQIK 取得實際交易日期（STOCK_DAY_ALL 無日期欄位）
-    # FMTQIK Date 格式：'1150522'（民國年7位）→ 2026-05-22
+    return result
+
+def _parse_twse_rwd_prices(data):
+    """解析 www.twse.com.tw/exchangeReport/STOCK_DAY_ALL 格式（{stat,date,fields,data}）"""
+    result = {}
     price_date = None
-    fmtqik = get('https://openapi.twse.com.tw/v1/exchangeReport/FMTQIK')
-    if fmtqik and isinstance(fmtqik, list) and len(fmtqik) > 0:
-        raw_date = str(fmtqik[-1].get('Date', '') or '').strip()
-        if len(raw_date) == 7 and raw_date.isdigit():
-            try:
-                price_date = f'{int(raw_date[:3]) + 1911}-{raw_date[3:5]}-{raw_date[5:7]}'
-            except Exception:
-                pass
-        elif re.match(r'\d{4}-\d{2}-\d{2}', raw_date):
-            price_date = raw_date
+    if not isinstance(data, dict) or data.get('stat') not in ('OK', '成功'):
+        return result, price_date
+    raw_date = str(data.get('date', '') or '').strip()
+    if len(raw_date) == 7 and raw_date.isdigit():
+        try:
+            price_date = f'{int(raw_date[:3]) + 1911}-{raw_date[3:5]}-{raw_date[5:7]}'
+        except Exception:
+            pass
+    rows = data.get('data', [])
+    for row in rows:
+        if len(row) < 9:
+            continue
+        code = str(row[0]).strip()
+        if not re.match(r'^\d{4,6}$', code):
+            continue
+        c = _flt(str(row[8]).replace(',', ''))
+        if not c or c <= 0:
+            continue
+        h = _flt(str(row[6]).replace(',', '')) or c
+        l = _flt(str(row[7]).replace(',', '')) or c
+        o = _flt(str(row[5]).replace(',', '')) or c
+        try:
+            v = int(float(str(row[2]).replace(',', '')))
+        except Exception:
+            v = 0
+        result[code] = {'c': round(c, 2), 'h': round(h, 2), 'l': round(l, 2), 'o': round(o, 2), 'v': v}
+    return result, price_date
+
+def fetch_twse_prices_today():
+    """TWSE 官方 API 一次取得所有上市股票今日 OHLCV（不需逐股請求，無 rate-limit 風險）"""
+    result = {}
+    price_date = None
+
+    # 主要：openapi.twse.com.tw（list of dicts 格式）
+    data = get('https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL')
+    if data and isinstance(data, list) and len(data) > 100:
+        result = _parse_twse_openapi_prices(data)
+        # 從 FMTQIK 取得交易日期（STOCK_DAY_ALL 無日期欄位）
+        fmtqik = get('https://openapi.twse.com.tw/v1/exchangeReport/FMTQIK')
+        if fmtqik and isinstance(fmtqik, list) and len(fmtqik) > 0:
+            raw_date = str(fmtqik[-1].get('Date', '') or '').strip()
+            if len(raw_date) == 7 and raw_date.isdigit():
+                try:
+                    price_date = f'{int(raw_date[:3]) + 1911}-{raw_date[3:5]}-{raw_date[5:7]}'
+                except Exception:
+                    pass
+            elif re.match(r'\d{4}-\d{2}-\d{2}', raw_date):
+                price_date = raw_date
+        print(f'  TWSE openapi 今日價格：{len(result)} 支（交易日期：{price_date}）')
+    else:
+        # 備援：www.twse.com.tw/exchangeReport 格式（{stat,date,fields,data}）
+        print('  [WARN] openapi STOCK_DAY_ALL 失敗，嘗試備援 URL')
+        alt = get('https://www.twse.com.tw/exchangeReport/STOCK_DAY_ALL?response=json')
+        if alt:
+            result, price_date = _parse_twse_rwd_prices(alt)
+        if len(result) > 100:
+            print(f'  TWSE 備援 STOCK_DAY_ALL：{len(result)} 支（交易日期：{price_date}）')
+        else:
+            print(f'  [WARN] TWSE STOCK_DAY_ALL 取得失敗（openapi+備援均無效）')
+
     print(f'  TWSE 官方今日價格：{len(result)} 支（交易日期：{price_date}）')
     return result, price_date
 
@@ -1041,14 +1090,25 @@ def fetch_exdiv():
         return
     end_str = min(end_str, '20261231')
 
-    url = f'https://www.twse.com.tw/rwd/zh/exRight/TWT49U?response=json&startDate={start_str}&endDate={end_str}'
+    # 嘗試多個 URL（rwd 主要、exchangeReport 備援）
+    urls = [
+        f'https://www.twse.com.tw/rwd/zh/exRight/TWT49U?response=json&startDate={start_str}&endDate={end_str}',
+        f'https://www.twse.com.tw/exchangeReport/TWT49U?response=json&startDate={start_str}&endDate={end_str}',
+    ]
     new_count = 0
-    try:
-        r = SESSION.get(url, timeout=20)
-        j = r.json()
-        if j.get('stat') != 'OK' or not isinstance(j.get('data'), list):
-            print(f'  ⚠️ 除息資料 stat={j.get("stat")}，跳過')
-        else:
+    success = False
+    for url in urls:
+        try:
+            r = SESSION.get(url, timeout=30)
+            r.raise_for_status()
+            raw = r.text.strip()
+            if not raw:
+                print(f'  ⚠️ 除息 API 空白回應: {url[30:70]}，嘗試備援')
+                continue
+            j = r.json()
+            if j.get('stat') not in ('OK', '成功') or not isinstance(j.get('data'), list):
+                print(f'  ⚠️ 除息資料 stat={j.get("stat")}，嘗試備援')
+                continue
             for row in j['data']:
                 # row[11] = "code,yyyymmdd"（最可靠的欄位）
                 key = str(row[11] if len(row) > 11 else '').strip()
@@ -1059,8 +1119,13 @@ def fetch_exdiv():
                         if code not in exdiv:
                             exdiv[code] = f'{mm}/{dd}'
                             new_count += 1
-    except Exception as e:
-        print(f'  ⚠️ 除息資料抓取失敗：{e}')
+            success = True
+            break
+        except Exception as e:
+            print(f'  ⚠️ 除息資料抓取失敗 ({url[30:70]}): {e}，嘗試備援')
+
+    if not success:
+        print('  ⚠️ 除息資料：所有 API 均失敗，保留現有資料')
 
     atomic_write('exdiv_2026.json', exdiv)
     print(f'  ✅ exdiv_2026.json: 累計 {len(exdiv)} 筆，本次新增 {new_count} 筆')
