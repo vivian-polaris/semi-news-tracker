@@ -611,6 +611,20 @@ footer a:hover{text-decoration:underline}
   #badStockBody th,#badStockBody td{padding:4px 5px!important;white-space:nowrap}
 }
 
+/* ── 除息追蹤器 ── */
+.div-phase-1{background:rgba(74,144,196,.18);color:#7dd3fc;border:1px solid rgba(74,144,196,.4)}
+.div-phase-2{background:rgba(245,158,11,.18);color:#fbbf24;border:1px solid rgba(245,158,11,.4)}
+.div-phase-3{background:rgba(139,92,246,.18);color:#a78bfa;border:1px solid rgba(139,92,246,.4)}
+.div-phase-4{background:rgba(5,150,105,.18);color:#34d399;border:1px solid rgba(5,150,105,.4)}
+.div-phase-done{background:rgba(113,113,122,.14);color:#9ca3af;border:1px solid rgba(113,113,122,.3)}
+.div-phase-warn{background:rgba(239,68,68,.18);color:#f87171;border:1px solid rgba(239,68,68,.4)}
+.div-pb{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.62rem;font-weight:700}
+@media(max-width:640px){
+  #divTrackerWrap{padding:8px 10px!important;overflow-x:auto!important}
+  #divTrackerBody table{font-size:.65rem!important;min-width:560px}
+  #divTrackerBody th,#divTrackerBody td{padding:4px 5px!important;white-space:nowrap}
+}
+
 /* ── Mobile FAB scan button ── */
 #mobScanFab{display:none;position:fixed;bottom:22px;right:16px;z-index:2000;
   padding:13px 22px;background:var(--purple);border:none;border-radius:28px;
@@ -852,6 +866,58 @@ footer a:hover{text-decoration:underline}
   </div>
   <div id="badStockBody" style="font-size:.78rem;color:var(--text2)">載入中...</div>
   <div id="badStockTime" style="font-size:.62rem;color:var(--text2);margin-top:8px;text-align:right"></div>
+</div>
+
+<!-- ── 除息追蹤器 ── -->
+<div id="divTrackerWrap" style="background:var(--card);border:1.5px solid var(--orange);border-radius:10px;padding:14px 18px;margin-bottom:14px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:.78rem;font-weight:800;color:var(--orange);letter-spacing:.05em">📅 除息追蹤器 <span id="divTrackerCount" style="font-size:.68rem;font-weight:400;color:var(--text2)"></span></div>
+      <div style="font-size:.6rem;color:var(--text2);margin-top:2px">依四階段操作策略提醒 · 手動輸入除息日</div>
+    </div>
+    <button onclick="toggleDivAddForm()" id="divAddToggleBtn" style="padding:4px 12px;font-size:.68rem;font-weight:700;background:rgba(212,168,75,.15);border:1px solid var(--orange);border-radius:8px;color:var(--orange);cursor:pointer;white-space:nowrap">+ 加入追蹤</button>
+  </div>
+  <!-- 新增表單 -->
+  <div id="divAddForm" style="display:none;background:var(--tag);border-radius:8px;padding:12px 14px;margin-bottom:12px;border:1px solid var(--border)">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:.6rem;color:var(--text2);text-transform:uppercase;letter-spacing:.05em">股票代號</label>
+        <input id="divAddCode" type="text" placeholder="如 2330" maxlength="6"
+          style="width:80px;padding:7px 10px;background:var(--card);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-size:.82rem;outline:none;font-family:inherit"
+          onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:.6rem;color:var(--text2);text-transform:uppercase;letter-spacing:.05em">股票名稱</label>
+        <input id="divAddName" type="text" placeholder="如 台積電" maxlength="10"
+          style="width:90px;padding:7px 10px;background:var(--card);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-size:.82rem;outline:none;font-family:inherit"
+          onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:.6rem;color:var(--text2);text-transform:uppercase;letter-spacing:.05em">除息日（台灣）</label>
+        <input id="divAddDate" type="date"
+          style="padding:7px 10px;background:var(--card);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-size:.82rem;outline:none;font-family:inherit;color-scheme:dark"
+          onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:.6rem;color:var(--text2);text-transform:uppercase;letter-spacing:.05em">現金殖利率 %</label>
+        <input id="divAddYield" type="number" placeholder="如 6.5" step="0.1" min="0" max="30"
+          style="width:80px;padding:7px 10px;background:var(--card);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-size:.82rem;outline:none;font-family:inherit"
+          onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="font-size:.6rem;color:var(--text2);text-transform:uppercase;letter-spacing:.05em">歷史填息率 %</label>
+        <input id="divAddFill" type="number" placeholder="如 80" step="1" min="0" max="100"
+          style="width:80px;padding:7px 10px;background:var(--card);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-size:.82rem;outline:none;font-family:inherit"
+          onfocus="this.style.borderColor='var(--orange)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <button onclick="submitDivStock()" style="padding:7px 18px;background:var(--orange);border:none;border-radius:8px;color:#0d1117;font-size:.82rem;font-weight:800;cursor:pointer;white-space:nowrap">確認加入</button>
+    </div>
+    <div id="divAddErr" style="display:none;font-size:.68rem;color:#f87171;margin-top:6px"></div>
+  </div>
+  <div id="divTrackerBody">
+    <div style="font-size:.78rem;color:var(--text2);padding:8px 0">尚無追蹤股票，點「+ 加入追蹤」新增</div>
+  </div>
+  <div id="divTrackerTime" style="font-size:.62rem;color:var(--text2);margin-top:8px;text-align:right"></div>
 </div>
 
 <!-- ── VCP 掃描 ── -->
@@ -6576,6 +6642,131 @@ function showSemiTab(id){
   document.querySelectorAll('#semi-wrap .nb').forEach(btn=>btn.classList.remove('active'));
   event.target.classList.add('active');
 }
+
+// ── 除息追蹤器 ────────────────────────────────────────────────────────────────
+function loadDivStocks(){try{return JSON.parse(localStorage.getItem('divStocks')||'[]');}catch(e){return[];}}
+function saveDivStocks(arr){localStorage.setItem('divStocks',JSON.stringify(arr));}
+
+function toggleDivAddForm(){
+  const f=document.getElementById('divAddForm');
+  const b=document.getElementById('divAddToggleBtn');
+  if(!f)return;
+  const open=f.style.display==='none'||f.style.display==='';
+  f.style.display=open?'block':'none';
+  if(b)b.textContent=open?'✕ 取消':'+ 加入追蹤';
+  if(open)document.getElementById('divAddCode')?.focus();
+}
+
+function submitDivStock(){
+  const code=(document.getElementById('divAddCode')?.value||'').trim();
+  const name=(document.getElementById('divAddName')?.value||'').trim();
+  const date=(document.getElementById('divAddDate')?.value||'').trim();
+  const yld=parseFloat(document.getElementById('divAddYield')?.value||0);
+  const fill=parseFloat(document.getElementById('divAddFill')?.value||0);
+  const err=document.getElementById('divAddErr');
+  if(!code||!date){if(err){err.textContent='股票代號與除息日為必填';err.style.display='block';}return;}
+  const arr=loadDivStocks();
+  const idx=arr.findIndex(s=>s.code===code);
+  const entry={code,name:name||code,exDivDate:date,divYield:isNaN(yld)?0:yld,fillRate:isNaN(fill)?0:fill,addedAt:new Date().toISOString().slice(0,10)};
+  if(idx>=0)arr[idx]=entry; else arr.push(entry);
+  saveDivStocks(arr);
+  if(err)err.style.display='none';
+  document.getElementById('divAddCode').value='';
+  document.getElementById('divAddName').value='';
+  document.getElementById('divAddDate').value='';
+  document.getElementById('divAddYield').value='';
+  document.getElementById('divAddFill').value='';
+  toggleDivAddForm();
+  renderDivTracker();
+}
+
+function removeDivStock(code){
+  saveDivStocks(loadDivStocks().filter(s=>s.code!==code));
+  renderDivTracker();
+}
+
+function bizDaysApprox(calDays){return Math.round(calDays*5/7);}
+
+function getDivPhaseInfo(exDivDate){
+  const today=new Date();today.setHours(0,0,0,0);
+  const ex=new Date(exDivDate);ex.setHours(0,0,0,0);
+  const calDays=Math.round((ex-today)/86400000);
+  const bDays=bizDaysApprox(calDays);
+  if(bDays<0){
+    return{phase:'done',label:'觀察填息',cls:'div-phase-done',bDays,
+      tips:'除息已過，觀察股價是否填息回原點。',action:null};}
+  if(bDays===0){
+    return{phase:'4',label:'除息日！',cls:'div-phase-4',bDays,
+      tips:'今日為除息日，昨天若尚未買進則此次無法領息。',action:null};}
+  if(bDays===1){
+    return{phase:'4',label:'最後買進日',cls:'div-phase-4',bDays,
+      tips:'⭐ 今日為最後買進日！台灣 T+2 交割制度，今日收盤前買進才能領息。',
+      action:'今日最晚買進'};}
+  if(bDays<=2){
+    return{phase:'3',label:'稅務評估（T-'+bDays+'）',cls:'div-phase-3',bDays,
+      tips:'距除息 '+bDays+' 個營業日。若適用高稅率（30%+）或單筆股利 >2 萬，建議趁高點賣出，直接賺取價差、避開稅負。',
+      action:'評估是否賣出了結'};}
+  if(bDays===6){
+    return{phase:'2',label:'⚠️ 融資警戒（T-6）',cls:'div-phase-warn',bDays,
+      tips:'距除息 6 個營業日。券商起設算融資擔保品，務必確保整戶擔保維持率 > 130%，禁止隔日沖！',
+      action:'確認擔保維持率 >130%'};}
+  if(bDays>=3&&bDays<=14){
+    const tagLabel=bDays>=7?'布局期（T-'+bDays+'）':'布局尾聲（T-'+bDays+'）';
+    return{phase:'1',label:tagLabel,cls:'div-phase-1',bDays,
+      tips:'距除息 '+bDays+' 個營業日，處於布局期。填息率高且近一季營業利益成長率為正者，可提前卡位，享後續散戶買盤推升。',
+      action:bDays>6?'評估提前布局':'留意 T-6 融資警戒即將到來'};}
+  return{phase:'wait',label:'尚未進入範圍（T-'+bDays+'）',cls:'div-phase-done',bDays,
+    tips:'距除息 '+bDays+' 個營業日（超過 14 天），尚未進入操作區間，可先列入觀察。',action:null};
+}
+
+function renderDivTracker(){
+  const arr=loadDivStocks();
+  const body=document.getElementById('divTrackerBody');
+  const cnt=document.getElementById('divTrackerCount');
+  const timeEl=document.getElementById('divTrackerTime');
+  if(!body)return;
+  if(cnt)cnt.textContent=arr.length?'（'+arr.length+' 支）':'';
+  if(!arr.length){
+    body.innerHTML='<div style="font-size:.78rem;color:var(--text2);padding:8px 0">尚無追蹤股票，點「+ 加入追蹤」新增</div>';
+    return;}
+  const sorted=[...arr].map(s=>({...s,info:getDivPhaseInfo(s.exDivDate)})).sort((a,b)=>a.info.bDays-b.info.bDays);
+  body.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:.8rem">'
+    +'<thead><tr style="font-size:.6rem;color:var(--text2);text-transform:uppercase;letter-spacing:.06em">'
+    +'<th style="text-align:left;padding:8px 10px 6px;border-bottom:1px solid var(--border);white-space:nowrap">代號</th>'
+    +'<th style="text-align:left;padding:8px 10px 6px;border-bottom:1px solid var(--border);white-space:nowrap">名稱</th>'
+    +'<th style="text-align:center;padding:8px 10px 6px;border-bottom:1px solid var(--border);white-space:nowrap">除息日</th>'
+    +'<th style="text-align:center;padding:8px 10px 6px;border-bottom:1px solid var(--border);white-space:nowrap">殖利率</th>'
+    +'<th style="text-align:center;padding:8px 10px 6px;border-bottom:1px solid var(--border);white-space:nowrap">填息率</th>'
+    +'<th style="text-align:center;padding:8px 10px 6px;border-bottom:1px solid var(--border);white-space:nowrap">操作階段</th>'
+    +'<th style="text-align:left;padding:8px 10px 6px;border-bottom:1px solid var(--border);white-space:nowrap">操作提醒</th>'
+    +'<th style="text-align:center;padding:8px 10px 6px;border-bottom:1px solid var(--border);white-space:nowrap">移除</th>'
+    +'</tr></thead><tbody>'
+    +sorted.map(function(s){
+      const info=s.info;
+      const yldStr=s.divYield?s.divYield.toFixed(1)+'%':'—';
+      const fillStr=s.fillRate?s.fillRate.toFixed(0)+'%':'—';
+      const fillCol=s.fillRate>=80?'#34d399':s.fillRate>=50?'#fbbf24':'#f87171';
+      const actionHtml=info.action?'<strong style="color:var(--text);display:block">'+escH(info.action)+'</strong>':'';
+      return '<tr style="border-bottom:1px solid rgba(45,55,72,.5)">'
+        +'<td style="padding:9px 10px;font-weight:700;color:var(--purple)">'+escH(s.code)+'</td>'
+        +'<td style="padding:9px 10px;font-weight:600;color:var(--text);white-space:nowrap">'+escH(s.name)+'</td>'
+        +'<td style="padding:9px 10px;text-align:center;color:var(--text2);white-space:nowrap">'+escH(s.exDivDate)+'</td>'
+        +'<td style="padding:9px 10px;text-align:center;font-weight:700;color:var(--orange)">'+yldStr+'</td>'
+        +'<td style="padding:9px 10px;text-align:center;font-weight:700;color:'+fillCol+'">'+fillStr+'</td>'
+        +'<td style="padding:9px 10px;text-align:center;white-space:nowrap"><span class="div-pb '+info.cls+'">'+escH(info.label)+'</span></td>'
+        +'<td style="padding:9px 10px;font-size:.68rem;color:var(--text2);line-height:1.5">'+actionHtml+escH(info.tips)+'</td>'
+        +'<td style="padding:9px 10px;text-align:center"><button onclick="removeDivStock(\''+escH(s.code)+'\')" style="padding:2px 7px;font-size:.58rem;font-weight:700;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);border-radius:4px;color:#f87171;cursor:pointer">移除</button></td>'
+        +'</tr>';
+    }).join('')
+    +'</tbody></table>';
+  if(timeEl)timeEl.textContent='更新於 '+new Date().toLocaleTimeString('zh-TW');
+}
+
+(function(){
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',renderDivTracker,{once:true});}
+  else{renderDivTracker();}
+})();
+// ── 除息追蹤器結束 ────────────────────────────────────────────────────────────
 
 // ── 坡段追蹤器：持倉管理 ────────────────────────────────────────────────────
 function loadSlopePositions(){try{return JSON.parse(localStorage.getItem('slopePositions')||'[]');}catch(e){return[];}}
