@@ -1194,7 +1194,7 @@ footer a:hover{text-decoration:underline}
       <th onclick="setSort('signal',this)" title="進場訊號：✅買=回踩地量，現在可買。⏳不買=條件未到位，繼續等。🚫不買=過熱或尚未突破。操作流程：等放量突破→等回踩縮量（地量）→才買。">訊號 ⇅</th>
       <th onclick="setSort('graham',this)" title="葛拉漢合理價 = 現價 × √(22.5 ÷ (PE × PB))。來源：台灣證交所 BWIBBU 官方數據。低估=綠・高估=紅">估值 ⇅</th>
       <th onclick="setSort('margin',this)" title="融資今日餘額變化（千股），盤中即時・收盤固定">融資 ⇅</th>
-      <th title="2026年除息日（TWSE TWT49U），距今≤14天標紅">除息日</th>
+      <th title="2026年除息日，距今30天內顯示・≤3天標紅・≤14天標黃">除息日</th>
 
       <th onclick="setSort('csC',this)" title="Current：EPS/營收成長≥25%" style="width:28px;min-width:28px;max-width:28px;text-align:center;cursor:pointer">C ⇅</th>
       <th onclick="setSort('csA',this)" title="Annual ROE≥15%" style="width:28px;min-width:28px;max-width:28px;text-align:center;cursor:pointer">A ⇅</th>
@@ -2180,7 +2180,7 @@ function renderExDivBanner(){
     const [mm,dd]=mmdd.split('/');
     const exDate=new Date(2026,parseInt(mm)-1,parseInt(dd));
     const daysLeft=Math.round((exDate-todayDate)/86400000);
-    if(daysLeft<0||daysLeft>14)return;
+    if(daysLeft<0||daysLeft>30)return;
     const isWatchlist=WATCHLIST_EX.includes(code);
     // 取名稱（stockPriceMap → twseDailyMap 股票清單 → 代號）
     const name=stockPriceMap[code]?.n
@@ -3069,7 +3069,9 @@ function calcVCP(data){
   const fin=detectRisingFin(data);
   const closes=data.map(d=>d.close),highs=data.map(d=>d.high),lows=data.map(d=>d.low);
   const volumes=data.map(d=>d.volume);
-  const price=closes[0];
+  // 若最新收盤價異常（<前日40%），用前一日價代替，防止 Yahoo 壞資料汙染
+  let price=closes[0];
+  if(price&&closes[1]&&price<closes[1]*0.4) price=closes[1];
   if(!price||price<=0)return null;
   const ma5=sma(closes,5);
   const ma10=sma(closes,10);
@@ -4479,8 +4481,9 @@ function renderTable(){
           const today=new Date();
           const exDate=new Date(2026,parseInt(mm)-1,parseInt(dd));
           const daysLeft=Math.round((exDate-today)/86400000);
-          const col=daysLeft<=1?'#f87171':daysLeft<=7?'#fbbf24':'#34d399';
-          const urgeTxt=daysLeft<0?'已過':daysLeft===0?'今天除息！':daysLeft===1?'明天除息':daysLeft+'天後除息';
+          if(daysLeft<0||daysLeft>30) return '<td style="text-align:center;color:var(--text2);font-size:.65rem">—</td>';
+          const col=daysLeft<=3?'#f87171':daysLeft<=14?'#fbbf24':'#34d399';
+          const urgeTxt=daysLeft===0?'今天除息！':daysLeft===1?'明天除息':daysLeft+'天後除息';
           const subTxt=daysLeft===1?'除息前一天（今天可買）':'';
           return `<td style="text-align:center;white-space:nowrap" title="除息日 2026/${mmdd}・${urgeTxt}">
             <div style="font-size:.72rem;font-weight:700;color:${col}">${mmdd}</div>
