@@ -1,0 +1,23 @@
+{
+  "run_date": "2026-06-23",
+  "criteria": {
+    "min_fill_rate": 60,
+    "max_fill_days": 120,
+    "min_yield": 5.0,
+    "min_years_div": 3,
+    "require_op_growth": true,
+    "max_pe": 15,
+    "max_pb": 1.5,
+    "min_eps_yoy": 10.0,
+    "min_op_growth_3y": 5.0,
+    "require_div_increase": true,
+    "min_payout_ratio": 70.0,
+    "min_payout_years": 3,
+    "buy_window_td": [
+      3,
+      10
+    ]
+  },
+  "qualified_window": [],
+  "qualified_watch": []
+}
