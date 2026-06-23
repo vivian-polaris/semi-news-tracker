@@ -35,12 +35,23 @@ jobs:
       - name: Fetch MoneyDJ ex-dividend data
         run: python scripts/fetch_moneydj_exdiv.py
 
+      - name: Install screener dependencies
+        run: pip install requests
+
+      - name: Run ex-div screener (Goodinfo基本面篩選)
+        run: python scripts/exdiv_screener.py
+
+      - name: Send Email report
+        run: python scripts/exdiv_email_report.py
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+
       - name: Commit and push
         continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add exdiv_moneydj.json
+          git add exdiv_moneydj.json exdiv_screener_results.json
           git diff --staged --quiet || git commit -m "data: update exdiv_moneydj from MoneyDJ $(date -u +'%Y-%m-%d')"
           git pull --rebase origin main
           git push
