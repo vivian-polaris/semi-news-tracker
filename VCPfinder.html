@@ -2452,7 +2452,7 @@ async function loadWeeklyOutlook(force=false){
       if(c.html&&c.ts&&Date.now()-c.ts<TTL){
         // 若快取內容出現明顯偏低的大盤點位（低於 30000），視為 AI 用舊訓練數據生成，強制捨棄
         const plainTxt=c.html.replace(/<[^>]*>/g,'');
-        const hasWrongTaiex=/點位[：:]\s*[12]\d{4}|[12]\d{4}\s*[–—~～\-]\s*[12]\d{4}\s*點/.test(plainTxt);
+        const hasWrongTaiex=/點位[：:]\s*[1-3]\d{4}/.test(plainTxt);
         if(!hasWrongTaiex){
           body.style.color='var(--text)';
           body.innerHTML=c.html;
@@ -2518,7 +2518,7 @@ async function loadWeeklyOutlook(force=false){
 
   const taixPriceStr=window.taixPrice
     ?`台股加權指數目前約 ${window.taixPrice.toLocaleString()} 點`
-    :`台股加權指數目前點位暫未取得即時數據，請根據近期市場狀況給出合理預測，台股加權指數通常在 18000～26000 點區間，請勿給出明顯偏離此範圍的點位`;
+    :`台股加權指數目前點位暫未取得即時數據，請根據近期台股市場新聞標題給出合理的點位預測`;
 
   // ③-A 讀取 FRED 美國總經數據（loadFedWatch 已快取至 localStorage）
   let fredBlock='【美國總經數據（FRED）】（未能取得，略過）';
