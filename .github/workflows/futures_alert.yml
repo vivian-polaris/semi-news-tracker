@@ -23,6 +23,12 @@ jobs:
         with:
           python-version: '3.11'
 
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-yfinance-requests
+          restore-keys: pip-${{ runner.os }}-
+
       - name: Install dependencies
         run: pip install --quiet yfinance requests
 

@@ -13,6 +13,12 @@ jobs:
         with:
           python-version: '3.11'
 
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-requests
+          restore-keys: pip-${{ runner.os }}-
+
       - run: pip install --quiet requests
 
       - name: Send VCP email report
