@@ -625,6 +625,30 @@ footer a:hover{text-decoration:underline}
   #divTrackerBody th,#divTrackerBody td{padding:4px 5px!important;white-space:nowrap}
 }
 
+/* ── 除息精選 ── */
+#exdivScreen{background:var(--card);border:1.5px solid #3b82f6;border-radius:10px;padding:14px 18px;margin-bottom:14px}
+#exdivScreen .es-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 12px}
+#exdivScreen .es-tab{padding:4px 12px;border-radius:8px;font-size:.68rem;font-weight:700;cursor:pointer;border:1px solid transparent;transition:all .15s}
+#exdivScreen .es-tab.buy{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.5);color:#f87171}
+#exdivScreen .es-tab.buy.active{background:rgba(239,68,68,.3);border-color:#ef4444}
+#exdivScreen .es-tab.win{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.4);color:#fbbf24}
+#exdivScreen .es-tab.win.active{background:rgba(245,158,11,.25);border-color:#f59e0b}
+#exdivScreen .es-tab.watch{background:rgba(63,185,122,.1);border-color:rgba(63,185,122,.35);color:#6ee7b7}
+#exdivScreen .es-tab.watch.active{background:rgba(63,185,122,.22);border-color:#3fb97a}
+#exdivScreen table{width:100%;border-collapse:collapse;font-size:.8rem}
+#exdivScreen th{background:rgba(255,255,255,.04);color:var(--text2);font-size:.63rem;font-weight:600;padding:5px 8px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+#exdivScreen td{padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle}
+#exdivScreen tr:hover td{background:rgba(255,255,255,.03)}
+.es-buy-flag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:.6rem;font-weight:700;background:rgba(239,68,68,.2);color:#f87171;border:1px solid rgba(239,68,68,.4);margin-left:4px}
+.es-yield-hi{color:#22c55e;font-weight:700}
+.es-yield-md{color:#3b82f6;font-weight:600}
+.es-yield-lo{color:#d97706}
+@media(max-width:640px){
+  #exdivScreen{padding:8px 10px!important;overflow-x:auto!important}
+  #exdivScreen table{font-size:.65rem!important;min-width:520px}
+  #exdivScreen th,#exdivScreen td{padding:4px 5px!important;white-space:nowrap}
+}
+
 /* ── Mobile FAB scan button ── */
 #mobScanFab{display:none;position:fixed;bottom:22px;right:16px;z-index:2000;
   padding:13px 22px;background:var(--purple);border:none;border-radius:28px;
@@ -918,6 +942,26 @@ footer a:hover{text-decoration:underline}
     <div style="font-size:.78rem;color:var(--text2);padding:8px 0">尚無追蹤股票，點「+ 加入追蹤」新增</div>
   </div>
   <div id="divTrackerTime" style="font-size:.62rem;color:var(--text2);margin-top:8px;text-align:right"></div>
+</div>
+
+<!-- ── 除息精選（TWSE API 自動篩選） ── -->
+<div id="exdivScreen">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:.78rem;font-weight:800;color:#3b82f6;letter-spacing:.05em">
+        💰 除息精選 <span id="esUpdated" style="font-size:.62rem;font-weight:400;color:var(--text2)"></span>
+      </div>
+      <div style="font-size:.6rem;color:var(--text2);margin-top:2px">每3天自動更新 · MoneyDJ除權息表 + TWSE基本面篩選</div>
+    </div>
+    <button onclick="loadExdivScreen(true)" style="padding:4px 12px;font-size:.68rem;font-weight:700;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.5);border-radius:8px;color:#60a5fa;cursor:pointer;white-space:nowrap">↻ 重新載入</button>
+  </div>
+  <div class="es-tabs">
+    <span class="es-tab buy active" id="esTab0" onclick="switchEsTab(0)">🔔 立即進場 <span id="esCnt0">—</span></span>
+    <span class="es-tab win" id="esTab1" onclick="switchEsTab(1)">📅 除息窗口 <span id="esCnt1">—</span></span>
+    <span class="es-tab watch" id="esTab2" onclick="switchEsTab(2)">📋 觀察名單 <span id="esCnt2">—</span></span>
+  </div>
+  <div id="esBody" style="color:var(--text2);font-size:.78rem">載入中...</div>
+  <div id="esCriteria" style="font-size:.58rem;color:var(--text2);margin-top:10px;line-height:1.8"></div>
 </div>
 
 <!-- ── VCP 掃描 ── -->
@@ -6896,6 +6940,108 @@ function renderSlopePositions(){
 // 頁面載入時自動顯示已存持倉
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',renderSlopePositions,{once:true});}
 else{renderSlopePositions();}
+
+// ════════════════════════════════════════════════════════════════
+// 除息精選（exdiv_screener_results.json）
+// ════════════════════════════════════════════════════════════════
+let _esData=null, _esTab=0;
+
+function yieldColor(y){
+  if(y==null)return'';
+  if(y>=8)return'es-yield-hi';
+  if(y>=5)return'es-yield-md';
+  return'es-yield-lo';
+}
+
+function esRow(q){
+  const code=q.code||'';
+  const name=q.name||'';
+  const exDate=q.exDate||'未公告';
+  const td=q.trading_days!=null?`T-${q.trading_days}`:'—';
+  const exDays=q.ex_days!=null?`${q.ex_days}天`:'—';
+  const y=q.yield3y;
+  const pe=q.pe!=null?q.pe.toFixed(1):'—';
+  const pb=q.pb!=null?q.pb.toFixed(1):'—';
+  const cy=q.consecutiveYears!=null?q.consecutiveYears:'—';
+  const cd=q.cash_div_total||q.divByYear?.[0]?.cashDiv||0;
+  const buyFlag=q.in_buy_window?`<span class="es-buy-flag">進場</span>`:'';
+  const fp=q.fill_proxy_ok?'✅':'—';
+  const yCls=yieldColor(y);
+  const yStr=y!=null?`<span class="${yCls}">${y.toFixed(1)}%</span>`:'—';
+  return`<tr>
+    <td><b>${code}</b>${buyFlag}</td>
+    <td>${name}</td>
+    <td style="white-space:nowrap">${exDate}<br><span style="font-size:.62rem;color:var(--text2)">${td} / ${exDays}</span></td>
+    <td>${yStr}</td>
+    <td>${pe}</td><td>${pb}</td>
+    <td>${cy}年</td>
+    <td>${cd?cd.toFixed(2):'—'}</td>
+    <td>${fp}</td>
+  </tr>`;
+}
+
+function renderEsTab(){
+  if(!_esData)return;
+  const w=_esData.qualified_window||[];
+  const wt=_esData.qualified_watch||[];
+  const buy=w.filter(q=>q.in_buy_window).sort((a,b)=>(a.trading_days||99)-(b.trading_days||99));
+  const other=w.filter(q=>!q.in_buy_window).sort((a,b)=>(a.ex_days||99)-(b.ex_days||99));
+  const watch=[...wt].sort((a,b)=>(b.yield3y||0)-(a.yield3y||0)).slice(0,20);
+
+  document.getElementById('esCnt0').textContent=buy.length?`(${buy.length})`:'(0)';
+  document.getElementById('esCnt1').textContent=other.length?`(${other.length})`:'(0)';
+  document.getElementById('esCnt2').textContent=watch.length?`(${watch.length})`:'(0)';
+
+  const sets=[buy,other,watch];
+  const rows=sets[_esTab];
+  const body=document.getElementById('esBody');
+
+  if(!rows.length){
+    const msgs=['本次無立即進場候選','本次無窗口內股票','本次無觀察名單'];
+    body.innerHTML=`<div style="padding:16px 0;color:var(--text2);font-size:.78rem">${msgs[_esTab]}</div>`;
+    return;
+  }
+
+  const thead=`<thead><tr>
+    <th>代號</th><th>名稱</th><th>除息日</th><th>殖利率</th>
+    <th>PE</th><th>PB</th><th>連配</th><th>現金股利</th><th>填息佳</th>
+  </tr></thead>`;
+  body.innerHTML=`<div style="overflow-x:auto"><table>${thead}<tbody>${rows.map(esRow).join('')}</tbody></table></div>`;
+}
+
+function switchEsTab(n){
+  _esTab=n;
+  [0,1,2].forEach(i=>{
+    const t=document.getElementById(`esTab${i}`);
+    if(t)t.classList.toggle('active',i===n);
+  });
+  renderEsTab();
+}
+
+async function loadExdivScreen(force=false){
+  const body=document.getElementById('esBody');
+  if(!body)return;
+  body.innerHTML='<span style="color:var(--text2)">載入中...</span>';
+  try{
+    const v=Date.now();
+    const url=force?`./exdiv_screener_results.json?v=${v}`:'./exdiv_screener_results.json';
+    const r=await fetchTO(url,8000);
+    if(!r.ok)throw new Error(r.status);
+    _esData=await r.json();
+    const upd=document.getElementById('esUpdated');
+    if(upd&&_esData.run_date)upd.textContent=`更新：${_esData.run_date}`;
+    // 篩選條件說明
+    const cr=_esData.criteria||{};
+    const cDiv=document.getElementById('esCriteria');
+    if(cDiv)cDiv.textContent=`篩選條件：殖利率≥${cr.min_yield||5}%　PE<${cr.max_pe||20}　PB<${cr.max_pb||2.5}　連配≥${cr.min_years_div||3}年　進場窗口T-${(cr.buy_window_td||[3,10])[0]}~T-${(cr.buy_window_td||[3,10])[1]}`;
+    renderEsTab();
+  }catch(e){
+    body.innerHTML=`<div style="color:#f87171;font-size:.78rem">載入失敗：${e.message}（請確認 exdiv_screener_results.json 已生成）</div>`;
+  }
+}
+
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',()=>loadExdivScreen(),{once:true});}
+else{loadExdivScreen();}
 
 // ── Mobile FAB: 顯示/隱藏浮動掃描鈕 ──
 (function(){
