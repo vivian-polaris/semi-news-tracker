@@ -28,17 +28,15 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: |
-          pip install playwright
-          playwright install chromium --with-deps
+        run: pip install playwright requests
+
+      - name: Install Playwright Chromium
+        run: playwright install --with-deps chromium
 
       - name: Fetch MoneyDJ ex-dividend data
         run: python scripts/fetch_moneydj_exdiv.py
 
-      - name: Install screener dependencies
-        run: pip install requests
-
-      - name: Run ex-div screener (Goodinfo基本面篩選)
+      - name: Run ex-div screener (TWSE API基本面篩選)
         run: python scripts/exdiv_screener.py
 
       - name: Send Email report
