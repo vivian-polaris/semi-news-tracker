@@ -418,16 +418,24 @@ def fetch_stock_fundamentals(
     result['pb']        = mkt.get('pb')
     result['yield3y']   = mkt.get('yield_div')   # 近1年殖利率作為代理
 
-    # ── 配息歷史（TWSE per-stock API）──
+    # ── 配息歷史（TWSE per-stock API，失敗時設 None = 跳過該條件）──
     div = fetch_dividend_history(code)
-    result['consecutiveYears']  = div.get('consecutive_years', 0)
-    result['divByYear']         = div.get('div_by_year', [])
-    result['divIncreasing3y']   = div.get('div_increasing_3y')
+    if div:
+        result['consecutiveYears'] = div.get('consecutive_years', 0)
+        result['divByYear']        = div.get('div_by_year', [])
+        result['divIncreasing3y']  = div.get('div_increasing_3y')
+    else:
+        # API 無資料：從 BWIBBU yield>0 推斷至少今年配息
+        yield_div = mkt.get('yield_div')
+        result['consecutiveYears'] = 1 if (yield_div and yield_div > 0) else None
+        result['divByYear']        = []
+        result['divIncreasing3y']  = None
 
     # ── 填息代理指標（連續配息 >= PROXY_FILL_YEARS）──
-    result['fillRate'] = None   # 無法從 TWSE 取得，設 None
+    result['fillRate'] = None
     result['fillDays'] = None
-    result['fill_proxy_ok'] = (result['consecutiveYears'] >= PROXY_FILL_YEARS)
+    cy = result['consecutiveYears']
+    result['fill_proxy_ok'] = (cy is not None and cy >= PROXY_FILL_YEARS)
 
     # ── EPS / OP 注入 ──
     result['prev_eps']     = prev_eps
@@ -452,20 +460,19 @@ def fetch_stock_fundamentals(
 def passes_criteria(r: dict) -> tuple[bool, list[str]]:
     fails = []
 
-    # 資料門檻：PE/PB/yield 和配息歷史全部 None → 資料不足
-    if (r.get('pe') is None and r.get('pb') is None
-            and r.get('yield3y') is None and r.get('consecutiveYears', 0) == 0):
+    # 資料門檻：PE/PB/yield 全部 None → TWSE 無此股資料
+    if r.get('pe') is None and r.get('pb') is None and r.get('yield3y') is None:
         fails.append("TWSE資料不足")
         return False, fails
 
-    # 1. 殖利率
+    # 1. 殖利率（None = BWIBBU 無資料，視為 0）
     y = r.get('yield3y')
-    if y is not None and y < MIN_YIELD:
-        fails.append(f"殖利率{y:.1f}%<{MIN_YIELD}%")
+    if y is None or y < MIN_YIELD:
+        fails.append(f"殖利率{y:.1f}%<{MIN_YIELD}%" if y is not None else "殖利率無資料")
 
-    # 2. 連續配息年數
-    cy = r.get('consecutiveYears', 0)
-    if cy < MIN_YEARS_DIV:
+    # 2. 連續配息年數（None = API 無回應，跳過此條件；只有拿到 0 才算失敗）
+    cy = r.get('consecutiveYears')
+    if cy is not None and cy < MIN_YEARS_DIV:
         fails.append(f"連續配息{cy}年<{MIN_YEARS_DIV}年")
 
     # 3. PE / PB（OR 邏輯：至少一個達標）
