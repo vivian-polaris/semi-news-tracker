@@ -29,8 +29,8 @@ from datetime import date, timedelta
 from pathlib import Path
 
 # ─── 必備條件 ──────────────────────────────────────────────────────────────────
-MIN_FILL_RATE     = 80    # 填息率(%)，可放寬至 40
-MAX_FILL_DAYS     = 60    # 最大平均填息天數
+MIN_FILL_RATE     = 60    # 填息率(%)，可放寬至 40
+MAX_FILL_DAYS     = 120   # 最大平均填息天數（60=保守，120=常見，180=寬鬆）
 MIN_YIELD         = 5.0   # 近3年平均現金殖利率(%)
 MIN_YEARS_DIV     = 3     # 最少連續配息年數
 REQUIRE_OP_GROWTH = True  # 最新季營業利益成長率 > 0
@@ -318,13 +318,15 @@ GOODINFO_JS = """
                 const stkDiv    = parseFloat(cells[7]) || 0;
                 const fdCell    = cells[9] || '-';
                 const fdVal     = parseFloat(fdCell);
-                const hasFilled = fdCell !== '-' && !isNaN(fdVal) && fdVal > 0;
+                // 排除被解析成年份的數字（> 999 視為無效）
+                const fdSane    = (!isNaN(fdVal) && fdVal > 0 && fdVal < 1000) ? fdVal : null;
+                const hasFilled = fdSane !== null;
                 if (cashDiv > 0 || stkDiv > 0) {
                     total++;
                     if (hasFilled) filled++;
                 }
                 divByYear.push({ year, cashDiv, stkDiv,
-                    fillDaysRow: isNaN(fdVal) ? null : fdVal });
+                    fillDaysRow: fdSane });
             }
             if (total > 0) fillRate = Math.round(filled / total * 100);
         }
@@ -479,23 +481,29 @@ async def scrape_goodinfo(page, code: str,
 def passes_criteria(r: dict) -> tuple[bool, list[str]]:
     fails = []
 
-    # ── 必備1: 連續配息年數 ──────────────────────────────────────────────────
+    # ── 資料品質門檻：三個核心指標都是 None 視為資料不足，直接淘汰 ───────────
+    fr = r.get("fillRate")
+    fd = r.get("fillDays")
+    y3 = r.get("yield3y")
     cy = r.get("consecutiveYears", 0)
-    if cy > 0 and cy < MIN_YEARS_DIV:
+    div_by_year = r.get("divByYear", [])
+    if fr is None and fd is None and y3 is None and cy == 0 and not div_by_year:
+        fails.append("Goodinfo資料不足(無股利歷史)")
+        return False, fails
+
+    # ── 必備1: 連續配息年數（0 = 無配息歷史，直接淘汰）──────────────────────
+    if cy < MIN_YEARS_DIV:
         fails.append(f"連續配息{cy}年<{MIN_YEARS_DIV}年")
 
     # ── 必備2: 填息率 ────────────────────────────────────────────────────────
-    fr = r.get("fillRate")
     if fr is not None and fr < MIN_FILL_RATE:
         fails.append(f"填息率{fr}%<{MIN_FILL_RATE}%")
 
     # ── 必備3: 平均填息天數 ──────────────────────────────────────────────────
-    fd = r.get("fillDays")
     if fd is not None and fd > MAX_FILL_DAYS:
         fails.append(f"填息{fd:.0f}天>{MAX_FILL_DAYS}天")
 
     # ── 必備4: 近3年平均殖利率 ───────────────────────────────────────────────
-    y3 = r.get("yield3y")
     if y3 is not None and y3 < MIN_YIELD:
         fails.append(f"殖利率{y3:.1f}%<{MIN_YIELD}%")
 
@@ -504,56 +512,77 @@ def passes_criteria(r: dict) -> tuple[bool, list[str]]:
     if REQUIRE_OP_GROWTH and op is not None and op <= 0:
         fails.append("營業利益≤0")
 
-    # ── 進階: PE ─────────────────────────────────────────────────────────────
-    if MAX_PE is not None:
+    # ── 進階A: PE < MAX_PE OR PB < MAX_PB（估值安全門檻，用 OR）─────────────
+    if MAX_PE is not None or MAX_PB is not None:
         pe = r.get("pe")
-        if pe is not None and pe > MAX_PE:
-            fails.append(f"PE{pe:.1f}>{MAX_PE}")
-
-    # ── 進階: PB ─────────────────────────────────────────────────────────────
-    if MAX_PB is not None:
         pb = r.get("pb")
-        if pb is not None and pb > MAX_PB:
-            fails.append(f"PB{pb:.1f}>{MAX_PB}")
+        pe_ok = (MAX_PE is None) or (pe is None) or (pe <= MAX_PE)
+        pb_ok = (MAX_PB is None) or (pb is None) or (pb <= MAX_PB)
+        if pe is not None and pb is not None:
+            # 兩者都有資料 → 至少一個達標
+            if not (pe_ok or pb_ok):
+                fails.append(f"估值過高:PE{pe:.1f}>{MAX_PE}且PB{pb:.1f}>{MAX_PB}")
+        elif pe is not None and not pe_ok:
+            fails.append(f"PE{pe:.1f}>{MAX_PE}(PB無資料)")
+        elif pb is not None and not pb_ok:
+            fails.append(f"PB{pb:.1f}>{MAX_PB}(PE無資料)")
 
-    # ── 進階: 本季 EPS 年增率 > MIN_EPS_YOY ─────────────────────────────────
+    # ── 進階B: EPS年增率 > MIN_EPS_YOY OR OP3年增率皆>MIN_OP_GROWTH_3Y ───────
+    eps_yoy_checked = False
+    op3y_checked    = False
+    eps_yoy_pass    = False
+    op3y_pass       = False
+
     if MIN_EPS_YOY is not None:
         curr_eps = r.get("eps")
         prev_eps = r.get("prev_eps")
         if curr_eps is not None and prev_eps is not None and prev_eps != 0:
             yoy = (curr_eps - prev_eps) / abs(prev_eps) * 100
             r["eps_yoy"] = round(yoy, 1)
-            if yoy < MIN_EPS_YOY:
-                fails.append(f"EPS年增{yoy:.1f}%<{MIN_EPS_YOY}%")
-        # 若資料不足 → 跳過（不扣分）
+            eps_yoy_checked = True
+            eps_yoy_pass = (yoy >= MIN_EPS_YOY)
 
-    # ── 進階: 近3年營業利益年增率皆 > MIN_OP_GROWTH_3Y ──────────────────────
     if MIN_OP_GROWTH_3Y is not None:
         op_3y = r.get("op_3y_growth")
         if op_3y is not None:
             valid = [g for g in op_3y if g is not None]
             if valid:
-                bad = [g for g in valid if g < MIN_OP_GROWTH_3Y]
-                if bad:
-                    fails.append(f"OP3年增率有{len(bad)}年<{MIN_OP_GROWTH_3Y}%")
-        # 若資料不足 → 跳過
+                op3y_checked = True
+                op3y_pass = all(g >= MIN_OP_GROWTH_3Y for g in valid)
 
-    # ── 進階: 現金股利連續3年增加 ───────────────────────────────────────────
+    if eps_yoy_checked or op3y_checked:
+        if not (eps_yoy_pass or op3y_pass):
+            yoy_str = f"EPS年增{r.get('eps_yoy','?')}%" if eps_yoy_checked else "EPS?%"
+            op_str  = f"OP3年增不足" if op3y_checked else "OP3年?%"
+            fails.append(f"爆發動能不足({yoy_str}且{op_str})")
+
+    # ── 進階C: 現金股利連增3年 OR 配息率≥70%（3/5年）─────────────────────────
+    div_inc_checked = False
+    div_inc_pass    = False
+    payout_checked  = False
+    payout_pass     = False
+
     if REQUIRE_DIV_INCREASE:
         inc3 = r.get("divIncreasing3y")
-        if inc3 is False:   # None = 資料不足，跳過
-            divs = r.get("divByYear", [])
-            vals = [d["cashDiv"] for d in divs[:3] if d.get("cashDiv", 0) > 0]
-            fails.append(f"現金股利未連增3年({'/'.join(str(v) for v in vals)})")
+        if inc3 is not None:
+            div_inc_checked = True
+            div_inc_pass = bool(inc3)
 
-    # ── 進階: 配息率 ≥ MIN_PAYOUT_RATIO，近5年至少 MIN_PAYOUT_YEARS 年 ──────
-    # best-effort: 若只有近似配息率（payout_approx），只做單年判斷
     if MIN_PAYOUT_RATIO is not None:
         pa = r.get("payout_approx")
         if pa is not None:
-            if pa < MIN_PAYOUT_RATIO:
-                fails.append(f"配息率≈{pa:.0f}%<{MIN_PAYOUT_RATIO}%")
-        # 若資料不足 → 跳過
+            payout_checked = True
+            payout_pass = (pa >= MIN_PAYOUT_RATIO)
+
+    if div_inc_checked or payout_checked:
+        if not (div_inc_pass or payout_pass):
+            divs = r.get("divByYear", [])
+            vals = [d["cashDiv"] for d in divs[:3] if d.get("cashDiv", 0) > 0]
+            pa   = r.get("payout_approx")
+            inc3 = r.get("divIncreasing3y")
+            d_str = f"{'連增' if inc3 else '未連增'}3年({'/'.join(str(v) for v in vals)})" if div_inc_checked else ""
+            p_str = f"配息率≈{pa:.0f}%<{MIN_PAYOUT_RATIO}%" if payout_checked and pa else ""
+            fails.append(f"配息穩定度不足:{d_str}{' 且 ' if d_str and p_str else ''}{p_str}")
 
     return (len(fails) == 0), fails
 
@@ -564,13 +593,14 @@ def passes_criteria(r: dict) -> tuple[bool, list[str]]:
 
 async def main():
     from playwright.async_api import async_playwright
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
     today = date.today()
     print(f"\n{'='*65}")
     print(f"除息前布局篩選  執行日期：{today}")
-    print(f"必備：填息率≥{MIN_FILL_RATE}%  填息≤{MAX_FILL_DAYS}天  殖利率≥{MIN_YIELD}%  OP>0")
-    print(f"進階：PE<{MAX_PE}  PB<{MAX_PB}  EPS年增≥{MIN_EPS_YOY}%  OP3年增≥{MIN_OP_GROWTH_3Y}%")
-    print(f"進階：股利連增3年={REQUIRE_DIV_INCREASE}  配息率≥{MIN_PAYOUT_RATIO}%({MIN_PAYOUT_YEARS}/5年)")
+    print(f"必備：填息率>={MIN_FILL_RATE}%  填息<={MAX_FILL_DAYS}天  殖利率>={MIN_YIELD}%  OP>0")
+    print(f"進階：PE<{MAX_PE}  PB<{MAX_PB}  EPS年增>={MIN_EPS_YOY}%  OP3年增>={MIN_OP_GROWTH_3Y}%")
+    print(f"進階：股利連增3年={REQUIRE_DIV_INCREASE}  配息率>={MIN_PAYOUT_RATIO}%({MIN_PAYOUT_YEARS}/5年)")
     print(f"進場窗口：除息前 T-{BUY_WIN_MAX_TD} 至 T-{BUY_WIN_MIN_TD} 個交易日")
     print(f"{'='*65}\n")
 

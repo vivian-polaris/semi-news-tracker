@@ -1668,30 +1668,65 @@ async function loadConfCalendar(){
   }catch(e){console.warn('法說會資料載入失敗',e);}
 }
 
-// ── 2026 除息日載入 ─────────────────────────────────────────────────────────
-// 優先讀靜態 exdiv_2026.json（GitHub Actions 每日更新，無 CORS 問題）
-// 備援：從 TWSE TWT49U 抓（CORS proxy，較不穩定）
+// ── 除息日載入 ───────────────────────────────────────────────────────────────
+// 優先讀 exdiv_moneydj.json（MoneyDJ 每3天更新，552筆）
+// 備援：exdiv_2026.json → TWSE TWT49U
 async function loadExDiv2026(){
   const _todayTW=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
   const cacheKey='exDiv2026_'+_todayTW;
   const cached=lsGet(cacheKey);
   if(cached?.data&&Date.now()-(cached.ts||0)<12*3600*1000){
-    // Handle double-wrapped cache corruption: {data:{data:{...},ts:...},ts:...}
     const src=(cached.data?.data&&typeof cached.data.data==='object'&&!Number.isFinite(cached.data.data))?cached.data.data:cached.data;
     if(Object.keys(src).some(k=>/^\d/.test(k))){Object.assign(exDivMap2026,src);return;}
-    // Corrupted — fall through to re-fetch
   }
 
-  // ① 優先：靜態 JSON（由 GitHub Actions fetch_daily 更新，永遠可用）
+  // helper：同時寫入 code→"MM/DD"（VCP表格用）和 YYYY-MM-DD→[codes]（事件曆用）
+  function _addExDiv(code, isoDate){
+    // isoDate = "2026-06-26"
+    const [yr,mo,dy]=isoDate.split('-');
+    exDivMap2026[code]=`${mo}/${dy}`;                       // code→"MM/DD"
+    if(!Array.isArray(exDivMap2026[isoDate]))exDivMap2026[isoDate]=[];
+    if(!exDivMap2026[isoDate].includes(code))exDivMap2026[isoDate].push(code); // date→[codes]
+  }
+
+  // ① 優先：exdiv_moneydj.json（MoneyDJ，records 陣列格式，552筆）
+  try{
+    const v=new Date().toISOString().slice(0,10);
+    const r=await fetchTO(`./exdiv_moneydj.json?v=${v}`,5000);
+    if(r.ok){
+      const d=await r.json();
+      const recs=d?.records||[];
+      if(recs.length>50){
+        recs.forEach(rec=>{
+          const code=String(rec.code||'').trim();
+          const dt=String(rec.ex_div_date||'').trim(); // "YYYY/MM/DD"
+          if(!code||!dt)return;
+          const parts=dt.split('/');
+          if(parts.length===3){
+            const isoDate=`${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
+            _addExDiv(code,isoDate);
+          }
+        });
+        if(Object.keys(exDivMap2026).length>50){lsSet(cacheKey,{...exDivMap2026});return;}
+      }
+    }
+  }catch(_){}
+
+  // ② 備援：exdiv_2026.json（舊格式 {code:"MM/DD"}）
   try{
     const v=new Date().toISOString().slice(0,10);
     const r=await fetchTO(`./exdiv_2026.json?v=${v}`,5000);
     if(r.ok){
       const d=await r.json();
       if(d&&typeof d==='object'&&Object.keys(d).length>50){
-        Object.assign(exDivMap2026,d);
-        lsSet(cacheKey,{...exDivMap2026});
-        return;
+        const yr=new Date().getFullYear();
+        Object.entries(d).forEach(([code,mmdd])=>{
+          if(!/^\d{4,6}$/.test(code)||!mmdd)return;
+          const [mo,dy]=(mmdd||'').split('/');
+          if(!mo||!dy)return;
+          _addExDiv(code,`${yr}-${mo.padStart(2,'0')}-${dy.padStart(2,'0')}`);
+        });
+        if(Object.keys(exDivMap2026).length>50){lsSet(cacheKey,{...exDivMap2026});return;}
       }
     }
   }catch(_){}
@@ -1709,10 +1744,16 @@ async function loadExDiv2026(){
       if(j?.stat==='OK'&&Array.isArray(j.data)){
         j.data.forEach(row=>{
           const code=String(row[0]||'').trim();
-          const dateRaw=String(row[2]||'').trim();
+          const dateRaw=String(row[2]||'').trim(); // "YYYY/MM/DD" (ROC or AD)
           if(!code||!dateRaw)return;
           const parts=dateRaw.split('/');
-          if(parts.length===3) exDivMap2026[code]=`${parts[1]}/${parts[2]}`;
+          if(parts.length===3){
+            // TWSE 可能是民國年（如 "115/06/26"），轉成 AD
+            let yr=parseInt(parts[0]);
+            if(yr<1000)yr+=1911;
+            const isoDate=`${yr}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
+            _addExDiv(code,isoDate);
+          }
         });
         lsSet(cacheKey,{...exDivMap2026});
         break;
@@ -2401,7 +2442,7 @@ async function loadWeeklyOutlook(force=false){
 
   const taixPriceStr=window.taixPrice
     ?`台股加權指數目前約 ${window.taixPrice.toLocaleString()} 點`
-    :`台股加權指數目前點位暫未取得即時數據，但台股自2024年起已長期維持在40000點以上，請務必以40000點以上為基準給出合理點位預測，嚴禁出現低於35000的點位數字`;
+    :`台股加權指數目前點位暫未取得即時數據，請根據近期市場狀況給出合理預測，台股加權指數通常在 18000～26000 點區間，請勿給出明顯偏離此範圍的點位`;
 
   // ③-A 讀取 FRED 美國總經數據（loadFedWatch 已快取至 localStorage）
   let fredBlock='【美國總經數據（FRED）】（未能取得，略過）';
