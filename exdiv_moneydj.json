@@ -1,46 +1,7 @@
 {
-  "updated_at": "2026-08-07T04:19:01Z",
-  "count": 229,
+  "updated_at": "2026-08-10T03:43:16Z",
+  "count": 237,
   "records": [
-    {
-      "code": "1210",
-      "name": "大成",
-      "ex_div_date": "2026/08/07",
-      "cash_div_earnings": 3,
-      "cash_div_reserve": 0,
-      "cash_div_total": 3,
-      "div_pay_date": "115/09/11",
-      "ex_right_date": "",
-      "stock_div_earnings": 0,
-      "stock_div_reserve": 0,
-      "stock_div_total": 0
-    },
-    {
-      "code": "6491",
-      "name": "晶碩",
-      "ex_div_date": "2026/08/07",
-      "cash_div_earnings": 10.00513084,
-      "cash_div_reserve": 0,
-      "cash_div_total": 10.00513084,
-      "div_pay_date": "115/08/28",
-      "ex_right_date": "",
-      "stock_div_earnings": 0,
-      "stock_div_reserve": 0,
-      "stock_div_total": 0
-    },
-    {
-      "code": "6662",
-      "name": "樂斯科",
-      "ex_div_date": "2026/08/07",
-      "cash_div_earnings": 1.55,
-      "cash_div_reserve": 0,
-      "cash_div_total": 1.55,
-      "div_pay_date": "115/09/07",
-      "ex_right_date": "",
-      "stock_div_earnings": 0,
-      "stock_div_reserve": 0,
-      "stock_div_total": 0
-    },
     {
       "code": "2520",
       "name": "冠德",
@@ -2265,6 +2226,19 @@
       "stock_div_total": 0
     },
     {
+      "code": "7547",
+      "name": "碩網",
+      "ex_div_date": "2026/08/21",
+      "cash_div_earnings": 1.77800547,
+      "cash_div_reserve": 0,
+      "cash_div_total": 1.77800547,
+      "div_pay_date": "115/09/23",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
       "code": "6825",
       "name": "和暢科技",
       "ex_div_date": "2026/08/21",
@@ -2330,6 +2304,19 @@
       "stock_div_total": 0
     },
     {
+      "code": "2413",
+      "name": "環科",
+      "ex_div_date": "2026/08/24",
+      "cash_div_earnings": 0.5,
+      "cash_div_reserve": 0,
+      "cash_div_total": 0.5,
+      "div_pay_date": "115/09/16",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
       "code": "2484",
       "name": "希華",
       "ex_div_date": "2026/08/24",
@@ -2337,6 +2324,32 @@
       "cash_div_reserve": 0.2,
       "cash_div_total": 0.7,
       "div_pay_date": "115/09/24",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
+      "code": "2527",
+      "name": "宏璟",
+      "ex_div_date": "2026/08/24",
+      "cash_div_earnings": 1.5,
+      "cash_div_reserve": 0,
+      "cash_div_total": 1.5,
+      "div_pay_date": "115/09/16",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
+      "code": "3434",
+      "name": "哲固",
+      "ex_div_date": "2026/08/24",
+      "cash_div_earnings": 0.2,
+      "cash_div_reserve": 1,
+      "cash_div_total": 1.2,
+      "div_pay_date": "115/09/16",
       "ex_right_date": "",
       "stock_div_earnings": 0,
       "stock_div_reserve": 0,
@@ -2354,6 +2367,32 @@
       "stock_div_earnings": 0,
       "stock_div_reserve": 0,
       "stock_div_total": 0
+    },
+    {
+      "code": "6977",
+      "name": "聯純",
+      "ex_div_date": "2026/08/24",
+      "cash_div_earnings": 6,
+      "cash_div_reserve": 0,
+      "cash_div_total": 6,
+      "div_pay_date": "115/09/30",
+      "ex_right_date": "115/08/24",
+      "stock_div_earnings": 2,
+      "stock_div_reserve": 0,
+      "stock_div_total": 2
+    },
+    {
+      "code": "7866",
+      "name": "丹立",
+      "ex_div_date": "2026/08/24",
+      "cash_div_earnings": 0.63846075,
+      "cash_div_reserve": 0,
+      "cash_div_total": 0.63846075,
+      "div_pay_date": "115/09/24",
+      "ex_right_date": "115/08/24",
+      "stock_div_earnings": 2.55384253,
+      "stock_div_reserve": 0,
+      "stock_div_total": 2.55384253
     },
     {
       "code": "00907",
@@ -2389,6 +2428,19 @@
       "cash_div_reserve": 0,
       "cash_div_total": 2,
       "div_pay_date": "115/09/18",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
+      "code": "2012",
+      "name": "春雨",
+      "ex_div_date": "2026/08/25",
+      "cash_div_earnings": 0.3,
+      "cash_div_reserve": 0,
+      "cash_div_total": 0.3,
+      "div_pay_date": "115/09/24",
       "ex_right_date": "",
       "stock_div_earnings": 0,
       "stock_div_reserve": 0,
@@ -2642,6 +2694,32 @@
       "stock_div_total": 0
     },
     {
+      "code": "3558",
+      "name": "神準",
+      "ex_div_date": "2026/08/27",
+      "cash_div_earnings": 3,
+      "cash_div_reserve": 0,
+      "cash_div_total": 3,
+      "div_pay_date": "115/09/22",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
+      "code": "5289",
+      "name": "宜鼎",
+      "ex_div_date": "2026/08/27",
+      "cash_div_earnings": 16.83491506,
+      "cash_div_reserve": 0,
+      "cash_div_total": 16.83491506,
+      "div_pay_date": "115/10/02",
+      "ex_right_date": "115/08/27",
+      "stock_div_earnings": 0.19922972,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0.19922972
+    },
+    {
       "code": "6624",
       "name": "萬年清",
       "ex_div_date": "2026/08/27",
@@ -2661,6 +2739,19 @@
       "cash_div_earnings": 25,
       "cash_div_reserve": 0,
       "cash_div_total": 25,
+      "div_pay_date": "115/09/24",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
+      "code": "6183",
+      "name": "關貿",
+      "ex_div_date": "2026/08/28",
+      "cash_div_earnings": 3.55,
+      "cash_div_reserve": 0,
+      "cash_div_total": 3.55,
       "div_pay_date": "115/09/24",
       "ex_right_date": "",
       "stock_div_earnings": 0,
@@ -2705,6 +2796,19 @@
       "stock_div_earnings": 0,
       "stock_div_reserve": 0,
       "stock_div_total": 0
+    },
+    {
+      "code": "3135",
+      "name": "凌航",
+      "ex_div_date": "2026/09/01",
+      "cash_div_earnings": 4.1,
+      "cash_div_reserve": 0,
+      "cash_div_total": 4.1,
+      "div_pay_date": "115/09/23",
+      "ex_right_date": "115/09/01",
+      "stock_div_earnings": 0.6,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0.6
     },
     {
       "code": "3416",
