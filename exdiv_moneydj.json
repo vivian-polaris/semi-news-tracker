@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-09-04T06:42:54Z",
-  "count": 158,
+  "updated_at": "2026-09-07T06:45:59Z",
+  "count": 161,
   "records": [
     {
       "code": "00400",
@@ -1693,6 +1693,32 @@
       "stock_div_total": 0
     },
     {
+      "code": "3260",
+      "name": "威剛",
+      "ex_div_date": "2026/09/21",
+      "cash_div_earnings": 18.00773559,
+      "cash_div_reserve": 0,
+      "cash_div_total": 18.00773559,
+      "div_pay_date": "115/10/23",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
+      "code": "5314",
+      "name": "世紀*",
+      "ex_div_date": "2026/09/21",
+      "cash_div_earnings": 0.04852674,
+      "cash_div_reserve": 0,
+      "cash_div_total": 0.04852674,
+      "div_pay_date": "115/10/13",
+      "ex_right_date": "115/08/14",
+      "stock_div_earnings": 1.57851468048,
+      "stock_div_reserve": 0,
+      "stock_div_total": 1.57851468048
+    },
+    {
       "code": "00836",
       "name": "B永豐10年A公司債",
       "ex_div_date": "2026/09/23",
@@ -1816,6 +1842,19 @@
       "cash_div_earnings": 0.2,
       "cash_div_reserve": 0,
       "cash_div_total": 0.2,
+      "div_pay_date": "115/10/23",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
+      "code": "5258",
+      "name": "虹堡",
+      "ex_div_date": "2026/09/23",
+      "cash_div_earnings": 1.00732658,
+      "cash_div_reserve": 0,
+      "cash_div_total": 1.00732658,
       "div_pay_date": "115/10/23",
       "ex_right_date": "",
       "stock_div_earnings": 0,
