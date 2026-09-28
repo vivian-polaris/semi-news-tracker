@@ -1,7 +1,20 @@
 {
-  "updated_at": "2026-09-25T06:49:14Z",
-  "count": 43,
+  "updated_at": "2026-09-28T07:54:26Z",
+  "count": 44,
   "records": [
+    {
+      "code": "1235",
+      "name": "興泰",
+      "ex_div_date": "2026/09/24",
+      "cash_div_earnings": 0.5,
+      "cash_div_reserve": 0,
+      "cash_div_total": 0.5,
+      "div_pay_date": "115/10/22",
+      "ex_right_date": "115/09/24",
+      "stock_div_earnings": 0.5,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0.5
+    },
     {
       "code": "2109",
       "name": "華豐",
