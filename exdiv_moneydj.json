@@ -1,33 +1,7 @@
 {
-  "updated_at": "2026-10-10T07:53:10Z",
-  "count": 118,
+  "updated_at": "2026-10-13T08:40:47Z",
+  "count": 119,
   "records": [
-    {
-      "code": "00400",
-      "name": "A主動國泰動能高息",
-      "ex_div_date": "2026/10/08",
-      "cash_div_earnings": 0.12,
-      "cash_div_reserve": 0,
-      "cash_div_total": 0.12,
-      "div_pay_date": "115/11/05",
-      "ex_right_date": "",
-      "stock_div_earnings": 0,
-      "stock_div_reserve": 0,
-      "stock_div_total": 0
-    },
-    {
-      "code": "1565",
-      "name": "精華",
-      "ex_div_date": "2026/10/12",
-      "cash_div_earnings": 5.8,
-      "cash_div_reserve": 0,
-      "cash_div_total": 5.8,
-      "div_pay_date": "115/10/30",
-      "ex_right_date": "",
-      "stock_div_earnings": 0,
-      "stock_div_reserve": 0,
-      "stock_div_total": 0
-    },
     {
       "code": "2938",
       "name": "床的世界",
@@ -1407,6 +1381,19 @@
       "stock_div_total": 0
     },
     {
+      "code": "00726",
+      "name": "B國泰新興投等債",
+      "ex_div_date": "2026/10/28",
+      "cash_div_earnings": 0.46,
+      "cash_div_reserve": 0,
+      "cash_div_total": 0.46,
+      "div_pay_date": "115/11/23",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
       "code": "00990",
       "name": "B國泰收益非投等債",
       "ex_div_date": "2026/10/28",
@@ -1420,6 +1407,19 @@
       "stock_div_total": 0
     },
     {
+      "code": "2063",
+      "name": "世鎧",
+      "ex_div_date": "2026/10/28",
+      "cash_div_earnings": 0,
+      "cash_div_reserve": 0.5000208,
+      "cash_div_total": 0.5000208,
+      "div_pay_date": "115/12/02",
+      "ex_right_date": "115/10/28",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0.9999999376,
+      "stock_div_total": 0.9999999376
+    },
+    {
       "code": "4552",
       "name": "力達-KY",
       "ex_div_date": "2026/10/28",
@@ -1427,6 +1427,19 @@
       "cash_div_reserve": 0,
       "cash_div_total": 0.6,
       "div_pay_date": "115/11/30",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
+      "code": "2762",
+      "name": "世界健身-KY",
+      "ex_div_date": "2026/10/29",
+      "cash_div_earnings": 1.80719799,
+      "cash_div_reserve": 0,
+      "cash_div_total": 1.80719799,
+      "div_pay_date": "115/11/23",
       "ex_right_date": "",
       "stock_div_earnings": 0,
       "stock_div_reserve": 0,
