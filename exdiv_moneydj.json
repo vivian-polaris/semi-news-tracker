@@ -1,46 +1,7 @@
 {
-  "updated_at": "2026-10-25T07:05:20Z",
-  "count": 34,
+  "updated_at": "2026-10-28T07:42:31Z",
+  "count": 32,
   "records": [
-    {
-      "code": "00888",
-      "name": "永豐台灣ESG",
-      "ex_div_date": "2026/10/27",
-      "cash_div_earnings": 1.5,
-      "cash_div_reserve": 0,
-      "cash_div_total": 1.5,
-      "div_pay_date": "115/11/20",
-      "ex_right_date": "",
-      "stock_div_earnings": 0,
-      "stock_div_reserve": 0,
-      "stock_div_total": 0
-    },
-    {
-      "code": "00907",
-      "name": "永豐優息存股",
-      "ex_div_date": "2026/10/27",
-      "cash_div_earnings": 0.268,
-      "cash_div_reserve": 0,
-      "cash_div_total": 0.268,
-      "div_pay_date": "115/11/20",
-      "ex_right_date": "",
-      "stock_div_earnings": 0,
-      "stock_div_reserve": 0,
-      "stock_div_total": 0
-    },
-    {
-      "code": "00958",
-      "name": "B永豐ESG銀行債15+",
-      "ex_div_date": "2026/10/27",
-      "cash_div_earnings": 0.041,
-      "cash_div_reserve": 0,
-      "cash_div_total": 0.041,
-      "div_pay_date": "115/11/20",
-      "ex_right_date": "",
-      "stock_div_earnings": 0,
-      "stock_div_reserve": 0,
-      "stock_div_total": 0
-    },
     {
       "code": "00726",
       "name": "B國泰新興投等債",
@@ -367,12 +328,25 @@
       "stock_div_total": 0
     },
     {
+      "code": "00940",
+      "name": "元大台灣價值高息",
+      "ex_div_date": "2026/11/10",
+      "cash_div_earnings": 0.06,
+      "cash_div_reserve": 0,
+      "cash_div_total": 0.06,
+      "div_pay_date": "115/12/01",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
       "code": "3680",
       "name": "家登",
       "ex_div_date": "2026/11/12",
-      "cash_div_earnings": 6,
-      "cash_div_reserve": 4,
-      "cash_div_total": 10,
+      "cash_div_earnings": 5.94884736,
+      "cash_div_reserve": 3.96589824,
+      "cash_div_total": 9.9147456,
       "div_pay_date": "115/12/18",
       "ex_right_date": "",
       "stock_div_earnings": 0,
