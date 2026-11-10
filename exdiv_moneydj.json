@@ -1,20 +1,7 @@
 {
-  "updated_at": "2026-11-07T07:58:01Z",
-  "count": 107,
+  "updated_at": "2026-11-10T08:55:58Z",
+  "count": 112,
   "records": [
-    {
-      "code": "00400",
-      "name": "A主動國泰動能高息",
-      "ex_div_date": "2026/11/06",
-      "cash_div_earnings": 0.12,
-      "cash_div_reserve": 0,
-      "cash_div_total": 0.12,
-      "div_pay_date": "115/12/02",
-      "ex_right_date": "",
-      "stock_div_earnings": 0,
-      "stock_div_reserve": 0,
-      "stock_div_total": 0
-    },
     {
       "code": "00940",
       "name": "元大台灣價值高息",
@@ -1251,6 +1238,19 @@
       "stock_div_total": 0
     },
     {
+      "code": "6655",
+      "name": "科定",
+      "ex_div_date": "2026/11/24",
+      "cash_div_earnings": 2.6,
+      "cash_div_reserve": 0,
+      "cash_div_total": 2.6,
+      "div_pay_date": "115/12/17",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
       "code": "7418",
       "name": "香繼光",
       "ex_div_date": "2026/11/24",
@@ -1258,6 +1258,32 @@
       "cash_div_reserve": 0,
       "cash_div_total": 1,
       "div_pay_date": "115/12/18",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
+      "code": "3040",
+      "name": "遠見",
+      "ex_div_date": "2026/12/02",
+      "cash_div_earnings": 3.5,
+      "cash_div_reserve": 0,
+      "cash_div_total": 3.5,
+      "div_pay_date": "115/12/30",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
+      "code": "1437",
+      "name": "勤益控",
+      "ex_div_date": "2026/12/03",
+      "cash_div_earnings": 0.62465299,
+      "cash_div_reserve": 0,
+      "cash_div_total": 0.62465299,
+      "div_pay_date": "116/01/08",
       "ex_right_date": "",
       "stock_div_earnings": 0,
       "stock_div_reserve": 0,
@@ -1342,6 +1368,19 @@
       "stock_div_total": 0
     },
     {
+      "code": "1707",
+      "name": "葡萄王",
+      "ex_div_date": "2026/12/30",
+      "cash_div_earnings": 1.9,
+      "cash_div_reserve": 0,
+      "cash_div_total": 1.9,
+      "div_pay_date": "116/01/28",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
       "code": "2454",
       "name": "聯發科",
       "ex_div_date": "2027/01/05",
@@ -1355,12 +1394,38 @@
       "stock_div_total": 0
     },
     {
+      "code": "5483",
+      "name": "中美晶",
+      "ex_div_date": "2027/01/05",
+      "cash_div_earnings": 2.8,
+      "cash_div_reserve": 0,
+      "cash_div_total": 2.8,
+      "div_pay_date": "116/01/29",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
       "code": "6561",
       "name": "是方",
       "ex_div_date": "2027/01/06",
       "cash_div_earnings": 6.8,
       "cash_div_reserve": 0,
       "cash_div_total": 6.8,
+      "div_pay_date": "116/01/29",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
+      "code": "5536",
+      "name": "聖暉*",
+      "ex_div_date": "2027/01/11",
+      "cash_div_earnings": 12,
+      "cash_div_reserve": 0,
+      "cash_div_total": 12,
       "div_pay_date": "116/01/29",
       "ex_right_date": "",
       "stock_div_earnings": 0,
