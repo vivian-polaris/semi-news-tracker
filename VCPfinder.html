@@ -539,6 +539,13 @@ footer a:hover{text-decoration:underline}
   #exdivScreen th,#exdivScreen td{padding:4px 5px!important;white-space:nowrap}
 }
 
+/* ── Fed Watch 行事曆表格 ── */
+.fd-tbl{width:100%;border-collapse:collapse;font-size:.72rem}
+.fd-tbl th{text-align:left;color:var(--text2);font-size:.62rem;font-weight:700;padding:5px 8px;border-bottom:1px solid var(--border)}
+.fd-tbl td{padding:8px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top;line-height:1.55}
+.fd-tbl .fd-d{white-space:nowrap;width:1%}
+.fd-tbl .fd-e{min-width:150px}
+.fd-tbl .fd-r{min-width:190px;font-size:.68rem}
 /* ── 近期除息日曆 ── */
 #upcomingDivWrap{background:var(--card);border:1.5px solid #a78bfa;border-radius:10px;padding:14px 18px;margin-bottom:14px}
 #upcomingDivWrap .ud-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;margin-bottom:10px}
@@ -553,11 +560,13 @@ footer a:hover{text-decoration:underline}
 #upcomingDivWrap .ud-tbl .num{text-align:right;font-variant-numeric:tabular-nums}
 #upcomingDivWrap .ud-tbl th.num{text-align:right}
 #upcomingDivWrap .ud-tbl .nm{max-width:220px;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+#upcomingDivWrap .ud-tbl td.nm,#upcomingDivWrap .ud-tbl td.cd,#upcomingDivWrap .ud-tbl td.ud-dt{text-align:left}
 #upcomingDivWrap .ud-tbl .cd{color:#c4b5fd;font-weight:700;font-variant-numeric:tabular-nums}
-#upcomingDivWrap .ud-tbl tr.ud-dhead td{background:rgba(167,139,250,.12);color:#c4b5fd;font-weight:800;font-size:.7rem;padding:5px 10px}
-#upcomingDivWrap .ud-tbl tr.ud-dhead.soon td{background:rgba(248,113,113,.14);color:#f87171}
-#upcomingDivWrap .ud-tbl tr.ud-dhead small{font-weight:600;opacity:.8;margin-left:6px}
-#upcomingDivWrap .ud-tbl tbody tr:not(.ud-dhead):hover td{background:rgba(167,139,250,.08)}
+#upcomingDivWrap .ud-tbl td.ud-dt{color:#c4b5fd;font-weight:800;font-variant-numeric:tabular-nums}
+#upcomingDivWrap .ud-tbl td.ud-dt small{display:block;font-weight:600;font-size:.6rem;opacity:.8}
+#upcomingDivWrap .ud-tbl td.ud-dt.soon{color:#f87171}
+#upcomingDivWrap .ud-tbl tr.ud-b1 td{background:rgba(167,139,250,.07)}
+#upcomingDivWrap .ud-tbl tbody tr:hover td{background:rgba(167,139,250,.16)}
 #upcomingDivWrap .ud-etf{display:inline-block;font-size:.55rem;padding:0 4px;margin-left:5px;border-radius:3px;background:rgba(96,165,250,.2);color:#93c5fd;vertical-align:middle}
 #upcomingDivWrap .ud-yh{color:#3fb97a;font-weight:700}
 @media(max-width:640px){#upcomingDivWrap{padding:8px 10px!important}#upcomingDivWrap .ud-hide-m{display:none}#upcomingDivWrap .ud-tbl .nm{max-width:130px}}
@@ -2266,64 +2275,78 @@ ${tradingDays.map(d=>`📅 ${d}：[30字內判斷] 點位：[XXXXX–YYYYY] 情�
 // ─── Fed Watch 美國關鍵數據行事曆 ────────────────────────────────────────
 // ── 各指標衝擊說明（type → 解說） ──────────────────────────────────────
 const FED_IMPACT={
+  // lvl: 'bad' 壞消息 / 'good' 好消息 / 'watch' 需留意
   CPI:{
-    what:'美國消費者物價指數（月公布，衡量通膨年增率）',
+    what:'美國物價漲了多少（通膨）。數字越高，Fed 越不敢降息。',
     rows:[
-      {c:'#f87171', t:'> 4%',   fx:'降息機會歸零，台積電、費半急殺。歷史：標普3個月均跌4%、6個月跌7%'},
-      {c:'#d4a84b', t:'3.5–4%', fx:'降息時間表延後，科技股承壓，但不至於崩'},
-      {c:'#34d399', t:'2–2.5%', fx:'接近Fed 2%目標，降息預期升溫，台股利多'},
-      {c:'#60a5fa', t:'< 2%',   fx:'通膨受控，但需確認非需求崩潰（衰退）造成'},
+      {lvl:'bad',   t:'高於 4%',   fx:'通膨太高 → Fed 不會降息 → 台積電等科技股容易大跌'},
+      {lvl:'watch', t:'3.5–4%',    fx:'通膨偏高 → 降息要延後 → 科技股承壓，但不至於崩'},
+      {lvl:'good',  t:'2–2.5%',    fx:'接近 Fed 目標 2% → 降息有望 → 對台股偏利多'},
+      {lvl:'watch', t:'低於 2%',   fx:'通膨很低通常是好事；但若是景氣變差造成的，反而是壞消息'},
     ]
   },
   NFP:{
-    what:'非農就業人數（每月第一個週五，衡量新增工作機會）',
+    what:'美國這個月新增了多少工作（每月第一個週五公布）。工作增太多＝經濟太熱，Fed 反而不降息。',
     rows:[
-      {c:'#f87171', t:'> 250K', fx:'勞動市場過熱 → Fed不敢降息甚至升息 → 科技股崩'},
-      {c:'#34d399', t:'150–200K',fx:'甜蜜點：溫和成長，既無過熱又無衰退，台股最喜歡'},
-      {c:'#d4a84b', t:'< 100K', fx:'就業急速放緩 → 衰退疑慮升溫 → 全面賣壓'},
+      {lvl:'bad',   t:'多於 25 萬',  fx:'工作增太多、經濟過熱 → Fed 不敢降息 → 科技股容易跌'},
+      {lvl:'good',  t:'15–20 萬',    fx:'剛剛好的溫和成長 → 台股最喜歡'},
+      {lvl:'bad',   t:'少於 10 萬',  fx:'工作大減 → 擔心景氣衰退 → 市場容易全面賣壓'},
     ]
   },
   FOMC:{
-    what:'Fed公開市場委員會利率決議（每年8次）',
+    what:'Fed 開會決定美國利率（一年 8 次），是影響全球股市最大的事件。',
     rows:[
-      {c:'#f87171', t:'升息 / 鷹派聲明',    fx:'外資出走新興市場，台股直接跌'},
-      {c:'#34d399', t:'降息 / 鴿派暗示',    fx:'外資回流亞太，台積電、高股息率先反彈'},
-      {c:'#60a5fa', t:'點陣圖（3/6/9/12月）',fx:'預測未來2年利率路徑，比決議本身更重要'},
+      {lvl:'bad',   t:'升息／口氣強硬', fx:'外資撤出新興市場，台股容易下跌'},
+      {lvl:'good',  t:'降息／口氣放鬆', fx:'外資回流亞洲，台積電、高股息股常先反彈'},
+      {lvl:'watch', t:'點陣圖',         fx:'Fed 官員對未來利率的預測圖（3、6、9、12 月公布），常比當次決定更重要'},
     ]
   },
   PCE:{
-    what:'個人消費支出物價指數（Fed官方首選通膨指標，月底公布）',
+    what:'另一種物價指標，是 Fed 最看重的通膨數字（月底公布）。',
     rows:[
-      {c:'#f87171', t:'> 2.5%', fx:'Fed最重視此數字，高於預期會直接推遲降息'},
-      {c:'#34d399', t:'≈ 2%',   fx:'達到Fed目標，降息路徑確認，比CPI出來時更直接'},
+      {lvl:'bad',   t:'高於 2.5%', fx:'比預期高 → 降息被推遲'},
+      {lvl:'good',  t:'約 2%',     fx:'達到 Fed 目標 → 降息路徑更明確'},
     ]
   },
   ADP:{
-    what:'ADP私部門就業（NFP公布前兩天，先行指標）',
+    what:'民間公司新增的工作數，比週五的非農就業早兩天公布，可當預告。',
     rows:[
-      {c:'#d4a84b', t:'大幅超預期', fx:'暗示週五NFP也強 → 科技股提前下跌'},
-      {c:'#d4a84b', t:'遠低預期',  fx:'暗示NFP可能疲軟 → 降息預期回升，反而利多'},
+      {lvl:'watch', t:'遠高於預期', fx:'預告週五非農也會很強 → 科技股可能提前下跌'},
+      {lvl:'watch', t:'遠低於預期', fx:'預告非農偏弱 → 降息預期升溫，反而可能利多'},
     ]
   },
   ISM:{
-    what:'ISM製造業採購經理人指數（每月首個工作日）',
+    what:'美國製造業景氣指數（每月第一個工作日），50 是擴張與收縮的分界。',
     rows:[
-      {c:'#34d399', t:'> 55',   fx:'製造業強勁擴張，半導體需求預期大增，台積電利多'},
-      {c:'#60a5fa', t:'50–55',  fx:'溫和擴張，市場中性'},
-      {c:'#d4a84b', t:'45–50',  fx:'收縮，半導體供應鏈壓力浮現'},
-      {c:'#f87171', t:'< 45',   fx:'衰退警號，台股半導體板塊首當其衝'},
+      {lvl:'good',  t:'高於 55',   fx:'製造業很強，半導體需求看好，台積電利多'},
+      {lvl:'watch', t:'50–55',     fx:'溫和擴張，影響中性'},
+      {lvl:'watch', t:'45–50',     fx:'製造業收縮，半導體供應鏈壓力浮現'},
+      {lvl:'bad',   t:'低於 45',   fx:'衰退警訊，台股半導體首當其衝'},
     ]
   },
   GDP:{
-    what:'美國實質GDP季增年化率（每季公布初值／修正值）',
+    what:'美國整體經濟成長率（每季公布）。',
     rows:[
-      {c:'#d4a84b', t:'> 3%',   fx:'過熱，Fed不降息，市場擔心再升息'},
-      {c:'#34d399', t:'1–2.5%', fx:'黃金成長區間，既無過熱又無衰退，股市最喜歡'},
-      {c:'#d4a84b', t:'0–1%',   fx:'成長放緩，衰退疑慮開始浮現'},
-      {c:'#f87171', t:'< 0%',   fx:'技術性衰退，外資全面撤出新興市場'},
+      {lvl:'watch', t:'高於 3%',   fx:'經濟過熱 → Fed 不降息，市場擔心再升息'},
+      {lvl:'good',  t:'1–2.5%',    fx:'成長剛剛好，股市最喜歡'},
+      {lvl:'watch', t:'0–1%',      fx:'成長放緩，開始擔心衰退'},
+      {lvl:'bad',   t:'低於 0%',   fx:'技術性衰退，外資全面撤出新興市場'},
     ]
   },
 };
+const FED_LVL={bad:{ic:'🔴',lb:'壞消息',c:'#f87171'},good:{ic:'🟢',lb:'好消息',c:'#34d399'},watch:{ic:'🟡',lb:'需留意',c:'#d4a84b'}};
+// 事件名稱 → 看得懂的中文名（英文縮寫放小字）
+function fedZh(n){
+  const rest=n.replace(/^(CPI|NFP|PCE|ADP|ISM|GDP|FOMC)\s*/,'').trim();
+  if(n.startsWith('CPI'))  return {zh:rest+' 通膨數據',en:'CPI'};
+  if(n.startsWith('NFP'))  return {zh:rest+' 非農就業',en:'NFP'};
+  if(n.startsWith('PCE'))  return {zh:rest+' 物價指標',en:'PCE'};
+  if(n.startsWith('ADP'))  return {zh:'民間新增就業',en:'ADP'};
+  if(n.startsWith('ISM'))  return {zh:'製造業景氣指數',en:'ISM PMI'};
+  if(n.startsWith('GDP'))  return {zh:rest.replace('初值','')+' 經濟成長（初值）',en:'GDP'};
+  if(n.startsWith('FOMC')) return {zh:'美國利率決議',en:'FOMC'};
+  return {zh:n,en:''};
+}
 
 function getFedImpact(name){
   if(name.includes('CPI'))  return FED_IMPACT.CPI;
@@ -2388,40 +2411,35 @@ async function loadFedWatch(force=false){
     else badge.textContent='';
   }
 
-  // 渲染行事曆列表（附完整影響說明）
-  const rows=upcoming.map(e=>{
+  // 渲染行事曆：表格（日期｜事件＋白話說明｜數字怎麼看）
+  const dowArr=['日','一','二','三','四','五','六'];
+  const body=upcoming.map(e=>{
     const daysLeft=Math.ceil((new Date(e.date)-new Date(todayTW))/86400000);
     const dateObj=new Date(e.date+'T00:00:00+08:00');
-    const mm=(dateObj.getMonth()+1);
-    const dd=dateObj.getDate();
-    const dowArr=['日','一','二','三','四','五','六'];
-    const dow=dowArr[dateObj.getDay()];
-    const urgent=daysLeft<=7;
-    const soon=daysLeft<=14;
-    const icon=e.tier===1?'🔴':'🟡';
+    const urgent=daysLeft<=7, soon=daysLeft<=14;
     const dateColor=urgent?'#f87171':soon?'#d4a84b':'var(--text2)';
-    const daysStr=daysLeft===0?'今天！':daysLeft===1?'明天':daysLeft<=7?`⚠️ ${daysLeft}天後`:`${daysLeft}天後`;
-    const bg=urgent?'rgba(248,113,113,.08)':soon?'rgba(212,168,75,.05)':'';
+    const daysStr=daysLeft===0?'今天':daysLeft===1?'明天':daysLeft+' 天後';
+    const bg=urgent?'rgba(248,113,113,.08)':'';
     const impact=getFedImpact(e.name);
-    // 衝擊說明：取前3個閾值
-    const impactRows=impact?impact.rows.slice(0,3).map(r=>
-      `<span style="color:${r.c};font-weight:700">${escH(r.t)}</span><span style="color:var(--text2)"> → ${escH(r.fx)}</span>`
-    ).join('<br>'):'';
-    const extraNote=e.extra?`<div style="font-size:.62rem;color:#60a5fa;margin-top:2px">📌 ${escH(e.extra)}</div>`:'';
+    const nm=fedZh(e.name);
     const dotBadge=e.dot?`<span style="font-size:.55rem;font-weight:700;color:#a78bfa;background:rgba(167,139,250,.15);padding:1px 5px;border-radius:4px;margin-left:4px">含點陣圖</span>`:'';
-    return `<div style="padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.05);background:${bg};border-radius:${urgent?'6px':'0'}">
-      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-        <span>${icon}</span>
-        <span style="font-size:.7rem;color:${dateColor};font-weight:700;white-space:nowrap">${mm}/${dd}（週${dow}）</span>
-        <span style="font-size:.75rem;font-weight:800;color:${urgent?'#f87171':soon?'#d4a84b':'var(--text)'}">${escH(e.name)}${dotBadge}</span>
-        <span style="font-size:.62rem;color:${dateColor};margin-left:auto;white-space:nowrap;font-weight:700">${daysStr}</span>
-      </div>
-      ${impact?`<div style="font-size:.62rem;color:var(--text2);margin:2px 0 3px 18px">${escH(impact.what)}</div>`:''}
-      ${impactRows?`<div style="font-size:.62rem;line-height:1.8;margin-left:18px">${impactRows}</div>`:''}
-      ${extraNote}
-    </div>`;
+    const extraNote=e.extra?`<div style="font-size:.62rem;color:#60a5fa;margin-top:2px">📌 ${escH(e.extra)}</div>`:'';
+    const look=impact?impact.rows.map(r=>{
+      const L=FED_LVL[r.lvl]||FED_LVL.watch;
+      return `<div style="margin-bottom:3px"><b style="color:${L.c}">${L.ic} ${escH(r.t)}</b><span style="color:var(--text2)">：${escH(r.fx)}</span></div>`;
+    }).join(''):'<span style="color:var(--text2)">—</span>';
+    return `<tr style="background:${bg}">
+      <td class="fd-d"><div style="color:${dateColor};font-weight:800">${dateObj.getMonth()+1}/${dateObj.getDate()}（${dowArr[dateObj.getDay()]}）</div><div style="font-size:.62rem;color:${dateColor};font-weight:700">${daysStr}</div></td>
+      <td class="fd-e"><div style="font-weight:800;color:var(--text)">${e.tier===1?'🔴':'🟡'} ${escH(nm.zh)}${nm.en?` <small style="color:var(--text2);font-weight:600">${escH(nm.en)}</small>`:''}${dotBadge}</div>
+        ${impact?`<div style="font-size:.64rem;color:var(--text2);margin-top:2px">${escH(impact.what)}</div>`:''}${extraNote}</td>
+      <td class="fd-r">${look}</td></tr>`;
   }).join('');
-  calEl.innerHTML=rows||'<span style="color:var(--text2)">今年行事曆已結束</span>';
+  const lastCal=FED_CAL[FED_CAL.length-1].date;
+  const calWarn=(new Date(lastCal)-new Date(todayTW))/86400000<=30
+    ?`<div style="font-size:.62rem;color:#d4a84b;margin-top:6px">⚠️ 行事曆資料只排到 ${lastCal.slice(5).replace('-','/')}，之後的日期需要補資料。</div>`:'';
+  calEl.innerHTML=body?`<div style="font-size:.62rem;color:var(--text2);margin-bottom:6px">事件：🔴 重要　🟡 次要　｜　數字結果：🟢 好消息　🔴 壞消息　🟡 需留意（對台股的影響）</div>
+    <div style="overflow-x:auto"><table class="fd-tbl"><thead><tr><th>日期</th><th>事件（這是什麼）</th><th>數字怎麼看</th></tr></thead><tbody>${body}</tbody></table></div>${calWarn}`
+    :'<span style="color:var(--text2)">今年行事曆已結束</span>';
 
   // ── FRED 最新數值（快取；重大數據發布日縮短為30分鐘，其餘6小時）──────
   const fredCacheKey='fredvals_'+todayTW;
@@ -5343,6 +5361,7 @@ return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(20
     loadWeeklyOutlook(false).catch(()=>{});
   });
   Promise.all([loadTWSEDaily(), loadStockPrices()]).finally(()=>{
+    try{renderUpcomingDiv();}catch(_){} // 股價載入後重畫除息日曆，才能算出殖利率
     loadGeoStatus(); // 先顯示昨天快取，避免空白
     loadGeoAI(false).catch(()=>{}); // AI 自動偵測今日地緣政治
     loadFedWatch(false).catch(()=>{}); // Fed Watch 行事曆 + FRED 數值
@@ -6516,7 +6535,8 @@ function renderUpcomingDiv(){
     const code=String(rec.code||rec.stock_no||'');
     if(_udType==='etf'&&!isEtf(code)) return;
     if(_udType==='stock'&&isEtf(code)) return;
-    rows.push({d:d,key:d.toISOString().slice(0,10),code:code,name:rec.name||rec.stock_name||'',
+    // key 直接取原始日期字串；不可用 toISOString()（本地午夜在 UTC+8 會被退回前一天，日期整排差一天）
+    rows.push({d:d,key:String(rec.ex_div_date||rec.exDate||'').replace(/\//g,'-'),code:code,name:rec.name||rec.stock_name||'',
       div:Number(rec.cash_div_total!=null?rec.cash_div_total:rec.cashDivTotal)||0,pay:_udPayDate(rec.div_pay_date)});
   });
   rows.sort((a,b)=>a.d-b.d||a.code.localeCompare(b.code));
@@ -6529,25 +6549,23 @@ function renderUpcomingDiv(){
   }
 
   const wk=['日','一','二','三','四','五','六'];
-  const cnt={}; rows.forEach(r=>{cnt[r.key]=(cnt[r.key]||0)+1;});
-  let last='', html='';
+  let last='', band=0, html='';
   rows.forEach(r=>{
-    if(r.key!==last){
-      last=r.key;
-      const diff=Math.round((r.d-today)/86400000);
-      const rel=diff===1?'明天':diff+' 天後';
-      html+='<tr class="ud-dhead'+(diff<=3?' soon':'')+'"><td colspan="5">'+r.key.slice(5).replace('-','/')+'（'+wk[r.d.getDay()]+'）<small>'+rel+' · '+cnt[r.key]+' 檔</small></td></tr>';
-    }
+    if(r.key!==last){last=r.key;band^=1;}          // 同一天的列同底色，換日換底色
+    const diff=Math.round((r.d-today)/86400000);
+    const rel=diff===1?'明天':diff+' 天後';
     const price=(typeof stockPriceMap!=='undefined'&&stockPriceMap&&stockPriceMap[r.code]&&stockPriceMap[r.code].c)?stockPriceMap[r.code].c[0]:0;
     const yld=(price>0&&r.div>0)?(r.div/price*100).toFixed(2)+'%':'—';
     const tag=isEtf(r.code)?'<span class="ud-etf">ETF</span>':'';
-    html+='<tr><td class="cd">'+r.code+'</td><td class="nm" title="'+r.name+'">'+r.name+tag+'</td>'
+    html+='<tr class="'+(band?'ud-b1':'ud-b0')+'">'
+        +'<td class="ud-dt'+(diff<=3?' soon':'')+'">'+r.key.slice(5).replace('-','/')+'（'+wk[r.d.getDay()]+'）<small>'+rel+'</small></td>'
+        +'<td class="cd">'+r.code+'</td><td class="nm" title="'+r.name+'">'+r.name+tag+'</td>'
         +'<td class="num">'+_udFmtDiv(r.div)+'</td>'
         +'<td class="num ud-hide-m'+(yld==='—'?'':' ud-yh')+'">'+yld+'</td>'
         +'<td class="num ud-hide-m">'+r.pay+'</td></tr>';
   });
   body.innerHTML='<div class="ud-scroll"><table class="ud-tbl"><thead><tr>'
-    +'<th>代號</th><th>名稱</th><th class="num">現金股利</th><th class="num ud-hide-m">殖利率</th><th class="num ud-hide-m">發放日</th>'
+    +'<th>除息日</th><th>代號</th><th>名稱</th><th class="num">現金股利</th><th class="num ud-hide-m" title="本次配息 ÷ 目前股價，不是年化殖利率（月配/季配 ETF 會偏低）">本次殖利率</th><th class="num ud-hide-m">發放日</th>'
     +'</tr></thead><tbody>'+html+'</tbody></table></div>';
 }
 
