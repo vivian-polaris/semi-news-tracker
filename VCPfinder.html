@@ -462,12 +462,6 @@ footer a:hover{text-decoration:underline}
     padding:10px 12px!important;
   }
   #sentimentPanel>div[style*="width:1px"]{display:none!important} /* 隱藏垂直分隔線 */
-  #sentimentPanel .sent-btn-group{
-    display:flex!important;
-    flex-wrap:wrap!important;
-    gap:5px!important;
-    width:100%!important;
-  }
   #sentimentPanel button{
     font-size:.65rem!important;
     padding:3px 8px!important;
@@ -571,30 +565,13 @@ footer a:hover{text-decoration:underline}
   <p>台股動能精選 <span class="subtitle-badge">VCP · Stage 2</span></p>
 </header>
 
-<!-- ── 市場情緒面板 ── -->
+<!-- ── BTC／監控面板 ── -->
 <div id="sentimentPanel" style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:12px 16px;margin:10px 0 12px;display:flex;flex-wrap:wrap;gap:12px;align-items:center">
   <!-- BTC Widget -->
   <div style="display:flex;align-items:center;gap:8px;min-width:160px">
     <span style="font-size:.62rem;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.06em">BTC</span>
     <span id="btcPrice" style="font-size:.85rem;font-weight:700;color:var(--text)">—</span>
     <span id="btcChange" style="font-size:.75rem;font-weight:700">—</span>
-  </div>
-  <div style="width:1px;height:24px;background:var(--border)"></div>
-  <!-- Auto Sentiment Display -->
-  <div style="flex:1;min-width:0">
-    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-      <span style="font-size:.62rem;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap">大盤情緒</span>
-      <span style="font-size:.6rem;color:#60a5fa;font-weight:600">🤖 自動判斷</span>
-      <span id="sentBasis" style="font-size:.58rem;color:var(--text2)">計算中...</span>
-    </div>
-    <!-- Manual override buttons -->
-    <div class="sent-btn-group" style="display:flex;align-items:center;gap:4px;margin-top:4px;flex-wrap:wrap">
-      <span style="font-size:.55rem;color:var(--text2);white-space:nowrap">手動覆蓋：</span>
-      <button id="sentBtn_risk_on" onclick="setSentiment('risk_on')" style="padding:3px 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--tag);color:var(--text);font-size:.65rem;cursor:pointer;font-weight:700;white-space:nowrap">🟢 開啟</button>
-      <button id="sentBtn_neutral" onclick="setSentiment('neutral')" style="padding:3px 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--tag);color:var(--text);font-size:.65rem;cursor:pointer;font-weight:700;white-space:nowrap">🟡 中性</button>
-      <button id="sentBtn_risk_off" onclick="setSentiment('risk_off')" style="padding:3px 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--tag);color:var(--text);font-size:.65rem;cursor:pointer;font-weight:700;white-space:nowrap">🔴 關閉</button>
-      <button onclick="resetSentimentAuto()" style="padding:3px 8px;border-radius:6px;border:1.5px solid #60a5fa;background:transparent;color:#60a5fa;font-size:.6rem;cursor:pointer;font-weight:700;white-space:nowrap">↺ 還原自動</button>
-    </div>
   </div>
   <div style="width:1px;height:24px;background:var(--border)"></div>
   <!-- Monitor Mode -->
@@ -713,9 +690,10 @@ footer a:hover{text-decoration:underline}
       <!-- 邏輯提示 -->
       <div style="margin-top:10px;padding:7px 10px;background:var(--tag);border-radius:8px;font-size:.68rem;color:var(--text2);line-height:1.7">
         💡 <strong style="color:var(--text)">記住這個邏輯：</strong><br>
-        數據好 → Fed 不降息 → 台股跌<br>
+        數據好 → Fed 繼續升息 → 台股跌<br>
         數據差 → 衰退疑慮 → 台股也跌<br>
-        <strong style="color:#34d399">剛剛好</strong> → 才漲
+        <strong style="color:#34d399">剛剛好</strong> → 才漲<br>
+        <span style="font-size:.62rem;opacity:.8">⚠️ Fed 目前處於升息週期（2026/9 起），不是降息。日期以美國時間為準，表內已換算台灣時間。</span>
       </div>
       <div class="news-time" id="fedwatchTime"></div>
     </div>
@@ -2203,7 +2181,7 @@ async function fetchFRED(seriesId, units){
 }
 
 // ─── 本週大盤展望 ─────────────────────────────────────────────────────────
-async function loadWeeklyOutlook(force=false){
+async function loadWeeklyOutlook(force=false,cacheOnly=false){
   const body=document.getElementById('weeklyOutlookBody');
   const timeEl=document.getElementById('weeklyOutlookTime');
   const btn=document.getElementById('weeklyOutlookRefreshBtn');
@@ -2221,7 +2199,9 @@ async function loadWeeklyOutlook(force=false){
         // 若快取內容出現明顯偏低的大盤點位（低於 30000），視為 AI 用舊訓練數據生成，強制捨棄
         const plainTxt=c.html.replace(/<[^>]*>/g,'');
         const hasWrongTaiex=/點位[：:]\s*[1-3]\d{4}/.test(plainTxt);
-        if(!hasWrongTaiex){
+        // 舊版曾把「AI 已達上限」等錯誤訊息存成快取，一律丟棄
+        const isErrCache=/^\s*⚠️|AI 已達上限|AI 暫時無法回應|Groq 速率限制/.test(plainTxt);
+        if(!hasWrongTaiex&&!isErrCache){
           body.style.color='var(--text)';
           body.innerHTML=c.html;
           if(timeEl)timeEl.textContent=`⏱ 快取（${cacheAgeStr(c.ts)}）・點 ↻ 強制更新`;
@@ -2231,6 +2211,13 @@ async function loadWeeklyOutlook(force=false){
         try{localStorage.removeItem('ai_v2_'+dayKey);}catch(_){}
       }
     }catch(_){}
+  }
+
+  // 開頁自動呼叫時只顯示快取，不自動呼叫 AI（避免用盡免費額度）；要產生請按 ↻
+  if(cacheOnly){
+    body.style.color='var(--text2)';
+    body.textContent='尚未產生。按右上角「↻」產生本週大盤展望（會使用 AI 額度，不會自動執行）。';
+    return;
   }
 
   // Loading state
@@ -2377,6 +2364,14 @@ ${tradingDays.map(d=>`📅 ${d}：[30字內判斷] 點位：[XXXXX–YYYYY] 情�
 
   const result=await callAI(prompt);
 
+  // AI 失敗（額度用完、逾時）：只顯示提示，不渲染成展望、不快取
+  if(/^⚠️/.test(result)){
+    body.style.color='#d4a84b';
+    body.textContent=result;
+    if(btn)btn.disabled=false;
+    return;
+  }
+
   // ④ 渲染：把看多/看空/震盪上色
   const lines=result.split('\n').filter(l=>l.trim());
   const htmlLines=lines.map(line=>{
@@ -2406,19 +2401,19 @@ ${tradingDays.map(d=>`📅 ${d}：[30字內判斷] 點位：[XXXXX–YYYYY] 情�
 const FED_IMPACT={
   // lvl: 'bad' 壞消息 / 'good' 好消息 / 'watch' 需留意
   CPI:{
-    what:'美國物價漲了多少（通膨）。數字越高，Fed 越不敢降息。',
+    what:'美國物價漲了多少（通膨）。數字越高，Fed 越可能繼續升息。',
     rows:[
-      {lvl:'bad',   t:'高於 4%',   fx:'通膨太高 → Fed 不會降息 → 台積電等科技股容易大跌'},
-      {lvl:'watch', t:'3.5–4%',    fx:'通膨偏高 → 降息要延後 → 科技股承壓，但不至於崩'},
-      {lvl:'good',  t:'2–2.5%',    fx:'接近 Fed 目標 2% → 降息有望 → 對台股偏利多'},
+      {lvl:'bad',   t:'高於 4%',   fx:'通膨太高 → Fed 會繼續升息 → 台積電等科技股容易大跌'},
+      {lvl:'watch', t:'3.5–4%',    fx:'通膨偏高 → 升息壓力持續 → 科技股承壓，但不至於崩'},
+      {lvl:'good',  t:'2–2.5%',    fx:'通膨降溫、接近 Fed 目標 2% → Fed 有機會停止升息 → 對台股偏利多'},
       {lvl:'watch', t:'低於 2%',   fx:'通膨很低通常是好事；但若是景氣變差造成的，反而是壞消息'},
     ]
   },
   NFP:{
-    what:'美國這個月新增了多少工作（每月第一個週五公布）。工作增太多＝經濟太熱，Fed 反而不降息。',
+    what:'美國這個月新增了多少工作（每月第一個週五公布）。工作增太多＝經濟太熱，Fed 更可能繼續升息。',
     rows:[
-      {lvl:'bad',   t:'多於 25 萬',  fx:'工作增太多、經濟過熱 → Fed 不敢降息 → 科技股容易跌'},
-      {lvl:'good',  t:'15–20 萬',    fx:'剛剛好的溫和成長 → 台股最喜歡'},
+      {lvl:'bad',   t:'多於 25 萬',  fx:'工作增太多、經濟過熱 → Fed 更有理由繼續升息 → 科技股容易跌'},
+      {lvl:'good',  t:'15–20 萬',    fx:'剛剛好的溫和成長 → Fed 不必急著升息 → 台股最喜歡'},
       {lvl:'bad',   t:'少於 10 萬',  fx:'工作大減 → 擔心景氣衰退 → 市場容易全面賣壓'},
     ]
   },
@@ -2426,22 +2421,22 @@ const FED_IMPACT={
     what:'Fed 開會決定美國利率（一年 8 次），是影響全球股市最大的事件。',
     rows:[
       {lvl:'bad',   t:'升息／口氣強硬', fx:'外資撤出新興市場，台股容易下跌'},
-      {lvl:'good',  t:'降息／口氣放鬆', fx:'外資回流亞洲，台積電、高股息股常先反彈'},
+      {lvl:'good',  t:'停止升息／口氣放鬆', fx:'外資回流亞洲，台積電、高股息股常先反彈'},
       {lvl:'watch', t:'點陣圖',         fx:'Fed 官員對未來利率的預測圖（3、6、9、12 月公布），常比當次決定更重要'},
     ]
   },
   PCE:{
     what:'另一種物價指標，是 Fed 最看重的通膨數字（月底公布）。',
     rows:[
-      {lvl:'bad',   t:'高於 2.5%', fx:'比預期高 → 降息被推遲'},
-      {lvl:'good',  t:'約 2%',     fx:'達到 Fed 目標 → 降息路徑更明確'},
+      {lvl:'bad',   t:'高於 2.5%', fx:'比預期高 → 升息持續、停手被推遲'},
+      {lvl:'good',  t:'約 2%',     fx:'達到 Fed 目標 → 可以停止升息'},
     ]
   },
   ADP:{
     what:'民間公司新增的工作數，比週五的非農就業早兩天公布，可當預告。',
     rows:[
       {lvl:'watch', t:'遠高於預期', fx:'預告週五非農也會很強 → 科技股可能提前下跌'},
-      {lvl:'watch', t:'遠低於預期', fx:'預告非農偏弱 → 降息預期升溫，反而可能利多'},
+      {lvl:'watch', t:'遠低於預期', fx:'預告非農偏弱 → 升息壓力下降，反而可能利多'},
     ]
   },
   ISM:{
@@ -2456,7 +2451,7 @@ const FED_IMPACT={
   GDP:{
     what:'美國整體經濟成長率（每季公布）。',
     rows:[
-      {lvl:'watch', t:'高於 3%',   fx:'經濟過熱 → Fed 不降息，市場擔心再升息'},
+      {lvl:'watch', t:'高於 3%',   fx:'經濟過熱 → Fed 更可能繼續升息'},
       {lvl:'good',  t:'1–2.5%',    fx:'成長剛剛好，股市最喜歡'},
       {lvl:'watch', t:'0–1%',      fx:'成長放緩，開始擔心衰退'},
       {lvl:'bad',   t:'低於 0%',   fx:'技術性衰退，外資全面撤出新興市場'},
@@ -2491,7 +2486,7 @@ function getFedImpact(name){
 const FED_CAL=[
   // tier 1 = 🔴 直接衝擊  tier 2 = 🟡 次重要
   {date:'2026-06-11',name:'CPI 5月',tier:1,dot:false,extra:'⚠️ 本波最關鍵：美銀警告若>4%直接觸發科技股拋售'},
-  {date:'2026-06-18',name:'FOMC 利率決議',tier:1,dot:true,extra:'含點陣圖，今年下半年最重要的政策信號'},
+  {date:'2026-06-17',name:'FOMC 利率決議',tier:1,dot:true,extra:'含點陣圖，今年下半年最重要的政策信號'},
   {date:'2026-06-26',name:'PCE 5月',tier:2},
   {date:'2026-07-01',name:'ISM 製造業 PMI',tier:2},
   {date:'2026-07-01',name:'ADP 就業',tier:2},
@@ -2507,18 +2502,50 @@ const FED_CAL=[
   {date:'2026-09-02',name:'ADP 就業',tier:2},
   {date:'2026-09-04',name:'NFP 8月',tier:1},
   {date:'2026-09-10',name:'CPI 8月',tier:1},
-  {date:'2026-09-17',name:'FOMC 利率決議',tier:1,dot:true},
+  {date:'2026-09-16',name:'FOMC 利率決議',tier:1,dot:true},
   {date:'2026-09-25',name:'PCE 8月',tier:2},
   {date:'2026-10-02',name:'NFP 9月',tier:1},
   {date:'2026-10-13',name:'CPI 9月',tier:1},
-  {date:'2026-10-29',name:'FOMC 利率決議',tier:1,dot:false},
+  {date:'2026-10-28',name:'FOMC 利率決議',tier:1,dot:false},
   {date:'2026-10-30',name:'GDP Q3 初值',tier:2},
   {date:'2026-11-06',name:'NFP 10月',tier:1},
-  {date:'2026-11-12',name:'CPI 10月',tier:1},
+  {date:'2026-11-10',name:'CPI 10月',tier:1},
   {date:'2026-12-04',name:'NFP 11月',tier:1},
-  {date:'2026-12-10',name:'FOMC 利率決議',tier:1,dot:true,extra:'年終最終決策，含點陣圖'},
-  {date:'2026-12-11',name:'CPI 11月',tier:1},
+  {date:'2026-12-09',name:'FOMC 利率決議',tier:1,dot:true,extra:'年終最終決策，含點陣圖'},
+  {date:'2026-12-10',name:'CPI 11月',tier:1},
+  // 2027：NFP/CPI 為 BLS 官方日期；FOMC 為 Fed 暫定日期（以 Fed 公告為準）
+  {date:'2027-01-08',name:'NFP 12月',tier:1},
+  {date:'2027-01-13',name:'CPI 12月',tier:1},
+  {date:'2027-01-27',name:'FOMC 利率決議',tier:1,dot:false,extra:'暫定日期，以 Fed 公告為準'},
+  {date:'2027-02-05',name:'NFP 1月',tier:1},
+  {date:'2027-02-11',name:'CPI 1月',tier:1},
+  {date:'2027-03-05',name:'NFP 2月',tier:1},
+  {date:'2027-03-10',name:'CPI 2月',tier:1},
+  {date:'2027-03-17',name:'FOMC 利率決議',tier:1,dot:false,extra:'暫定日期，以 Fed 公告為準'},
+  {date:'2027-04-02',name:'NFP 3月',tier:1},
+  {date:'2027-04-13',name:'CPI 3月',tier:1},
+  {date:'2027-04-28',name:'FOMC 利率決議',tier:1,dot:false,extra:'暫定日期，以 Fed 公告為準'},
 ];
+
+// 美國事件日期 → 台灣時間（FOMC 14:00 ET、ISM 10:00、ADP 08:15，其餘 08:30；含美國夏令時間）
+function _usDst(y,m,d){
+  const nthSun=(mo,n)=>{const f=new Date(Date.UTC(y,mo-1,1)).getUTCDay();return 1+((7-f)%7)+(n-1)*7;};
+  const cur=Date.UTC(y,m-1,d);
+  return cur>=Date.UTC(y,2,nthSun(3,2)) && cur<Date.UTC(y,10,nthSun(11,1));
+}
+function fedTW(e){
+  const [y,m,d]=e.date.split('-').map(Number);
+  const hm=/FOMC/.test(e.name)?[14,0]:/ISM/.test(e.name)?[10,0]:/ADP/.test(e.name)?[8,15]:[8,30];
+  const inst=Date.UTC(y,m-1,d,hm[0]+(_usDst(y,m,d)?4:5),hm[1]);       // 實際時間點(UTC)
+  const w=new Date(inst+8*3600000);                                  // 台灣牆上時間（讀 getUTC*）
+  return {inst, mo:w.getUTCMonth()+1, d:w.getUTCDate(), dow:w.getUTCDay(),
+          hh:String(w.getUTCHours()).padStart(2,'0'), mi:String(w.getUTCMinutes()).padStart(2,'0'),
+          ymd:w.toISOString().slice(0,10), usMD:m+'/'+d};
+}
+function fedDaysLeft(e,todayTW){
+  const a=fedTW(e).ymd.split('-').map(Number), b=todayTW.split('-').map(Number);
+  return Math.round((Date.UTC(a[0],a[1]-1,a[2])-Date.UTC(b[0],b[1]-1,b[2]))/86400000);
+}
 
 async function loadFedWatch(force=false){
   const calEl=document.getElementById('fedCalBody');
@@ -2529,13 +2556,14 @@ async function loadFedWatch(force=false){
   const todayTW=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
 
   // ── 行事曆：顯示未來 70 天 ──────────────────────────────────────
-  const upcoming=FED_CAL.filter(e=>e.date>=todayTW).slice(0,10);
+  // 以台灣時間判斷：事件發布後 12 小時內仍顯示（FOMC 美國 14:00 公布＝台灣隔天凌晨，影響的是台股隔天開盤）
+  const upcoming=FED_CAL.filter(e=>fedTW(e).inst>=Date.now()-12*3600000).slice(0,10);
   if(!upcoming.length){calEl.textContent='今年行事曆已結束';return;}
 
   // 找最近的 tier1 事件更新 badge
   const next1=upcoming.find(e=>e.tier===1);
   if(next1&&badge){
-    const daysLeft=Math.ceil((new Date(next1.date)-new Date(todayTW))/86400000);
+    const daysLeft=fedDaysLeft(next1,todayTW);
     if(daysLeft<=7) badge.textContent=`⚠️ ${daysLeft}天後 ${next1.name}`;
     else badge.textContent='';
   }
@@ -2543,8 +2571,8 @@ async function loadFedWatch(force=false){
   // 渲染行事曆：表格（日期｜事件＋白話說明｜數字怎麼看）
   const dowArr=['日','一','二','三','四','五','六'];
   const body=upcoming.map(e=>{
-    const daysLeft=Math.ceil((new Date(e.date)-new Date(todayTW))/86400000);
-    const dateObj=new Date(e.date+'T00:00:00+08:00');
+    const tw=fedTW(e);
+    const daysLeft=fedDaysLeft(e,todayTW);
     const urgent=daysLeft<=7, soon=daysLeft<=14;
     const dateColor=urgent?'#f87171':soon?'#d4a84b':'var(--text2)';
     const daysStr=daysLeft===0?'今天':daysLeft===1?'明天':daysLeft+' 天後';
@@ -2558,7 +2586,7 @@ async function loadFedWatch(force=false){
       return `<div style="margin-bottom:3px"><b style="color:${L.c}">${L.ic} ${escH(r.t)}</b><span style="color:var(--text2)">：${escH(r.fx)}</span></div>`;
     }).join(''):'<span style="color:var(--text2)">—</span>';
     return `<tr style="background:${bg}">
-      <td class="fd-d"><div style="color:${dateColor};font-weight:800">${dateObj.getMonth()+1}/${dateObj.getDate()}（${dowArr[dateObj.getDay()]}）</div><div style="font-size:.62rem;color:${dateColor};font-weight:700">${daysStr}</div></td>
+      <td class="fd-d"><div style="color:${dateColor};font-weight:800">${tw.mo}/${tw.d}（${dowArr[tw.dow]}）${tw.hh}:${tw.mi}</div><div style="font-size:.62rem;color:${dateColor};font-weight:700">${daysStr}</div><div style="font-size:.58rem;color:var(--text2)">台灣時間・美國 ${tw.usMD}</div></td>
       <td class="fd-e"><div style="font-weight:800;color:var(--text)">${e.tier===1?'🔴':'🟡'} ${escH(nm.zh)}${nm.en?` <small style="color:var(--text2);font-weight:600">${escH(nm.en)}</small>`:''}${dotBadge}</div>
         ${impact?`<div style="font-size:.64rem;color:var(--text2);margin-top:2px">${escH(impact.what)}</div>`:''}${extraNote}</td>
       <td class="fd-r">${look}</td></tr>`;
@@ -3989,7 +4017,7 @@ function calcCANSLIM(vcp, fund, chips){
   const fNet=chips?parseChipNum(chips.foreignNet)??0:null;
   const tNet=chips?parseChipNum(chips.trustNet)??0:null;
   const I=(fNet!==null||tNet!==null)?((fNet||0)>0||(tNet||0)>0):null;
-  const mktUp=(localStorage.getItem('mktSentiment')||'neutral')==='risk_on'||(window.taixChg!=null&&window.taixChg>0);
+  const mktUp=(window.taixChg!=null&&window.taixChg>0);
   const M=vcp?(vcp.stage2&&mktUp):null;
   const letters={C,A,N,S,L,I,M};
   const total=Object.values(letters).filter(v=>v===true).length;
@@ -4125,12 +4153,6 @@ function scoreBadge(label, cls, detailHTML){
   </div>`;
 }
 function renderTable(){
-  // 更新外資整體買超（用於自動情緒）
-  const allFnets=Object.values(chipsMap).map(c=>parseChipNum(c?.foreignNet)||0).filter(v=>isFinite(v));
-  if(allFnets.length>0){
-    window.foreignAggregate=allFnets.reduce((a,b)=>a+b,0);
-    if(typeof autoSetSentiment==='function')autoSetSentiment();
-  }
   const filtered=getFiltered(),sorted=getSorted(filtered);
   const counted=allResults.filter(r=>r.vcp).length;
   document.getElementById('showN').textContent=sorted.length;
@@ -5469,7 +5491,7 @@ return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(20
   // 本週大盤展望 + 除息橫幅：等除息+法說曆載入後再跑
   Promise.all([loadExDiv2026().catch(()=>{}), loadConfCalendar().catch(()=>{})]).then(()=>{
     renderExDivBanner();           // 近期除息提醒（立即，不用 AI）
-    loadWeeklyOutlook(false).catch(()=>{});
+    loadWeeklyOutlook(false,true).catch(()=>{});  // 只顯示快取，不自動呼叫 AI
   });
   Promise.all([loadTWSEDaily(), loadStockPrices()]).finally(()=>{
     try{renderUpcomingDiv();}catch(_){} // 股價載入後重畫除息日曆，才能算出殖利率
@@ -6179,72 +6201,7 @@ loadBorrowData(false).catch(()=>{});
 
   patchLookupStock();
 
-  // ── 市場情緒系統 ──────────────────────────────────────────────────────
-  window.btcSentiment = 0; // global: +5 or -10 or 0
-  window.btcChg = 0;
-  window.taixChg = null; // TAIEX today % change
-  window.foreignAggregate = null; // aggregate foreign net
-  const SENT_MULT = {'risk_on':1.1,'neutral':1.0,'risk_off':0.7};
-
-  function getSentiment(){ return localStorage.getItem('mktSentiment')||'neutral'; }
-
-  function setSentiment(val, manual=true){
-    if(manual) localStorage.setItem('mktSentimentMode','manual');
-    localStorage.setItem('mktSentiment', val);
-    ['risk_on','neutral','risk_off'].forEach(k=>{
-      const b=document.getElementById('sentBtn_'+k);
-      if(!b)return;
-      b.style.background = k===val ? 'var(--purple)' : 'var(--tag)';
-      b.style.color = k===val ? '#fff' : 'var(--text)';
-      b.style.borderColor = k===val ? 'var(--purple)' : 'var(--border)';
-    });
-  }
-  window.setSentiment = setSentiment;
-
-  // ── 自動情緒計算 ──────────────────────────────────────────────────────
-  function calcAutoSentiment(){
-    let score = 0;
-    const reasons = [];
-    // BTC
-    const btc = window.btcChg||0;
-    if(btc>3){score+=1;reasons.push(`BTC+${btc.toFixed(1)}%↑`);}
-    else if(btc<-3){score-=2;reasons.push(`BTC${btc.toFixed(1)}%↓`);}
-    else if(btc>0){reasons.push(`BTC+${btc.toFixed(1)}%`);}
-    else{reasons.push(`BTC${btc.toFixed(1)}%`);}
-    // TAIEX
-    const tx = window.taixChg;
-    if(tx!=null){
-      if(tx>1){score+=2;reasons.push(`大盤+${tx.toFixed(1)}%↑`);}
-      else if(tx>0){score+=1;reasons.push(`大盤+${tx.toFixed(1)}%`);}
-      else if(tx<-1){score-=2;reasons.push(`大盤${tx.toFixed(1)}%↓`);}
-      else if(tx<0){score-=1;reasons.push(`大盤${tx.toFixed(1)}%`);}
-    }
-    // Foreign aggregate
-    const fa = window.foreignAggregate;
-    if(fa!=null){
-      if(fa>50){score+=1;reasons.push(`外資+${fa.toFixed(0)}億`);}
-      else if(fa<-50){score-=1;reasons.push(`外資${fa.toFixed(0)}億`);}
-      else{reasons.push(`外資${fa.toFixed(0)}億（中性）`);}
-    }
-    const val = score>=2?'risk_on':score<=-2?'risk_off':'neutral';
-    const label = val==='risk_on'?'🟢 自動：風險開啟':val==='risk_off'?'🔴 自動：風險關閉':'🟡 自動：中性';
-    // Update basis display
-    const basisEl=document.getElementById('sentBasis');
-    if(basisEl) basisEl.textContent=reasons.join(' · ');
-    return val;
-  }
-
-  function autoSetSentiment(){
-    if(localStorage.getItem('mktSentimentMode')==='manual') return; // user override
-    const val=calcAutoSentiment();
-    setSentiment(val, false);
-  }
-
-  // Reset to auto mode button
-  window.resetSentimentAuto=function(){
-    localStorage.removeItem('mktSentimentMode');
-    autoSetSentiment();
-  };
+  window.taixChg = null; // 加權指數今日漲跌 %（CANSLIM「M」使用）
 
   // ── BTC Widget ────────────────────────────────────────────────────────
   async function fetchBTC(){
@@ -6263,9 +6220,6 @@ loadBorrowData(false).catch(()=>{});
         chgEl.textContent=sign+chg.toFixed(1)+'%';
         chgEl.style.color=chg>=0?'#34d399':'#f87171';
       }
-      window.btcChg = chg||0;
-      window.btcSentiment = chg>3 ? 5 : chg<-3 ? -10 : 0;
-      autoSetSentiment();
     }catch(e){}
   }
 
@@ -6285,7 +6239,6 @@ loadBorrowData(false).catch(()=>{});
           window.taixPrice=Math.round(curr);
         }
       }
-      autoSetSentiment();
     }catch(e){}
   }
 
@@ -6293,9 +6246,6 @@ loadBorrowData(false).catch(()=>{});
   fetchTAIEX();
   setInterval(fetchBTC, 5*60*1000);
   setInterval(fetchTAIEX, 5*60*1000);
-  // Apply on load with whatever is available
-  autoSetSentiment();
-
   // ── 瀏覽器通知 ───────────────────────────────────────────────────────
   if('Notification' in window && Notification.permission==='default'){
     Notification.requestPermission();
