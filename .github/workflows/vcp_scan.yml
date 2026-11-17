@@ -1,4 +1,4 @@
-name: VCP Daily Scan + Email
+name: VCP Daily Scan
 
 on:
   schedule:
@@ -19,7 +19,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  scan-and-email:
+  scan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,11 +51,3 @@ jobs:
           git diff --cached --quiet || git commit -m "data: update prices + vcp_daily"
           git pull --rebase origin main
           git push
-
-      - name: Send email report
-        if: steps.scan.outcome == 'success'
-        env:
-          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
-        run: |
-          pip install --quiet requests
-          python scripts/vcp_email_report.py
