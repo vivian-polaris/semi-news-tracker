@@ -427,7 +427,7 @@ def fetch_stock_fundamentals(
     else:
         # API 無資料：從 BWIBBU yield>0 推斷至少今年配息
         yield_div = mkt.get('yield_div')
-        result['consecutiveYears'] = 1 if (yield_div and yield_div > 0) else None
+        result['consecutiveYears'] = None  # API 無回應，跳過連配年數條件
         result['divByYear']        = []
         result['divIncreasing3y']  = None
 

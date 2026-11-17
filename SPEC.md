@@ -69,6 +69,9 @@ GitHub Actions（自動排程）
 2. 失敗時 fallback 到 Yahoo Finance CORS proxy（3個輪流）
 3. 籌碼：A) localStorage快取 → B) twse_daily.json → C) TWSE T86 直連
 4. 基本面：twse_daily.json（月營收/季報）+ Yahoo Finance quoteSummary
+5. 借券賣出餘額（fetch_twse_daily.py）：A) TWSE `TWT93U`（第二組『前日餘額/當日餘額』，股→張）→ B) CF Worker /api/borrow → C) MI_SLBK（被封鎖）→ D) BFT41U → E) OpenAPI
+6. 掃描名單代號規則：4 碼股票 或 ETF（`00` 開頭 + 3~4 碼數字 + 可選結尾英文字母，如 0050、00878、00679B、00981A）；ETF 產業標為「ETF」，無基本面/CANSLIM 資料
+7. 啟動行為：每次開啟頁面自動呼叫 startScan()；有快取時先顯示快取
 ```
 
 ### 5. AI 新聞 `loadTrump()`

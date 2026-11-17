@@ -102,7 +102,7 @@ def fetch_otc_stocks():
         for r in data:
             code = str(r.get('SecuritiesCompanyCode') or '').strip()
             name = str(r.get('CompanyName') or code).strip()
-            if re.match(r'^\d{4}$', code):
+            if re.match(r'^(\d{4}|00\d{3,4}[A-Z]?)$', code):
                 otc.append({'code': code, 'name': name})
         print(f'  OTC stocks: {len(otc)}')
     else:
@@ -118,7 +118,7 @@ def fetch_tse_stocks():
         for r in data:
             code = str(r.get('Code') or r.get('code') or '').strip()
             name = str(r.get('Name') or r.get('name') or code).strip()
-            if re.match(r'^\d{4}$', code):
+            if re.match(r'^(\d{4}|00\d{3,4}[A-Z]?)$', code):
                 tse.append({'code': code, 'name': name})
         print(f'  TSE stocks: {len(tse)}')
     else:
@@ -175,7 +175,7 @@ def fetch_chips():
             if len(row) <= max(ci, fi, ti, di):
                 continue
             code = str(row[ci]).strip()
-            if not re.match(r'^\d{4,6}$', code):
+            if not re.match(r'^(\d{4,6}|00\d{3,4}[A-Z])$', code):
                 continue
             chips[code] = {
                 'foreignNet': _int(row[fi]),
@@ -204,7 +204,7 @@ def fetch_chips():
             if len(row) < 6:
                 continue
             code = str(row[0]).strip()
-            if not re.match(r'^\d{4,6}$', code):
+            if not re.match(r'^(\d{4,6}|00\d{3,4}[A-Z])$', code):
                 continue
             if code not in chips:
                 chips[code] = {
@@ -265,7 +265,7 @@ def parse_income_rows(data):
         return result
     for r in data:
         code = str(r.get('公司代號') or '').strip()
-        if not code or not re.match(r'^\d{4,6}$', code):
+        if not code or not re.match(r'^(\d{4,6}|00\d{3,4}[A-Z])$', code):
             continue
         eps = _flt(r.get('基本每股盈餘(元)'))
         rev = _int2(r.get('營業收入'))
@@ -332,7 +332,7 @@ def fetch_margin():
                     if len(row) < 7:
                         continue
                     code = str(row[0]).strip()
-                    if not re.match(r'^\d{4,6}$', code):
+                    if not re.match(r'^(\d{4,6}|00\d{3,4}[A-Z])$', code):
                         continue
                     t = parse_num(row[6])
                     p = parse_num(row[5])
@@ -417,7 +417,7 @@ def _parse_twse_openapi_prices(data):
     result = {}
     for r in data:
         code = str(r.get('Code') or r.get('code') or '').strip()
-        if not re.match(r'^\d{4,6}$', code):
+        if not re.match(r'^(\d{4,6}|00\d{3,4}[A-Z])$', code):
             continue
         c = _flt(r.get('ClosingPrice') or r.get('收盤價') or r.get('close'))
         if not c or c <= 0:
@@ -450,7 +450,7 @@ def _parse_twse_rwd_prices(data):
         if len(row) < 9:
             continue
         code = str(row[0]).strip()
-        if not re.match(r'^\d{4,6}$', code):
+        if not re.match(r'^(\d{4,6}|00\d{3,4}[A-Z])$', code):
             continue
         c = _flt(str(row[8]).replace(',', ''))
         if not c or c <= 0:
@@ -519,7 +519,7 @@ def fetch_tpex_prices_today():
     result = {}
     for r in data:
         code = str(r.get('SecuritiesCompanyCode') or '').strip()
-        if not re.match(r'^\d{4}$', code):
+        if not re.match(r'^(\d{4}|00\d{3,4}[A-Z]?)$', code):
             continue
         c = _flt(r.get('Close'))
         if not c or c <= 0:
@@ -991,7 +991,7 @@ def sync_d1_database(output, tse_prices, otc_prices, full_sync=False):
     price_rows = []
     for prices_dict, date_str in [(tse_prices, tse_date), (otc_prices, otc_date)]:
         for code, stock in prices_dict.items():
-            if not re.match(r'^\d{4,6}$', str(code)):
+            if not re.match(r'^(\d{4,6}|00\d{3,4}[A-Z])$', str(code)):
                 continue
             closes = stock.get('c') or []
             if not closes or closes[0] is None:
@@ -1159,7 +1159,7 @@ def fetch_gdr_list(name_to_code=None):
                     date_raw = str(row.get('申請日期') or row.get('日期') or '').strip()
                     amount = str(row.get('募集金額') or row.get('金額') or '').strip()
                     if re.search(r'GDR|ADR|DR|存託憑證', sec_type, re.I):
-                        if code and re.match(r'^\d{4,6}$', code) and code not in seen_codes:
+                        if code and re.match(r'^(\d{4,6}|00\d{3,4}[A-Z])$', code) and code not in seen_codes:
                             date_ad = ''
                             m = re.match(r'(\d{3})[/-]?(\d{2})[/-]?(\d{2})', date_raw)
                             if m:
@@ -1239,7 +1239,7 @@ def fetch_gdr_list(name_to_code=None):
                         tds = [html_lib.unescape(re.sub(r'<[^>]+>', '', td).strip()) for td in tds]
                         if len(tds) < 4:
                             continue
-                        code = tds[0].strip() if re.match(r'^\d{4,6}$', tds[0].strip()) else ''
+                        code = tds[0].strip() if re.match(r'^(\d{4,6}|00\d{3,4}[A-Z])$', tds[0].strip()) else ''
                         if not code or code in seen_codes:
                             continue
                         # 主旨（第5欄或最後欄）需含 GDR/存託/海外募資 才算 GDR 相關
@@ -1289,7 +1289,7 @@ def fetch_gdr_list(name_to_code=None):
                 found_by_code = False
                 for m in re.finditer(r'[（(「](\d{4,6})[）)」]|^(\d{4,6})\b', title):
                     code = m.group(1) or m.group(2)
-                    if code and code not in seen_codes and re.match(r'^\d{4,6}$', code):
+                    if code and code not in seen_codes and re.match(r'^(\d{4,6}|00\d{3,4}[A-Z])$', code):
                         result.append({'code': code, 'name': '', 'date': pub,
                                        'type': 'GDR', 'amount': '', 'src': 'news',
                                        'title': title[:100]})
@@ -1341,9 +1341,71 @@ def fetch_gdr_list(name_to_code=None):
 
 
 # ── 10. 借券賣出餘額全市場掃描 ───────────────────────────────────────────────
+def _fetch_borrow_twt93u():
+    """來源 A：TWSE TWT93U（信用額度總量管制餘額表）。
+    MI_SLBK 被封鎖後的替代：後半段『借券賣出』含前日餘額/當日餘額，全市場約 1300 列，單位：股。
+    回傳 {code: {...}}（餘額單位換算為『張』），失敗回傳 None。"""
+    url = 'https://www.twse.com.tw/rwd/zh/marginTrading/TWT93U?response=json'
+    try:
+        r = SESSION.get(url, timeout=30, headers={'Accept': 'application/json, text/javascript, */*'})
+        j = r.json()
+    except Exception as e:
+        print(f'  [WARN] TWT93U: {e}')
+        return None
+    if j.get('stat') != 'OK' or not j.get('data'):
+        print(f'  [WARN] TWT93U stat={j.get("stat")}, rows={len(j.get("data", []))}')
+        return None
+
+    fields = j.get('fields', [])
+    prev_idx = [i for i, f in enumerate(fields) if f.strip() == '前日餘額']
+    bal_idx = [i for i, f in enumerate(fields) if f.strip() == '當日餘額']
+    if len(prev_idx) < 2 or not bal_idx:
+        print(f'  [WARN] TWT93U 欄位不符預期: {fields}')
+        return None
+    ip, ib = prev_idx[1], bal_idx[-1]   # 第二組（借券賣出）的前日/當日餘額
+
+    def _n(v):
+        try:
+            return int(str(v).replace(',', '').strip() or 0)
+        except Exception:
+            return 0
+
+    date_str = str(j.get('date', ''))
+    out = {}
+    for row in j['data']:
+        if len(row) <= max(ip, ib):
+            continue
+        code = str(row[0]).strip()
+        if not re.match(r'^(\d{4,6}|00\d{3,4}[A-Z])$', code):
+            continue
+        prev_bal = _n(row[ip]) // 1000
+        bal = _n(row[ib]) // 1000
+        out[code] = {
+            'name': str(row[1]).strip(), 'balance': bal,
+            'prevBalance': prev_bal, 'changeAbs': bal - prev_bal,
+            'changePct': round((bal - prev_bal) / prev_bal * 100, 2) if prev_bal > 0 else 0.0,
+            'date': date_str,
+        }
+    if not out:
+        return None
+    print(f'  borrow: TWT93U OK, {len(out)} 檔, date={date_str}')
+    return out
+
+
 def fetch_borrow_balance(existing_borrow=None):
-    """抓 TWSE 全部股票借券賣出餘額（MI_SLBK），與前日比較計算暴增幅度"""
+    """抓 TWSE 全部股票借券賣出餘額，與前日比較計算暴增幅度。
+    第一順位 TWT93U（全市場，未被封鎖）；失敗才走 CF Worker / MI_SLBK / BFT41U / OpenAPI 備援。"""
     prev = existing_borrow or {}
+
+    tw = _fetch_borrow_twt93u()
+    if tw:
+        surge = [(c, v) for c, v in tw.items() if v['changePct'] >= 20 and v['balance'] >= 500]
+        surge.sort(key=lambda x: -x[1]['changePct'])
+        print(f'  borrow: {len(tw)} stocks，借券暴增(≥20%,≥500張): {len(surge)} 支')
+        for c, v in surge[:5]:
+            print(f'    {c} {v["name"]} 餘額={v["balance"]:,}張 增{v["changePct"]:+.1f}%')
+        return tw
+
     borrow = {}
 
     tz_tw = datetime.timezone(datetime.timedelta(hours=8))
@@ -1460,7 +1522,7 @@ def fetch_borrow_balance(existing_borrow=None):
 
     for row in raw.get('data', []):
         code, name, balance = _parse_row(row)
-        if not re.match(r'^\d{4,6}$', code):
+        if not re.match(r'^(\d{4,6}|00\d{3,4}[A-Z])$', code):
             continue
         prev_entry = prev.get(code, {})
         prev_bal = prev_entry.get('balance', 0) if isinstance(prev_entry, dict) else 0
