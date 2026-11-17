@@ -668,9 +668,13 @@ footer a:hover{text-decoration:underline}
     <div class="sec-body" id="trumpSecBody">
     <div class="news-card" style="margin:0;border-top-left-radius:0;border-top-right-radius:0;border-top:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-size:.62rem;font-weight:700;color:#60a5fa">🤖 AI 自動偵測（每4小時更新）</span>
-        <button onclick="loadGeoAI(true)" id="geoAIRefreshBtn"
-          style="padding:2px 8px;font-size:.62rem;font-weight:700;background:rgba(79,126,247,.15);border:1px solid var(--purple);border-radius:6px;color:var(--purple);cursor:pointer">↻ 更新</button>
+        <span style="font-size:.62rem;font-weight:700;color:#60a5fa">📰 規則偵測（不用 AI，每 30 分鐘更新）</span>
+        <span style="display:flex;gap:6px">
+          <button onclick="loadGeoNews(true)" id="geoNewsRefreshBtn"
+            style="padding:2px 8px;font-size:.62rem;font-weight:700;background:rgba(79,126,247,.15);border:1px solid var(--purple);border-radius:6px;color:var(--purple);cursor:pointer">↻ 更新</button>
+          <button onclick="loadGeoAI(true)" id="geoAIRefreshBtn" title="會消耗免費 AI 額度，只在需要時按"
+            style="padding:2px 8px;font-size:.62rem;font-weight:700;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer">🤖 AI 摘要</button>
+        </span>
       </div>
       <div id="geoAIBody" style="font-size:.78rem;line-height:1.75;color:var(--text);min-height:40px;white-space:pre-wrap">偵測中...</div>
       <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -968,83 +972,134 @@ footer a:hover{text-decoration:underline}
 
 <!-- ── 買股票的紀律 toggle ── -->
 <div style="text-align:right;margin:6px 2px 2px">
-  <a href="#" id="explainLink" onclick="toggleExplain(event)" style="font-size:.72rem;color:var(--purple);text-decoration:none">買股票的紀律 ▶</a>
+  <a href="#" id="explainLink" onclick="toggleExplain(event)" style="font-size:.72rem;color:var(--purple);text-decoration:none">買賣紀律清單 ▶</a>
 </div>
 <div id="explainDiv" style="display:none">
-  <div class="note" style="border-left:3px solid var(--orange)">
-    <strong style="color:var(--orange);font-size:.85rem">買股票的紀律</strong>
-    <div style="margin-top:10px;display:grid;gap:8px">
-
-      <div style="background:rgba(148,163,184,.08);border-radius:6px;padding:8px 12px">
-        <span style="color:#cbd5e1;font-weight:700">為什麼要改：2026 年發生的事</span><br>
-        <span style="color:var(--text2);font-size:.78rem;line-height:1.75">
-          • <strong style="color:var(--fg)">2/28</strong> 美以空襲伊朗 → 3 月荷莫茲海峽實質封閉，布蘭特油價 3 月底漲到 118 美元<br>
-          • <strong style="color:var(--fg)">7/17</strong> 加權指數 −2,953 點（史上最大跌點）：台積電法說「利多出盡」<br>
-          • <strong style="color:var(--fg)">9 月起</strong> Fed 轉為升息，美債殖利率創 2000 年代初新高（不是降息）<br>
-          • <strong style="color:var(--fg)">10/15</strong> −1,656 點，外資單日賣超 3,025 億（史上最大）<br>
-          • <strong style="color:var(--fg)">11/3</strong> −1,613 點：美國期中選舉不確定性、美軍突襲伊朗島嶼<br>
-          • <strong style="color:var(--fg)">11/16</strong> −2,635 點（−6.03%，史上第 2 大跌點），收 41,040<br>
-          • <strong style="color:var(--fg)">11/17</strong> 輝達執行長黃仁勳請辭消息，費半崩跌逾 5%；台股開盤一度 −1,200 點後急拉翻紅<br>
-          <span style="font-size:.7rem;opacity:.65">共同點：跌幅都來自「大事件＋外資集中賣超」，且單日幅度很大（11/16 一天 −6%），−5% 停損價可能一次就被跳過。資料來自新聞報導，點數以證交所為準。</span>
-        </span>
-      </div>
-
-      <div style="background:rgba(239,68,68,.08);border-radius:6px;padding:8px 12px">
-        <span style="color:#f87171;font-weight:700">賣出紀律</span><br>
-        <span style="color:var(--text2);font-size:.8rem">
-          ① <strong style="color:var(--fg)">隔日沖：開盤即賣</strong> — 隔日沖部位開盤第一時間出場，不等、不猶豫<br>
-          ② <strong style="color:var(--fg)">停損 −5%</strong> — 跌破買點 5% 無條件出場，不加碼攤平<br>
-          <span style="color:#fbbf24">②-1 <strong>跳空跌破停損價：開盤即出</strong> — 如 11/17 開盤一度 −1,200 點，不要等反彈或「看一下」</span><br>
-          ③ <strong style="color:var(--fg)">分批獲利</strong> — 漲 15% 賣半倉，漲 25% 全出
-        </span>
-      </div>
-
-      <div style="background:rgba(52,211,153,.08);border-radius:6px;padding:8px 12px">
-        <span style="color:var(--mint);font-weight:700">買入時機</span><br>
-        <span style="color:var(--text2);font-size:.8rem">
-          ① <strong style="color:var(--fg)">盤中撿跌</strong> — 只在盤中大跌或明顯便宜時買，不追漲<br>
-          <span style="color:#fbbf24">①-1 <strong>崩盤日不算「撿跌」</strong> — 大盤單日重挫當天不接刀（11/16 −6% 後隔天開盤又 −1,200 點，沒人知道底在哪）</span><br>
-          ② <strong style="color:var(--fg)">盤尾建倉</strong> — 新倉位 13:00 後才買，避免開盤追高被套
-        </span>
-      </div>
-
-      <div style="background:rgba(96,165,250,.08);border-radius:6px;padding:8px 12px">
-        <span style="color:#60a5fa;font-weight:700">摩根史坦利籌碼紀律</span><br>
-        <span style="color:var(--text2);font-size:.8rem">
-          ① <strong style="color:#f87171">禁買</strong> — 摩根史坦利當日有賣超，該股不可買<br>
-          ② <strong style="color:var(--mint)">跟買條件</strong> — 摩根史坦利連續 1日、5日、10日、20日<strong style="color:var(--fg)">皆買超</strong>才可跟進<br>
-          <span style="color:#fbbf24">③ <strong>外資整體單日賣超超過 500 億：當天不買</strong> — 10/15（3,025 億）、11/3（1,073 億）、11/16（702 億）都是這種日子</span><br>
-          <span style="font-size:.72rem;opacity:.6">籌碼資料：TWSE T86 外資分點，需手動查詢證交所或券商資料</span>
-        </span>
-      </div>
-
-      <div style="background:rgba(251,191,36,.08);border-radius:6px;padding:8px 12px">
-        <span style="color:var(--orange);font-weight:700">風控紀律</span><br>
-        <span style="color:var(--text2);font-size:.8rem">
-          ① <strong style="color:var(--fg)">不逆大盤</strong> — 大盤單日跌超 2%（以 4.1 萬點計約 820 點），當天不開新倉<br>
-          <span style="color:#fbbf24">①-1 <strong>單日跌超 4%（約 1,640 點）：當天與隔天都不開新倉</strong>，隔天只觀察、不買</span><br>
-          ② <strong style="color:var(--fg)">部位控管</strong> — 單一個股不超過總資金 10%；急殺後不為了攤平把部位加到上限，也不用融資加碼
-        </span>
-      </div>
-
-      <div style="background:rgba(167,139,250,.08);border-radius:6px;padding:8px 12px">
-        <span style="color:#a78bfa;font-weight:700">事件日紀律（2026 新增）</span><br>
-        <span style="color:var(--text2);font-size:.8rem">
-          ① <strong style="color:var(--fg)">重大事件前一天不建新倉</strong> — 包含 Fed 利率決議、CPI、非農（見上方 Fed Watch）、輝達財報、台積電法說、美國重大選舉與政策日<br>
-          ② <strong style="color:var(--fg)">法說／財報前，已大賺的權值股先賣一半</strong> — 7/17 台積電法說前市場期待已極高，結果「利多出盡」成為史上最大跌點<br>
-          ③ <strong style="color:var(--fg)">目前是升息環境</strong>（Fed 9 月起升息）— 高本益比的 AI 題材股對利率最敏感，CPI、FOMC 當天視同事件日<br>
-          ④ <strong style="color:var(--fg)">領袖、執行長、地緣突發消息</strong> — 如 11/17 黃仁勳請辭、中東衝突升級，當天先不買，等收盤看外資與費半方向
-        </span>
-      </div>
-
-      <div style="font-size:.68rem;color:var(--text2);opacity:.75;padding:0 4px">
-        💡 黃色標示是依 2026 年實際事件新增的條件；數字（500 億、4%、−5% 等）是建議值，可依自己的風險承受度調整。
-      </div>
-
+  <style>
+    #discRoot .dtabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 8px}
+    #discRoot .dtab{padding:5px 14px;border-radius:8px;font-size:.74rem;font-weight:700;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2)}
+    #discRoot .dtab.on{background:rgba(167,139,250,.22);border-color:#a78bfa;color:#c4b5fd}
+    #discRoot .dstat{padding:8px 12px;border-radius:8px;font-size:.8rem;font-weight:800;margin-bottom:8px}
+    #discRoot .dstat.ok{background:rgba(52,211,153,.14);color:#34d399}
+    #discRoot .dstat.no{background:rgba(248,113,113,.12);color:#f87171}
+    #discRoot .dstat.info{background:rgba(96,165,250,.12);color:#60a5fa}
+    #discRoot label.ditem{display:flex;gap:9px;align-items:flex-start;padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;font-size:.8rem;line-height:1.55;color:var(--text)}
+    #discRoot label.ditem:hover{background:rgba(255,255,255,.03)}
+    #discRoot label.ditem input{margin-top:3px;width:16px;height:16px;flex:none;accent-color:#34d399}
+    #discRoot label.ditem.done{color:var(--text2)}
+    #discRoot .dsrc{display:inline-block;flex:none;font-size:.58rem;font-weight:800;padding:1px 6px;border-radius:4px;margin-top:2px}
+    #discRoot .dsrc.b{background:rgba(251,191,36,.18);color:#fbbf24}
+    #discRoot .dsrc.m{background:rgba(96,165,250,.18);color:#60a5fa}
+    #discRoot .dsrc.s{background:rgba(167,139,250,.2);color:#c4b5fd}
+    #discRoot .dopt{font-size:.6rem;color:var(--text2);margin-left:4px}
+  </style>
+  <div class="note" style="border-left:3px solid var(--orange)" id="discRoot">
+    <strong style="color:var(--orange);font-size:.85rem">買賣紀律清單</strong>
+    <div style="font-size:.66rem;color:var(--text2);margin-top:4px;line-height:1.7">
+      <span class="dsrc b">巴</span>巴菲特　<span class="dsrc m">蒙</span>蒙格　<span class="dsrc s">自</span>你原本的規則（VCP 短中期系統）<br>
+      巴菲特、蒙格的原則為意譯整理，非原文引用。兩人是長期持有、不設停損的價值投資者，與你的停損、分批獲利、隔日沖哲學不同，這裡保留你的規則並標示為「自」。
     </div>
+    <div class="dtabs" id="discTabs">
+      <button class="dtab on" data-tab="buy" onclick="discTab('buy')">① 買進前</button>
+      <button class="dtab" data-tab="hold" onclick="discTab('hold')">② 持有中</button>
+      <button class="dtab" data-tab="sell" onclick="discTab('sell')">③ 賣出前</button>
+    </div>
+    <div id="discStat" class="dstat info"></div>
+    <div id="discList"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;flex-wrap:wrap;gap:6px">
+      <span style="font-size:.62rem;color:var(--text2)">勾選狀態只存在這台瀏覽器，隔天自動清空。</span>
+      <button onclick="discReset()" style="font-size:.68rem;padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer">清除重填</button>
+    </div>
+    <details style="margin-top:12px">
+      <summary style="cursor:pointer;font-size:.74rem;font-weight:700;color:#cbd5e1">為什麼加這些條件：2026 年發生的事</summary>
+      <div style="font-size:.76rem;color:var(--text2);line-height:1.8;margin-top:6px">
+        • <strong style="color:var(--fg)">2/28</strong> 美以空襲伊朗 → 3 月荷莫茲海峽實質封閉，布蘭特油價 3 月底漲到 118 美元<br>
+        • <strong style="color:var(--fg)">7/17</strong> 加權指數 −2,953 點（史上最大跌點）：台積電法說「利多出盡」<br>
+        • <strong style="color:var(--fg)">9 月起</strong> Fed 轉為升息，不是降息<br>
+        • <strong style="color:var(--fg)">10/15</strong> −1,656 點，外資單日賣超 3,025 億（史上最大）<br>
+        • <strong style="color:var(--fg)">11/3</strong> −1,613 點：美國期中選舉不確定性、美軍突襲伊朗島嶼<br>
+        • <strong style="color:var(--fg)">11/16</strong> −2,635 點（−6.03%，史上第 2 大跌點），收 41,040<br>
+        • <strong style="color:var(--fg)">11/17</strong> 輝達執行長黃仁勳請辭消息，費半崩跌逾 5%；台股開盤一度 −1,200 點後急拉翻紅<br>
+        <span style="font-size:.68rem;opacity:.7">資料來自新聞報導，點數以證交所為準。清單中的數字（500 億、2%、4%、−5%）是建議值，可依自己的風險承受度調整。</span>
+      </div>
+    </details>
   </div>
 </div>
 <script>
+  // ── 買賣紀律清單（可勾選）──────────────────────────────────────────────
+  // src: b=巴菲特 m=蒙格 s=自己的規則；opt=可略過（如 ETF）；reason=賣出理由
+  const DISC={
+    buy:[
+      {id:'b1',src:'b',t:'我能用兩句話講清楚這家公司怎麼賺錢（能力圈：看不懂的不碰）'},
+      {id:'b2',src:'m',t:'我已想過「這筆最可能怎麼虧錢」，而且這個虧損我承受得起（逆向思考：先問怎麼輸）'},
+      {id:'b3',src:'m',t:'不是因為怕錯過、別人都在賺或新聞很熱才買（不被 FOMO 帶著走）'},
+      {id:'b4',src:'b',t:'價格有安全邊際：不是追高，離回踩買點合理，估值欄不是「高估」'},
+      {id:'b5',src:'b',opt:true,t:'企業品質：有護城河、獲利穩定、管理層可信'},
+      {id:'b6',src:'m',t:'沒有借錢（融資）買進'},
+      {id:'b7',src:'b',t:'就算市場休市一段時間，我也敢抱著這檔，不是只想賺一個差價'},
+      {id:'b8',src:'s',t:'單一個股部位不超過總資金 10%'},
+      {id:'b9',src:'s',t:'不在「爛股警示」或 GDR 地雷名單內'},
+      {id:'b10',src:'s',t:'VCP 型態成立，買入訊號是 ✅ 買（回踩縮量）'},
+      {id:'b11',src:'s',t:'13:00 後才下單（盤尾建倉），不追開盤'},
+      {id:'b12',src:'s',t:'摩根史坦利當日沒有賣超，且外資整體單日賣超沒超過 500 億'},
+      {id:'b13',src:'s',t:'今天不是事件日（Fed 利率、CPI、非農、輝達財報、台積電法說），且大盤單日跌幅沒超過 2%'},
+      {id:'b14',src:'s',t:'近兩天大盤沒有單日跌超 4%，今天也沒有領袖請辭、戰事升級這類突發消息'}
+    ],
+    hold:[
+      {id:'h1',src:'b',t:'我買進的理由現在還成立嗎？（看理由有沒有變，不看股價漲跌）'},
+      {id:'h2',src:'m',t:'我想賣，是因為公司真的變差，還是只是股價在波動？'},
+      {id:'h3',src:'m',t:'我沒有因為無聊或手癢而頻繁換股（多等、少動）'},
+      {id:'h4',src:'s',t:'停損價已設好（買點 −5%），而且沒有因為下跌而攤平'},
+      {id:'h5',src:'s',t:'重大事件（法說、財報）前，已大賺的權值股已先賣一半'}
+    ],
+    sell:[
+      {id:'s1',src:'b',reason:true,t:'買進的理由已經失效：獲利轉壞、護城河受損、管理層出狀況'},
+      {id:'s2',src:'b',reason:true,t:'有明顯更好的標的，而且我已經比較過（機會成本）'},
+      {id:'s3',src:'s',reason:true,t:'跌破買點 5%：無條件出場，不攤平'},
+      {id:'s4',src:'s',reason:true,t:'跳空跌破停損價：開盤即出，不等反彈（例：11/17 開盤一度 −1,200 點）'},
+      {id:'s5',src:'s',reason:true,t:'已漲 15%（賣半倉）或 25%（全出）'},
+      {id:'s6',src:'s',reason:true,t:'隔日沖部位：開盤第一時間出場'},
+      {id:'s7',src:'m',confirm:true,t:'（沒觸及停損時）我不是因為恐慌或一則標題才賣；我問過自己：「如果今天我沒持有，我還會買嗎？」'}
+    ]
+  };
+  const DISC_TAG={b:['b','巴'],m:['m','蒙'],s:['s','自']};
+  let _discTab='buy';
+  function _discLoad(){
+    const today=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+    try{const o=JSON.parse(localStorage.getItem('disc_state')||'{}');if(o.date===today&&o.c)return o;}catch(_){}
+    return {date:today,c:{}};
+  }
+  function _discSave(o){try{localStorage.setItem('disc_state',JSON.stringify(o));}catch(_){}}
+  function discTab(tab){
+    _discTab=tab;
+    document.querySelectorAll('#discTabs .dtab').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+    renderDisc();
+  }
+  function discToggle(id,on){const o=_discLoad();if(on)o.c[id]=1;else delete o.c[id];_discSave(o);renderDisc();}
+  function discReset(){_discSave({date:_discLoad().date,c:{}});renderDisc();}
+  function renderDisc(){
+    const list=document.getElementById('discList'),stat=document.getElementById('discStat');
+    if(!list||!stat)return;
+    const o=_discLoad(),items=DISC[_discTab];
+    list.innerHTML=items.map(it=>{
+      const [cls,lb]=DISC_TAG[it.src],on=!!o.c[it.id];
+      return `<label class="ditem${on?' done':''}"><input type="checkbox" ${on?'checked':''} onchange="discToggle('${it.id}',this.checked)"><span class="dsrc ${cls}">${lb}</span><span>${it.t}${it.opt?'<span class="dopt">（ETF 可略過）</span>':''}</span></label>`;
+    }).join('');
+    if(_discTab==='buy'){
+      const need=items.filter(i=>!i.opt),miss=need.filter(i=>!o.c[i.id]).length;
+      stat.className='dstat '+(miss===0?'ok':'no');
+      stat.textContent=miss===0?`✅ 全部通過（${need.length}/${need.length}），可以下單`:`⛔ 還有 ${miss} 項沒勾（已勾 ${need.length-miss}/${need.length}），先不要買`;
+    }else if(_discTab==='sell'){
+      const n=items.filter(i=>i.reason&&o.c[i.id]).length;
+      stat.className='dstat '+(n>0?'ok':'no');
+      stat.textContent=n>0?`✅ 有 ${n} 項明確的賣出理由`:'⛔ 還沒有明確的賣出理由，先別賣（觸及停損例外：照停損出場）';
+    }else{
+      const n=items.filter(i=>o.c[i.id]).length;
+      stat.className='dstat info';
+      stat.textContent=`已確認 ${n}/${items.length}　建議每週檢查一次`;
+    }
+  }
+  renderDisc();
   function toggleExplain(e){
     e.preventDefault();
     const d=document.getElementById('explainDiv');
@@ -1053,7 +1108,7 @@ footer a:hover{text-decoration:underline}
     const open=d.style.display==='none';
     d.style.display=open?'':'none';
     if(leg) leg.style.display=open?'flex':'none';
-    lk.textContent=open?'說明 ▼':'說明 ▶';
+    lk.textContent=open?'買賣紀律清單 ▼':'買賣紀律清單 ▶';
   }
   function toggleFilterBox(){
     const wrap=document.getElementById('filterRowsWrap');
@@ -1918,6 +1973,83 @@ function loadGeoStatus(){
   }
 }
 
+// ── 地緣/重大事件：規則偵測（不呼叫 AI、不耗額度）──────────────────────────
+// 急性事件（突發、會直接衝擊開盤）與慢性背景（長期存在、單獨不算突發）分開計分。
+const GEO_ACUTE=[
+  /resign|steps? down|請辭|辭任|下台/i,
+  /air ?strike|missile|invasion|blockade|封鎖|開戰|空襲|突襲|飛彈/i,
+  /plunge|crash|tumble|sell-?off|崩跌|重挫|暴跌/i,
+  /export controls?|出口管制|entity list|實體清單/i,
+  /scandal|醜聞|probe|investigation|indict|起訴/i,
+  /emergency|緊急/i,
+];
+const GEO_CHRONIC=[/hormuz|荷莫茲|霍爾木茲/i,/tariff|關稅/i,/sanction|制裁/i,/rate hike|升息/i];
+async function loadGeoNews(force=false){
+  const body=document.getElementById('geoAIBody');
+  const timeEl=document.getElementById('geoTime');
+  if(!body)return;
+  const day=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
+  const cacheKey='geo_news_'+day, TTL=30*60*1000;
+  const paint=(c)=>{
+    body.style.whiteSpace='normal';
+    body.innerHTML=c.html;
+    if(c.status==='yes'||c.status==='no') setGeoStatus(c.status); else renderGeoStatus(null,'');
+    if(timeEl) timeEl.textContent='📰 規則偵測 '+new Date(c.ts).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  };
+  if(!force){
+    try{const c=JSON.parse(localStorage.getItem(cacheKey)||'{}');if(c.html&&c.ts&&Date.now()-c.ts<TTL){paint(c);return;}}catch(_){}
+  }
+  body.style.whiteSpace='normal';
+  body.style.color='var(--text2)';
+  body.textContent='正在抓取新聞...';
+  const settled=await Promise.allSettled([
+    fetchRSS('美伊 OR 中東 OR 以色列 衝突 制裁'),
+    fetchRSS('US China trade war Taiwan geopolitical risk'),
+    fetchRSS('輝達 OR 黃仁勳 OR 台積電 台股 重挫 OR 風波 OR 出口管制'),
+    fetchRSS('Nvidia Jensen Huang OR TSMC stock plunge OR scandal OR export controls'),
+  ]);
+  const all=[];
+  settled.forEach(r=>{if(r.status==='fulfilled')all.push(...r.value);});
+  const seen=new Set(), now=Date.now();
+  // 只看 24 小時內、去重；沒有發布時間的視為過期，不採用
+  const fresh=all.filter(x=>{
+    const ts=x.pubRaw?new Date(x.pubRaw).getTime():NaN;
+    if(!isFinite(ts)||now-ts>24*3600000||now-ts<-3600000) return false;
+    const k=x.title.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]/g,'').slice(0,40);
+    if(seen.has(k)) return false; seen.add(k); x._ts=ts; return true;
+  }).map(x=>{
+    x._acute=GEO_ACUTE.filter(re=>re.test(x.title)).length;
+    x._chronic=GEO_CHRONIC.filter(re=>re.test(x.title)).length;
+    return x;
+  });
+  const acute=fresh.filter(x=>x._acute>0);
+  const chronic=fresh.filter(x=>x._chronic>0&&x._acute===0);
+  let level, status=null;
+  if(fresh.length<3) level='gray';                       // 抓不到/太少：不判斷，絕不給綠燈
+  else if(acute.length>=2||acute.some(x=>x._acute>=2)) {level='red';status='yes';}
+  else if(acute.length===1||chronic.length>=3) level='yellow';
+  else {level='green';status='no';}
+  const L={
+    red:   {ic:'🔴',c:'#f87171',tx:'有重大事件：多則 24 小時內的急性消息'},
+    yellow:{ic:'🟡',c:'#d4a84b',tx:'需留意：有 1 則急性消息，或慢性背景風險偏多'},
+    green: {ic:'🟢',c:'#34d399',tx:'目前沒有偵測到急性事件'},
+    gray:  {ic:'⚪',c:'var(--text2)',tx:'無法判斷：新聞來源抓取失敗或 24 小時內新聞太少，請手動確認'},
+  }[level];
+  const show=(level==='red'||level==='yellow'?acute.concat(chronic):fresh)
+    .sort((a,b)=>(b._acute*3+b._chronic)-(a._acute*3+a._chronic)||b._ts-a._ts).slice(0,3);
+  const rows=show.map(x=>{
+    const tm=new Date(x._ts).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const tag=x._acute?'<span style="color:#f87171;font-weight:700">急性</span> ':x._chronic?'<span style="color:#d4a84b;font-weight:700">背景</span> ':'';
+    return `<div style="margin-top:4px">${tag}<a href="${safeUrl(x.link)}" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none">${escH(x.title)}</a> <span style="color:var(--text2);font-size:.64rem">${tm}</span></div>`;
+  }).join('');
+  const html=`<div style="font-weight:800;color:${L.c}">${L.ic} ${L.tx}</div>${rows}
+    <div style="margin-top:6px;font-size:.62rem;color:var(--text2)">依 ${fresh.length} 則 24 小時內新聞的關鍵字規則判斷（不是 AI，不耗額度）。要 AI 摘要請按「🤖 AI 摘要」。</div>`;
+  const c={html,status,ts:Date.now()};
+  // 抓取失敗（灰色）不快取，下次開頁會重試
+  if(level!=='gray'){try{localStorage.setItem(cacheKey,JSON.stringify(c));}catch(_){}}
+  paint(c);
+}
+
 async function loadGeoAI(force=false){
   const body=document.getElementById('geoAIBody');
   const btn=document.getElementById('geoAIRefreshBtn');
@@ -1963,17 +2095,26 @@ async function loadGeoAI(force=false){
   const headlines=newsItems.map(x=>`- ${x.title}`).join('\n')||'（無法取得新聞）';
   const today=new Date(Date.now()+8*3600000).toISOString().slice(0,10);
 
-  const prompt=`今天是 ${today}。以下是最新的地緣政治與重大市場事件新聞標題：
-
-${headlines}
-
-任務：判斷這些新聞是否有「重大風險事件」會影響台股今日開盤。範圍包含：(1) 地緣政治（新戰事爆發、重大制裁、談判破裂、台海緊張、晶片出口管制）；(2) 關鍵公司或領袖的重大負面事件（如輝達/台積電執行長醜聞或離職風波、重大財報暴雷）導致 AI 供應鏈或美股科技股大跌。只要有任一類就判定【有事件】。
+  // 指示放前面、標題放最後：備援 AI 會截斷過長提示詞，截掉的應該是多餘的標題，不是輸出格式
+  const prompt=`今天是 ${today}。任務：判斷這些新聞是否有「重大風險事件」會影響台股今日開盤。範圍包含：(1) 地緣政治（新戰事爆發、重大制裁、談判破裂、台海緊張、晶片出口管制）；(2) 關鍵公司或領袖的重大負面事件（如輝達/台積電執行長醜聞或離職風波、重大財報暴雷）導致 AI 供應鏈或美股科技股大跌。只要有任一類就判定【有事件】。
 
 輸出格式（嚴格只輸出以下兩行，不要其他文字）：
 第一行：【有事件】或【無事件】
-第二行：一句話說明原因（20字內）`;
+第二行：一句話說明原因（20字內）
+
+以下是最新的新聞標題：
+${headlines}`;
 
   const result=await callAI(prompt);
+
+  // AI 失敗（額度用完、逾時）：只顯示提示，不當成判斷結果、不快取、不改燈號
+  if(/^⚠️/.test(result)){
+    body.style.whiteSpace='pre-wrap';
+    body.style.color='#d4a84b';
+    body.textContent=result+'\n（上方「規則偵測」不需要 AI，仍可使用；稍後再按「🤖 AI 摘要」重試）';
+    if(btn)btn.disabled=false;
+    return;
+  }
 
   // 解析 AI 回答
   let status='unknown';
@@ -1983,6 +2124,7 @@ ${headlines}
 
   // 顯示
   const lines=result.split('\n').filter(l=>l.trim()).slice(0,2).join('\n');
+  body.style.whiteSpace='pre-wrap';
   body.textContent=lines||result;
   body.style.color=status==='yes'?'#f87171':status==='no'?'#34d399':'var(--text)';
 
@@ -5332,7 +5474,7 @@ return{phase:'mid',emoji:'🟡',label:'坡段中段',color:'#fbbf24',bg:'rgba(20
   Promise.all([loadTWSEDaily(), loadStockPrices()]).finally(()=>{
     try{renderUpcomingDiv();}catch(_){} // 股價載入後重畫除息日曆，才能算出殖利率
     loadGeoStatus(); // 先顯示昨天快取，避免空白
-    loadGeoAI(false).catch(()=>{}); // AI 自動偵測今日地緣政治
+    loadGeoNews().catch(()=>{}); // 規則偵測今日地緣/重大事件（不用 AI，不耗免費額度）
     loadFedWatch(false).catch(()=>{}); // Fed Watch 行事曆 + FRED 數值
     // 用最新 stocks_tse/otc.json 更新快取結果的現價（修正舊快取顯示舊股價的問題）
     // 更新條件：快取是前一天或更早（舊快取），OR 今天盤後/盤前（非盤中）
