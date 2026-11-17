@@ -113,6 +113,7 @@ GitHub Actions（自動排程）
 |------|------|
 | Cloudflare Pages | 靜態 HTML 托管 + Pages Functions |
 | `functions/api/groq.js` | Groq API Key 代理（server-side，Key 不暴露） |
+| `functions/api/rss.js` | RSS 伺服器端代理（僅允許 news.google.com），`/api/rss?url=`，取代不穩定的免費 CORS proxy |
 | GitHub Actions `deploy.yml` | push → 自動部署 |
 | GitHub Actions `fetch_daily.yml` | 每天 16:45 更新資料 JSON |
 

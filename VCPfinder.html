@@ -1748,9 +1748,9 @@ async function fetchRSSUrl(directUrl){
   // 加時間戳防止 CORS proxy 返回快取舊資料
   const bustUrl=directUrl+(directUrl.includes('?')?'&':'?')+'_t='+Date.now();
   const proxies=[
+    `/api/rss?url=${encodeURIComponent(directUrl)}`,   // 自家 Pages Function（最穩），免費 proxy 當備援
     `https://api.allorigins.win/raw?url=${encodeURIComponent(bustUrl)}`,
-    `https://corsproxy.io/?${encodeURIComponent(bustUrl)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(bustUrl)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(bustUrl)}`,  // corsproxy.io 已於 2026-11 回 401，移除
   ];
   for(const proxy of proxies){
     try{
@@ -1765,8 +1765,11 @@ async function fetchRSSUrl(directUrl){
   return [];
 }
 async function fetchRSS(query){
-  // en-US 確保抓到國際財經媒體（WSJ/Reuters/CNBC），zh-TW 結果較少且較舊
-  const url=`https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+  // 英文查詢用 en-US（WSJ/Reuters/CNBC）；含中文的查詢必須用 zh-TW，
+  // 否則 Google News 在 en-US 下對中文關鍵字幾乎回傳 0 則（實測 2026-11-18）
+  const zh=/[一-鿿]/.test(query);
+  const loc=zh?'hl=zh-TW&gl=TW&ceid=TW:zh-Hant':'hl=en-US&gl=US&ceid=US:en';
+  const url=`https://news.google.com/rss/search?q=${encodeURIComponent(query)}&${loc}`;
   return fetchRSSUrl(url);
 }
 
@@ -1981,10 +1984,10 @@ async function loadGeoNews(force=false){
   body.style.color='var(--text2)';
   body.textContent='正在抓取新聞...';
   const settled=await Promise.allSettled([
-    fetchRSS('美伊 OR 中東 OR 以色列 衝突 制裁'),
-    fetchRSS('US China trade war Taiwan geopolitical risk'),
-    fetchRSS('輝達 OR 黃仁勳 OR 台積電 台股 重挫 OR 風波 OR 出口管制'),
-    fetchRSS('Nvidia Jensen Huang OR TSMC stock plunge OR scandal OR export controls'),
+    fetchRSS('伊朗 OR 以色列 OR 台海 OR 制裁 OR 中東 when:1d'),
+    fetchRSS('US China trade war Taiwan geopolitical risk when:1d'),
+    fetchRSS('輝達 OR 黃仁勳 OR 台積電 重挫 OR 風波 OR 出口管制 when:1d'),
+    fetchRSS('Nvidia Jensen Huang OR TSMC stock plunge OR scandal OR export controls when:1d'),
   ]);
   const all=[];
   settled.forEach(r=>{if(r.status==='fulfilled')all.push(...r.value);});
@@ -2058,11 +2061,11 @@ async function loadGeoAI(force=false){
   let newsItems=[];
   try{
     const [r1,r2,r3,r4]=await Promise.allSettled([
-      fetchRSS('美伊 OR 中東 OR 以色列 衝突 制裁'),
-      fetchRSS('US China trade war Taiwan geopolitical risk'),
+      fetchRSS('伊朗 OR 以色列 OR 台海 OR 制裁 OR 中東 when:1d'),
+      fetchRSS('US China trade war Taiwan geopolitical risk when:1d'),
       // 關鍵公司/人物重大事件（輝達、台積電領導層風波、出口管制）會直接衝擊台股權值與AI供應鏈
-      fetchRSS('輝達 OR 黃仁勳 OR 台積電 台股 重挫 OR 風波 OR 出口管制'),
-      fetchRSS('Nvidia Jensen Huang OR TSMC stock plunge OR scandal OR export controls'),
+      fetchRSS('輝達 OR 黃仁勳 OR 台積電 重挫 OR 風波 OR 出口管制 when:1d'),
+      fetchRSS('Nvidia Jensen Huang OR TSMC stock plunge OR scandal OR export controls when:1d'),
     ]);
     const lv=r=>r.status==='fulfilled'?r.value:[];
     // 各來源輪流取，避免單一來源佔滿而漏掉其他重大事件
@@ -2229,8 +2232,8 @@ async function loadWeeklyOutlook(force=false,cacheOnly=false){
   let newsItems=[];
   try{
     const [r1,r2]=await Promise.allSettled([
-      fetchRSS('台股 大盤 本週 展望'),
-      fetchRSS('台指期 台積電 stock market week'),
+      fetchRSS('台股 大盤 展望 when:7d'),
+      fetchRSS('Taiwan stocks week ahead when:7d'),
     ]);
     const list1=r1.status==='fulfilled'?r1.value:[];
     const list2=r2.status==='fulfilled'?r2.value:[];
