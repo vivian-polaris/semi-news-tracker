@@ -1,20 +1,7 @@
 {
-  "updated_at": "2026-11-19T09:38:28Z",
-  "count": 59,
+  "updated_at": "2026-11-22T08:59:58Z",
+  "count": 60,
   "records": [
-    {
-      "code": "01007",
-      "name": "T兆豐國泰R2",
-      "ex_div_date": "2026/11/19",
-      "cash_div_earnings": 0.215313472,
-      "cash_div_reserve": 0,
-      "cash_div_total": 0.215313472,
-      "div_pay_date": "115/12/21",
-      "ex_right_date": "",
-      "stock_div_earnings": 0,
-      "stock_div_reserve": 0,
-      "stock_div_total": 0
-    },
     {
       "code": "0051",
       "name": "元大中型100",
@@ -341,6 +328,19 @@
       "stock_div_total": 0
     },
     {
+      "code": "00966",
+      "name": "B統一ESG投等債15+",
+      "ex_div_date": "2026/12/02",
+      "cash_div_earnings": 0.068,
+      "cash_div_reserve": 0,
+      "cash_div_total": 0.068,
+      "div_pay_date": "115/12/24",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
       "code": "3040",
       "name": "遠見",
       "ex_div_date": "2026/12/02",
@@ -595,6 +595,19 @@
       "cash_div_reserve": 0,
       "cash_div_total": 0.8,
       "div_pay_date": "116/01/15",
+      "ex_right_date": "",
+      "stock_div_earnings": 0,
+      "stock_div_reserve": 0,
+      "stock_div_total": 0
+    },
+    {
+      "code": "5278",
+      "name": "尚凡*",
+      "ex_div_date": "2026/12/18",
+      "cash_div_earnings": 0.30810707,
+      "cash_div_reserve": 0,
+      "cash_div_total": 0.30810707,
+      "div_pay_date": "116/01/22",
       "ex_right_date": "",
       "stock_div_earnings": 0,
       "stock_div_reserve": 0,
