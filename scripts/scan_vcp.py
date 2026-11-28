@@ -660,5 +660,12 @@ def main():
         json.dump(output, f, ensure_ascii=False, separators=(',', ':'))
     print(f'Saved: {out_path}  ({len(filtered)} records + {len(semi_eco)} semi_eco)')
 
+    # ── Step 4（選用）：python scripts/scan_vcp.py --buffett 對通過 VCP 的股票加跑巴菲特十年收益率 ──
+    if '--buffett' in sys.argv:
+        from buffett_yoc import run_on_vcp_results
+        res = run_on_vcp_results(filtered, base / 'buffett_daily.json', min_vcp=70, top=30)
+        n_pass = sum(1 for r in res if r.get('moat', {}).get('allPass'))
+        print(f'Buffett: analyzed={len(res)}, moat all-pass={n_pass} → buffett_daily.json')
+
 if __name__ == '__main__':
     main()
