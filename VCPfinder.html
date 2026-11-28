@@ -620,7 +620,12 @@ footer a:hover{text-decoration:underline}
   <div style="margin:10px 0 6px;font-size:.7rem;color:var(--text2);line-height:1.6">
     對 VCP 候選股檢驗 6 項護城河（ROE&gt;20%、ROIC&gt;15%、CapEx/OCF&lt;30%、FCF/淨利≥0.9、長債/FCF&lt;3、毛利率&gt;50%），並試算以現價買入、持有十年的收益率。
     假設：無風險利率 1.5%、EPS 成長取歷史淨利年複合成長（上限 12%）、現金流＝EPS×配息率。僅供參考，非投資建議。
-    <label style="margin-left:8px;white-space:nowrap"><input type="checkbox" id="buffettOnlyPass" onchange="renderBuffett()"> 只看 6 項全過</label>
+    <div style="margin-top:6px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <label style="white-space:nowrap"><input type="checkbox" id="buffettOnlyPass" onchange="renderBuffett()"> 只看 6 項全過</label>
+      <label style="white-space:nowrap" title="你要求的十年年化報酬；合理價＝買在這個價格以下，十年 IRR 才≥此值">要求報酬 <input type="number" id="buffettHurdle" value="10" min="1" max="30" step="0.5" style="width:56px;padding:2px 4px;background:var(--tag);border:1px solid var(--border);border-radius:6px;color:var(--text)" onchange="renderBuffett()">%</label>
+      <label style="white-space:nowrap" title="十年後賣出時假設的本益比；15x 最保守">合理價用退場本益比 <select id="buffettPE" onchange="renderBuffett()" style="padding:2px 4px;background:var(--tag);border:1px solid var(--border);border-radius:6px;color:var(--text)"><option value="15" selected>15x（保守）</option><option value="20">20x</option><option value="25">25x</option></select></label>
+      <span>點欄位標題可排序</span>
+    </div>
   </div>
   <div id="buffettBody" style="color:var(--text2);font-size:.78rem"></div>
 </details>
@@ -6598,38 +6603,79 @@ let _buffettData=null;
 const _bfLab={roe:'ROE>20%',roic:'ROIC>15%',capex_ocf:'CapEx/OCF<30%',fcf_ni:'FCF/淨利≥0.9',ltd_fcf:'長債/FCF<3',gross_margin:'毛利率>50%'};
 function _bfEsc(t){return String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function _bfPct(x,d){return x==null?'—':(x*100).toFixed(d==null?1:d)+'%';}
+let _bfSort={k:'moat',dir:-1};
+function sortBuffett(k){
+  if(_bfSort.k===k)_bfSort.dir=-_bfSort.dir;
+  else _bfSort={k:k,dir:(k==='sym'||k==='name')?1:-1};
+  renderBuffett();
+}
+// 合理價：買在這個價格，十年持有（股息 + 第10年退場價）折現後 IRR 剛好等於要求報酬
+function _bfFair(y,pe,h){
+  const e=y.exits[String(pe)];
+  if(!e)return null;
+  let pv=0;
+  y.years.forEach((r,i)=>{pv+=r.dividend/Math.pow(1+h,i+1);});
+  return pv+e.exitPrice/Math.pow(1+h,y.years.length);
+}
 function renderBuffett(){
   const body=document.getElementById('buffettBody'),cnt=document.getElementById('buffettCount');
   if(!body||!_buffettData)return;
   const only=document.getElementById('buffettOnlyPass').checked;
+  const h=Math.min(30,Math.max(1,parseFloat(document.getElementById('buffettHurdle').value)||10))/100;
+  const pe=document.getElementById('buffettPE').value;
   const ok=_buffettData.filter(r=>r.moat&&r.yoc);
-  const passN=ok.filter(r=>r.moat.allPass).length;
-  cnt.textContent=`${ok.length} 檔已分析・6 項全過 ${passN} 檔`;
-  let rows=ok.filter(r=>!only||r.moat.allPass);
-  rows.sort((a,b)=>b.moat.passed-a.moat.passed||((b.yoc.exits['20'].irr||-9)-(a.yoc.exits['20'].irr||-9)));
+  cnt.textContent=`${ok.length} 檔已分析・6 項全過 ${ok.filter(r=>r.moat.allPass).length} 檔`;
+  const rows=ok.filter(r=>!only||r.moat.allPass).map(r=>{
+    const y=r.yoc,e=y.exits;
+    const fair=_bfFair(y,pe,h);
+    return {r:r,m:r.moat,y:y,e:e,fair:fair,disc:fair?(fair-y.price)/fair:null};
+  });
+  const val={
+    sym:o=>o.r.sym, name:o=>o.r.name, moat:o=>o.m.passed, price:o=>o.y.price,
+    yoc:o=>o.y.years[o.y.years.length-1].yoc, golden:o=>o.y.goldenCrossYear,
+    irr15:o=>o.e['15'].irr, irr20:o=>o.e['20'].irr, irr25:o=>o.e['25'].irr,
+    mos:o=>o.e['20'].marginOfSafety, fair:o=>o.fair, disc:o=>o.disc
+  }[_bfSort.k]||(o=>o.m.passed);
+  rows.sort((a,b)=>{
+    const x=val(a),z=val(b);
+    if(x==null&&z==null)return 0; if(x==null)return 1; if(z==null)return -1;   // 無資料永遠排最後
+    const c=(typeof x==='string')?x.localeCompare(z,'zh-Hant'):(x-z);
+    return c*_bfSort.dir||((b.e['20'].irr||-9)-(a.e['20'].irr||-9));
+  });
   if(!rows.length){body.innerHTML='<div style="padding:8px 0">沒有符合的股票</div>';return;}
-  const tr=rows.map(r=>{
-    const m=r.moat,y=r.yoc,e=y.exits;
+  const tr=rows.map(o=>{
+    const r=o.r,m=o.m,y=o.y,e=o.e;
     const dots=Object.keys(_bfLab).map(k=>{
       const c=m.checks[k];
       const col=c===true?'#22c55e':(c===false?'#ef4444':'#9ca3af');
       return `<span title="${_bfEsc(_bfLab[k])}：${c===true?'通過':c===false?'未過':'無資料'}" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:2px"></span>`;
     }).join('');
-    const irr=pe=>{const v=e[pe].irr;return `<td class="num" style="color:${v==null?'inherit':v>=0.1?'#16a34a':v>=0.05?'inherit':'#dc2626'}">${_bfPct(v)}</td>`;};
-    const mos=e['20'].marginOfSafety;
+    const irr=k=>{const v=e[k].irr;return `<td class="num" style="color:${v==null?'inherit':v>=0.1?'#16a34a':v>=0.05?'inherit':'#dc2626'}">${_bfPct(v)}</td>`;};
+    const d=o.disc;
+    const dTxt=d==null?'—':(d>=0?'低 '+(d*100).toFixed(0)+'%':'高 '+(-d*100).toFixed(0)+'%');
+    const dCol=d==null?'inherit':d>=0.15?'#16a34a':d>=0?'inherit':'#dc2626';
     return `<tr><td class="cd">${_bfEsc(r.sym.replace(/\.TWO?$/,''))}</td><td class="nm">${_bfEsc(r.name)}</td>`
       +`<td style="white-space:nowrap">${dots} <b>${m.passed}/${m.total}</b></td>`
       +`<td class="num">${y.price}</td>`
+      +`<td class="num"><b>${o.fair==null?'—':o.fair.toFixed(1)}</b></td>`
+      +`<td class="num" style="color:${dCol}" title="現價相對合理價：低＝現價比合理價便宜">${dTxt}</td>`
       +`<td class="num">${_bfPct(y.years[0].yoc)} → ${_bfPct(y.years[y.years.length-1].yoc)}</td>`
       +`<td class="num">${y.goldenCrossYear==null?'—':'第'+y.goldenCrossYear+'年'}</td>`
       +irr('15')+irr('20')+irr('25')
-      +`<td class="num">${_bfPct(mos,0)}</td></tr>`;
+      +`<td class="num">${_bfPct(e['20'].marginOfSafety,0)}</td></tr>`;
   }).join('');
+  const th=(k,label,cls,tip)=>{
+    const on=_bfSort.k===k;
+    return `<th class="${cls||''}" onclick="sortBuffett('${k}')" style="cursor:pointer;user-select:none;white-space:nowrap"${tip?` title="${tip}"`:''}>${label}${on?(_bfSort.dir>0?' ▲':' ▼'):''}</th>`;
+  };
   body.innerHTML='<div class="ud-scroll" style="overflow-x:auto"><table class="ud-tbl"><thead><tr>'
-    +'<th>代號</th><th>名稱</th><th>護城河</th><th class="num">買入價</th><th class="num" title="第1年→第10年 EPS/買入價">持有收益率</th>'
-    +'<th class="num" title="首次 當年收益率 > 公債利率">黃金交叉</th>'
-    +'<th class="num" title="十年後以 15 倍本益比賣出的年化報酬">IRR 15x</th><th class="num">IRR 20x</th><th class="num">IRR 25x</th>'
-    +'<th class="num" title="退場20x，以公債利率折現的內在價值相對買入價（偏樂觀）">安全邊際20x</th>'
+    +th('sym','代號')+th('name','名稱')+th('moat','護城河')+th('price','買入價','num')
+    +th('fair','合理價','num',`買在此價以下，十年 IRR ≥ ${(h*100).toFixed(1)}%（退場 ${pe}x）`)
+    +th('disc','現價 vs 合理價','num','低＝現價比合理價便宜（有安全邊際）；高＝偏貴')
+    +th('yoc','持有收益率','num','第1年→第10年 EPS/買入價')
+    +th('golden','黃金交叉','num','首次 當年收益率 > 公債利率')
+    +th('irr15','IRR 15x','num','十年後以 15 倍本益比賣出的年化報酬')+th('irr20','IRR 20x','num')+th('irr25','IRR 25x','num')
+    +th('mos','安全邊際20x','num','退場20x，以公債利率折現的內在價值相對買入價（偏樂觀）')
     +'</tr></thead><tbody>'+tr+'</tbody></table></div>';
 }
 async function loadBuffett(){
