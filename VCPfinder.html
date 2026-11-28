@@ -611,6 +611,20 @@ footer a:hover{text-decoration:underline}
   <div id="lookupResult" style="margin-top:12px;display:none"></div>
 </div>
 
+<!-- ── 巴菲特護城河 + 十年持有收益率（資料：buffett_daily.json，由 scripts/buffett_yoc.py 產生）── -->
+<details id="buffettWrap" class="lcard" style="margin:0 0 12px">
+  <summary style="cursor:pointer;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <span style="font-size:.75rem;font-weight:800;color:var(--purple);letter-spacing:.06em">巴菲特護城河 + 十年持有收益率</span>
+    <span id="buffettCount" style="font-size:.6rem;color:var(--text2);background:var(--tag);padding:2px 8px;border-radius:8px">載入中...</span>
+  </summary>
+  <div style="margin:10px 0 6px;font-size:.7rem;color:var(--text2);line-height:1.6">
+    對 VCP 候選股檢驗 6 項護城河（ROE&gt;20%、ROIC&gt;15%、CapEx/OCF&lt;30%、FCF/淨利≥0.9、長債/FCF&lt;3、毛利率&gt;50%），並試算以現價買入、持有十年的收益率。
+    假設：無風險利率 1.5%、EPS 成長取歷史淨利年複合成長（上限 12%）、現金流＝EPS×配息率。僅供參考，非投資建議。
+    <label style="margin-left:8px;white-space:nowrap"><input type="checkbox" id="buffettOnlyPass" onchange="renderBuffett()"> 只看 6 項全過</label>
+  </div>
+  <div id="buffettBody" style="color:var(--text2);font-size:.78rem"></div>
+</details>
+
 <!-- Key Panel hidden (Groq key is server-side) -->
 <div class="key-panel" id="keyPanel" style="display:none!important">
   <p>設定 <a href="https://console.groq.com" target="_blank">Groq API Key</a>（免費，每日額度充足），享 AI 快訊摘要。</p>
@@ -6577,6 +6591,62 @@ else{loadUpcomingDiv();}
   window.addEventListener('resize',updateFab,{passive:true});
   setInterval(updateFab,1500);
 })();
+</script>
+<script>
+// ── 巴菲特護城河 + 十年持有收益率（讀 ./buffett_daily.json）──
+let _buffettData=null;
+const _bfLab={roe:'ROE>20%',roic:'ROIC>15%',capex_ocf:'CapEx/OCF<30%',fcf_ni:'FCF/淨利≥0.9',ltd_fcf:'長債/FCF<3',gross_margin:'毛利率>50%'};
+function _bfEsc(t){return String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function _bfPct(x,d){return x==null?'—':(x*100).toFixed(d==null?1:d)+'%';}
+function renderBuffett(){
+  const body=document.getElementById('buffettBody'),cnt=document.getElementById('buffettCount');
+  if(!body||!_buffettData)return;
+  const only=document.getElementById('buffettOnlyPass').checked;
+  const ok=_buffettData.filter(r=>r.moat&&r.yoc);
+  const passN=ok.filter(r=>r.moat.allPass).length;
+  cnt.textContent=`${ok.length} 檔已分析・6 項全過 ${passN} 檔`;
+  let rows=ok.filter(r=>!only||r.moat.allPass);
+  rows.sort((a,b)=>b.moat.passed-a.moat.passed||((b.yoc.exits['20'].irr||-9)-(a.yoc.exits['20'].irr||-9)));
+  if(!rows.length){body.innerHTML='<div style="padding:8px 0">沒有符合的股票</div>';return;}
+  const tr=rows.map(r=>{
+    const m=r.moat,y=r.yoc,e=y.exits;
+    const dots=Object.keys(_bfLab).map(k=>{
+      const c=m.checks[k];
+      const col=c===true?'#22c55e':(c===false?'#ef4444':'#9ca3af');
+      return `<span title="${_bfEsc(_bfLab[k])}：${c===true?'通過':c===false?'未過':'無資料'}" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:2px"></span>`;
+    }).join('');
+    const irr=pe=>{const v=e[pe].irr;return `<td class="num" style="color:${v==null?'inherit':v>=0.1?'#16a34a':v>=0.05?'inherit':'#dc2626'}">${_bfPct(v)}</td>`;};
+    const mos=e['20'].marginOfSafety;
+    return `<tr><td class="cd">${_bfEsc(r.sym.replace(/\.TWO?$/,''))}</td><td class="nm">${_bfEsc(r.name)}</td>`
+      +`<td style="white-space:nowrap">${dots} <b>${m.passed}/${m.total}</b></td>`
+      +`<td class="num">${y.price}</td>`
+      +`<td class="num">${_bfPct(y.years[0].yoc)} → ${_bfPct(y.years[y.years.length-1].yoc)}</td>`
+      +`<td class="num">${y.goldenCrossYear==null?'—':'第'+y.goldenCrossYear+'年'}</td>`
+      +irr('15')+irr('20')+irr('25')
+      +`<td class="num">${_bfPct(mos,0)}</td></tr>`;
+  }).join('');
+  body.innerHTML='<div class="ud-scroll" style="overflow-x:auto"><table class="ud-tbl"><thead><tr>'
+    +'<th>代號</th><th>名稱</th><th>護城河</th><th class="num">買入價</th><th class="num" title="第1年→第10年 EPS/買入價">持有收益率</th>'
+    +'<th class="num" title="首次 當年收益率 > 公債利率">黃金交叉</th>'
+    +'<th class="num" title="十年後以 15 倍本益比賣出的年化報酬">IRR 15x</th><th class="num">IRR 20x</th><th class="num">IRR 25x</th>'
+    +'<th class="num" title="退場20x，以公債利率折現的內在價值相對買入價（偏樂觀）">安全邊際20x</th>'
+    +'</tr></thead><tbody>'+tr+'</tbody></table></div>';
+}
+async function loadBuffett(){
+  const cnt=document.getElementById('buffettCount');
+  try{
+    const r=await fetchTO('./buffett_daily.json',8000);
+    if(!r.ok) throw new Error(r.status);
+    _buffettData=await r.json();
+    renderBuffett();
+  }catch(e){
+    if(cnt) cnt.textContent='尚無資料';
+    const b=document.getElementById('buffettBody');
+    if(b) b.textContent='載入失敗：'+e.message+'（需先執行 scripts/buffett_yoc.py 或 scan_vcp.py --buffett 產生 buffett_daily.json）';
+  }
+}
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',loadBuffett,{once:true});}
+else{loadBuffett();}
 </script>
 </body>
 </html>

@@ -1,0 +1,6344 @@
+[
+ {
+  "sym": "1232.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.2236622760438527,
+    "roic": 0.22871291533074353,
+    "capex_ocf": 0.21180681882591632,
+    "fcf_ni": 1.232107778173254,
+    "ltd_fcf": 0.7211660088040094,
+    "gross_margin": 0.1344306909971152
+   },
+   "checks": {
+    "roe": true,
+    "roic": true,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 5,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.2236622760438527,
+   "roic": 0.22871291533074353,
+   "grossMargin": 0.1344306909971152,
+   "eps": 10.46,
+   "payout": 0.6903
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 10.46,
+   "price": 165.5,
+   "growth": 0.025,
+   "payout": 0.69,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 10.722,
+     "yoc": 0.0648,
+     "dividend": 7.401,
+     "cumEarnings": 10.72,
+     "cumDividends": 7.4,
+     "cumBondInterest": 2.48
+    },
+    {
+     "year": 2,
+     "eps": 10.99,
+     "yoc": 0.0664,
+     "dividend": 7.586,
+     "cumEarnings": 21.71,
+     "cumDividends": 14.99,
+     "cumBondInterest": 4.96
+    },
+    {
+     "year": 3,
+     "eps": 11.264,
+     "yoc": 0.0681,
+     "dividend": 7.776,
+     "cumEarnings": 32.98,
+     "cumDividends": 22.76,
+     "cumBondInterest": 7.45
+    },
+    {
+     "year": 4,
+     "eps": 11.546,
+     "yoc": 0.0698,
+     "dividend": 7.97,
+     "cumEarnings": 44.52,
+     "cumDividends": 30.73,
+     "cumBondInterest": 9.93
+    },
+    {
+     "year": 5,
+     "eps": 11.835,
+     "yoc": 0.0715,
+     "dividend": 8.169,
+     "cumEarnings": 56.36,
+     "cumDividends": 38.9,
+     "cumBondInterest": 12.41
+    },
+    {
+     "year": 6,
+     "eps": 12.13,
+     "yoc": 0.0733,
+     "dividend": 8.374,
+     "cumEarnings": 68.49,
+     "cumDividends": 47.28,
+     "cumBondInterest": 14.89
+    },
+    {
+     "year": 7,
+     "eps": 12.434,
+     "yoc": 0.0751,
+     "dividend": 8.583,
+     "cumEarnings": 80.92,
+     "cumDividends": 55.86,
+     "cumBondInterest": 17.38
+    },
+    {
+     "year": 8,
+     "eps": 12.745,
+     "yoc": 0.077,
+     "dividend": 8.798,
+     "cumEarnings": 93.66,
+     "cumDividends": 64.66,
+     "cumBondInterest": 19.86
+    },
+    {
+     "year": 9,
+     "eps": 13.063,
+     "yoc": 0.0789,
+     "dividend": 9.017,
+     "cumEarnings": 106.73,
+     "cumDividends": 73.67,
+     "cumBondInterest": 22.34
+    },
+    {
+     "year": 10,
+     "eps": 13.39,
+     "yoc": 0.0809,
+     "dividend": 9.243,
+     "cumEarnings": 120.12,
+     "cumDividends": 82.92,
+     "cumBondInterest": 24.83
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": null,
+   "exits": {
+    "15": {
+     "exitPrice": 200.85,
+     "irr": 0.0653,
+     "intrinsicValue": 249.3,
+     "marginOfSafety": 0.3361
+    },
+    "20": {
+     "exitPrice": 267.79,
+     "irr": 0.0899,
+     "intrinsicValue": 306.99,
+     "marginOfSafety": 0.4609
+    },
+    "25": {
+     "exitPrice": 334.74,
+     "irr": 0.1102,
+     "intrinsicValue": 364.67,
+     "marginOfSafety": 0.5462
+    }
+   }
+  },
+  "name": "大統益"
+ },
+ {
+  "sym": "2412.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.10075989701429981,
+    "roic": 0.09924019170401134,
+    "capex_ocf": 0.35950210469230176,
+    "fcf_ni": 1.2815915256426818,
+    "ltd_fcf": 0.5017337311507136,
+    "gross_margin": 0.3646672431640334
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": false,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 2,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.10075989701429981,
+   "roic": 0.09924019170401134,
+   "grossMargin": 0.3646672431640334,
+   "eps": 5.41,
+   "payout": 0.95589995
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 5.41,
+   "price": 164.5,
+   "growth": 0.0211,
+   "payout": 0.956,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 5.524,
+     "yoc": 0.0336,
+     "dividend": 5.28,
+     "cumEarnings": 5.52,
+     "cumDividends": 5.28,
+     "cumBondInterest": 2.47
+    },
+    {
+     "year": 2,
+     "eps": 5.64,
+     "yoc": 0.0343,
+     "dividend": 5.392,
+     "cumEarnings": 11.16,
+     "cumDividends": 10.67,
+     "cumBondInterest": 4.93
+    },
+    {
+     "year": 3,
+     "eps": 5.759,
+     "yoc": 0.035,
+     "dividend": 5.505,
+     "cumEarnings": 16.92,
+     "cumDividends": 16.18,
+     "cumBondInterest": 7.4
+    },
+    {
+     "year": 4,
+     "eps": 5.881,
+     "yoc": 0.0357,
+     "dividend": 5.621,
+     "cumEarnings": 22.8,
+     "cumDividends": 21.8,
+     "cumBondInterest": 9.87
+    },
+    {
+     "year": 5,
+     "eps": 6.004,
+     "yoc": 0.0365,
+     "dividend": 5.74,
+     "cumEarnings": 28.81,
+     "cumDividends": 27.54,
+     "cumBondInterest": 12.34
+    },
+    {
+     "year": 6,
+     "eps": 6.131,
+     "yoc": 0.0373,
+     "dividend": 5.861,
+     "cumEarnings": 34.94,
+     "cumDividends": 33.4,
+     "cumBondInterest": 14.8
+    },
+    {
+     "year": 7,
+     "eps": 6.26,
+     "yoc": 0.0381,
+     "dividend": 5.984,
+     "cumEarnings": 41.2,
+     "cumDividends": 39.38,
+     "cumBondInterest": 17.27
+    },
+    {
+     "year": 8,
+     "eps": 6.392,
+     "yoc": 0.0389,
+     "dividend": 6.11,
+     "cumEarnings": 47.59,
+     "cumDividends": 45.49,
+     "cumBondInterest": 19.74
+    },
+    {
+     "year": 9,
+     "eps": 6.527,
+     "yoc": 0.0397,
+     "dividend": 6.239,
+     "cumEarnings": 54.12,
+     "cumDividends": 51.73,
+     "cumBondInterest": 22.21
+    },
+    {
+     "year": 10,
+     "eps": 6.664,
+     "yoc": 0.0405,
+     "dividend": 6.37,
+     "cumEarnings": 60.78,
+     "cumDividends": 58.1,
+     "cumBondInterest": 24.68
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": null,
+   "exits": {
+    "15": {
+     "exitPrice": 99.96,
+     "irr": -0.0047,
+     "intrinsicValue": 139.58,
+     "marginOfSafety": -0.1785
+    },
+    "20": {
+     "exitPrice": 133.29,
+     "irr": 0.0177,
+     "intrinsicValue": 168.29,
+     "marginOfSafety": 0.0225
+    },
+    "25": {
+     "exitPrice": 166.61,
+     "irr": 0.0362,
+     "intrinsicValue": 197.01,
+     "marginOfSafety": 0.165
+    }
+   }
+  },
+  "name": "中華電"
+ },
+ {
+  "sym": "9960.TWO",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.08966193267403043,
+    "roic": 0.07647965186915887,
+    "capex_ocf": 0.03382676072626344,
+    "fcf_ni": 2.279847182425979,
+    "ltd_fcf": 0.000538631875037405,
+    "gross_margin": 0.3543659459745825
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 3,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.08966193267403043,
+   "roic": 0.07647965186915887,
+   "grossMargin": 0.3543659459745825,
+   "eps": 1.89,
+   "payout": 0.8203
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 1.89,
+   "price": 40.3,
+   "growth": 0.0,
+   "payout": 0.82,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 1.89,
+     "yoc": 0.0469,
+     "dividend": 1.55,
+     "cumEarnings": 1.89,
+     "cumDividends": 1.55,
+     "cumBondInterest": 0.6
+    },
+    {
+     "year": 2,
+     "eps": 1.89,
+     "yoc": 0.0469,
+     "dividend": 1.55,
+     "cumEarnings": 3.78,
+     "cumDividends": 3.1,
+     "cumBondInterest": 1.21
+    },
+    {
+     "year": 3,
+     "eps": 1.89,
+     "yoc": 0.0469,
+     "dividend": 1.55,
+     "cumEarnings": 5.67,
+     "cumDividends": 4.65,
+     "cumBondInterest": 1.81
+    },
+    {
+     "year": 4,
+     "eps": 1.89,
+     "yoc": 0.0469,
+     "dividend": 1.55,
+     "cumEarnings": 7.56,
+     "cumDividends": 6.2,
+     "cumBondInterest": 2.42
+    },
+    {
+     "year": 5,
+     "eps": 1.89,
+     "yoc": 0.0469,
+     "dividend": 1.55,
+     "cumEarnings": 9.45,
+     "cumDividends": 7.75,
+     "cumBondInterest": 3.02
+    },
+    {
+     "year": 6,
+     "eps": 1.89,
+     "yoc": 0.0469,
+     "dividend": 1.55,
+     "cumEarnings": 11.34,
+     "cumDividends": 9.3,
+     "cumBondInterest": 3.63
+    },
+    {
+     "year": 7,
+     "eps": 1.89,
+     "yoc": 0.0469,
+     "dividend": 1.55,
+     "cumEarnings": 13.23,
+     "cumDividends": 10.85,
+     "cumBondInterest": 4.23
+    },
+    {
+     "year": 8,
+     "eps": 1.89,
+     "yoc": 0.0469,
+     "dividend": 1.55,
+     "cumEarnings": 15.12,
+     "cumDividends": 12.4,
+     "cumBondInterest": 4.84
+    },
+    {
+     "year": 9,
+     "eps": 1.89,
+     "yoc": 0.0469,
+     "dividend": 1.55,
+     "cumEarnings": 17.01,
+     "cumDividends": 13.95,
+     "cumBondInterest": 5.44
+    },
+    {
+     "year": 10,
+     "eps": 1.89,
+     "yoc": 0.0469,
+     "dividend": 1.55,
+     "cumEarnings": 18.9,
+     "cumDividends": 15.5,
+     "cumBondInterest": 6.04
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": null,
+   "exits": {
+    "15": {
+     "exitPrice": 28.35,
+     "irr": 0.0101,
+     "intrinsicValue": 38.73,
+     "marginOfSafety": -0.0406
+    },
+    "20": {
+     "exitPrice": 37.8,
+     "irr": 0.0331,
+     "intrinsicValue": 46.87,
+     "marginOfSafety": 0.1402
+    },
+    "25": {
+     "exitPrice": 47.25,
+     "irr": 0.0521,
+     "intrinsicValue": 55.01,
+     "marginOfSafety": 0.2674
+    }
+   }
+  },
+  "name": "邁達康"
+ },
+ {
+  "sym": "1817.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.116709158693477,
+    "roic": 0.11429805040799218,
+    "capex_ocf": 0.10035353686670462,
+    "fcf_ni": 1.6032378627817399,
+    "ltd_fcf": 0.0023454690343375716,
+    "gross_margin": 0.36822970673663585
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 3,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.116709158693477,
+   "roic": 0.11429805040799218,
+   "grossMargin": 0.36822970673663585,
+   "eps": 4.91,
+   "payout": 0.4481
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 4.91,
+   "price": 40.7,
+   "growth": 0.0,
+   "payout": 0.448,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 4.91,
+     "yoc": 0.1206,
+     "dividend": 2.2,
+     "cumEarnings": 4.91,
+     "cumDividends": 2.2,
+     "cumBondInterest": 0.61
+    },
+    {
+     "year": 2,
+     "eps": 4.91,
+     "yoc": 0.1206,
+     "dividend": 2.2,
+     "cumEarnings": 9.82,
+     "cumDividends": 4.4,
+     "cumBondInterest": 1.22
+    },
+    {
+     "year": 3,
+     "eps": 4.91,
+     "yoc": 0.1206,
+     "dividend": 2.2,
+     "cumEarnings": 14.73,
+     "cumDividends": 6.6,
+     "cumBondInterest": 1.83
+    },
+    {
+     "year": 4,
+     "eps": 4.91,
+     "yoc": 0.1206,
+     "dividend": 2.2,
+     "cumEarnings": 19.64,
+     "cumDividends": 8.8,
+     "cumBondInterest": 2.44
+    },
+    {
+     "year": 5,
+     "eps": 4.91,
+     "yoc": 0.1206,
+     "dividend": 2.2,
+     "cumEarnings": 24.55,
+     "cumDividends": 11.0,
+     "cumBondInterest": 3.05
+    },
+    {
+     "year": 6,
+     "eps": 4.91,
+     "yoc": 0.1206,
+     "dividend": 2.2,
+     "cumEarnings": 29.46,
+     "cumDividends": 13.2,
+     "cumBondInterest": 3.66
+    },
+    {
+     "year": 7,
+     "eps": 4.91,
+     "yoc": 0.1206,
+     "dividend": 2.2,
+     "cumEarnings": 34.37,
+     "cumDividends": 15.4,
+     "cumBondInterest": 4.27
+    },
+    {
+     "year": 8,
+     "eps": 4.91,
+     "yoc": 0.1206,
+     "dividend": 2.2,
+     "cumEarnings": 39.28,
+     "cumDividends": 17.6,
+     "cumBondInterest": 4.88
+    },
+    {
+     "year": 9,
+     "eps": 4.91,
+     "yoc": 0.1206,
+     "dividend": 2.2,
+     "cumEarnings": 44.19,
+     "cumDividends": 19.8,
+     "cumBondInterest": 5.49
+    },
+    {
+     "year": 10,
+     "eps": 4.91,
+     "yoc": 0.1206,
+     "dividend": 2.2,
+     "cumEarnings": 49.1,
+     "cumDividends": 22.0,
+     "cumBondInterest": 6.11
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 9,
+   "exits": {
+    "15": {
+     "exitPrice": 73.65,
+     "irr": 0.1039,
+     "intrinsicValue": 83.75,
+     "marginOfSafety": 0.514
+    },
+    "20": {
+     "exitPrice": 98.2,
+     "irr": 0.1306,
+     "intrinsicValue": 104.91,
+     "marginOfSafety": 0.612
+    },
+    "25": {
+     "exitPrice": 122.75,
+     "irr": 0.1523,
+     "intrinsicValue": 126.06,
+     "marginOfSafety": 0.6771
+    }
+   }
+  },
+  "name": "凱撒衛"
+ },
+ {
+  "sym": "2114.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.14219673518445067,
+    "roic": 0.12807141405671257,
+    "capex_ocf": 0.04714937834397811,
+    "fcf_ni": 1.296401741922323,
+    "ltd_fcf": 0.3424296015543758,
+    "gross_margin": 0.3973152151172769
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 3,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.14219673518445067,
+   "roic": 0.12807141405671257,
+   "grossMargin": 0.3973152151172769,
+   "eps": 6.71,
+   "payout": 0.7452
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 6.71,
+   "price": 89.6,
+   "growth": 0.0479,
+   "payout": 0.745,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 7.031,
+     "yoc": 0.0785,
+     "dividend": 5.24,
+     "cumEarnings": 7.03,
+     "cumDividends": 5.24,
+     "cumBondInterest": 1.34
+    },
+    {
+     "year": 2,
+     "eps": 7.368,
+     "yoc": 0.0822,
+     "dividend": 5.49,
+     "cumEarnings": 14.4,
+     "cumDividends": 10.73,
+     "cumBondInterest": 2.69
+    },
+    {
+     "year": 3,
+     "eps": 7.72,
+     "yoc": 0.0862,
+     "dividend": 5.753,
+     "cumEarnings": 22.12,
+     "cumDividends": 16.48,
+     "cumBondInterest": 4.03
+    },
+    {
+     "year": 4,
+     "eps": 8.09,
+     "yoc": 0.0903,
+     "dividend": 6.029,
+     "cumEarnings": 30.21,
+     "cumDividends": 22.51,
+     "cumBondInterest": 5.38
+    },
+    {
+     "year": 5,
+     "eps": 8.477,
+     "yoc": 0.0946,
+     "dividend": 6.317,
+     "cumEarnings": 38.69,
+     "cumDividends": 28.83,
+     "cumBondInterest": 6.72
+    },
+    {
+     "year": 6,
+     "eps": 8.883,
+     "yoc": 0.0991,
+     "dividend": 6.62,
+     "cumEarnings": 47.57,
+     "cumDividends": 35.45,
+     "cumBondInterest": 8.06
+    },
+    {
+     "year": 7,
+     "eps": 9.308,
+     "yoc": 0.1039,
+     "dividend": 6.936,
+     "cumEarnings": 56.88,
+     "cumDividends": 42.39,
+     "cumBondInterest": 9.41
+    },
+    {
+     "year": 8,
+     "eps": 9.754,
+     "yoc": 0.1089,
+     "dividend": 7.269,
+     "cumEarnings": 66.63,
+     "cumDividends": 49.65,
+     "cumBondInterest": 10.75
+    },
+    {
+     "year": 9,
+     "eps": 10.221,
+     "yoc": 0.1141,
+     "dividend": 7.616,
+     "cumEarnings": 76.85,
+     "cumDividends": 57.27,
+     "cumBondInterest": 12.1
+    },
+    {
+     "year": 10,
+     "eps": 10.71,
+     "yoc": 0.1195,
+     "dividend": 7.981,
+     "cumEarnings": 87.56,
+     "cumDividends": 65.25,
+     "cumBondInterest": 13.44
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": null,
+   "exits": {
+    "15": {
+     "exitPrice": 160.65,
+     "irr": 0.1159,
+     "intrinsicValue": 198.26,
+     "marginOfSafety": 0.5481
+    },
+    "20": {
+     "exitPrice": 214.2,
+     "irr": 0.1409,
+     "intrinsicValue": 244.4,
+     "marginOfSafety": 0.6334
+    },
+    "25": {
+     "exitPrice": 267.75,
+     "irr": 0.1614,
+     "intrinsicValue": 290.54,
+     "marginOfSafety": 0.6916
+    }
+   }
+  },
+  "name": "鑫永銓"
+ },
+ {
+  "sym": "2618.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.18905914106529972,
+    "roic": 0.15782573972667335,
+    "capex_ocf": 0.49882495332923554,
+    "fcf_ni": 1.058545720780235,
+    "ltd_fcf": 1.7571620957742147,
+    "gross_margin": 0.2343310655107873
+   },
+   "checks": {
+    "roe": false,
+    "roic": true,
+    "capex_ocf": false,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 3,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.18905914106529972,
+   "roic": 0.15782573972667335,
+   "grossMargin": 0.2343310655107873,
+   "eps": 4.88,
+   "payout": 0.4098
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 4.88,
+   "price": 48.1,
+   "growth": 0.12,
+   "payout": 0.41,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 5.466,
+     "yoc": 0.1136,
+     "dividend": 2.24,
+     "cumEarnings": 5.47,
+     "cumDividends": 2.24,
+     "cumBondInterest": 0.72
+    },
+    {
+     "year": 2,
+     "eps": 6.121,
+     "yoc": 0.1273,
+     "dividend": 2.509,
+     "cumEarnings": 11.59,
+     "cumDividends": 4.75,
+     "cumBondInterest": 1.44
+    },
+    {
+     "year": 3,
+     "eps": 6.856,
+     "yoc": 0.1425,
+     "dividend": 2.81,
+     "cumEarnings": 18.44,
+     "cumDividends": 7.56,
+     "cumBondInterest": 2.16
+    },
+    {
+     "year": 4,
+     "eps": 7.679,
+     "yoc": 0.1596,
+     "dividend": 3.147,
+     "cumEarnings": 26.12,
+     "cumDividends": 10.7,
+     "cumBondInterest": 2.89
+    },
+    {
+     "year": 5,
+     "eps": 8.6,
+     "yoc": 0.1788,
+     "dividend": 3.524,
+     "cumEarnings": 34.72,
+     "cumDividends": 14.23,
+     "cumBondInterest": 3.61
+    },
+    {
+     "year": 6,
+     "eps": 9.632,
+     "yoc": 0.2003,
+     "dividend": 3.947,
+     "cumEarnings": 44.35,
+     "cumDividends": 18.18,
+     "cumBondInterest": 4.33
+    },
+    {
+     "year": 7,
+     "eps": 10.788,
+     "yoc": 0.2243,
+     "dividend": 4.421,
+     "cumEarnings": 55.14,
+     "cumDividends": 22.6,
+     "cumBondInterest": 5.05
+    },
+    {
+     "year": 8,
+     "eps": 12.083,
+     "yoc": 0.2512,
+     "dividend": 4.951,
+     "cumEarnings": 67.23,
+     "cumDividends": 27.55,
+     "cumBondInterest": 5.77
+    },
+    {
+     "year": 9,
+     "eps": 13.533,
+     "yoc": 0.2813,
+     "dividend": 5.546,
+     "cumEarnings": 80.76,
+     "cumDividends": 33.09,
+     "cumBondInterest": 6.49
+    },
+    {
+     "year": 10,
+     "eps": 15.157,
+     "yoc": 0.3151,
+     "dividend": 6.211,
+     "cumEarnings": 95.91,
+     "cumDividends": 39.31,
+     "cumBondInterest": 7.21
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 7,
+   "exits": {
+    "15": {
+     "exitPrice": 227.35,
+     "irr": 0.2073,
+     "intrinsicValue": 231.65,
+     "marginOfSafety": 0.7924
+    },
+    "20": {
+     "exitPrice": 303.13,
+     "irr": 0.2373,
+     "intrinsicValue": 296.95,
+     "marginOfSafety": 0.838
+    },
+    "25": {
+     "exitPrice": 378.91,
+     "irr": 0.2616,
+     "intrinsicValue": 362.25,
+     "marginOfSafety": 0.8672
+    }
+   }
+  },
+  "name": "長榮航"
+ },
+ {
+  "sym": "8464.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.2200112345260302,
+    "roic": 0.22352175019559284,
+    "capex_ocf": 0.2338057931704185,
+    "fcf_ni": 0.818520957467904,
+    "ltd_fcf": 0.09817381218580096,
+    "gross_margin": 0.5880244782283185
+   },
+   "checks": {
+    "roe": true,
+    "roic": true,
+    "capex_ocf": true,
+    "fcf_ni": false,
+    "ltd_fcf": true,
+    "gross_margin": true
+   },
+   "passed": 5,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.2200112345260302,
+   "roic": 0.22352175019559284,
+   "grossMargin": 0.5880244782283185,
+   "eps": 23.4,
+   "payout": 0.6838
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 23.4,
+   "price": 372.5,
+   "growth": 0.0226,
+   "payout": 0.684,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 23.929,
+     "yoc": 0.0642,
+     "dividend": 16.363,
+     "cumEarnings": 23.93,
+     "cumDividends": 16.36,
+     "cumBondInterest": 5.59
+    },
+    {
+     "year": 2,
+     "eps": 24.47,
+     "yoc": 0.0657,
+     "dividend": 16.733,
+     "cumEarnings": 48.4,
+     "cumDividends": 33.1,
+     "cumBondInterest": 11.17
+    },
+    {
+     "year": 3,
+     "eps": 25.023,
+     "yoc": 0.0672,
+     "dividend": 17.111,
+     "cumEarnings": 73.42,
+     "cumDividends": 50.21,
+     "cumBondInterest": 16.76
+    },
+    {
+     "year": 4,
+     "eps": 25.589,
+     "yoc": 0.0687,
+     "dividend": 17.498,
+     "cumEarnings": 99.01,
+     "cumDividends": 67.7,
+     "cumBondInterest": 22.35
+    },
+    {
+     "year": 5,
+     "eps": 26.167,
+     "yoc": 0.0702,
+     "dividend": 17.893,
+     "cumEarnings": 125.18,
+     "cumDividends": 85.6,
+     "cumBondInterest": 27.94
+    },
+    {
+     "year": 6,
+     "eps": 26.759,
+     "yoc": 0.0718,
+     "dividend": 18.298,
+     "cumEarnings": 151.94,
+     "cumDividends": 103.89,
+     "cumBondInterest": 33.52
+    },
+    {
+     "year": 7,
+     "eps": 27.364,
+     "yoc": 0.0735,
+     "dividend": 18.711,
+     "cumEarnings": 179.3,
+     "cumDividends": 122.61,
+     "cumBondInterest": 39.11
+    },
+    {
+     "year": 8,
+     "eps": 27.982,
+     "yoc": 0.0751,
+     "dividend": 19.134,
+     "cumEarnings": 207.28,
+     "cumDividends": 141.74,
+     "cumBondInterest": 44.7
+    },
+    {
+     "year": 9,
+     "eps": 28.615,
+     "yoc": 0.0768,
+     "dividend": 19.567,
+     "cumEarnings": 235.9,
+     "cumDividends": 161.31,
+     "cumBondInterest": 50.29
+    },
+    {
+     "year": 10,
+     "eps": 29.262,
+     "yoc": 0.0786,
+     "dividend": 20.009,
+     "cumEarnings": 265.16,
+     "cumDividends": 181.32,
+     "cumBondInterest": 55.87
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": null,
+   "exits": {
+    "15": {
+     "exitPrice": 438.93,
+     "irr": 0.0616,
+     "intrinsicValue": 544.97,
+     "marginOfSafety": 0.3165
+    },
+    "20": {
+     "exitPrice": 585.24,
+     "irr": 0.0862,
+     "intrinsicValue": 671.04,
+     "marginOfSafety": 0.4449
+    },
+    "25": {
+     "exitPrice": 731.55,
+     "irr": 0.1064,
+     "intrinsicValue": 797.11,
+     "marginOfSafety": 0.5327
+    }
+   }
+  },
+  "name": "億豐"
+ },
+ {
+  "sym": "2323.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.08966977004304168,
+    "roic": 0.0716313634517178,
+    "capex_ocf": null,
+    "fcf_ni": -0.848931265825938,
+    "ltd_fcf": null,
+    "gross_margin": 0.2398655045139964
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": null,
+    "fcf_ni": false,
+    "ltd_fcf": false,
+    "gross_margin": false
+   },
+   "passed": 0,
+   "total": 6,
+   "allPass": false,
+   "missing": [
+    "capex_ocf"
+   ]
+  },
+  "fundamentals": {
+   "roe": 0.08966977004304168,
+   "roic": 0.0716313634517178,
+   "grossMargin": 0.2398655045139964,
+   "eps": 3.74,
+   "payout": 0.3205
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 3.74,
+   "price": 11.9,
+   "growth": 0.05,
+   "payout": 0.321,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 3.927,
+     "yoc": 0.33,
+     "dividend": 1.259,
+     "cumEarnings": 3.93,
+     "cumDividends": 1.26,
+     "cumBondInterest": 0.18
+    },
+    {
+     "year": 2,
+     "eps": 4.123,
+     "yoc": 0.3465,
+     "dividend": 1.322,
+     "cumEarnings": 8.05,
+     "cumDividends": 2.58,
+     "cumBondInterest": 0.36
+    },
+    {
+     "year": 3,
+     "eps": 4.33,
+     "yoc": 0.3638,
+     "dividend": 1.388,
+     "cumEarnings": 12.38,
+     "cumDividends": 3.97,
+     "cumBondInterest": 0.54
+    },
+    {
+     "year": 4,
+     "eps": 4.546,
+     "yoc": 0.382,
+     "dividend": 1.457,
+     "cumEarnings": 16.93,
+     "cumDividends": 5.42,
+     "cumBondInterest": 0.71
+    },
+    {
+     "year": 5,
+     "eps": 4.773,
+     "yoc": 0.4011,
+     "dividend": 1.53,
+     "cumEarnings": 21.7,
+     "cumDividends": 6.95,
+     "cumBondInterest": 0.89
+    },
+    {
+     "year": 6,
+     "eps": 5.012,
+     "yoc": 0.4212,
+     "dividend": 1.606,
+     "cumEarnings": 26.71,
+     "cumDividends": 8.56,
+     "cumBondInterest": 1.07
+    },
+    {
+     "year": 7,
+     "eps": 5.263,
+     "yoc": 0.4422,
+     "dividend": 1.687,
+     "cumEarnings": 31.97,
+     "cumDividends": 10.25,
+     "cumBondInterest": 1.25
+    },
+    {
+     "year": 8,
+     "eps": 5.526,
+     "yoc": 0.4643,
+     "dividend": 1.771,
+     "cumEarnings": 37.5,
+     "cumDividends": 12.02,
+     "cumBondInterest": 1.43
+    },
+    {
+     "year": 9,
+     "eps": 5.802,
+     "yoc": 0.4876,
+     "dividend": 1.86,
+     "cumEarnings": 43.3,
+     "cumDividends": 13.88,
+     "cumBondInterest": 1.61
+    },
+    {
+     "year": 10,
+     "eps": 6.092,
+     "yoc": 0.5119,
+     "dividend": 1.953,
+     "cumEarnings": 49.39,
+     "cumDividends": 15.83,
+     "cumBondInterest": 1.79
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 3,
+   "exits": {
+    "15": {
+     "exitPrice": 91.38,
+     "irr": 0.2877,
+     "intrinsicValue": 93.25,
+     "marginOfSafety": 0.8724
+    },
+    "20": {
+     "exitPrice": 121.84,
+     "irr": 0.3182,
+     "intrinsicValue": 119.5,
+     "marginOfSafety": 0.9004
+    },
+    "25": {
+     "exitPrice": 152.3,
+     "irr": 0.3431,
+     "intrinsicValue": 145.75,
+     "marginOfSafety": 0.9184
+    }
+   }
+  },
+  "name": "中環"
+ },
+ {
+  "sym": "5278.TWO",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.08058016362720838,
+    "roic": 0.07281384756634512,
+    "capex_ocf": 0.017180632006977375,
+    "fcf_ni": 1.083889111837286,
+    "ltd_fcf": 2.3975428502584384,
+    "gross_margin": 0.5619211962807665
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": true
+   },
+   "passed": 4,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.08058016362720838,
+   "roic": 0.07281384756634512,
+   "grossMargin": 0.5619211962807665,
+   "eps": 1.59,
+   "payout": 0.83169997
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 1.59,
+   "price": 24.6,
+   "growth": 0.0844,
+   "payout": 0.832,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 1.724,
+     "yoc": 0.0701,
+     "dividend": 1.434,
+     "cumEarnings": 1.72,
+     "cumDividends": 1.43,
+     "cumBondInterest": 0.37
+    },
+    {
+     "year": 2,
+     "eps": 1.87,
+     "yoc": 0.076,
+     "dividend": 1.555,
+     "cumEarnings": 3.59,
+     "cumDividends": 2.99,
+     "cumBondInterest": 0.74
+    },
+    {
+     "year": 3,
+     "eps": 2.027,
+     "yoc": 0.0824,
+     "dividend": 1.686,
+     "cumEarnings": 5.62,
+     "cumDividends": 4.67,
+     "cumBondInterest": 1.11
+    },
+    {
+     "year": 4,
+     "eps": 2.198,
+     "yoc": 0.0894,
+     "dividend": 1.828,
+     "cumEarnings": 7.82,
+     "cumDividends": 6.5,
+     "cumBondInterest": 1.48
+    },
+    {
+     "year": 5,
+     "eps": 2.384,
+     "yoc": 0.0969,
+     "dividend": 1.983,
+     "cumEarnings": 10.2,
+     "cumDividends": 8.49,
+     "cumBondInterest": 1.84
+    },
+    {
+     "year": 6,
+     "eps": 2.585,
+     "yoc": 0.1051,
+     "dividend": 2.15,
+     "cumEarnings": 12.79,
+     "cumDividends": 10.64,
+     "cumBondInterest": 2.21
+    },
+    {
+     "year": 7,
+     "eps": 2.803,
+     "yoc": 0.1139,
+     "dividend": 2.331,
+     "cumEarnings": 15.59,
+     "cumDividends": 12.97,
+     "cumBondInterest": 2.58
+    },
+    {
+     "year": 8,
+     "eps": 3.039,
+     "yoc": 0.1236,
+     "dividend": 2.528,
+     "cumEarnings": 18.63,
+     "cumDividends": 15.49,
+     "cumBondInterest": 2.95
+    },
+    {
+     "year": 9,
+     "eps": 3.296,
+     "yoc": 0.134,
+     "dividend": 2.741,
+     "cumEarnings": 21.93,
+     "cumDividends": 18.24,
+     "cumBondInterest": 3.32
+    },
+    {
+     "year": 10,
+     "eps": 3.574,
+     "yoc": 0.1453,
+     "dividend": 2.972,
+     "cumEarnings": 25.5,
+     "cumDividends": 21.21,
+     "cumBondInterest": 3.69
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 10,
+   "exits": {
+    "15": {
+     "exitPrice": 53.61,
+     "irr": 0.14,
+     "intrinsicValue": 65.56,
+     "marginOfSafety": 0.6248
+    },
+    "20": {
+     "exitPrice": 71.48,
+     "irr": 0.1651,
+     "intrinsicValue": 80.95,
+     "marginOfSafety": 0.6961
+    },
+    "25": {
+     "exitPrice": 89.34,
+     "irr": 0.1859,
+     "intrinsicValue": 96.35,
+     "marginOfSafety": 0.7447
+    }
+   }
+  },
+  "name": "尚凡*"
+ },
+ {
+  "sym": "2850.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.1869842337924328,
+    "roic": null,
+    "capex_ocf": 0.8451326728888606,
+    "fcf_ni": 0.005013834646327038,
+    "ltd_fcf": 1.3247801717488559,
+    "gross_margin": 0.43488997
+   },
+   "checks": {
+    "roe": false,
+    "roic": null,
+    "capex_ocf": false,
+    "fcf_ni": false,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 1,
+   "total": 6,
+   "allPass": false,
+   "missing": [
+    "roic"
+   ]
+  },
+  "fundamentals": {
+   "roe": 0.1869842337924328,
+   "roic": null,
+   "grossMargin": 0.43488997,
+   "eps": 12.26,
+   "payout": 0.5833
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 12.26,
+   "price": 163.0,
+   "growth": 0.12,
+   "payout": 0.583,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 13.731,
+     "yoc": 0.0842,
+     "dividend": 8.009,
+     "cumEarnings": 13.73,
+     "cumDividends": 8.01,
+     "cumBondInterest": 2.44
+    },
+    {
+     "year": 2,
+     "eps": 15.379,
+     "yoc": 0.0943,
+     "dividend": 8.971,
+     "cumEarnings": 29.11,
+     "cumDividends": 16.98,
+     "cumBondInterest": 4.89
+    },
+    {
+     "year": 3,
+     "eps": 17.224,
+     "yoc": 0.1057,
+     "dividend": 10.047,
+     "cumEarnings": 46.33,
+     "cumDividends": 27.03,
+     "cumBondInterest": 7.33
+    },
+    {
+     "year": 4,
+     "eps": 19.291,
+     "yoc": 0.1184,
+     "dividend": 11.253,
+     "cumEarnings": 65.63,
+     "cumDividends": 38.28,
+     "cumBondInterest": 9.78
+    },
+    {
+     "year": 5,
+     "eps": 21.606,
+     "yoc": 0.1326,
+     "dividend": 12.603,
+     "cumEarnings": 87.23,
+     "cumDividends": 50.88,
+     "cumBondInterest": 12.22
+    },
+    {
+     "year": 6,
+     "eps": 24.199,
+     "yoc": 0.1485,
+     "dividend": 14.115,
+     "cumEarnings": 111.43,
+     "cumDividends": 65.0,
+     "cumBondInterest": 14.67
+    },
+    {
+     "year": 7,
+     "eps": 27.103,
+     "yoc": 0.1663,
+     "dividend": 15.809,
+     "cumEarnings": 138.53,
+     "cumDividends": 80.81,
+     "cumBondInterest": 17.11
+    },
+    {
+     "year": 8,
+     "eps": 30.355,
+     "yoc": 0.1862,
+     "dividend": 17.706,
+     "cumEarnings": 168.89,
+     "cumDividends": 98.51,
+     "cumBondInterest": 19.56
+    },
+    {
+     "year": 9,
+     "eps": 33.998,
+     "yoc": 0.2086,
+     "dividend": 19.831,
+     "cumEarnings": 202.89,
+     "cumDividends": 118.34,
+     "cumBondInterest": 22.0
+    },
+    {
+     "year": 10,
+     "eps": 38.078,
+     "yoc": 0.2336,
+     "dividend": 22.211,
+     "cumEarnings": 240.97,
+     "cumDividends": 140.55,
+     "cumBondInterest": 24.45
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 8,
+   "exits": {
+    "15": {
+     "exitPrice": 571.17,
+     "irr": 0.1803,
+     "intrinsicValue": 620.02,
+     "marginOfSafety": 0.7371
+    },
+    "20": {
+     "exitPrice": 761.55,
+     "irr": 0.2083,
+     "intrinsicValue": 784.07,
+     "marginOfSafety": 0.7921
+    },
+    "25": {
+     "exitPrice": 951.94,
+     "irr": 0.2312,
+     "intrinsicValue": 948.12,
+     "marginOfSafety": 0.8281
+    }
+   }
+  },
+  "name": "新產"
+ },
+ {
+  "sym": "6782.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.20059041675146416,
+    "roic": 0.18519937437909365,
+    "capex_ocf": 0.3993908278101376,
+    "fcf_ni": 0.9156200574700334,
+    "ltd_fcf": 0.3792002166900593,
+    "gross_margin": 0.4523858685357075
+   },
+   "checks": {
+    "roe": true,
+    "roic": true,
+    "capex_ocf": false,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 4,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.20059041675146416,
+   "roic": 0.18519937437909365,
+   "grossMargin": 0.4523858685357075,
+   "eps": 18.62,
+   "payout": 0.4511
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 18.62,
+   "price": 267.5,
+   "growth": 0.12,
+   "payout": 0.451,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 20.854,
+     "yoc": 0.078,
+     "dividend": 9.407,
+     "cumEarnings": 20.85,
+     "cumDividends": 9.41,
+     "cumBondInterest": 4.01
+    },
+    {
+     "year": 2,
+     "eps": 23.357,
+     "yoc": 0.0873,
+     "dividend": 10.536,
+     "cumEarnings": 44.21,
+     "cumDividends": 19.94,
+     "cumBondInterest": 8.03
+    },
+    {
+     "year": 3,
+     "eps": 26.16,
+     "yoc": 0.0978,
+     "dividend": 11.801,
+     "cumEarnings": 70.37,
+     "cumDividends": 31.74,
+     "cumBondInterest": 12.04
+    },
+    {
+     "year": 4,
+     "eps": 29.299,
+     "yoc": 0.1095,
+     "dividend": 13.217,
+     "cumEarnings": 99.67,
+     "cumDividends": 44.96,
+     "cumBondInterest": 16.05
+    },
+    {
+     "year": 5,
+     "eps": 32.815,
+     "yoc": 0.1227,
+     "dividend": 14.803,
+     "cumEarnings": 132.48,
+     "cumDividends": 59.76,
+     "cumBondInterest": 20.06
+    },
+    {
+     "year": 6,
+     "eps": 36.753,
+     "yoc": 0.1374,
+     "dividend": 16.579,
+     "cumEarnings": 169.24,
+     "cumDividends": 76.34,
+     "cumBondInterest": 24.07
+    },
+    {
+     "year": 7,
+     "eps": 41.163,
+     "yoc": 0.1539,
+     "dividend": 18.569,
+     "cumEarnings": 210.4,
+     "cumDividends": 94.91,
+     "cumBondInterest": 28.09
+    },
+    {
+     "year": 8,
+     "eps": 46.102,
+     "yoc": 0.1723,
+     "dividend": 20.797,
+     "cumEarnings": 256.5,
+     "cumDividends": 115.71,
+     "cumBondInterest": 32.1
+    },
+    {
+     "year": 9,
+     "eps": 51.635,
+     "yoc": 0.193,
+     "dividend": 23.292,
+     "cumEarnings": 308.14,
+     "cumDividends": 139.0,
+     "cumBondInterest": 36.11
+    },
+    {
+     "year": 10,
+     "eps": 57.831,
+     "yoc": 0.2162,
+     "dividend": 26.088,
+     "cumEarnings": 365.97,
+     "cumDividends": 165.09,
+     "cumBondInterest": 40.13
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 9,
+   "exits": {
+    "15": {
+     "exitPrice": 867.46,
+     "irr": 0.1594,
+     "intrinsicValue": 897.64,
+     "marginOfSafety": 0.702
+    },
+    "20": {
+     "exitPrice": 1156.62,
+     "irr": 0.1883,
+     "intrinsicValue": 1146.8,
+     "marginOfSafety": 0.7667
+    },
+    "25": {
+     "exitPrice": 1445.77,
+     "irr": 0.2119,
+     "intrinsicValue": 1395.95,
+     "marginOfSafety": 0.8084
+    }
+   }
+  },
+  "name": "視陽"
+ },
+ {
+  "sym": "2006.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.13745233356621847,
+    "roic": 0.11798527767511836,
+    "capex_ocf": 0.13878268766162813,
+    "fcf_ni": 1.5765435399012144,
+    "ltd_fcf": 0.18138437391085402,
+    "gross_margin": 0.14824861311646867
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 3,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.13745233356621847,
+   "roic": 0.11798527767511836,
+   "grossMargin": 0.14824861311646867,
+   "eps": 8.35,
+   "payout": 0.515
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 8.35,
+   "price": 82.6,
+   "growth": 0.0573,
+   "payout": 0.515,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 8.829,
+     "yoc": 0.1069,
+     "dividend": 4.547,
+     "cumEarnings": 8.83,
+     "cumDividends": 4.55,
+     "cumBondInterest": 1.24
+    },
+    {
+     "year": 2,
+     "eps": 9.335,
+     "yoc": 0.113,
+     "dividend": 4.807,
+     "cumEarnings": 18.16,
+     "cumDividends": 9.35,
+     "cumBondInterest": 2.48
+    },
+    {
+     "year": 3,
+     "eps": 9.87,
+     "yoc": 0.1195,
+     "dividend": 5.083,
+     "cumEarnings": 28.03,
+     "cumDividends": 14.44,
+     "cumBondInterest": 3.72
+    },
+    {
+     "year": 4,
+     "eps": 10.435,
+     "yoc": 0.1263,
+     "dividend": 5.374,
+     "cumEarnings": 38.47,
+     "cumDividends": 19.81,
+     "cumBondInterest": 4.96
+    },
+    {
+     "year": 5,
+     "eps": 11.034,
+     "yoc": 0.1336,
+     "dividend": 5.682,
+     "cumEarnings": 49.5,
+     "cumDividends": 25.49,
+     "cumBondInterest": 6.19
+    },
+    {
+     "year": 6,
+     "eps": 11.666,
+     "yoc": 0.1412,
+     "dividend": 6.008,
+     "cumEarnings": 61.17,
+     "cumDividends": 31.5,
+     "cumBondInterest": 7.43
+    },
+    {
+     "year": 7,
+     "eps": 12.335,
+     "yoc": 0.1493,
+     "dividend": 6.352,
+     "cumEarnings": 73.5,
+     "cumDividends": 37.85,
+     "cumBondInterest": 8.67
+    },
+    {
+     "year": 8,
+     "eps": 13.042,
+     "yoc": 0.1579,
+     "dividend": 6.717,
+     "cumEarnings": 86.54,
+     "cumDividends": 44.57,
+     "cumBondInterest": 9.91
+    },
+    {
+     "year": 9,
+     "eps": 13.789,
+     "yoc": 0.1669,
+     "dividend": 7.102,
+     "cumEarnings": 100.33,
+     "cumDividends": 51.67,
+     "cumBondInterest": 11.15
+    },
+    {
+     "year": 10,
+     "eps": 14.58,
+     "yoc": 0.1765,
+     "dividend": 7.509,
+     "cumEarnings": 114.91,
+     "cumDividends": 59.18,
+     "cumBondInterest": 12.39
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 8,
+   "exits": {
+    "15": {
+     "exitPrice": 218.7,
+     "irr": 0.1489,
+     "intrinsicValue": 242.65,
+     "marginOfSafety": 0.6596
+    },
+    "20": {
+     "exitPrice": 291.6,
+     "irr": 0.1762,
+     "intrinsicValue": 305.47,
+     "marginOfSafety": 0.7296
+    },
+    "25": {
+     "exitPrice": 364.49,
+     "irr": 0.1985,
+     "intrinsicValue": 368.28,
+     "marginOfSafety": 0.7757
+    }
+   }
+  },
+  "name": "東和鋼鐵"
+ },
+ {
+  "sym": "2603.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.12163595931481656,
+    "roic": 0.12044882700441703,
+    "capex_ocf": 0.2174030071498634,
+    "fcf_ni": 1.1548526164681743,
+    "ltd_fcf": 0.6873690269238157,
+    "gross_margin": 0.24449140445484557
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 3,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.12163595931481656,
+   "roic": 0.12044882700441703,
+   "grossMargin": 0.24449140445484557,
+   "eps": 36.66,
+   "payout": 0.4364
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 36.66,
+   "price": 256.5,
+   "growth": 0.0,
+   "payout": 0.436,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 36.66,
+     "yoc": 0.1429,
+     "dividend": 15.998,
+     "cumEarnings": 36.66,
+     "cumDividends": 16.0,
+     "cumBondInterest": 3.85
+    },
+    {
+     "year": 2,
+     "eps": 36.66,
+     "yoc": 0.1429,
+     "dividend": 15.998,
+     "cumEarnings": 73.32,
+     "cumDividends": 32.0,
+     "cumBondInterest": 7.69
+    },
+    {
+     "year": 3,
+     "eps": 36.66,
+     "yoc": 0.1429,
+     "dividend": 15.998,
+     "cumEarnings": 109.98,
+     "cumDividends": 48.0,
+     "cumBondInterest": 11.54
+    },
+    {
+     "year": 4,
+     "eps": 36.66,
+     "yoc": 0.1429,
+     "dividend": 15.998,
+     "cumEarnings": 146.64,
+     "cumDividends": 63.99,
+     "cumBondInterest": 15.39
+    },
+    {
+     "year": 5,
+     "eps": 36.66,
+     "yoc": 0.1429,
+     "dividend": 15.998,
+     "cumEarnings": 183.3,
+     "cumDividends": 79.99,
+     "cumBondInterest": 19.24
+    },
+    {
+     "year": 6,
+     "eps": 36.66,
+     "yoc": 0.1429,
+     "dividend": 15.998,
+     "cumEarnings": 219.96,
+     "cumDividends": 95.99,
+     "cumBondInterest": 23.08
+    },
+    {
+     "year": 7,
+     "eps": 36.66,
+     "yoc": 0.1429,
+     "dividend": 15.998,
+     "cumEarnings": 256.62,
+     "cumDividends": 111.99,
+     "cumBondInterest": 26.93
+    },
+    {
+     "year": 8,
+     "eps": 36.66,
+     "yoc": 0.1429,
+     "dividend": 15.998,
+     "cumEarnings": 293.28,
+     "cumDividends": 127.99,
+     "cumBondInterest": 30.78
+    },
+    {
+     "year": 9,
+     "eps": 36.66,
+     "yoc": 0.1429,
+     "dividend": 15.998,
+     "cumEarnings": 329.94,
+     "cumDividends": 143.99,
+     "cumBondInterest": 34.63
+    },
+    {
+     "year": 10,
+     "eps": 36.66,
+     "yoc": 0.1429,
+     "dividend": 15.998,
+     "cumEarnings": 366.6,
+     "cumDividends": 159.98,
+     "cumBondInterest": 38.47
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 7,
+   "exits": {
+    "15": {
+     "exitPrice": 549.9,
+     "irr": 0.1258,
+     "intrinsicValue": 621.37,
+     "marginOfSafety": 0.5872
+    },
+    "20": {
+     "exitPrice": 733.2,
+     "irr": 0.1527,
+     "intrinsicValue": 779.31,
+     "marginOfSafety": 0.6709
+    },
+    "25": {
+     "exitPrice": 916.5,
+     "irr": 0.1747,
+     "intrinsicValue": 937.26,
+     "marginOfSafety": 0.7263
+    }
+   }
+  },
+  "name": "長榮"
+ },
+ {
+  "sym": "2610.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.15064303916371685,
+    "roic": 0.09984273775875929,
+    "capex_ocf": 1.0877031093864764,
+    "fcf_ni": -0.29463591912529247,
+    "ltd_fcf": null,
+    "gross_margin": 0.1779991185374021
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": false,
+    "fcf_ni": false,
+    "ltd_fcf": false,
+    "gross_margin": false
+   },
+   "passed": 0,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.15064303916371685,
+   "roic": 0.09984273775875929,
+   "grossMargin": 0.1779991185374021,
+   "eps": 2.38,
+   "payout": 0.3422
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 2.38,
+   "price": 23.1,
+   "growth": 0.12,
+   "payout": 0.342,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 2.666,
+     "yoc": 0.1154,
+     "dividend": 0.912,
+     "cumEarnings": 2.67,
+     "cumDividends": 0.91,
+     "cumBondInterest": 0.35
+    },
+    {
+     "year": 2,
+     "eps": 2.985,
+     "yoc": 0.1292,
+     "dividend": 1.022,
+     "cumEarnings": 5.65,
+     "cumDividends": 1.93,
+     "cumBondInterest": 0.69
+    },
+    {
+     "year": 3,
+     "eps": 3.344,
+     "yoc": 0.1448,
+     "dividend": 1.144,
+     "cumEarnings": 8.99,
+     "cumDividends": 3.08,
+     "cumBondInterest": 1.04
+    },
+    {
+     "year": 4,
+     "eps": 3.745,
+     "yoc": 0.1621,
+     "dividend": 1.282,
+     "cumEarnings": 12.74,
+     "cumDividends": 4.36,
+     "cumBondInterest": 1.39
+    },
+    {
+     "year": 5,
+     "eps": 4.194,
+     "yoc": 0.1816,
+     "dividend": 1.435,
+     "cumEarnings": 16.93,
+     "cumDividends": 5.79,
+     "cumBondInterest": 1.73
+    },
+    {
+     "year": 6,
+     "eps": 4.698,
+     "yoc": 0.2034,
+     "dividend": 1.608,
+     "cumEarnings": 21.63,
+     "cumDividends": 7.4,
+     "cumBondInterest": 2.08
+    },
+    {
+     "year": 7,
+     "eps": 5.261,
+     "yoc": 0.2278,
+     "dividend": 1.8,
+     "cumEarnings": 26.89,
+     "cumDividends": 9.2,
+     "cumBondInterest": 2.43
+    },
+    {
+     "year": 8,
+     "eps": 5.893,
+     "yoc": 0.2551,
+     "dividend": 2.017,
+     "cumEarnings": 32.79,
+     "cumDividends": 11.22,
+     "cumBondInterest": 2.77
+    },
+    {
+     "year": 9,
+     "eps": 6.6,
+     "yoc": 0.2857,
+     "dividend": 2.258,
+     "cumEarnings": 39.39,
+     "cumDividends": 13.48,
+     "cumBondInterest": 3.12
+    },
+    {
+     "year": 10,
+     "eps": 7.392,
+     "yoc": 0.32,
+     "dividend": 2.53,
+     "cumEarnings": 46.78,
+     "cumDividends": 16.01,
+     "cumBondInterest": 3.46
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 7,
+   "exits": {
+    "15": {
+     "exitPrice": 110.88,
+     "irr": 0.2029,
+     "intrinsicValue": 110.1,
+     "marginOfSafety": 0.7902
+    },
+    "20": {
+     "exitPrice": 147.84,
+     "irr": 0.2335,
+     "intrinsicValue": 141.95,
+     "marginOfSafety": 0.8373
+    },
+    "25": {
+     "exitPrice": 184.8,
+     "irr": 0.2584,
+     "intrinsicValue": 173.8,
+     "marginOfSafety": 0.8671
+    }
+   }
+  },
+  "name": "華航"
+ },
+ {
+  "sym": "2887.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.07717920161744701,
+    "roic": null,
+    "capex_ocf": null,
+    "fcf_ni": -2.2741641048798917,
+    "ltd_fcf": null,
+    "gross_margin": 0.0
+   },
+   "checks": {
+    "roe": false,
+    "roic": null,
+    "capex_ocf": null,
+    "fcf_ni": false,
+    "ltd_fcf": false,
+    "gross_margin": false
+   },
+   "passed": 0,
+   "total": 6,
+   "allPass": false,
+   "missing": [
+    "roic",
+    "capex_ocf"
+   ]
+  },
+  "fundamentals": {
+   "roe": 0.07717920161744701,
+   "roic": null,
+   "grossMargin": 0.0,
+   "eps": 1.89,
+   "payout": 0.4712
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 1.89,
+   "price": 39.3,
+   "growth": 0.12,
+   "payout": 0.471,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 2.117,
+     "yoc": 0.0539,
+     "dividend": 0.997,
+     "cumEarnings": 2.12,
+     "cumDividends": 1.0,
+     "cumBondInterest": 0.59
+    },
+    {
+     "year": 2,
+     "eps": 2.371,
+     "yoc": 0.0603,
+     "dividend": 1.117,
+     "cumEarnings": 4.49,
+     "cumDividends": 2.11,
+     "cumBondInterest": 1.18
+    },
+    {
+     "year": 3,
+     "eps": 2.655,
+     "yoc": 0.0676,
+     "dividend": 1.251,
+     "cumEarnings": 7.14,
+     "cumDividends": 3.37,
+     "cumBondInterest": 1.77
+    },
+    {
+     "year": 4,
+     "eps": 2.974,
+     "yoc": 0.0757,
+     "dividend": 1.401,
+     "cumEarnings": 10.12,
+     "cumDividends": 4.77,
+     "cumBondInterest": 2.36
+    },
+    {
+     "year": 5,
+     "eps": 3.331,
+     "yoc": 0.0848,
+     "dividend": 1.569,
+     "cumEarnings": 13.45,
+     "cumDividends": 6.34,
+     "cumBondInterest": 2.95
+    },
+    {
+     "year": 6,
+     "eps": 3.731,
+     "yoc": 0.0949,
+     "dividend": 1.758,
+     "cumEarnings": 17.18,
+     "cumDividends": 8.09,
+     "cumBondInterest": 3.54
+    },
+    {
+     "year": 7,
+     "eps": 4.178,
+     "yoc": 0.1063,
+     "dividend": 1.969,
+     "cumEarnings": 21.36,
+     "cumDividends": 10.06,
+     "cumBondInterest": 4.13
+    },
+    {
+     "year": 8,
+     "eps": 4.68,
+     "yoc": 0.1191,
+     "dividend": 2.205,
+     "cumEarnings": 26.04,
+     "cumDividends": 12.27,
+     "cumBondInterest": 4.72
+    },
+    {
+     "year": 9,
+     "eps": 5.241,
+     "yoc": 0.1334,
+     "dividend": 2.47,
+     "cumEarnings": 31.28,
+     "cumDividends": 14.74,
+     "cumBondInterest": 5.31
+    },
+    {
+     "year": 10,
+     "eps": 5.87,
+     "yoc": 0.1494,
+     "dividend": 2.766,
+     "cumEarnings": 37.15,
+     "cumDividends": 17.5,
+     "cumBondInterest": 5.9
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": null,
+   "exits": {
+    "15": {
+     "exitPrice": 88.05,
+     "irr": 0.1133,
+     "intrinsicValue": 91.79,
+     "marginOfSafety": 0.5719
+    },
+    "20": {
+     "exitPrice": 117.4,
+     "irr": 0.1415,
+     "intrinsicValue": 117.08,
+     "marginOfSafety": 0.6643
+    },
+    "25": {
+     "exitPrice": 146.75,
+     "irr": 0.1643,
+     "intrinsicValue": 142.37,
+     "marginOfSafety": 0.724
+    }
+   }
+  },
+  "name": "台新新光金"
+ },
+ {
+  "sym": "2891.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.15553250412357014,
+    "roic": null,
+    "capex_ocf": 0.9898944568259366,
+    "fcf_ni": 0.0008410151954683072,
+    "ltd_fcf": 4885.3260080823575,
+    "gross_margin": 0.68068004
+   },
+   "checks": {
+    "roe": false,
+    "roic": null,
+    "capex_ocf": false,
+    "fcf_ni": false,
+    "ltd_fcf": false,
+    "gross_margin": true
+   },
+   "passed": 1,
+   "total": 6,
+   "allPass": false,
+   "missing": [
+    "roic"
+   ]
+  },
+  "fundamentals": {
+   "roe": 0.15553250412357014,
+   "roic": null,
+   "grossMargin": 0.68068004,
+   "eps": 4.06,
+   "payout": 0.5666
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 4.06,
+   "price": 77.5,
+   "growth": 0.12,
+   "payout": 0.567,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 4.547,
+     "yoc": 0.0587,
+     "dividend": 2.576,
+     "cumEarnings": 4.55,
+     "cumDividends": 2.58,
+     "cumBondInterest": 1.16
+    },
+    {
+     "year": 2,
+     "eps": 5.093,
+     "yoc": 0.0657,
+     "dividend": 2.886,
+     "cumEarnings": 9.64,
+     "cumDividends": 5.46,
+     "cumBondInterest": 2.32
+    },
+    {
+     "year": 3,
+     "eps": 5.704,
+     "yoc": 0.0736,
+     "dividend": 3.232,
+     "cumEarnings": 15.34,
+     "cumDividends": 8.69,
+     "cumBondInterest": 3.49
+    },
+    {
+     "year": 4,
+     "eps": 6.388,
+     "yoc": 0.0824,
+     "dividend": 3.62,
+     "cumEarnings": 21.73,
+     "cumDividends": 12.31,
+     "cumBondInterest": 4.65
+    },
+    {
+     "year": 5,
+     "eps": 7.155,
+     "yoc": 0.0923,
+     "dividend": 4.054,
+     "cumEarnings": 28.89,
+     "cumDividends": 16.37,
+     "cumBondInterest": 5.81
+    },
+    {
+     "year": 6,
+     "eps": 8.014,
+     "yoc": 0.1034,
+     "dividend": 4.541,
+     "cumEarnings": 36.9,
+     "cumDividends": 20.91,
+     "cumBondInterest": 6.97
+    },
+    {
+     "year": 7,
+     "eps": 8.975,
+     "yoc": 0.1158,
+     "dividend": 5.085,
+     "cumEarnings": 45.88,
+     "cumDividends": 25.99,
+     "cumBondInterest": 8.14
+    },
+    {
+     "year": 8,
+     "eps": 10.052,
+     "yoc": 0.1297,
+     "dividend": 5.696,
+     "cumEarnings": 55.93,
+     "cumDividends": 31.69,
+     "cumBondInterest": 9.3
+    },
+    {
+     "year": 9,
+     "eps": 11.259,
+     "yoc": 0.1453,
+     "dividend": 6.379,
+     "cumEarnings": 67.19,
+     "cumDividends": 38.07,
+     "cumBondInterest": 10.46
+    },
+    {
+     "year": 10,
+     "eps": 12.61,
+     "yoc": 0.1627,
+     "dividend": 7.145,
+     "cumEarnings": 79.8,
+     "cumDividends": 45.21,
+     "cumBondInterest": 11.62
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 10,
+   "exits": {
+    "15": {
+     "exitPrice": 189.15,
+     "irr": 0.1302,
+     "intrinsicValue": 204.11,
+     "marginOfSafety": 0.6203
+    },
+    "20": {
+     "exitPrice": 252.19,
+     "irr": 0.1578,
+     "intrinsicValue": 258.44,
+     "marginOfSafety": 0.7001
+    },
+    "25": {
+     "exitPrice": 315.24,
+     "irr": 0.1803,
+     "intrinsicValue": 312.77,
+     "marginOfSafety": 0.7522
+    }
+   }
+  },
+  "name": "中信金"
+ },
+ {
+  "sym": "6581.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.1530588797721344,
+    "roic": 0.13780167441943145,
+    "capex_ocf": 0.38364696164424483,
+    "fcf_ni": 0.8833379686728707,
+    "ltd_fcf": 0.7937590148936345,
+    "gross_margin": 0.5103430588060747
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": false,
+    "fcf_ni": false,
+    "ltd_fcf": true,
+    "gross_margin": true
+   },
+   "passed": 2,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.1530588797721344,
+   "roic": 0.13780167441943145,
+   "grossMargin": 0.5103430588060747,
+   "eps": 8.09,
+   "payout": 0.65510005
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 8.09,
+   "price": 107.5,
+   "growth": 0.0,
+   "payout": 0.655,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 8.09,
+     "yoc": 0.0753,
+     "dividend": 5.3,
+     "cumEarnings": 8.09,
+     "cumDividends": 5.3,
+     "cumBondInterest": 1.61
+    },
+    {
+     "year": 2,
+     "eps": 8.09,
+     "yoc": 0.0753,
+     "dividend": 5.3,
+     "cumEarnings": 16.18,
+     "cumDividends": 10.6,
+     "cumBondInterest": 3.23
+    },
+    {
+     "year": 3,
+     "eps": 8.09,
+     "yoc": 0.0753,
+     "dividend": 5.3,
+     "cumEarnings": 24.27,
+     "cumDividends": 15.9,
+     "cumBondInterest": 4.84
+    },
+    {
+     "year": 4,
+     "eps": 8.09,
+     "yoc": 0.0753,
+     "dividend": 5.3,
+     "cumEarnings": 32.36,
+     "cumDividends": 21.2,
+     "cumBondInterest": 6.45
+    },
+    {
+     "year": 5,
+     "eps": 8.09,
+     "yoc": 0.0753,
+     "dividend": 5.3,
+     "cumEarnings": 40.45,
+     "cumDividends": 26.5,
+     "cumBondInterest": 8.06
+    },
+    {
+     "year": 6,
+     "eps": 8.09,
+     "yoc": 0.0753,
+     "dividend": 5.3,
+     "cumEarnings": 48.54,
+     "cumDividends": 31.8,
+     "cumBondInterest": 9.68
+    },
+    {
+     "year": 7,
+     "eps": 8.09,
+     "yoc": 0.0753,
+     "dividend": 5.3,
+     "cumEarnings": 56.63,
+     "cumDividends": 37.1,
+     "cumBondInterest": 11.29
+    },
+    {
+     "year": 8,
+     "eps": 8.09,
+     "yoc": 0.0753,
+     "dividend": 5.3,
+     "cumEarnings": 64.72,
+     "cumDividends": 42.4,
+     "cumBondInterest": 12.9
+    },
+    {
+     "year": 9,
+     "eps": 8.09,
+     "yoc": 0.0753,
+     "dividend": 5.3,
+     "cumEarnings": 72.81,
+     "cumDividends": 47.7,
+     "cumBondInterest": 14.51
+    },
+    {
+     "year": 10,
+     "eps": 8.09,
+     "yoc": 0.0753,
+     "dividend": 5.3,
+     "cumEarnings": 80.9,
+     "cumDividends": 53.0,
+     "cumBondInterest": 16.13
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": null,
+   "exits": {
+    "15": {
+     "exitPrice": 121.35,
+     "irr": 0.0591,
+     "intrinsicValue": 153.44,
+     "marginOfSafety": 0.2994
+    },
+    "20": {
+     "exitPrice": 161.8,
+     "irr": 0.0836,
+     "intrinsicValue": 188.29,
+     "marginOfSafety": 0.4291
+    },
+    "25": {
+     "exitPrice": 202.25,
+     "irr": 0.1036,
+     "intrinsicValue": 223.15,
+     "marginOfSafety": 0.5183
+    }
+   }
+  },
+  "name": "鋼聯"
+ },
+ {
+  "sym": "1593.TWO",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.06535354499988344,
+    "roic": 0.07077761401479603,
+    "capex_ocf": 0.04669965658040615,
+    "fcf_ni": 1.622533396232928,
+    "ltd_fcf": 1.6165612412775856,
+    "gross_margin": 0.31334190419516106
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 3,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.06535354499988344,
+   "roic": 0.07077761401479603,
+   "grossMargin": 0.31334190419516106,
+   "eps": 4.38,
+   "payout": 0.4566
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 4.38,
+   "price": 31.9,
+   "growth": 0.0,
+   "payout": 0.457,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 4.38,
+     "yoc": 0.1373,
+     "dividend": 2.0,
+     "cumEarnings": 4.38,
+     "cumDividends": 2.0,
+     "cumBondInterest": 0.48
+    },
+    {
+     "year": 2,
+     "eps": 4.38,
+     "yoc": 0.1373,
+     "dividend": 2.0,
+     "cumEarnings": 8.76,
+     "cumDividends": 4.0,
+     "cumBondInterest": 0.96
+    },
+    {
+     "year": 3,
+     "eps": 4.38,
+     "yoc": 0.1373,
+     "dividend": 2.0,
+     "cumEarnings": 13.14,
+     "cumDividends": 6.0,
+     "cumBondInterest": 1.44
+    },
+    {
+     "year": 4,
+     "eps": 4.38,
+     "yoc": 0.1373,
+     "dividend": 2.0,
+     "cumEarnings": 17.52,
+     "cumDividends": 8.0,
+     "cumBondInterest": 1.91
+    },
+    {
+     "year": 5,
+     "eps": 4.38,
+     "yoc": 0.1373,
+     "dividend": 2.0,
+     "cumEarnings": 21.9,
+     "cumDividends": 10.0,
+     "cumBondInterest": 2.39
+    },
+    {
+     "year": 6,
+     "eps": 4.38,
+     "yoc": 0.1373,
+     "dividend": 2.0,
+     "cumEarnings": 26.28,
+     "cumDividends": 12.0,
+     "cumBondInterest": 2.87
+    },
+    {
+     "year": 7,
+     "eps": 4.38,
+     "yoc": 0.1373,
+     "dividend": 2.0,
+     "cumEarnings": 30.66,
+     "cumDividends": 14.0,
+     "cumBondInterest": 3.35
+    },
+    {
+     "year": 8,
+     "eps": 4.38,
+     "yoc": 0.1373,
+     "dividend": 2.0,
+     "cumEarnings": 35.04,
+     "cumDividends": 16.0,
+     "cumBondInterest": 3.83
+    },
+    {
+     "year": 9,
+     "eps": 4.38,
+     "yoc": 0.1373,
+     "dividend": 2.0,
+     "cumEarnings": 39.42,
+     "cumDividends": 18.0,
+     "cumBondInterest": 4.31
+    },
+    {
+     "year": 10,
+     "eps": 4.38,
+     "yoc": 0.1373,
+     "dividend": 2.0,
+     "cumEarnings": 43.8,
+     "cumDividends": 20.0,
+     "cumBondInterest": 4.79
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 8,
+   "exits": {
+    "15": {
+     "exitPrice": 65.7,
+     "irr": 0.1224,
+     "intrinsicValue": 75.06,
+     "marginOfSafety": 0.575
+    },
+    "20": {
+     "exitPrice": 87.6,
+     "irr": 0.1491,
+     "intrinsicValue": 93.93,
+     "marginOfSafety": 0.6604
+    },
+    "25": {
+     "exitPrice": 109.5,
+     "irr": 0.1709,
+     "intrinsicValue": 112.8,
+     "marginOfSafety": 0.7172
+    }
+   }
+  },
+  "name": "祺驊"
+ },
+ {
+  "sym": "3293.TWO",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.5694484654465385,
+    "roic": 0.5688461559087156,
+    "capex_ocf": 0.007576335647418422,
+    "fcf_ni": 1.0678950904670415,
+    "ltd_fcf": 0.00016999925614538683,
+    "gross_margin": 0.9759152194373921
+   },
+   "checks": {
+    "roe": true,
+    "roic": true,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": true
+   },
+   "passed": 6,
+   "total": 6,
+   "allPass": true,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.5694484654465385,
+   "roic": 0.5688461559087156,
+   "grossMargin": 0.9759152194373921,
+   "eps": 44.95,
+   "payout": 0.8009
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 44.95,
+   "price": 790.0,
+   "growth": 0.12,
+   "payout": 0.801,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 50.344,
+     "yoc": 0.0637,
+     "dividend": 40.321,
+     "cumEarnings": 50.34,
+     "cumDividends": 40.32,
+     "cumBondInterest": 11.85
+    },
+    {
+     "year": 2,
+     "eps": 56.385,
+     "yoc": 0.0714,
+     "dividend": 45.159,
+     "cumEarnings": 106.73,
+     "cumDividends": 85.48,
+     "cumBondInterest": 23.7
+    },
+    {
+     "year": 3,
+     "eps": 63.152,
+     "yoc": 0.0799,
+     "dividend": 50.578,
+     "cumEarnings": 169.88,
+     "cumDividends": 136.06,
+     "cumBondInterest": 35.55
+    },
+    {
+     "year": 4,
+     "eps": 70.73,
+     "yoc": 0.0895,
+     "dividend": 56.647,
+     "cumEarnings": 240.61,
+     "cumDividends": 192.7,
+     "cumBondInterest": 47.4
+    },
+    {
+     "year": 5,
+     "eps": 79.217,
+     "yoc": 0.1003,
+     "dividend": 63.445,
+     "cumEarnings": 319.83,
+     "cumDividends": 256.15,
+     "cumBondInterest": 59.25
+    },
+    {
+     "year": 6,
+     "eps": 88.723,
+     "yoc": 0.1123,
+     "dividend": 71.059,
+     "cumEarnings": 408.55,
+     "cumDividends": 327.21,
+     "cumBondInterest": 71.1
+    },
+    {
+     "year": 7,
+     "eps": 99.37,
+     "yoc": 0.1258,
+     "dividend": 79.586,
+     "cumEarnings": 507.92,
+     "cumDividends": 406.79,
+     "cumBondInterest": 82.95
+    },
+    {
+     "year": 8,
+     "eps": 111.295,
+     "yoc": 0.1409,
+     "dividend": 89.136,
+     "cumEarnings": 619.22,
+     "cumDividends": 495.93,
+     "cumBondInterest": 94.8
+    },
+    {
+     "year": 9,
+     "eps": 124.65,
+     "yoc": 0.1578,
+     "dividend": 99.832,
+     "cumEarnings": 743.87,
+     "cumDividends": 595.76,
+     "cumBondInterest": 106.65
+    },
+    {
+     "year": 10,
+     "eps": 139.608,
+     "yoc": 0.1767,
+     "dividend": 111.812,
+     "cumEarnings": 883.47,
+     "cumDividends": 707.57,
+     "cumBondInterest": 118.5
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 10,
+   "exits": {
+    "15": {
+     "exitPrice": 2094.12,
+     "irr": 0.1569,
+     "intrinsicValue": 2448.1,
+     "marginOfSafety": 0.6773
+    },
+    "20": {
+     "exitPrice": 2792.16,
+     "irr": 0.183,
+     "intrinsicValue": 3049.58,
+     "marginOfSafety": 0.7409
+    },
+    "25": {
+     "exitPrice": 3490.2,
+     "irr": 0.2044,
+     "intrinsicValue": 3651.06,
+     "marginOfSafety": 0.7836
+    }
+   }
+  },
+  "name": "鈊象"
+ },
+ {
+  "sym": "2816.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.12945112635956815,
+    "roic": 0.13027534722242412,
+    "capex_ocf": 0.0976702816678915,
+    "fcf_ni": 0.5043263121931371,
+    "ltd_fcf": 0.038924389065015434,
+    "gross_margin": 0.40464002
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": false,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 2,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.12945112635956815,
+   "roic": 0.13027534722242412,
+   "grossMargin": 0.40464002,
+   "eps": 4.64,
+   "payout": 0.3233
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 4.64,
+   "price": 42.55,
+   "growth": 0.05,
+   "payout": 0.323,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 4.872,
+     "yoc": 0.1145,
+     "dividend": 1.575,
+     "cumEarnings": 4.87,
+     "cumDividends": 1.58,
+     "cumBondInterest": 0.64
+    },
+    {
+     "year": 2,
+     "eps": 5.116,
+     "yoc": 0.1202,
+     "dividend": 1.654,
+     "cumEarnings": 9.99,
+     "cumDividends": 3.23,
+     "cumBondInterest": 1.28
+    },
+    {
+     "year": 3,
+     "eps": 5.371,
+     "yoc": 0.1262,
+     "dividend": 1.737,
+     "cumEarnings": 15.36,
+     "cumDividends": 4.97,
+     "cumBondInterest": 1.91
+    },
+    {
+     "year": 4,
+     "eps": 5.64,
+     "yoc": 0.1325,
+     "dividend": 1.823,
+     "cumEarnings": 21.0,
+     "cumDividends": 6.79,
+     "cumBondInterest": 2.55
+    },
+    {
+     "year": 5,
+     "eps": 5.922,
+     "yoc": 0.1392,
+     "dividend": 1.915,
+     "cumEarnings": 26.92,
+     "cumDividends": 8.7,
+     "cumBondInterest": 3.19
+    },
+    {
+     "year": 6,
+     "eps": 6.218,
+     "yoc": 0.1461,
+     "dividend": 2.01,
+     "cumEarnings": 33.14,
+     "cumDividends": 10.71,
+     "cumBondInterest": 3.83
+    },
+    {
+     "year": 7,
+     "eps": 6.529,
+     "yoc": 0.1534,
+     "dividend": 2.111,
+     "cumEarnings": 39.67,
+     "cumDividends": 12.82,
+     "cumBondInterest": 4.47
+    },
+    {
+     "year": 8,
+     "eps": 6.855,
+     "yoc": 0.1611,
+     "dividend": 2.216,
+     "cumEarnings": 46.52,
+     "cumDividends": 15.04,
+     "cumBondInterest": 5.11
+    },
+    {
+     "year": 9,
+     "eps": 7.198,
+     "yoc": 0.1692,
+     "dividend": 2.327,
+     "cumEarnings": 53.72,
+     "cumDividends": 17.37,
+     "cumBondInterest": 5.74
+    },
+    {
+     "year": 10,
+     "eps": 7.558,
+     "yoc": 0.1776,
+     "dividend": 2.444,
+     "cumEarnings": 61.28,
+     "cumDividends": 19.81,
+     "cumBondInterest": 6.38
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 8,
+   "exits": {
+    "15": {
+     "exitPrice": 113.37,
+     "irr": 0.1333,
+     "intrinsicValue": 115.85,
+     "marginOfSafety": 0.6327
+    },
+    "20": {
+     "exitPrice": 151.16,
+     "irr": 0.1623,
+     "intrinsicValue": 148.41,
+     "marginOfSafety": 0.7133
+    },
+    "25": {
+     "exitPrice": 188.95,
+     "irr": 0.1858,
+     "intrinsicValue": 180.98,
+     "marginOfSafety": 0.7649
+    }
+   }
+  },
+  "name": "旺旺保"
+ },
+ {
+  "sym": "1456.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.16490703931833825,
+    "roic": 0.04644722989942896,
+    "capex_ocf": null,
+    "fcf_ni": -1.4506218453715416,
+    "ltd_fcf": null,
+    "gross_margin": 0.3894758809202995
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": null,
+    "fcf_ni": false,
+    "ltd_fcf": false,
+    "gross_margin": false
+   },
+   "passed": 0,
+   "total": 6,
+   "allPass": false,
+   "missing": [
+    "capex_ocf"
+   ]
+  },
+  "fundamentals": {
+   "roe": 0.16490703931833825,
+   "roic": 0.04644722989942896,
+   "grossMargin": 0.3894758809202995,
+   "eps": 7.47,
+   "payout": 0.0
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 7.47,
+   "price": 14.8,
+   "growth": 0.05,
+   "payout": 0.2,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 7.843,
+     "yoc": 0.53,
+     "dividend": 1.569,
+     "cumEarnings": 7.84,
+     "cumDividends": 1.57,
+     "cumBondInterest": 0.22
+    },
+    {
+     "year": 2,
+     "eps": 8.236,
+     "yoc": 0.5565,
+     "dividend": 1.647,
+     "cumEarnings": 16.08,
+     "cumDividends": 3.22,
+     "cumBondInterest": 0.44
+    },
+    {
+     "year": 3,
+     "eps": 8.647,
+     "yoc": 0.5843,
+     "dividend": 1.729,
+     "cumEarnings": 24.73,
+     "cumDividends": 4.95,
+     "cumBondInterest": 0.67
+    },
+    {
+     "year": 4,
+     "eps": 9.08,
+     "yoc": 0.6135,
+     "dividend": 1.816,
+     "cumEarnings": 33.81,
+     "cumDividends": 6.76,
+     "cumBondInterest": 0.89
+    },
+    {
+     "year": 5,
+     "eps": 9.534,
+     "yoc": 0.6442,
+     "dividend": 1.907,
+     "cumEarnings": 43.34,
+     "cumDividends": 8.67,
+     "cumBondInterest": 1.11
+    },
+    {
+     "year": 6,
+     "eps": 10.011,
+     "yoc": 0.6764,
+     "dividend": 2.002,
+     "cumEarnings": 53.35,
+     "cumDividends": 10.67,
+     "cumBondInterest": 1.33
+    },
+    {
+     "year": 7,
+     "eps": 10.511,
+     "yoc": 0.7102,
+     "dividend": 2.102,
+     "cumEarnings": 63.86,
+     "cumDividends": 12.77,
+     "cumBondInterest": 1.55
+    },
+    {
+     "year": 8,
+     "eps": 11.037,
+     "yoc": 0.7457,
+     "dividend": 2.207,
+     "cumEarnings": 74.9,
+     "cumDividends": 14.98,
+     "cumBondInterest": 1.78
+    },
+    {
+     "year": 9,
+     "eps": 11.588,
+     "yoc": 0.783,
+     "dividend": 2.318,
+     "cumEarnings": 86.49,
+     "cumDividends": 17.3,
+     "cumBondInterest": 2.0
+    },
+    {
+     "year": 10,
+     "eps": 12.168,
+     "yoc": 0.8222,
+     "dividend": 2.434,
+     "cumEarnings": 98.65,
+     "cumDividends": 19.73,
+     "cumBondInterest": 2.22
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 2,
+   "exits": {
+    "15": {
+     "exitPrice": 182.52,
+     "irr": 0.339,
+     "intrinsicValue": 175.36,
+     "marginOfSafety": 0.9156
+    },
+    "20": {
+     "exitPrice": 243.36,
+     "irr": 0.3724,
+     "intrinsicValue": 227.78,
+     "marginOfSafety": 0.935
+    },
+    "25": {
+     "exitPrice": 304.2,
+     "irr": 0.3994,
+     "intrinsicValue": 280.2,
+     "marginOfSafety": 0.9472
+    }
+   }
+  },
+  "name": "怡華"
+ },
+ {
+  "sym": "2535.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.16345137262259601,
+    "roic": 0.08983354428712008,
+    "capex_ocf": 0.0009062885604740956,
+    "fcf_ni": 2.3599166201703214,
+    "ltd_fcf": 0.9594086781757899,
+    "gross_margin": 0.11300398293814823
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 3,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.16345137262259601,
+   "roic": 0.08983354428712008,
+   "grossMargin": 0.11300398293814823,
+   "eps": 10.61,
+   "payout": 0.4336
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 10.61,
+   "price": 89.9,
+   "growth": 0.12,
+   "payout": 0.434,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 11.883,
+     "yoc": 0.1322,
+     "dividend": 5.153,
+     "cumEarnings": 11.88,
+     "cumDividends": 5.15,
+     "cumBondInterest": 1.35
+    },
+    {
+     "year": 2,
+     "eps": 13.309,
+     "yoc": 0.148,
+     "dividend": 5.771,
+     "cumEarnings": 25.19,
+     "cumDividends": 10.92,
+     "cumBondInterest": 2.7
+    },
+    {
+     "year": 3,
+     "eps": 14.906,
+     "yoc": 0.1658,
+     "dividend": 6.463,
+     "cumEarnings": 40.1,
+     "cumDividends": 17.39,
+     "cumBondInterest": 4.05
+    },
+    {
+     "year": 4,
+     "eps": 16.695,
+     "yoc": 0.1857,
+     "dividend": 7.239,
+     "cumEarnings": 56.79,
+     "cumDividends": 24.63,
+     "cumBondInterest": 5.39
+    },
+    {
+     "year": 5,
+     "eps": 18.698,
+     "yoc": 0.208,
+     "dividend": 8.108,
+     "cumEarnings": 75.49,
+     "cumDividends": 32.73,
+     "cumBondInterest": 6.74
+    },
+    {
+     "year": 6,
+     "eps": 20.942,
+     "yoc": 0.233,
+     "dividend": 9.081,
+     "cumEarnings": 96.43,
+     "cumDividends": 41.81,
+     "cumBondInterest": 8.09
+    },
+    {
+     "year": 7,
+     "eps": 23.455,
+     "yoc": 0.2609,
+     "dividend": 10.17,
+     "cumEarnings": 119.89,
+     "cumDividends": 51.98,
+     "cumBondInterest": 9.44
+    },
+    {
+     "year": 8,
+     "eps": 26.27,
+     "yoc": 0.2922,
+     "dividend": 11.391,
+     "cumEarnings": 146.16,
+     "cumDividends": 63.37,
+     "cumBondInterest": 10.79
+    },
+    {
+     "year": 9,
+     "eps": 29.422,
+     "yoc": 0.3273,
+     "dividend": 12.758,
+     "cumEarnings": 175.58,
+     "cumDividends": 76.13,
+     "cumBondInterest": 12.14
+    },
+    {
+     "year": 10,
+     "eps": 32.953,
+     "yoc": 0.3666,
+     "dividend": 14.288,
+     "cumEarnings": 208.54,
+     "cumDividends": 90.42,
+     "cumBondInterest": 13.48
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 6,
+   "exits": {
+    "15": {
+     "exitPrice": 494.3,
+     "irr": 0.2316,
+     "intrinsicValue": 508.17,
+     "marginOfSafety": 0.8231
+    },
+    "20": {
+     "exitPrice": 659.06,
+     "irr": 0.2615,
+     "intrinsicValue": 650.15,
+     "marginOfSafety": 0.8617
+    },
+    "25": {
+     "exitPrice": 823.83,
+     "irr": 0.2859,
+     "intrinsicValue": 792.12,
+     "marginOfSafety": 0.8865
+    }
+   }
+  },
+  "name": "達欣工"
+ },
+ {
+  "sym": "2606.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.09363311033146263,
+    "roic": 0.0572978121937069,
+    "capex_ocf": 0.8189368120569682,
+    "fcf_ni": 0.3608779709009519,
+    "ltd_fcf": 25.199351773336844,
+    "gross_margin": 0.28804245455748556
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": false,
+    "fcf_ni": false,
+    "ltd_fcf": false,
+    "gross_margin": false
+   },
+   "passed": 0,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.09363311033146263,
+   "roic": 0.0572978121937069,
+   "grossMargin": 0.28804245455748556,
+   "eps": 7.34,
+   "payout": 0.3815
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 7.34,
+   "price": 71.0,
+   "growth": 0.0,
+   "payout": 0.382,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 7.34,
+     "yoc": 0.1034,
+     "dividend": 2.8,
+     "cumEarnings": 7.34,
+     "cumDividends": 2.8,
+     "cumBondInterest": 1.06
+    },
+    {
+     "year": 2,
+     "eps": 7.34,
+     "yoc": 0.1034,
+     "dividend": 2.8,
+     "cumEarnings": 14.68,
+     "cumDividends": 5.6,
+     "cumBondInterest": 2.13
+    },
+    {
+     "year": 3,
+     "eps": 7.34,
+     "yoc": 0.1034,
+     "dividend": 2.8,
+     "cumEarnings": 22.02,
+     "cumDividends": 8.4,
+     "cumBondInterest": 3.19
+    },
+    {
+     "year": 4,
+     "eps": 7.34,
+     "yoc": 0.1034,
+     "dividend": 2.8,
+     "cumEarnings": 29.36,
+     "cumDividends": 11.2,
+     "cumBondInterest": 4.26
+    },
+    {
+     "year": 5,
+     "eps": 7.34,
+     "yoc": 0.1034,
+     "dividend": 2.8,
+     "cumEarnings": 36.7,
+     "cumDividends": 14.0,
+     "cumBondInterest": 5.32
+    },
+    {
+     "year": 6,
+     "eps": 7.34,
+     "yoc": 0.1034,
+     "dividend": 2.8,
+     "cumEarnings": 44.04,
+     "cumDividends": 16.8,
+     "cumBondInterest": 6.39
+    },
+    {
+     "year": 7,
+     "eps": 7.34,
+     "yoc": 0.1034,
+     "dividend": 2.8,
+     "cumEarnings": 51.38,
+     "cumDividends": 19.6,
+     "cumBondInterest": 7.45
+    },
+    {
+     "year": 8,
+     "eps": 7.34,
+     "yoc": 0.1034,
+     "dividend": 2.8,
+     "cumEarnings": 58.72,
+     "cumDividends": 22.4,
+     "cumBondInterest": 8.52
+    },
+    {
+     "year": 9,
+     "eps": 7.34,
+     "yoc": 0.1034,
+     "dividend": 2.8,
+     "cumEarnings": 66.06,
+     "cumDividends": 25.2,
+     "cumBondInterest": 9.58
+    },
+    {
+     "year": 10,
+     "eps": 7.34,
+     "yoc": 0.1034,
+     "dividend": 2.8,
+     "cumEarnings": 73.4,
+     "cumDividends": 28.0,
+     "cumBondInterest": 10.65
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 10,
+   "exits": {
+    "15": {
+     "exitPrice": 110.1,
+     "irr": 0.0778,
+     "intrinsicValue": 120.69,
+     "marginOfSafety": 0.4117
+    },
+    "20": {
+     "exitPrice": 146.8,
+     "irr": 0.1049,
+     "intrinsicValue": 152.32,
+     "marginOfSafety": 0.5339
+    },
+    "25": {
+     "exitPrice": 183.5,
+     "irr": 0.1268,
+     "intrinsicValue": 183.94,
+     "marginOfSafety": 0.614
+    }
+   }
+  },
+  "name": "裕民"
+ },
+ {
+  "sym": "2852.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.09618247605360217,
+    "roic": 0.0961842785934021,
+    "capex_ocf": 0.08182653279213843,
+    "fcf_ni": 0.48829914382316586,
+    "ltd_fcf": 0.009355579494505545,
+    "gross_margin": 0.41731
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": false,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 2,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.09618247605360217,
+   "roic": 0.0961842785934021,
+   "grossMargin": 0.41731,
+   "eps": 2.92,
+   "payout": 0.71919996
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 2.92,
+   "price": 28.85,
+   "growth": 0.12,
+   "payout": 0.719,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 3.27,
+     "yoc": 0.1134,
+     "dividend": 2.352,
+     "cumEarnings": 3.27,
+     "cumDividends": 2.35,
+     "cumBondInterest": 0.43
+    },
+    {
+     "year": 2,
+     "eps": 3.663,
+     "yoc": 0.127,
+     "dividend": 2.634,
+     "cumEarnings": 6.93,
+     "cumDividends": 4.99,
+     "cumBondInterest": 0.87
+    },
+    {
+     "year": 3,
+     "eps": 4.102,
+     "yoc": 0.1422,
+     "dividend": 2.95,
+     "cumEarnings": 11.04,
+     "cumDividends": 7.94,
+     "cumBondInterest": 1.3
+    },
+    {
+     "year": 4,
+     "eps": 4.595,
+     "yoc": 0.1593,
+     "dividend": 3.304,
+     "cumEarnings": 15.63,
+     "cumDividends": 11.24,
+     "cumBondInterest": 1.73
+    },
+    {
+     "year": 5,
+     "eps": 5.146,
+     "yoc": 0.1784,
+     "dividend": 3.701,
+     "cumEarnings": 20.78,
+     "cumDividends": 14.94,
+     "cumBondInterest": 2.16
+    },
+    {
+     "year": 6,
+     "eps": 5.764,
+     "yoc": 0.1998,
+     "dividend": 4.145,
+     "cumEarnings": 26.54,
+     "cumDividends": 19.09,
+     "cumBondInterest": 2.6
+    },
+    {
+     "year": 7,
+     "eps": 6.455,
+     "yoc": 0.2238,
+     "dividend": 4.643,
+     "cumEarnings": 33.0,
+     "cumDividends": 23.73,
+     "cumBondInterest": 3.03
+    },
+    {
+     "year": 8,
+     "eps": 7.23,
+     "yoc": 0.2506,
+     "dividend": 5.2,
+     "cumEarnings": 40.22,
+     "cumDividends": 28.93,
+     "cumBondInterest": 3.46
+    },
+    {
+     "year": 9,
+     "eps": 8.097,
+     "yoc": 0.2807,
+     "dividend": 5.824,
+     "cumEarnings": 48.32,
+     "cumDividends": 34.75,
+     "cumBondInterest": 3.89
+    },
+    {
+     "year": 10,
+     "eps": 9.069,
+     "yoc": 0.3144,
+     "dividend": 6.522,
+     "cumEarnings": 57.39,
+     "cumDividends": 41.28,
+     "cumBondInterest": 4.33
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 7,
+   "exits": {
+    "15": {
+     "exitPrice": 136.04,
+     "irr": 0.2371,
+     "intrinsicValue": 154.77,
+     "marginOfSafety": 0.8136
+    },
+    "20": {
+     "exitPrice": 181.38,
+     "irr": 0.2642,
+     "intrinsicValue": 193.84,
+     "marginOfSafety": 0.8512
+    },
+    "25": {
+     "exitPrice": 226.73,
+     "irr": 0.2865,
+     "intrinsicValue": 232.91,
+     "marginOfSafety": 0.8761
+    }
+   }
+  },
+  "name": "第一保"
+ },
+ {
+  "sym": "6655.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.12133462924817742,
+    "roic": 0.0496625994996261,
+    "capex_ocf": 0.7923971844943561,
+    "fcf_ni": 0.3977295262369108,
+    "ltd_fcf": 32.08407578754639,
+    "gross_margin": 0.49896591818657016
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": false,
+    "fcf_ni": false,
+    "ltd_fcf": false,
+    "gross_margin": false
+   },
+   "passed": 0,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.12133462924817742,
+   "roic": 0.0496625994996261,
+   "grossMargin": 0.49896591818657016,
+   "eps": 5.68,
+   "payout": 1.0562999
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 5.68,
+   "price": 135.0,
+   "growth": 0.0,
+   "payout": 1.0,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 5.68,
+     "yoc": 0.0421,
+     "dividend": 5.68,
+     "cumEarnings": 5.68,
+     "cumDividends": 5.68,
+     "cumBondInterest": 2.02
+    },
+    {
+     "year": 2,
+     "eps": 5.68,
+     "yoc": 0.0421,
+     "dividend": 5.68,
+     "cumEarnings": 11.36,
+     "cumDividends": 11.36,
+     "cumBondInterest": 4.05
+    },
+    {
+     "year": 3,
+     "eps": 5.68,
+     "yoc": 0.0421,
+     "dividend": 5.68,
+     "cumEarnings": 17.04,
+     "cumDividends": 17.04,
+     "cumBondInterest": 6.07
+    },
+    {
+     "year": 4,
+     "eps": 5.68,
+     "yoc": 0.0421,
+     "dividend": 5.68,
+     "cumEarnings": 22.72,
+     "cumDividends": 22.72,
+     "cumBondInterest": 8.1
+    },
+    {
+     "year": 5,
+     "eps": 5.68,
+     "yoc": 0.0421,
+     "dividend": 5.68,
+     "cumEarnings": 28.4,
+     "cumDividends": 28.4,
+     "cumBondInterest": 10.12
+    },
+    {
+     "year": 6,
+     "eps": 5.68,
+     "yoc": 0.0421,
+     "dividend": 5.68,
+     "cumEarnings": 34.08,
+     "cumDividends": 34.08,
+     "cumBondInterest": 12.15
+    },
+    {
+     "year": 7,
+     "eps": 5.68,
+     "yoc": 0.0421,
+     "dividend": 5.68,
+     "cumEarnings": 39.76,
+     "cumDividends": 39.76,
+     "cumBondInterest": 14.18
+    },
+    {
+     "year": 8,
+     "eps": 5.68,
+     "yoc": 0.0421,
+     "dividend": 5.68,
+     "cumEarnings": 45.44,
+     "cumDividends": 45.44,
+     "cumBondInterest": 16.2
+    },
+    {
+     "year": 9,
+     "eps": 5.68,
+     "yoc": 0.0421,
+     "dividend": 5.68,
+     "cumEarnings": 51.12,
+     "cumDividends": 51.12,
+     "cumBondInterest": 18.22
+    },
+    {
+     "year": 10,
+     "eps": 5.68,
+     "yoc": 0.0421,
+     "dividend": 5.68,
+     "cumEarnings": 56.8,
+     "cumDividends": 56.8,
+     "cumBondInterest": 20.25
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": null,
+   "exits": {
+    "15": {
+     "exitPrice": 85.2,
+     "irr": 0.0062,
+     "intrinsicValue": 125.8,
+     "marginOfSafety": -0.0732
+    },
+    "20": {
+     "exitPrice": 113.6,
+     "irr": 0.0281,
+     "intrinsicValue": 150.27,
+     "marginOfSafety": 0.1016
+    },
+    "25": {
+     "exitPrice": 142.0,
+     "irr": 0.0463,
+     "intrinsicValue": 174.74,
+     "marginOfSafety": 0.2274
+    }
+   }
+  },
+  "name": "科定"
+ },
+ {
+  "sym": "6199.TWO",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.02124693580878321,
+    "roic": 0.03522381404398923,
+    "capex_ocf": 0.19444149782539513,
+    "fcf_ni": 0.804918119667179,
+    "ltd_fcf": 0.189755069791941,
+    "gross_margin": 0.4563709811887041
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": false,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 2,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.02124693580878321,
+   "roic": 0.03522381404398923,
+   "grossMargin": 0.4563709811887041,
+   "eps": 10.75,
+   "payout": 0.0
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 10.75,
+   "price": 170.0,
+   "growth": 0.05,
+   "payout": 0.2,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 11.287,
+     "yoc": 0.0664,
+     "dividend": 2.257,
+     "cumEarnings": 11.29,
+     "cumDividends": 2.26,
+     "cumBondInterest": 2.55
+    },
+    {
+     "year": 2,
+     "eps": 11.852,
+     "yoc": 0.0697,
+     "dividend": 2.37,
+     "cumEarnings": 23.14,
+     "cumDividends": 4.63,
+     "cumBondInterest": 5.1
+    },
+    {
+     "year": 3,
+     "eps": 12.444,
+     "yoc": 0.0732,
+     "dividend": 2.489,
+     "cumEarnings": 35.58,
+     "cumDividends": 7.12,
+     "cumBondInterest": 7.65
+    },
+    {
+     "year": 4,
+     "eps": 13.067,
+     "yoc": 0.0769,
+     "dividend": 2.613,
+     "cumEarnings": 48.65,
+     "cumDividends": 9.73,
+     "cumBondInterest": 10.2
+    },
+    {
+     "year": 5,
+     "eps": 13.72,
+     "yoc": 0.0807,
+     "dividend": 2.744,
+     "cumEarnings": 62.37,
+     "cumDividends": 12.47,
+     "cumBondInterest": 12.75
+    },
+    {
+     "year": 6,
+     "eps": 14.406,
+     "yoc": 0.0847,
+     "dividend": 2.881,
+     "cumEarnings": 76.78,
+     "cumDividends": 15.36,
+     "cumBondInterest": 15.3
+    },
+    {
+     "year": 7,
+     "eps": 15.126,
+     "yoc": 0.089,
+     "dividend": 3.025,
+     "cumEarnings": 91.9,
+     "cumDividends": 18.38,
+     "cumBondInterest": 17.85
+    },
+    {
+     "year": 8,
+     "eps": 15.883,
+     "yoc": 0.0934,
+     "dividend": 3.177,
+     "cumEarnings": 107.79,
+     "cumDividends": 21.56,
+     "cumBondInterest": 20.4
+    },
+    {
+     "year": 9,
+     "eps": 16.677,
+     "yoc": 0.0981,
+     "dividend": 3.335,
+     "cumEarnings": 124.46,
+     "cumDividends": 24.89,
+     "cumBondInterest": 22.95
+    },
+    {
+     "year": 10,
+     "eps": 17.511,
+     "yoc": 0.103,
+     "dividend": 3.502,
+     "cumEarnings": 141.97,
+     "cumDividends": 28.39,
+     "cumBondInterest": 25.5
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 6,
+   "paybackYear": null,
+   "exits": {
+    "15": {
+     "exitPrice": 262.66,
+     "irr": 0.0581,
+     "intrinsicValue": 252.35,
+     "marginOfSafety": 0.3263
+    },
+    "20": {
+     "exitPrice": 350.21,
+     "irr": 0.087,
+     "intrinsicValue": 327.8,
+     "marginOfSafety": 0.4814
+    },
+    "25": {
+     "exitPrice": 437.77,
+     "irr": 0.1101,
+     "intrinsicValue": 403.24,
+     "marginOfSafety": 0.5784
+    }
+   }
+  },
+  "name": "天品"
+ },
+ {
+  "sym": "7713.TWO",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.1655040789766054,
+    "roic": 0.12213046402000335,
+    "capex_ocf": 0.6822387845321503,
+    "fcf_ni": 0.477346503320467,
+    "ltd_fcf": 4.906200717205911,
+    "gross_margin": 0.33441449562787345
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": false,
+    "fcf_ni": false,
+    "ltd_fcf": false,
+    "gross_margin": false
+   },
+   "passed": 0,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.1655040789766054,
+   "roic": 0.12213046402000335,
+   "grossMargin": 0.33441449562787345,
+   "eps": 5.19,
+   "payout": 0.79
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 5.19,
+   "price": 70.5,
+   "growth": 0.1069,
+   "payout": 0.79,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 5.745,
+     "yoc": 0.0815,
+     "dividend": 4.538,
+     "cumEarnings": 5.74,
+     "cumDividends": 4.54,
+     "cumBondInterest": 1.06
+    },
+    {
+     "year": 2,
+     "eps": 6.358,
+     "yoc": 0.0902,
+     "dividend": 5.023,
+     "cumEarnings": 12.1,
+     "cumDividends": 9.56,
+     "cumBondInterest": 2.11
+    },
+    {
+     "year": 3,
+     "eps": 7.038,
+     "yoc": 0.0998,
+     "dividend": 5.56,
+     "cumEarnings": 19.14,
+     "cumDividends": 15.12,
+     "cumBondInterest": 3.17
+    },
+    {
+     "year": 4,
+     "eps": 7.79,
+     "yoc": 0.1105,
+     "dividend": 6.154,
+     "cumEarnings": 26.93,
+     "cumDividends": 21.28,
+     "cumBondInterest": 4.23
+    },
+    {
+     "year": 5,
+     "eps": 8.622,
+     "yoc": 0.1223,
+     "dividend": 6.812,
+     "cumEarnings": 35.55,
+     "cumDividends": 28.09,
+     "cumBondInterest": 5.29
+    },
+    {
+     "year": 6,
+     "eps": 9.544,
+     "yoc": 0.1354,
+     "dividend": 7.54,
+     "cumEarnings": 45.1,
+     "cumDividends": 35.63,
+     "cumBondInterest": 6.34
+    },
+    {
+     "year": 7,
+     "eps": 10.564,
+     "yoc": 0.1498,
+     "dividend": 8.345,
+     "cumEarnings": 55.66,
+     "cumDividends": 43.97,
+     "cumBondInterest": 7.4
+    },
+    {
+     "year": 8,
+     "eps": 11.692,
+     "yoc": 0.1658,
+     "dividend": 9.237,
+     "cumEarnings": 67.35,
+     "cumDividends": 53.21,
+     "cumBondInterest": 8.46
+    },
+    {
+     "year": 9,
+     "eps": 12.942,
+     "yoc": 0.1836,
+     "dividend": 10.224,
+     "cumEarnings": 80.29,
+     "cumDividends": 63.43,
+     "cumBondInterest": 9.52
+    },
+    {
+     "year": 10,
+     "eps": 14.325,
+     "yoc": 0.2032,
+     "dividend": 11.317,
+     "cumEarnings": 94.62,
+     "cumDividends": 74.75,
+     "cumBondInterest": 10.57
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 9,
+   "exits": {
+    "15": {
+     "exitPrice": 214.87,
+     "irr": 0.1797,
+     "intrinsicValue": 253.24,
+     "marginOfSafety": 0.7216
+    },
+    "20": {
+     "exitPrice": 286.49,
+     "irr": 0.2057,
+     "intrinsicValue": 314.96,
+     "marginOfSafety": 0.7762
+    },
+    "25": {
+     "exitPrice": 358.12,
+     "irr": 0.2272,
+     "intrinsicValue": 376.67,
+     "marginOfSafety": 0.8128
+    }
+   }
+  },
+  "name": "威力德生醫"
+ },
+ {
+  "sym": "1438.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.061774876709738,
+    "roic": 0.019868316297979152,
+    "capex_ocf": null,
+    "fcf_ni": -8.49535099474281,
+    "ltd_fcf": null,
+    "gross_margin": 0.3002341310307801
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": null,
+    "fcf_ni": false,
+    "ltd_fcf": false,
+    "gross_margin": false
+   },
+   "passed": 0,
+   "total": 6,
+   "allPass": false,
+   "missing": [
+    "capex_ocf"
+   ]
+  },
+  "fundamentals": {
+   "roe": 0.061774876709738,
+   "roic": 0.019868316297979152,
+   "grossMargin": 0.3002341310307801,
+   "eps": 3.14,
+   "payout": 0.0637
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 3.14,
+   "price": 21.95,
+   "growth": 0.0,
+   "payout": 0.2,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 3.14,
+     "yoc": 0.1431,
+     "dividend": 0.628,
+     "cumEarnings": 3.14,
+     "cumDividends": 0.63,
+     "cumBondInterest": 0.33
+    },
+    {
+     "year": 2,
+     "eps": 3.14,
+     "yoc": 0.1431,
+     "dividend": 0.628,
+     "cumEarnings": 6.28,
+     "cumDividends": 1.26,
+     "cumBondInterest": 0.66
+    },
+    {
+     "year": 3,
+     "eps": 3.14,
+     "yoc": 0.1431,
+     "dividend": 0.628,
+     "cumEarnings": 9.42,
+     "cumDividends": 1.88,
+     "cumBondInterest": 0.99
+    },
+    {
+     "year": 4,
+     "eps": 3.14,
+     "yoc": 0.1431,
+     "dividend": 0.628,
+     "cumEarnings": 12.56,
+     "cumDividends": 2.51,
+     "cumBondInterest": 1.32
+    },
+    {
+     "year": 5,
+     "eps": 3.14,
+     "yoc": 0.1431,
+     "dividend": 0.628,
+     "cumEarnings": 15.7,
+     "cumDividends": 3.14,
+     "cumBondInterest": 1.65
+    },
+    {
+     "year": 6,
+     "eps": 3.14,
+     "yoc": 0.1431,
+     "dividend": 0.628,
+     "cumEarnings": 18.84,
+     "cumDividends": 3.77,
+     "cumBondInterest": 1.98
+    },
+    {
+     "year": 7,
+     "eps": 3.14,
+     "yoc": 0.1431,
+     "dividend": 0.628,
+     "cumEarnings": 21.98,
+     "cumDividends": 4.4,
+     "cumBondInterest": 2.3
+    },
+    {
+     "year": 8,
+     "eps": 3.14,
+     "yoc": 0.1431,
+     "dividend": 0.628,
+     "cumEarnings": 25.12,
+     "cumDividends": 5.02,
+     "cumBondInterest": 2.63
+    },
+    {
+     "year": 9,
+     "eps": 3.14,
+     "yoc": 0.1431,
+     "dividend": 0.628,
+     "cumEarnings": 28.26,
+     "cumDividends": 5.65,
+     "cumBondInterest": 2.96
+    },
+    {
+     "year": 10,
+     "eps": 3.14,
+     "yoc": 0.1431,
+     "dividend": 0.628,
+     "cumEarnings": 31.4,
+     "cumDividends": 6.28,
+     "cumBondInterest": 3.29
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 7,
+   "exits": {
+    "15": {
+     "exitPrice": 47.1,
+     "irr": 0.1004,
+     "intrinsicValue": 46.38,
+     "marginOfSafety": 0.5267
+    },
+    "20": {
+     "exitPrice": 62.8,
+     "irr": 0.1298,
+     "intrinsicValue": 59.9,
+     "marginOfSafety": 0.6336
+    },
+    "25": {
+     "exitPrice": 78.5,
+     "irr": 0.1534,
+     "intrinsicValue": 73.43,
+     "marginOfSafety": 0.7011
+    }
+   }
+  },
+  "name": "三地開發"
+ },
+ {
+  "sym": "8432.TWO",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.096533433522181,
+    "roic": 0.1299331265294866,
+    "capex_ocf": 0.07456278669724771,
+    "fcf_ni": 0.9271650150797071,
+    "ltd_fcf": 0.0,
+    "gross_margin": 0.5093350432428024
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": true
+   },
+   "passed": 4,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.096533433522181,
+   "roic": 0.1299331265294866,
+   "grossMargin": 0.5093350432428024,
+   "eps": 5.45,
+   "payout": 0.4789
+  },
+  "notes": [
+   "長期負債無資料，視為 0"
+  ],
+  "yoc": {
+   "eps0": 5.45,
+   "price": 61.4,
+   "growth": 0.12,
+   "payout": 0.479,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 6.104,
+     "yoc": 0.0994,
+     "dividend": 2.923,
+     "cumEarnings": 6.1,
+     "cumDividends": 2.92,
+     "cumBondInterest": 0.92
+    },
+    {
+     "year": 2,
+     "eps": 6.836,
+     "yoc": 0.1113,
+     "dividend": 3.274,
+     "cumEarnings": 12.94,
+     "cumDividends": 6.2,
+     "cumBondInterest": 1.84
+    },
+    {
+     "year": 3,
+     "eps": 7.657,
+     "yoc": 0.1247,
+     "dividend": 3.667,
+     "cumEarnings": 20.6,
+     "cumDividends": 9.86,
+     "cumBondInterest": 2.76
+    },
+    {
+     "year": 4,
+     "eps": 8.576,
+     "yoc": 0.1397,
+     "dividend": 4.107,
+     "cumEarnings": 29.17,
+     "cumDividends": 13.97,
+     "cumBondInterest": 3.68
+    },
+    {
+     "year": 5,
+     "eps": 9.605,
+     "yoc": 0.1564,
+     "dividend": 4.6,
+     "cumEarnings": 38.78,
+     "cumDividends": 18.57,
+     "cumBondInterest": 4.6
+    },
+    {
+     "year": 6,
+     "eps": 10.757,
+     "yoc": 0.1752,
+     "dividend": 5.152,
+     "cumEarnings": 49.54,
+     "cumDividends": 23.72,
+     "cumBondInterest": 5.53
+    },
+    {
+     "year": 7,
+     "eps": 12.048,
+     "yoc": 0.1962,
+     "dividend": 5.77,
+     "cumEarnings": 61.58,
+     "cumDividends": 29.49,
+     "cumBondInterest": 6.45
+    },
+    {
+     "year": 8,
+     "eps": 13.494,
+     "yoc": 0.2198,
+     "dividend": 6.462,
+     "cumEarnings": 75.08,
+     "cumDividends": 35.95,
+     "cumBondInterest": 7.37
+    },
+    {
+     "year": 9,
+     "eps": 15.113,
+     "yoc": 0.2461,
+     "dividend": 7.238,
+     "cumEarnings": 90.19,
+     "cumDividends": 43.19,
+     "cumBondInterest": 8.29
+    },
+    {
+     "year": 10,
+     "eps": 16.927,
+     "yoc": 0.2757,
+     "dividend": 8.106,
+     "cumEarnings": 107.12,
+     "cumDividends": 51.3,
+     "cumBondInterest": 9.21
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 7,
+   "exits": {
+    "15": {
+     "exitPrice": 253.9,
+     "irr": 0.1949,
+     "intrinsicValue": 265.45,
+     "marginOfSafety": 0.7687
+    },
+    "20": {
+     "exitPrice": 338.54,
+     "irr": 0.224,
+     "intrinsicValue": 338.37,
+     "marginOfSafety": 0.8185
+    },
+    "25": {
+     "exitPrice": 423.17,
+     "irr": 0.2477,
+     "intrinsicValue": 411.3,
+     "marginOfSafety": 0.8507
+    }
+   }
+  },
+  "name": "東生華"
+ },
+ {
+  "sym": "2501.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.10691294546164798,
+    "roic": 0.05754838795528973,
+    "capex_ocf": 0.030599351883848915,
+    "fcf_ni": 1.7658476688421296,
+    "ltd_fcf": 1.7587044211678549,
+    "gross_margin": 0.2775889515494807
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 3,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.10691294546164798,
+   "roic": 0.05754838795528973,
+   "grossMargin": 0.2775889515494807,
+   "eps": 3.8,
+   "payout": 0.3158
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 3.8,
+   "price": 21.4,
+   "growth": 0.12,
+   "payout": 0.316,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 4.256,
+     "yoc": 0.1989,
+     "dividend": 1.344,
+     "cumEarnings": 4.26,
+     "cumDividends": 1.34,
+     "cumBondInterest": 0.32
+    },
+    {
+     "year": 2,
+     "eps": 4.767,
+     "yoc": 0.2227,
+     "dividend": 1.505,
+     "cumEarnings": 9.02,
+     "cumDividends": 2.85,
+     "cumBondInterest": 0.64
+    },
+    {
+     "year": 3,
+     "eps": 5.339,
+     "yoc": 0.2495,
+     "dividend": 1.686,
+     "cumEarnings": 14.36,
+     "cumDividends": 4.54,
+     "cumBondInterest": 0.96
+    },
+    {
+     "year": 4,
+     "eps": 5.979,
+     "yoc": 0.2794,
+     "dividend": 1.888,
+     "cumEarnings": 20.34,
+     "cumDividends": 6.42,
+     "cumBondInterest": 1.28
+    },
+    {
+     "year": 5,
+     "eps": 6.697,
+     "yoc": 0.3129,
+     "dividend": 2.115,
+     "cumEarnings": 27.04,
+     "cumDividends": 8.54,
+     "cumBondInterest": 1.6
+    },
+    {
+     "year": 6,
+     "eps": 7.501,
+     "yoc": 0.3505,
+     "dividend": 2.369,
+     "cumEarnings": 34.54,
+     "cumDividends": 10.91,
+     "cumBondInterest": 1.93
+    },
+    {
+     "year": 7,
+     "eps": 8.401,
+     "yoc": 0.3926,
+     "dividend": 2.653,
+     "cumEarnings": 42.94,
+     "cumDividends": 13.56,
+     "cumBondInterest": 2.25
+    },
+    {
+     "year": 8,
+     "eps": 9.409,
+     "yoc": 0.4397,
+     "dividend": 2.971,
+     "cumEarnings": 52.35,
+     "cumDividends": 16.53,
+     "cumBondInterest": 2.57
+    },
+    {
+     "year": 9,
+     "eps": 10.538,
+     "yoc": 0.4924,
+     "dividend": 3.328,
+     "cumEarnings": 62.89,
+     "cumDividends": 19.86,
+     "cumBondInterest": 2.89
+    },
+    {
+     "year": 10,
+     "eps": 11.802,
+     "yoc": 0.5515,
+     "dividend": 3.727,
+     "cumEarnings": 74.69,
+     "cumDividends": 23.59,
+     "cumBondInterest": 3.21
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 5,
+   "exits": {
+    "15": {
+     "exitPrice": 177.03,
+     "irr": 0.2785,
+     "intrinsicValue": 174.0,
+     "marginOfSafety": 0.877
+    },
+    "20": {
+     "exitPrice": 236.04,
+     "irr": 0.3104,
+     "intrinsicValue": 224.85,
+     "marginOfSafety": 0.9048
+    },
+    "25": {
+     "exitPrice": 295.06,
+     "irr": 0.3363,
+     "intrinsicValue": 275.7,
+     "marginOfSafety": 0.9224
+    }
+   }
+  },
+  "name": "國建"
+ },
+ {
+  "sym": "6505.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.027755915134346665,
+    "roic": 0.027415741691211123,
+    "capex_ocf": 0.1491777924700117,
+    "fcf_ni": 3.747140729909416,
+    "ltd_fcf": 0.23848599094104544,
+    "gross_margin": 0.035243923055619075
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 3,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.027755915134346665,
+   "roic": 0.027415741691211123,
+   "grossMargin": 0.035243923055619075,
+   "eps": 7.61,
+   "payout": 0.1577
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 7.61,
+   "price": 89.6,
+   "growth": 0.0,
+   "payout": 0.2,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 7.61,
+     "yoc": 0.0849,
+     "dividend": 1.522,
+     "cumEarnings": 7.61,
+     "cumDividends": 1.52,
+     "cumBondInterest": 1.34
+    },
+    {
+     "year": 2,
+     "eps": 7.61,
+     "yoc": 0.0849,
+     "dividend": 1.522,
+     "cumEarnings": 15.22,
+     "cumDividends": 3.04,
+     "cumBondInterest": 2.69
+    },
+    {
+     "year": 3,
+     "eps": 7.61,
+     "yoc": 0.0849,
+     "dividend": 1.522,
+     "cumEarnings": 22.83,
+     "cumDividends": 4.57,
+     "cumBondInterest": 4.03
+    },
+    {
+     "year": 4,
+     "eps": 7.61,
+     "yoc": 0.0849,
+     "dividend": 1.522,
+     "cumEarnings": 30.44,
+     "cumDividends": 6.09,
+     "cumBondInterest": 5.38
+    },
+    {
+     "year": 5,
+     "eps": 7.61,
+     "yoc": 0.0849,
+     "dividend": 1.522,
+     "cumEarnings": 38.05,
+     "cumDividends": 7.61,
+     "cumBondInterest": 6.72
+    },
+    {
+     "year": 6,
+     "eps": 7.61,
+     "yoc": 0.0849,
+     "dividend": 1.522,
+     "cumEarnings": 45.66,
+     "cumDividends": 9.13,
+     "cumBondInterest": 8.06
+    },
+    {
+     "year": 7,
+     "eps": 7.61,
+     "yoc": 0.0849,
+     "dividend": 1.522,
+     "cumEarnings": 53.27,
+     "cumDividends": 10.65,
+     "cumBondInterest": 9.41
+    },
+    {
+     "year": 8,
+     "eps": 7.61,
+     "yoc": 0.0849,
+     "dividend": 1.522,
+     "cumEarnings": 60.88,
+     "cumDividends": 12.18,
+     "cumBondInterest": 10.75
+    },
+    {
+     "year": 9,
+     "eps": 7.61,
+     "yoc": 0.0849,
+     "dividend": 1.522,
+     "cumEarnings": 68.49,
+     "cumDividends": 13.7,
+     "cumBondInterest": 12.1
+    },
+    {
+     "year": 10,
+     "eps": 7.61,
+     "yoc": 0.0849,
+     "dividend": 1.522,
+     "cumEarnings": 76.1,
+     "cumDividends": 15.22,
+     "cumBondInterest": 13.44
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": null,
+   "exits": {
+    "15": {
+     "exitPrice": 114.15,
+     "irr": 0.0398,
+     "intrinsicValue": 112.4,
+     "marginOfSafety": 0.2028
+    },
+    "20": {
+     "exitPrice": 152.2,
+     "irr": 0.068,
+     "intrinsicValue": 145.18,
+     "marginOfSafety": 0.3828
+    },
+    "25": {
+     "exitPrice": 190.25,
+     "irr": 0.0907,
+     "intrinsicValue": 177.97,
+     "marginOfSafety": 0.4965
+    }
+   }
+  },
+  "name": "台塑化"
+ },
+ {
+  "sym": "4728.TWO",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.44861240576499417,
+    "roic": 0.4507718494520832,
+    "capex_ocf": 0.08273702716250282,
+    "fcf_ni": 1.0438650277161938,
+    "ltd_fcf": 0.0,
+    "gross_margin": 0.7840564732173704
+   },
+   "checks": {
+    "roe": true,
+    "roic": true,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": true
+   },
+   "passed": 6,
+   "total": 6,
+   "allPass": true,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.44861240576499417,
+   "roic": 0.4507718494520832,
+   "grossMargin": 0.7840564732173704,
+   "eps": 16.46,
+   "payout": 0.73510003
+  },
+  "notes": [
+   "長期負債無資料，視為 0"
+  ],
+  "yoc": {
+   "eps0": 16.46,
+   "price": 384.5,
+   "growth": 0.1078,
+   "payout": 0.735,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 18.234,
+     "yoc": 0.0474,
+     "dividend": 13.404,
+     "cumEarnings": 18.23,
+     "cumDividends": 13.4,
+     "cumBondInterest": 5.77
+    },
+    {
+     "year": 2,
+     "eps": 20.2,
+     "yoc": 0.0525,
+     "dividend": 14.849,
+     "cumEarnings": 38.43,
+     "cumDividends": 28.25,
+     "cumBondInterest": 11.54
+    },
+    {
+     "year": 3,
+     "eps": 22.378,
+     "yoc": 0.0582,
+     "dividend": 16.45,
+     "cumEarnings": 60.81,
+     "cumDividends": 44.7,
+     "cumBondInterest": 17.3
+    },
+    {
+     "year": 4,
+     "eps": 24.79,
+     "yoc": 0.0645,
+     "dividend": 18.223,
+     "cumEarnings": 85.6,
+     "cumDividends": 62.93,
+     "cumBondInterest": 23.07
+    },
+    {
+     "year": 5,
+     "eps": 27.462,
+     "yoc": 0.0714,
+     "dividend": 20.187,
+     "cumEarnings": 113.06,
+     "cumDividends": 83.11,
+     "cumBondInterest": 28.84
+    },
+    {
+     "year": 6,
+     "eps": 30.422,
+     "yoc": 0.0791,
+     "dividend": 22.364,
+     "cumEarnings": 143.49,
+     "cumDividends": 105.48,
+     "cumBondInterest": 34.6
+    },
+    {
+     "year": 7,
+     "eps": 33.702,
+     "yoc": 0.0877,
+     "dividend": 24.774,
+     "cumEarnings": 177.19,
+     "cumDividends": 130.25,
+     "cumBondInterest": 40.37
+    },
+    {
+     "year": 8,
+     "eps": 37.335,
+     "yoc": 0.0971,
+     "dividend": 27.445,
+     "cumEarnings": 214.52,
+     "cumDividends": 157.7,
+     "cumBondInterest": 46.14
+    },
+    {
+     "year": 9,
+     "eps": 41.36,
+     "yoc": 0.1076,
+     "dividend": 30.403,
+     "cumEarnings": 255.88,
+     "cumDividends": 188.1,
+     "cumBondInterest": 51.91
+    },
+    {
+     "year": 10,
+     "eps": 45.818,
+     "yoc": 0.1192,
+     "dividend": 33.681,
+     "cumEarnings": 301.7,
+     "cumDividends": 221.78,
+     "cumBondInterest": 57.67
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": null,
+   "exits": {
+    "15": {
+     "exitPrice": 687.27,
+     "irr": 0.1021,
+     "intrinsicValue": 794.21,
+     "marginOfSafety": 0.5159
+    },
+    "20": {
+     "exitPrice": 916.36,
+     "irr": 0.128,
+     "intrinsicValue": 991.61,
+     "marginOfSafety": 0.6122
+    },
+    "25": {
+     "exitPrice": 1145.45,
+     "irr": 0.1492,
+     "intrinsicValue": 1189.01,
+     "marginOfSafety": 0.6766
+    }
+   }
+  },
+  "name": "雙美"
+ },
+ {
+  "sym": "2881.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.1230879640536837,
+    "roic": null,
+    "capex_ocf": 0.600667247565963,
+    "fcf_ni": 0.04757082615910958,
+    "ltd_fcf": 104.39811329117279,
+    "gross_margin": 0.41785
+   },
+   "checks": {
+    "roe": false,
+    "roic": null,
+    "capex_ocf": false,
+    "fcf_ni": false,
+    "ltd_fcf": false,
+    "gross_margin": false
+   },
+   "passed": 0,
+   "total": 6,
+   "allPass": false,
+   "missing": [
+    "roic"
+   ]
+  },
+  "fundamentals": {
+   "roe": 0.1230879640536837,
+   "roic": null,
+   "grossMargin": 0.41785,
+   "eps": 8.01,
+   "payout": 0.5174
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 8.01,
+   "price": 150.5,
+   "growth": 0.12,
+   "payout": 0.517,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 8.971,
+     "yoc": 0.0596,
+     "dividend": 4.642,
+     "cumEarnings": 8.97,
+     "cumDividends": 4.64,
+     "cumBondInterest": 2.26
+    },
+    {
+     "year": 2,
+     "eps": 10.048,
+     "yoc": 0.0668,
+     "dividend": 5.199,
+     "cumEarnings": 19.02,
+     "cumDividends": 9.84,
+     "cumBondInterest": 4.51
+    },
+    {
+     "year": 3,
+     "eps": 11.253,
+     "yoc": 0.0748,
+     "dividend": 5.823,
+     "cumEarnings": 30.27,
+     "cumDividends": 15.66,
+     "cumBondInterest": 6.77
+    },
+    {
+     "year": 4,
+     "eps": 12.604,
+     "yoc": 0.0837,
+     "dividend": 6.521,
+     "cumEarnings": 42.88,
+     "cumDividends": 22.18,
+     "cumBondInterest": 9.03
+    },
+    {
+     "year": 5,
+     "eps": 14.116,
+     "yoc": 0.0938,
+     "dividend": 7.304,
+     "cumEarnings": 56.99,
+     "cumDividends": 29.49,
+     "cumBondInterest": 11.29
+    },
+    {
+     "year": 6,
+     "eps": 15.81,
+     "yoc": 0.1051,
+     "dividend": 8.18,
+     "cumEarnings": 72.8,
+     "cumDividends": 37.67,
+     "cumBondInterest": 13.54
+    },
+    {
+     "year": 7,
+     "eps": 17.708,
+     "yoc": 0.1177,
+     "dividend": 9.162,
+     "cumEarnings": 90.51,
+     "cumDividends": 46.83,
+     "cumBondInterest": 15.8
+    },
+    {
+     "year": 8,
+     "eps": 19.832,
+     "yoc": 0.1318,
+     "dividend": 10.261,
+     "cumEarnings": 110.34,
+     "cumDividends": 57.09,
+     "cumBondInterest": 18.06
+    },
+    {
+     "year": 9,
+     "eps": 22.212,
+     "yoc": 0.1476,
+     "dividend": 11.493,
+     "cumEarnings": 132.56,
+     "cumDividends": 68.58,
+     "cumBondInterest": 20.32
+    },
+    {
+     "year": 10,
+     "eps": 24.878,
+     "yoc": 0.1653,
+     "dividend": 12.872,
+     "cumEarnings": 157.43,
+     "cumDividends": 81.46,
+     "cumBondInterest": 22.57
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 10,
+   "exits": {
+    "15": {
+     "exitPrice": 373.17,
+     "irr": 0.1291,
+     "intrinsicValue": 395.65,
+     "marginOfSafety": 0.6196
+    },
+    "20": {
+     "exitPrice": 497.56,
+     "irr": 0.157,
+     "intrinsicValue": 502.83,
+     "marginOfSafety": 0.7007
+    },
+    "25": {
+     "exitPrice": 621.95,
+     "irr": 0.1798,
+     "intrinsicValue": 610.01,
+     "marginOfSafety": 0.7533
+    }
+   }
+  },
+  "name": "富邦金"
+ },
+ {
+  "sym": "2883.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.09180932158200873,
+    "roic": null,
+    "capex_ocf": null,
+    "fcf_ni": -0.7933772454460291,
+    "ltd_fcf": null,
+    "gross_margin": 0.43723
+   },
+   "checks": {
+    "roe": false,
+    "roic": null,
+    "capex_ocf": null,
+    "fcf_ni": false,
+    "ltd_fcf": false,
+    "gross_margin": false
+   },
+   "passed": 0,
+   "total": 6,
+   "allPass": false,
+   "missing": [
+    "roic",
+    "capex_ocf"
+   ]
+  },
+  "fundamentals": {
+   "roe": 0.09180932158200873,
+   "roic": null,
+   "grossMargin": 0.43723,
+   "eps": 1.74,
+   "payout": 0.48369998
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 1.74,
+   "price": 34.15,
+   "growth": 0.12,
+   "payout": 0.484,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 1.949,
+     "yoc": 0.0571,
+     "dividend": 0.943,
+     "cumEarnings": 1.95,
+     "cumDividends": 0.94,
+     "cumBondInterest": 0.51
+    },
+    {
+     "year": 2,
+     "eps": 2.183,
+     "yoc": 0.0639,
+     "dividend": 1.056,
+     "cumEarnings": 4.13,
+     "cumDividends": 2.0,
+     "cumBondInterest": 1.02
+    },
+    {
+     "year": 3,
+     "eps": 2.445,
+     "yoc": 0.0716,
+     "dividend": 1.182,
+     "cumEarnings": 6.58,
+     "cumDividends": 3.18,
+     "cumBondInterest": 1.54
+    },
+    {
+     "year": 4,
+     "eps": 2.738,
+     "yoc": 0.0802,
+     "dividend": 1.324,
+     "cumEarnings": 9.31,
+     "cumDividends": 4.51,
+     "cumBondInterest": 2.05
+    },
+    {
+     "year": 5,
+     "eps": 3.066,
+     "yoc": 0.0898,
+     "dividend": 1.483,
+     "cumEarnings": 12.38,
+     "cumDividends": 5.99,
+     "cumBondInterest": 2.56
+    },
+    {
+     "year": 6,
+     "eps": 3.434,
+     "yoc": 0.1006,
+     "dividend": 1.661,
+     "cumEarnings": 15.81,
+     "cumDividends": 7.65,
+     "cumBondInterest": 3.07
+    },
+    {
+     "year": 7,
+     "eps": 3.847,
+     "yoc": 0.1126,
+     "dividend": 1.861,
+     "cumEarnings": 19.66,
+     "cumDividends": 9.51,
+     "cumBondInterest": 3.59
+    },
+    {
+     "year": 8,
+     "eps": 4.308,
+     "yoc": 0.1262,
+     "dividend": 2.084,
+     "cumEarnings": 23.97,
+     "cumDividends": 11.59,
+     "cumBondInterest": 4.1
+    },
+    {
+     "year": 9,
+     "eps": 4.825,
+     "yoc": 0.1413,
+     "dividend": 2.334,
+     "cumEarnings": 28.79,
+     "cumDividends": 13.93,
+     "cumBondInterest": 4.61
+    },
+    {
+     "year": 10,
+     "eps": 5.404,
+     "yoc": 0.1582,
+     "dividend": 2.614,
+     "cumEarnings": 34.2,
+     "cumDividends": 16.54,
+     "cumBondInterest": 5.12
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 10,
+   "exits": {
+    "15": {
+     "exitPrice": 81.06,
+     "irr": 0.1213,
+     "intrinsicValue": 84.9,
+     "marginOfSafety": 0.5977
+    },
+    "20": {
+     "exitPrice": 108.08,
+     "irr": 0.1495,
+     "intrinsicValue": 108.18,
+     "marginOfSafety": 0.6843
+    },
+    "25": {
+     "exitPrice": 135.1,
+     "irr": 0.1724,
+     "intrinsicValue": 131.46,
+     "marginOfSafety": 0.7402
+    }
+   }
+  },
+  "name": "凱基金"
+ },
+ {
+  "sym": "4904.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.14903386128669743,
+    "roic": 0.10771585403169767,
+    "capex_ocf": 0.21349964796683155,
+    "fcf_ni": 1.8818329521455495,
+    "ltd_fcf": 1.4684299948048631,
+    "gross_margin": 0.3027820372807635
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 3,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.14903386128669743,
+   "roic": 0.10771585403169767,
+   "grossMargin": 0.3027820372807635,
+   "eps": 4.17,
+   "payout": 0.9135
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 4.17,
+   "price": 108.5,
+   "growth": 0.12,
+   "payout": 0.913,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 4.67,
+     "yoc": 0.043,
+     "dividend": 4.266,
+     "cumEarnings": 4.67,
+     "cumDividends": 4.27,
+     "cumBondInterest": 1.63
+    },
+    {
+     "year": 2,
+     "eps": 5.231,
+     "yoc": 0.0482,
+     "dividend": 4.778,
+     "cumEarnings": 9.9,
+     "cumDividends": 9.04,
+     "cumBondInterest": 3.25
+    },
+    {
+     "year": 3,
+     "eps": 5.859,
+     "yoc": 0.054,
+     "dividend": 5.352,
+     "cumEarnings": 15.76,
+     "cumDividends": 14.4,
+     "cumBondInterest": 4.88
+    },
+    {
+     "year": 4,
+     "eps": 6.562,
+     "yoc": 0.0605,
+     "dividend": 5.994,
+     "cumEarnings": 22.32,
+     "cumDividends": 20.39,
+     "cumBondInterest": 6.51
+    },
+    {
+     "year": 5,
+     "eps": 7.349,
+     "yoc": 0.0677,
+     "dividend": 6.713,
+     "cumEarnings": 29.67,
+     "cumDividends": 27.1,
+     "cumBondInterest": 8.14
+    },
+    {
+     "year": 6,
+     "eps": 8.231,
+     "yoc": 0.0759,
+     "dividend": 7.519,
+     "cumEarnings": 37.9,
+     "cumDividends": 34.62,
+     "cumBondInterest": 9.76
+    },
+    {
+     "year": 7,
+     "eps": 9.219,
+     "yoc": 0.085,
+     "dividend": 8.421,
+     "cumEarnings": 47.12,
+     "cumDividends": 43.04,
+     "cumBondInterest": 11.39
+    },
+    {
+     "year": 8,
+     "eps": 10.325,
+     "yoc": 0.0952,
+     "dividend": 9.432,
+     "cumEarnings": 57.44,
+     "cumDividends": 52.48,
+     "cumBondInterest": 13.02
+    },
+    {
+     "year": 9,
+     "eps": 11.564,
+     "yoc": 0.1066,
+     "dividend": 10.563,
+     "cumEarnings": 69.01,
+     "cumDividends": 63.04,
+     "cumBondInterest": 14.65
+    },
+    {
+     "year": 10,
+     "eps": 12.951,
+     "yoc": 0.1194,
+     "dividend": 11.831,
+     "cumEarnings": 81.96,
+     "cumDividends": 74.87,
+     "cumBondInterest": 16.27
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": null,
+   "exits": {
+    "15": {
+     "exitPrice": 194.27,
+     "irr": 0.1099,
+     "intrinsicValue": 235.51,
+     "marginOfSafety": 0.5393
+    },
+    "20": {
+     "exitPrice": 259.03,
+     "irr": 0.1349,
+     "intrinsicValue": 291.3,
+     "marginOfSafety": 0.6275
+    },
+    "25": {
+     "exitPrice": 323.78,
+     "irr": 0.1555,
+     "intrinsicValue": 347.1,
+     "marginOfSafety": 0.6874
+    }
+   }
+  },
+  "name": "遠傳"
+ },
+ {
+  "sym": "6757.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.33712569310650686,
+    "roic": 0.36737792862144486,
+    "capex_ocf": 0.3932912271279284,
+    "fcf_ni": 1.692352310755422,
+    "ltd_fcf": 0.005661346704493605,
+    "gross_margin": 0.27665914326479585
+   },
+   "checks": {
+    "roe": true,
+    "roic": true,
+    "capex_ocf": false,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 4,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.33712569310650686,
+   "roic": 0.36737792862144486,
+   "grossMargin": 0.27665914326479585,
+   "eps": 6.14,
+   "payout": 0.39419997
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 6.14,
+   "price": 58.3,
+   "growth": 0.05,
+   "payout": 0.394,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 6.447,
+     "yoc": 0.1106,
+     "dividend": 2.541,
+     "cumEarnings": 6.45,
+     "cumDividends": 2.54,
+     "cumBondInterest": 0.87
+    },
+    {
+     "year": 2,
+     "eps": 6.769,
+     "yoc": 0.1161,
+     "dividend": 2.668,
+     "cumEarnings": 13.22,
+     "cumDividends": 5.21,
+     "cumBondInterest": 1.75
+    },
+    {
+     "year": 3,
+     "eps": 7.108,
+     "yoc": 0.1219,
+     "dividend": 2.802,
+     "cumEarnings": 20.32,
+     "cumDividends": 8.01,
+     "cumBondInterest": 2.62
+    },
+    {
+     "year": 4,
+     "eps": 7.463,
+     "yoc": 0.128,
+     "dividend": 2.942,
+     "cumEarnings": 27.79,
+     "cumDividends": 10.95,
+     "cumBondInterest": 3.5
+    },
+    {
+     "year": 5,
+     "eps": 7.836,
+     "yoc": 0.1344,
+     "dividend": 3.089,
+     "cumEarnings": 35.62,
+     "cumDividends": 14.04,
+     "cumBondInterest": 4.37
+    },
+    {
+     "year": 6,
+     "eps": 8.228,
+     "yoc": 0.1411,
+     "dividend": 3.244,
+     "cumEarnings": 43.85,
+     "cumDividends": 17.29,
+     "cumBondInterest": 5.25
+    },
+    {
+     "year": 7,
+     "eps": 8.64,
+     "yoc": 0.1482,
+     "dividend": 3.406,
+     "cumEarnings": 52.49,
+     "cumDividends": 20.69,
+     "cumBondInterest": 6.12
+    },
+    {
+     "year": 8,
+     "eps": 9.072,
+     "yoc": 0.1556,
+     "dividend": 3.576,
+     "cumEarnings": 61.56,
+     "cumDividends": 24.27,
+     "cumBondInterest": 7.0
+    },
+    {
+     "year": 9,
+     "eps": 9.525,
+     "yoc": 0.1634,
+     "dividend": 3.755,
+     "cumEarnings": 71.09,
+     "cumDividends": 28.02,
+     "cumBondInterest": 7.87
+    },
+    {
+     "year": 10,
+     "eps": 10.001,
+     "yoc": 0.1716,
+     "dividend": 3.943,
+     "cumEarnings": 81.09,
+     "cumDividends": 31.97,
+     "cumBondInterest": 8.75
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 8,
+   "exits": {
+    "15": {
+     "exitPrice": 150.02,
+     "irr": 0.1354,
+     "intrinsicValue": 158.57,
+     "marginOfSafety": 0.6323
+    },
+    "20": {
+     "exitPrice": 200.03,
+     "irr": 0.1637,
+     "intrinsicValue": 201.66,
+     "marginOfSafety": 0.7109
+    },
+    "25": {
+     "exitPrice": 250.04,
+     "irr": 0.1866,
+     "intrinsicValue": 244.75,
+     "marginOfSafety": 0.7618
+    }
+   }
+  },
+  "name": "台灣虎航"
+ },
+ {
+  "sym": "8341.TW",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.10961402225999736,
+    "roic": 0.09066359378848587,
+    "capex_ocf": 0.2658310357587194,
+    "fcf_ni": 1.8415773806970739,
+    "ltd_fcf": 2.31276394156463,
+    "gross_margin": 0.4319524877523148
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 3,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.10961402225999736,
+   "roic": 0.09066359378848587,
+   "grossMargin": 0.4319524877523148,
+   "eps": 5.91,
+   "payout": 0.6768
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 5.91,
+   "price": 75.8,
+   "growth": 0.0,
+   "payout": 0.677,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 5.91,
+     "yoc": 0.078,
+     "dividend": 4.0,
+     "cumEarnings": 5.91,
+     "cumDividends": 4.0,
+     "cumBondInterest": 1.14
+    },
+    {
+     "year": 2,
+     "eps": 5.91,
+     "yoc": 0.078,
+     "dividend": 4.0,
+     "cumEarnings": 11.82,
+     "cumDividends": 8.0,
+     "cumBondInterest": 2.27
+    },
+    {
+     "year": 3,
+     "eps": 5.91,
+     "yoc": 0.078,
+     "dividend": 4.0,
+     "cumEarnings": 17.73,
+     "cumDividends": 12.0,
+     "cumBondInterest": 3.41
+    },
+    {
+     "year": 4,
+     "eps": 5.91,
+     "yoc": 0.078,
+     "dividend": 4.0,
+     "cumEarnings": 23.64,
+     "cumDividends": 16.0,
+     "cumBondInterest": 4.55
+    },
+    {
+     "year": 5,
+     "eps": 5.91,
+     "yoc": 0.078,
+     "dividend": 4.0,
+     "cumEarnings": 29.55,
+     "cumDividends": 20.0,
+     "cumBondInterest": 5.69
+    },
+    {
+     "year": 6,
+     "eps": 5.91,
+     "yoc": 0.078,
+     "dividend": 4.0,
+     "cumEarnings": 35.46,
+     "cumDividends": 24.0,
+     "cumBondInterest": 6.82
+    },
+    {
+     "year": 7,
+     "eps": 5.91,
+     "yoc": 0.078,
+     "dividend": 4.0,
+     "cumEarnings": 41.37,
+     "cumDividends": 28.0,
+     "cumBondInterest": 7.96
+    },
+    {
+     "year": 8,
+     "eps": 5.91,
+     "yoc": 0.078,
+     "dividend": 4.0,
+     "cumEarnings": 47.28,
+     "cumDividends": 32.0,
+     "cumBondInterest": 9.1
+    },
+    {
+     "year": 9,
+     "eps": 5.91,
+     "yoc": 0.078,
+     "dividend": 4.0,
+     "cumEarnings": 53.19,
+     "cumDividends": 36.0,
+     "cumBondInterest": 10.23
+    },
+    {
+     "year": 10,
+     "eps": 5.91,
+     "yoc": 0.078,
+     "dividend": 4.0,
+     "cumEarnings": 59.1,
+     "cumDividends": 40.0,
+     "cumBondInterest": 11.37
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": null,
+   "exits": {
+    "15": {
+     "exitPrice": 88.65,
+     "irr": 0.0653,
+     "intrinsicValue": 113.27,
+     "marginOfSafety": 0.3308
+    },
+    "20": {
+     "exitPrice": 118.2,
+     "irr": 0.0896,
+     "intrinsicValue": 138.74,
+     "marginOfSafety": 0.4536
+    },
+    "25": {
+     "exitPrice": 147.75,
+     "irr": 0.1096,
+     "intrinsicValue": 164.2,
+     "marginOfSafety": 0.5384
+    }
+   }
+  },
+  "name": "日友"
+ },
+ {
+  "sym": "6486.TWO",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.14585030909735636,
+    "roic": 0.1471009579777977,
+    "capex_ocf": 0.7091314031180401,
+    "fcf_ni": 0.011102194596138544,
+    "ltd_fcf": 0.0,
+    "gross_margin": 0.32244144571100747
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": false,
+    "fcf_ni": false,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 1,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.14585030909735636,
+   "roic": 0.1471009579777977,
+   "grossMargin": 0.32244144571100747,
+   "eps": 8.76,
+   "payout": 0.6849
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 8.76,
+   "price": 82.5,
+   "growth": 0.11,
+   "payout": 0.685,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 9.724,
+     "yoc": 0.1179,
+     "dividend": 6.66,
+     "cumEarnings": 9.72,
+     "cumDividends": 6.66,
+     "cumBondInterest": 1.24
+    },
+    {
+     "year": 2,
+     "eps": 10.794,
+     "yoc": 0.1308,
+     "dividend": 7.393,
+     "cumEarnings": 20.52,
+     "cumDividends": 14.05,
+     "cumBondInterest": 2.48
+    },
+    {
+     "year": 3,
+     "eps": 11.982,
+     "yoc": 0.1452,
+     "dividend": 8.206,
+     "cumEarnings": 32.5,
+     "cumDividends": 22.26,
+     "cumBondInterest": 3.71
+    },
+    {
+     "year": 4,
+     "eps": 13.3,
+     "yoc": 0.1612,
+     "dividend": 9.109,
+     "cumEarnings": 45.8,
+     "cumDividends": 31.37,
+     "cumBondInterest": 4.95
+    },
+    {
+     "year": 5,
+     "eps": 14.764,
+     "yoc": 0.179,
+     "dividend": 10.112,
+     "cumEarnings": 60.56,
+     "cumDividends": 41.48,
+     "cumBondInterest": 6.19
+    },
+    {
+     "year": 6,
+     "eps": 16.389,
+     "yoc": 0.1987,
+     "dividend": 11.225,
+     "cumEarnings": 76.95,
+     "cumDividends": 52.71,
+     "cumBondInterest": 7.42
+    },
+    {
+     "year": 7,
+     "eps": 18.192,
+     "yoc": 0.2205,
+     "dividend": 12.46,
+     "cumEarnings": 95.15,
+     "cumDividends": 65.17,
+     "cumBondInterest": 8.66
+    },
+    {
+     "year": 8,
+     "eps": 20.194,
+     "yoc": 0.2448,
+     "dividend": 13.831,
+     "cumEarnings": 115.34,
+     "cumDividends": 79.0,
+     "cumBondInterest": 9.9
+    },
+    {
+     "year": 9,
+     "eps": 22.417,
+     "yoc": 0.2717,
+     "dividend": 15.353,
+     "cumEarnings": 137.76,
+     "cumDividends": 94.35,
+     "cumBondInterest": 11.14
+    },
+    {
+     "year": 10,
+     "eps": 24.883,
+     "yoc": 0.3016,
+     "dividend": 17.043,
+     "cumEarnings": 162.64,
+     "cumDividends": 111.39,
+     "cumBondInterest": 12.38
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": 7,
+   "exits": {
+    "15": {
+     "exitPrice": 373.25,
+     "irr": 0.2304,
+     "intrinsicValue": 423.06,
+     "marginOfSafety": 0.805
+    },
+    "20": {
+     "exitPrice": 497.67,
+     "irr": 0.2575,
+     "intrinsicValue": 530.26,
+     "marginOfSafety": 0.8444
+    },
+    "25": {
+     "exitPrice": 622.09,
+     "irr": 0.2799,
+     "intrinsicValue": 637.47,
+     "marginOfSafety": 0.8706
+    }
+   }
+  },
+  "name": "互動"
+ },
+ {
+  "sym": "6561.TWO",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.33802171098704603,
+    "roic": 0.349112983157035,
+    "capex_ocf": 0.47911179471229837,
+    "fcf_ni": 0.6494788751557101,
+    "ltd_fcf": 2.804393393351957,
+    "gross_margin": 0.5260691448008021
+   },
+   "checks": {
+    "roe": true,
+    "roic": true,
+    "capex_ocf": false,
+    "fcf_ni": false,
+    "ltd_fcf": true,
+    "gross_margin": true
+   },
+   "passed": 4,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.33802171098704603,
+   "roic": 0.349112983157035,
+   "grossMargin": 0.5260691448008021,
+   "eps": 15.83,
+   "payout": 0.90330005
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 15.83,
+   "price": 332.5,
+   "growth": 0.12,
+   "payout": 0.903,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 17.73,
+     "yoc": 0.0533,
+     "dividend": 16.015,
+     "cumEarnings": 17.73,
+     "cumDividends": 16.02,
+     "cumBondInterest": 4.99
+    },
+    {
+     "year": 2,
+     "eps": 19.857,
+     "yoc": 0.0597,
+     "dividend": 17.937,
+     "cumEarnings": 37.59,
+     "cumDividends": 33.95,
+     "cumBondInterest": 9.97
+    },
+    {
+     "year": 3,
+     "eps": 22.24,
+     "yoc": 0.0669,
+     "dividend": 20.089,
+     "cumEarnings": 59.83,
+     "cumDividends": 54.04,
+     "cumBondInterest": 14.96
+    },
+    {
+     "year": 4,
+     "eps": 24.909,
+     "yoc": 0.0749,
+     "dividend": 22.5,
+     "cumEarnings": 84.74,
+     "cumDividends": 76.54,
+     "cumBondInterest": 19.95
+    },
+    {
+     "year": 5,
+     "eps": 27.898,
+     "yoc": 0.0839,
+     "dividend": 25.2,
+     "cumEarnings": 112.63,
+     "cumDividends": 101.74,
+     "cumBondInterest": 24.94
+    },
+    {
+     "year": 6,
+     "eps": 31.246,
+     "yoc": 0.094,
+     "dividend": 28.224,
+     "cumEarnings": 143.88,
+     "cumDividends": 129.97,
+     "cumBondInterest": 29.93
+    },
+    {
+     "year": 7,
+     "eps": 34.995,
+     "yoc": 0.1052,
+     "dividend": 31.611,
+     "cumEarnings": 178.87,
+     "cumDividends": 161.58,
+     "cumBondInterest": 34.91
+    },
+    {
+     "year": 8,
+     "eps": 39.194,
+     "yoc": 0.1179,
+     "dividend": 35.404,
+     "cumEarnings": 218.07,
+     "cumDividends": 196.98,
+     "cumBondInterest": 39.9
+    },
+    {
+     "year": 9,
+     "eps": 43.898,
+     "yoc": 0.132,
+     "dividend": 39.653,
+     "cumEarnings": 261.97,
+     "cumDividends": 236.63,
+     "cumBondInterest": 44.89
+    },
+    {
+     "year": 10,
+     "eps": 49.166,
+     "yoc": 0.1479,
+     "dividend": 44.411,
+     "cumEarnings": 311.13,
+     "cumDividends": 281.05,
+     "cumBondInterest": 49.87
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": null,
+   "exits": {
+    "15": {
+     "exitPrice": 737.48,
+     "irr": 0.1385,
+     "intrinsicValue": 891.13,
+     "marginOfSafety": 0.6269
+    },
+    "20": {
+     "exitPrice": 983.31,
+     "irr": 0.1637,
+     "intrinsicValue": 1102.95,
+     "marginOfSafety": 0.6985
+    },
+    "25": {
+     "exitPrice": 1229.14,
+     "irr": 0.1845,
+     "intrinsicValue": 1314.77,
+     "marginOfSafety": 0.7471
+    }
+   }
+  },
+  "name": "是方"
+ },
+ {
+  "sym": "7704.TWO",
+  "error": null,
+  "moat": {
+   "values": {
+    "roe": 0.06005553530051094,
+    "roic": 0.05934796185447125,
+    "capex_ocf": 0.28244032839195715,
+    "fcf_ni": 0.97698239152952,
+    "ltd_fcf": 0.0,
+    "gross_margin": 0.33013546961358897
+   },
+   "checks": {
+    "roe": false,
+    "roic": false,
+    "capex_ocf": true,
+    "fcf_ni": true,
+    "ltd_fcf": true,
+    "gross_margin": false
+   },
+   "passed": 3,
+   "total": 6,
+   "allPass": false,
+   "missing": []
+  },
+  "fundamentals": {
+   "roe": 0.06005553530051094,
+   "roic": 0.05934796185447125,
+   "grossMargin": 0.33013546961358897,
+   "eps": 3.71,
+   "payout": 0.48520002
+  },
+  "notes": [],
+  "yoc": {
+   "eps0": 3.71,
+   "price": 66.7,
+   "growth": 0.0,
+   "payout": 0.485,
+   "rf": 0.015,
+   "discount": 0.015,
+   "years": [
+    {
+     "year": 1,
+     "eps": 3.71,
+     "yoc": 0.0556,
+     "dividend": 1.8,
+     "cumEarnings": 3.71,
+     "cumDividends": 1.8,
+     "cumBondInterest": 1.0
+    },
+    {
+     "year": 2,
+     "eps": 3.71,
+     "yoc": 0.0556,
+     "dividend": 1.8,
+     "cumEarnings": 7.42,
+     "cumDividends": 3.6,
+     "cumBondInterest": 2.0
+    },
+    {
+     "year": 3,
+     "eps": 3.71,
+     "yoc": 0.0556,
+     "dividend": 1.8,
+     "cumEarnings": 11.13,
+     "cumDividends": 5.4,
+     "cumBondInterest": 3.0
+    },
+    {
+     "year": 4,
+     "eps": 3.71,
+     "yoc": 0.0556,
+     "dividend": 1.8,
+     "cumEarnings": 14.84,
+     "cumDividends": 7.2,
+     "cumBondInterest": 4.0
+    },
+    {
+     "year": 5,
+     "eps": 3.71,
+     "yoc": 0.0556,
+     "dividend": 1.8,
+     "cumEarnings": 18.55,
+     "cumDividends": 9.0,
+     "cumBondInterest": 5.0
+    },
+    {
+     "year": 6,
+     "eps": 3.71,
+     "yoc": 0.0556,
+     "dividend": 1.8,
+     "cumEarnings": 22.26,
+     "cumDividends": 10.8,
+     "cumBondInterest": 6.0
+    },
+    {
+     "year": 7,
+     "eps": 3.71,
+     "yoc": 0.0556,
+     "dividend": 1.8,
+     "cumEarnings": 25.97,
+     "cumDividends": 12.6,
+     "cumBondInterest": 7.0
+    },
+    {
+     "year": 8,
+     "eps": 3.71,
+     "yoc": 0.0556,
+     "dividend": 1.8,
+     "cumEarnings": 29.68,
+     "cumDividends": 14.4,
+     "cumBondInterest": 8.0
+    },
+    {
+     "year": 9,
+     "eps": 3.71,
+     "yoc": 0.0556,
+     "dividend": 1.8,
+     "cumEarnings": 33.39,
+     "cumDividends": 16.2,
+     "cumBondInterest": 9.0
+    },
+    {
+     "year": 10,
+     "eps": 3.71,
+     "yoc": 0.0556,
+     "dividend": 1.8,
+     "cumEarnings": 37.1,
+     "cumDividends": 18.0,
+     "cumBondInterest": 10.01
+    }
+   ],
+   "goldenCrossYear": 1,
+   "cumCrossYear": 1,
+   "paybackYear": null,
+   "exits": {
+    "15": {
+     "exitPrice": 55.65,
+     "irr": 0.0112,
+     "intrinsicValue": 64.55,
+     "marginOfSafety": -0.0333
+    },
+    "20": {
+     "exitPrice": 74.2,
+     "irr": 0.0365,
+     "intrinsicValue": 80.54,
+     "marginOfSafety": 0.1718
+    },
+    "25": {
+     "exitPrice": 92.75,
+     "irr": 0.057,
+     "intrinsicValue": 96.52,
+     "marginOfSafety": 0.309
+    }
+   }
+  },
+  "name": "明遠精密"
+ }
+]

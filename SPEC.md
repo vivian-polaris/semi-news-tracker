@@ -89,7 +89,8 @@ GitHub Actions（自動排程）
 - **資料**：yfinance 年度財報（income_stmt/balance_sheet/cashflow + info）；買入價沿用 `vcp_daily.json` 的 `vcp.price`，可傳入現成 Ticker 物件共用快取
 - **護城河 6 項**：ROE>20%、ROIC>15%、CapEx/OCF<30%、FCF/淨利≥0.9、長債/FCF<3、毛利率>50%（缺資料為 null，不算通過）
 - **十年收益率**：逐年 EPS×(1+g)^n / 買入價；累積股息 vs 公債單利；黃金交叉年（收益率>rf）；15/20/25x 退場 IRR 與以折現率（預設=rf）計的安全邊際
-- **入口**：`python scripts/buffett_yoc.py --from-vcp --min-vcp 70 --only-pass`；`python scripts/scan_vcp.py --buffett` 輸出 `buffett_daily.json`（預設不執行，CI 不受影響）
+- **入口**：`python scripts/buffett_yoc.py --from-vcp --min-vcp 70 --only-pass`；`python scripts/scan_vcp.py --buffett` 輸出 `buffett_daily.json`（vcp_scan.yml 已加此旗標，每次掃描更新）
+- **前端**：VCPfinder.html 個股快查下方「巴菲特護城河 + 十年持有收益率」折疊卡，讀 `./buffett_daily.json`（VCP≥70 前 40 檔），可勾「只看 6 項全過」
 
 ## 資料結構
 
